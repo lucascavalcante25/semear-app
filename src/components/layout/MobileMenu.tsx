@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccessRoute } from "@/auth/permissions";
 
 interface MobileMenuProps {
   onClose: () => void;
@@ -33,6 +35,9 @@ const menuItems = [
 
 export function MobileMenu({ onClose }: MobileMenuProps) {
   const location = useLocation();
+  const { user } = useAuth();
+  const role = user?.role;
+  const filteredItems = menuItems.filter((item) => canAccessRoute(role, item.path));
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
@@ -45,7 +50,7 @@ export function MobileMenu({ onClose }: MobileMenuProps) {
           <div className="flex flex-col">
             <SheetTitle className="text-left text-lg font-bold">SEMEAR</SheetTitle>
             <span className="text-xs text-muted-foreground">
-              Igreja Evangélica
+              Comunidade Evangélica
             </span>
           </div>
         </div>
@@ -54,7 +59,7 @@ export function MobileMenu({ onClose }: MobileMenuProps) {
       {/* Menu Items */}
       <nav className="flex-1 overflow-y-auto p-3">
         <ul className="space-y-1">
-          {menuItems.map((item) => {
+          {filteredItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
 

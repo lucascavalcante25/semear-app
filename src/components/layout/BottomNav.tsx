@@ -7,6 +7,8 @@ import {
   MoreHorizontal 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccessRoute } from "@/auth/permissions";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/" },
@@ -18,11 +20,14 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
+  const { user } = useAuth();
+  const role = user?.role;
+  const filteredItems = navItems.filter((item) => canAccessRoute(role, item.path));
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass safe-bottom">
       <div className="flex items-center justify-around h-16">
-        {navItems.map((item) => {
+        {filteredItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
 

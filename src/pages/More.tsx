@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -18,7 +18,9 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccessRoute } from "@/auth/permissions";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -75,11 +77,21 @@ function MenuItem({
 }
 
 export default function More() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const isDarkMode = theme === "dark";
 
   const handleDarkModeToggle = () => {
-    setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle("dark");
+    toggleTheme();
+  };
+
+  const role = user?.role;
+  const canAccess = (path?: string) => {
+    if (!path) {
+      return true;
+    }
+    return canAccessRoute(role, path);
   };
 
   return (
@@ -100,30 +112,38 @@ export default function More() {
           </h2>
           <Card>
             <CardContent className="p-0">
-              <MenuItem
-                icon={BookMarked}
-                label="Devocionais"
-                description="Reflexões diárias"
-                path="/devocionais"
-              />
-              <MenuItem
-                icon={UserPlus}
-                label="Visitantes"
-                description="Registrar novos visitantes"
-                path="/visitantes"
-              />
-              <MenuItem
-                icon={Megaphone}
-                label="Avisos"
-                description="Comunicados da igreja"
-                path="/avisos"
-              />
-              <MenuItem
-                icon={Wallet}
-                label="Financeiro"
-                description="Entradas e saídas"
-                path="/financeiro"
-              />
+              {canAccess("/devocionais") && (
+                <MenuItem
+                  icon={BookMarked}
+                  label="Devocionais"
+                  description="Reflexões diárias"
+                  path="/devocionais"
+                />
+              )}
+              {canAccess("/visitantes") && (
+                <MenuItem
+                  icon={UserPlus}
+                  label="Visitantes"
+                  description="Registrar novos visitantes"
+                  path="/visitantes"
+                />
+              )}
+              {canAccess("/avisos") && (
+                <MenuItem
+                  icon={Megaphone}
+                  label="Avisos"
+                  description="Comunicados da igreja"
+                  path="/avisos"
+                />
+              )}
+              {canAccess("/financeiro") && (
+                <MenuItem
+                  icon={Wallet}
+                  label="Financeiro"
+                  description="Entradas e saídas"
+                  path="/financeiro"
+                />
+              )}
             </CardContent>
           </Card>
         </section>
@@ -147,12 +167,14 @@ export default function More() {
                   />
                 }
               />
-              <MenuItem
-                icon={Settings}
-                label="Configurações"
-                description="Preferências do app"
-                path="/configuracoes"
-              />
+              {canAccess("/configuracoes") && (
+                <MenuItem
+                  icon={Settings}
+                  label="Configurações"
+                  description="Preferências do app"
+                  path="/configuracoes"
+                />
+              )}
             </CardContent>
           </Card>
         </section>
@@ -207,7 +229,10 @@ export default function More() {
               icon={LogOut}
               label="Sair"
               variant="destructive"
-              onClick={() => console.log("Logout")}
+              onClick={() => {
+                logout();
+                navigate("/login", { replace: true });
+              }}
             />
           </CardContent>
         </Card>
