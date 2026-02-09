@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 
-export default function AccessDenied() {
-  const { defaultRoute } = useAuth();
+export default function AcessoNegado() {
+  const { defaultRoute } = usarAutenticacao();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">

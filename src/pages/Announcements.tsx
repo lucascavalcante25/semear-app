@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout";
+import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,10 +40,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Announcement } from "@/types";
+import type { Aviso } from "@/types";
 
-// Sample announcements
-const sampleAnnouncements: Announcement[] = [
+// Avisos de exemplo
+const avisosExemplo: Aviso[] = [
   {
     id: "1",
     title: "Culto de Santa Ceia",
@@ -109,14 +109,14 @@ const typeConfig = {
   },
 };
 
-interface AnnouncementCardProps {
-  announcement: Announcement;
-  onEdit: (announcement: Announcement) => void;
-  onDelete: (id: string) => void;
+interface CartaoAvisoProps {
+  aviso: Aviso;
+  aoEditar: (aviso: Aviso) => void;
+  aoExcluir: (id: string) => void;
 }
 
-function AnnouncementCard({ announcement, onEdit, onDelete }: AnnouncementCardProps) {
-  const config = typeConfig[announcement.type];
+function CartaoAviso({ aviso, aoEditar, aoExcluir }: CartaoAvisoProps) {
+  const config = typeConfig[aviso.type];
   const Icon = config.icon;
 
   return (
@@ -125,8 +125,8 @@ function AnnouncementCard({ announcement, onEdit, onDelete }: AnnouncementCardPr
         <div className="flex items-start gap-3">
           <div className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-            announcement.type === "urgent" ? "bg-destructive/10 text-destructive" :
-            announcement.type === "fixed" ? "bg-olive/10 text-olive" :
+            aviso.type === "urgent" ? "bg-destructive/10 text-destructive" :
+            aviso.type === "fixed" ? "bg-olive/10 text-olive" :
             "bg-muted text-muted-foreground"
           )}>
             <Icon className="h-5 w-5" />
@@ -134,25 +134,25 @@ function AnnouncementCard({ announcement, onEdit, onDelete }: AnnouncementCardPr
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold">{announcement.title}</h3>
+              <h3 className="font-semibold">{aviso.title}</h3>
               <Badge variant="outline" className={cn("text-xs", config.badgeClass)}>
                 {config.label}
               </Badge>
             </div>
             
             <p className="text-sm text-muted-foreground mb-2">
-              {announcement.content}
+              {aviso.content}
             </p>
             
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {announcement.startDate.toLocaleDateString("pt-BR")}
-                {announcement.endDate && (
-                  <> até {announcement.endDate.toLocaleDateString("pt-BR")}</>
+                {aviso.startDate.toLocaleDateString("pt-BR")}
+                {aviso.endDate && (
+                  <> até {aviso.endDate.toLocaleDateString("pt-BR")}</>
                 )}
               </span>
-              <span>Por: {announcement.createdBy}</span>
+              <span>Por: {aviso.createdBy}</span>
             </div>
           </div>
 
@@ -163,12 +163,12 @@ function AnnouncementCard({ announcement, onEdit, onDelete }: AnnouncementCardPr
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(announcement)}>
+              <DropdownMenuItem onClick={() => aoEditar(aviso)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Editar
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => onDelete(announcement.id)}
+                onClick={() => aoExcluir(aviso.id)}
                 className="text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -182,30 +182,30 @@ function AnnouncementCard({ announcement, onEdit, onDelete }: AnnouncementCardPr
   );
 }
 
-export default function AnnouncementsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [announcements] = useState<Announcement[]>(sampleAnnouncements);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function PaginaAvisos() {
+  const [buscaTexto, setBuscaTexto] = useState("");
+  const [avisos] = useState<Aviso[]>(avisosExemplo);
+  const [dialogAberto, setDialogAberto] = useState(false);
 
-  const filteredAnnouncements = announcements.filter((a) =>
-    a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    a.content.toLowerCase().includes(searchQuery.toLowerCase())
+  const avisosFiltrados = avisos.filter((a) =>
+    a.title.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+    a.content.toLowerCase().includes(buscaTexto.toLowerCase())
   );
 
-  const fixedAnnouncements = filteredAnnouncements.filter((a) => a.type === "fixed");
-  const urgentAnnouncements = filteredAnnouncements.filter((a) => a.type === "urgent");
-  const normalAnnouncements = filteredAnnouncements.filter((a) => a.type === "normal");
+  const avisosFixos = avisosFiltrados.filter((a) => a.type === "fixed");
+  const avisosUrgentes = avisosFiltrados.filter((a) => a.type === "urgent");
+  const avisosNormais = avisosFiltrados.filter((a) => a.type === "normal");
 
-  const handleEdit = (announcement: Announcement) => {
-    console.log("Edit:", announcement);
+  const editarAviso = (aviso: Aviso) => {
+    console.log("Editar aviso:", aviso);
   };
 
-  const handleDelete = (id: string) => {
-    console.log("Delete:", id);
+  const excluirAviso = (id: string) => {
+    console.log("Excluir aviso:", id);
   };
 
   return (
-    <AppLayout>
+    <LayoutApp>
       <div className="space-y-4 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -216,12 +216,12 @@ export default function AnnouncementsPage() {
             <div>
               <h1 className="text-xl font-bold">Avisos</h1>
               <p className="text-sm text-muted-foreground">
-                {announcements.length} avisos ativos
+                {avisos.length} avisos ativos
               </p>
             </div>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -272,10 +272,10 @@ export default function AnnouncementsPage() {
                   <Switch id="active" defaultChecked />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={() => setIsDialogOpen(false)}>
+                  <Button onClick={() => setDialogAberto(false)}>
                     Salvar
                   </Button>
                 </div>
@@ -284,77 +284,77 @@ export default function AnnouncementsPage() {
           </Dialog>
         </div>
 
-        {/* Search */}
+        {/* Busca */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar avisos..."
             className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={buscaTexto}
+            onChange={(e) => setBuscaTexto(e.target.value)}
           />
         </div>
 
-        {/* Fixed Announcements */}
-        {fixedAnnouncements.length > 0 && (
+        {/* Avisos fixos */}
+        {avisosFixos.length > 0 && (
           <section>
             <h2 className="text-sm font-semibold text-olive uppercase tracking-wider mb-3 flex items-center gap-2">
               <Pin className="h-4 w-4" />
               Avisos Fixos
             </h2>
             <div className="space-y-3">
-              {fixedAnnouncements.map((a) => (
-                <AnnouncementCard
+              {avisosFixos.map((a) => (
+                <CartaoAviso
                   key={a.id}
-                  announcement={a}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  aviso={a}
+                  aoEditar={editarAviso}
+                  aoExcluir={excluirAviso}
                 />
               ))}
             </div>
           </section>
         )}
 
-        {/* Urgent Announcements */}
-        {urgentAnnouncements.length > 0 && (
+        {/* Avisos urgentes */}
+        {avisosUrgentes.length > 0 && (
           <section>
             <h2 className="text-sm font-semibold text-destructive uppercase tracking-wider mb-3 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               Avisos Urgentes
             </h2>
             <div className="space-y-3">
-              {urgentAnnouncements.map((a) => (
-                <AnnouncementCard
+              {avisosUrgentes.map((a) => (
+                <CartaoAviso
                   key={a.id}
-                  announcement={a}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  aviso={a}
+                  aoEditar={editarAviso}
+                  aoExcluir={excluirAviso}
                 />
               ))}
             </div>
           </section>
         )}
 
-        {/* Normal Announcements */}
-        {normalAnnouncements.length > 0 && (
+        {/* Avisos normais */}
+        {avisosNormais.length > 0 && (
           <section>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Outros Avisos
             </h2>
             <div className="space-y-3">
-              {normalAnnouncements.map((a) => (
-                <AnnouncementCard
+              {avisosNormais.map((a) => (
+                <CartaoAviso
                   key={a.id}
-                  announcement={a}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  aviso={a}
+                  aoEditar={editarAviso}
+                  aoExcluir={excluirAviso}
                 />
               ))}
             </div>
           </section>
         )}
 
-        {filteredAnnouncements.length === 0 && (
+        {avisosFiltrados.length === 0 && (
           <div className="text-center py-12">
             <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">
@@ -363,6 +363,6 @@ export default function AnnouncementsPage() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 }

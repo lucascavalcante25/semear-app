@@ -1,0 +1,61 @@
+// JHipster JDL - Seguranca e Pre-cadastro (PostgreSQL)
+
+enum StatusCadastro {
+  PRIMEIROACESSO,
+  PENDENTE,
+  APROVADO,
+  REJEITADO
+}
+
+enum Sexo {
+  MASCULINO,
+  FEMININO,
+  OUTRO,
+  NAO_INFORMADO
+}
+
+enum PerfilAcesso {
+  ADMIN,
+  PASTOR,
+  SECRETARIA,
+  TESOURARIA,
+  LIDER,
+  MEMBRO,
+  VISITANTE
+}
+
+entity Endereco {
+  logradouro String required
+  numero String required
+  complemento String
+  bairro String required
+  cidade String required
+  estado String required minlength(2) maxlength(2)
+  cep String required
+}
+
+entity PreCadastro {
+  nomeCompleto String required
+  email String required unique
+  telefone String required
+  telefoneSecundario String required
+  telefoneEmergencia String required
+  nomeContatoEmergencia String required
+  cpf String required unique
+  sexo Sexo required
+  dataNascimento LocalDate required
+  login String required unique
+  senha String required minlength(8)
+  perfilSolicitado PerfilAcesso required
+  perfilAprovado PerfilAcesso
+  status StatusCadastro required
+  observacoes TextBlob
+  criadoEm Instant required
+  atualizadoEm Instant
+}
+
+relationship OneToOne {
+  PreCadastro{endereco} to Endereco
+}
+
+paginate PreCadastro, Endereco with pagination

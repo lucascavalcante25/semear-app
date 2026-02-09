@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout";
+import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { FinancialEntry } from "@/types";
+import type { LancamentoFinanceiro } from "@/types";
 import { 
   ChartConfig, 
   ChartContainer, 
@@ -42,8 +42,8 @@ import {
 } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
 
-// Sample data
-const sampleEntries: FinancialEntry[] = [
+// Lancamentos de exemplo
+const lancamentosExemplo: LancamentoFinanceiro[] = [
   {
     id: "1",
     type: "income",
@@ -113,12 +113,12 @@ const categoryLabels: Record<string, string> = {
   other: "Outros",
 };
 
-interface EntryCardProps {
-  entry: FinancialEntry;
+interface CartaoLancamentoProps {
+  lancamento: LancamentoFinanceiro;
 }
 
-function EntryCard({ entry }: EntryCardProps) {
-  const isIncome = entry.type === "income";
+function CartaoLancamento({ lancamento }: CartaoLancamentoProps) {
+  const isIncome = lancamento.type === "income";
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-card border hover:shadow-sm transition-shadow">
@@ -135,14 +135,14 @@ function EntryCard({ entry }: EntryCardProps) {
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="font-medium truncate">{entry.description}</p>
+          <p className="font-medium truncate">{lancamento.description}</p>
           <Badge variant="secondary" className="text-xs">
-            {categoryLabels[entry.category] || entry.category}
+            {categoryLabels[lancamento.category] || lancamento.category}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground flex items-center gap-1">
           <Calendar className="h-3 w-3" />
-          {entry.date.toLocaleDateString("pt-BR")}
+          {lancamento.date.toLocaleDateString("pt-BR")}
         </p>
       </div>
       
@@ -150,28 +150,28 @@ function EntryCard({ entry }: EntryCardProps) {
         "font-bold",
         isIncome ? "text-olive" : "text-destructive"
       )}>
-        {isIncome ? "+" : "-"} R$ {entry.amount.toLocaleString("pt-BR")}
+        {isIncome ? "+" : "-"} R$ {lancamento.amount.toLocaleString("pt-BR")}
       </p>
     </div>
   );
 }
 
-export default function Financial() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [entryType, setEntryType] = useState<"income" | "expense">("income");
+export default function Financeiro() {
+  const [dialogAberto, setDialogAberto] = useState(false);
+  const [tipoLancamento, setTipoLancamento] = useState<"income" | "expense">("income");
 
-  const totalIncome = sampleEntries
+  const totalReceitas = lancamentosExemplo
     .filter((e) => e.type === "income")
     .reduce((acc, e) => acc + e.amount, 0);
 
-  const totalExpense = sampleEntries
+  const totalDespesas = lancamentosExemplo
     .filter((e) => e.type === "expense")
     .reduce((acc, e) => acc + e.amount, 0);
 
-  const balance = totalIncome - totalExpense;
+  const saldo = totalReceitas - totalDespesas;
 
   return (
-    <AppLayout>
+    <LayoutApp>
       <div className="space-y-4 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -187,7 +187,7 @@ export default function Financial() {
             </div>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -205,23 +205,23 @@ export default function Financial() {
                 {/* Type Selection */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button
-                    variant={entryType === "income" ? "default" : "outline"}
+                    variant={tipoLancamento === "income" ? "default" : "outline"}
                     className={cn(
                       "gap-2",
-                      entryType === "income" && "bg-olive hover:bg-olive-dark"
+                      tipoLancamento === "income" && "bg-olive hover:bg-olive-dark"
                     )}
-                    onClick={() => setEntryType("income")}
+                    onClick={() => setTipoLancamento("income")}
                   >
                     <TrendingUp className="h-4 w-4" />
                     Entrada
                   </Button>
                   <Button
-                    variant={entryType === "expense" ? "default" : "outline"}
+                    variant={tipoLancamento === "expense" ? "default" : "outline"}
                     className={cn(
                       "gap-2",
-                      entryType === "expense" && "bg-destructive hover:bg-destructive/90"
+                      tipoLancamento === "expense" && "bg-destructive hover:bg-destructive/90"
                     )}
-                    onClick={() => setEntryType("expense")}
+                    onClick={() => setTipoLancamento("expense")}
                   >
                     <TrendingDown className="h-4 w-4" />
                     Saída
@@ -243,7 +243,7 @@ export default function Financial() {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {entryType === "income" ? (
+                      {tipoLancamento === "income" ? (
                         <>
                           <SelectItem value="tithe">Dízimo</SelectItem>
                           <SelectItem value="offering">Oferta</SelectItem>
@@ -293,10 +293,10 @@ export default function Financial() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={() => setIsDialogOpen(false)}>
+                  <Button onClick={() => setDialogAberto(false)}>
                     Salvar
                   </Button>
                 </div>
@@ -314,7 +314,7 @@ export default function Financial() {
                 <span className="text-xs text-muted-foreground">Entradas</span>
               </div>
               <p className="text-lg font-bold text-olive">
-                R$ {totalIncome.toLocaleString("pt-BR")}
+                R$ {totalReceitas.toLocaleString("pt-BR")}
               </p>
             </CardContent>
           </Card>
@@ -326,22 +326,22 @@ export default function Financial() {
                 <span className="text-xs text-muted-foreground">Saídas</span>
               </div>
               <p className="text-lg font-bold text-destructive">
-                R$ {totalExpense.toLocaleString("pt-BR")}
+                R$ {totalDespesas.toLocaleString("pt-BR")}
               </p>
             </CardContent>
           </Card>
 
           <Card className={cn(
             "border",
-            balance >= 0 ? "bg-deep-blue/5 border-deep-blue/20" : "bg-destructive/5 border-destructive/20"
+            saldo >= 0 ? "bg-deep-blue/5 border-deep-blue/20" : "bg-destructive/5 border-destructive/20"
           )}>
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
-                <Wallet className={cn("h-4 w-4", balance >= 0 ? "text-deep-blue" : "text-destructive")} />
+                <Wallet className={cn("h-4 w-4", saldo >= 0 ? "text-deep-blue" : "text-destructive")} />
                 <span className="text-xs text-muted-foreground">Saldo</span>
               </div>
-              <p className={cn("text-lg font-bold", balance >= 0 ? "text-deep-blue" : "text-destructive")}>
-                R$ {balance.toLocaleString("pt-BR")}
+              <p className={cn("text-lg font-bold", saldo >= 0 ? "text-deep-blue" : "text-destructive")}>
+                R$ {saldo.toLocaleString("pt-BR")}
               </p>
             </CardContent>
           </Card>
@@ -374,28 +374,28 @@ export default function Financial() {
           </TabsList>
 
           <TabsContent value="all" className="mt-4 space-y-2">
-            {sampleEntries.map((entry) => (
-              <EntryCard key={entry.id} entry={entry} />
+            {lancamentosExemplo.map((entry) => (
+              <CartaoLancamento key={entry.id} lancamento={entry} />
             ))}
           </TabsContent>
 
           <TabsContent value="income" className="mt-4 space-y-2">
-            {sampleEntries
+            {lancamentosExemplo
               .filter((e) => e.type === "income")
               .map((entry) => (
-                <EntryCard key={entry.id} entry={entry} />
+                <CartaoLancamento key={entry.id} lancamento={entry} />
               ))}
           </TabsContent>
 
           <TabsContent value="expense" className="mt-4 space-y-2">
-            {sampleEntries
+            {lancamentosExemplo
               .filter((e) => e.type === "expense")
               .map((entry) => (
-                <EntryCard key={entry.id} entry={entry} />
+                <CartaoLancamento key={entry.id} lancamento={entry} />
               ))}
           </TabsContent>
         </Tabs>
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 }

@@ -1,0 +1,43 @@
+{
+  "annotations": {
+    "changelogDate": "20260209173859"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "livroId",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "livroNome",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "capitulo",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required", "min"],
+      "fieldValidateRulesMin": "1"
+    },
+    {
+      "fieldName": "versao",
+      "fieldType": "VersaoBiblia",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "ALMEIDA,KJV,BBE,WEB,ASV,DRA,OEB_US,OEB_CW,WEBBE,YLT"
+    },
+    {
+      "fieldName": "versiculosJson",
+      "fieldType": "TextBlob",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "cacheadoEm",
+      "fieldType": "Instant",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "CapituloBibliaCache",
+  "relationships": [],
+  "searchEngine": "no"
+}

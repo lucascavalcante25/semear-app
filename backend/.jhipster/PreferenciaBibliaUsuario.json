@@ -1,0 +1,63 @@
+{
+  "annotations": {
+    "changelogDate": "20260209173858"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "modo",
+      "fieldType": "ModoBiblia",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "LEITURA,ESTUDO"
+    },
+    {
+      "fieldName": "tamanhoFonte",
+      "fieldType": "TamanhoFonte",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "PEQUENA,MEDIA,GRANDE,EXTRA_GRANDE"
+    },
+    {
+      "fieldName": "tema",
+      "fieldType": "Tema",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "SISTEMA,CLARO,ESCURO"
+    },
+    {
+      "fieldName": "mostrarDestaques",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "mostrarNotas",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "mostrarFavoritos",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "criadoEm",
+      "fieldType": "Instant",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "atualizadoEm",
+      "fieldType": "Instant",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "PreferenciaBibliaUsuario",
+  "relationships": [
+    {
+      "otherEntityField": "login",
+      "otherEntityName": "user",
+      "relationshipName": "usuario",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one",
+      "relationshipWithBuiltInEntity": true
+    }
+  ],
+  "searchEngine": "no"
+}

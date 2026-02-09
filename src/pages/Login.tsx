@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 
 type LocationState = {
   from?: { pathname?: string };
 };
 
-export default function Login() {
-  const { login, user, defaultRoute } = useAuth();
+export default function Entrar() {
+  const { login, user, defaultRoute } = usarAutenticacao();
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState("");
+  const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +30,7 @@ export default function Login() {
     setError(null);
     setIsSubmitting(true);
 
-    const result = await login(email.trim(), password);
+    const result = await login(identificador.trim(), password);
     if (!result.success) {
       setError(result.message ?? "Falha ao entrar.");
       setIsSubmitting(false);
@@ -55,14 +55,14 @@ export default function Login() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="identificador">CPF ou e-mail</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="seuemail@semeare.com"
-                autoComplete="email"
+                id="identificador"
+                type="text"
+                value={identificador}
+                onChange={(event) => setIdentificador(event.target.value)}
+                placeholder="CPF ou seuemail@semear.com"
+                autoComplete="username"
                 required
               />
             </div>
@@ -86,6 +86,10 @@ export default function Login() {
 
             <Button className="w-full" type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Entrando..." : "Entrar"}
+            </Button>
+
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/pre-cadastro">Primeiro acesso / Pre-cadastro</Link>
             </Button>
           </form>
         </CardContent>

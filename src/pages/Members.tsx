@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout";
+import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,10 +37,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Member } from "@/types";
+import type { Membro } from "@/types";
 
-// Sample members for demonstration
-const sampleMembers: Member[] = [
+// Membros de exemplo
+const membrosExemplo: Membro[] = [
   {
     id: "1",
     name: "Maria Santos da Silva",
@@ -82,7 +82,7 @@ const sampleMembers: Member[] = [
   },
 ];
 
-function getInitials(name: string): string {
+function obterIniciais(name: string): string {
   return name
     .split(" ")
     .map((n) => n[0])
@@ -91,37 +91,37 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-interface MemberCardProps {
-  member: Member;
-  onEdit: (member: Member) => void;
-  onDelete: (id: string) => void;
+interface CartaoMembroProps {
+  membro: Membro;
+  aoEditar: (membro: Membro) => void;
+  aoExcluir: (id: string) => void;
 }
 
-function MemberCard({ member, onEdit, onDelete }: MemberCardProps) {
+function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={member.photoUrl} alt={member.name} />
+            <AvatarImage src={membro.photoUrl} alt={membro.name} />
             <AvatarFallback className="bg-olive-light text-olive-dark font-medium">
-              {getInitials(member.name)}
+              {obterIniciais(membro.name)}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="font-semibold truncate">{member.name}</h3>
+                <h3 className="font-semibold truncate">{membro.name}</h3>
                 <div className="flex items-center gap-2 mt-0.5">
-                  {member.ministry && (
+                  {membro.ministry && (
                     <Badge variant="secondary" className="text-xs">
-                      {member.ministry}
+                      {membro.ministry}
                     </Badge>
                   )}
-                  {member.role && (
+                  {membro.role && (
                     <span className="text-xs text-muted-foreground">
-                      {member.role}
+                      {membro.role}
                     </span>
                   )}
                 </div>
@@ -134,12 +134,12 @@ function MemberCard({ member, onEdit, onDelete }: MemberCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(member)}>
+                  <DropdownMenuItem onClick={() => aoEditar(membro)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Editar
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => onDelete(member.id)}
+                    onClick={() => aoExcluir(membro.id)}
                     className="text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -150,14 +150,14 @@ function MemberCard({ member, onEdit, onDelete }: MemberCardProps) {
             </div>
             
             <div className="flex flex-col gap-1 mt-2 text-sm text-muted-foreground">
-              <a href={`tel:${member.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
+              <a href={`tel:${membro.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
                 <Phone className="h-3.5 w-3.5" />
-                {member.phone}
+                {membro.phone}
               </a>
-              {member.email && (
-                <a href={`mailto:${member.email}`} className="flex items-center gap-1.5 hover:text-foreground">
+              {membro.email && (
+                <a href={`mailto:${membro.email}`} className="flex items-center gap-1.5 hover:text-foreground">
                   <Mail className="h-3.5 w-3.5" />
-                  {member.email}
+                  {membro.email}
                 </a>
               )}
             </div>
@@ -168,26 +168,26 @@ function MemberCard({ member, onEdit, onDelete }: MemberCardProps) {
   );
 }
 
-export default function Members() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [members] = useState<Member[]>(sampleMembers);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function Membros() {
+  const [buscaTexto, setBuscaTexto] = useState("");
+  const [membros] = useState<Membro[]>(membrosExemplo);
+  const [dialogAberto, setDialogAberto] = useState(false);
 
-  const filteredMembers = members.filter((member) =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.ministry?.toLowerCase().includes(searchQuery.toLowerCase())
+  const membrosFiltrados = membros.filter((membro) =>
+    membro.name.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+    membro.ministry?.toLowerCase().includes(buscaTexto.toLowerCase())
   );
 
-  const handleEdit = (member: Member) => {
-    console.log("Edit member:", member);
+  const editarMembro = (membro: Membro) => {
+    console.log("Editar membro:", membro);
   };
 
-  const handleDelete = (id: string) => {
-    console.log("Delete member:", id);
+  const excluirMembro = (id: string) => {
+    console.log("Excluir membro:", id);
   };
 
   return (
-    <AppLayout>
+    <LayoutApp>
       <div className="space-y-4 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -198,12 +198,12 @@ export default function Members() {
             <div>
               <h1 className="text-xl font-bold">Membros</h1>
               <p className="text-sm text-muted-foreground">
-                {members.length} membros cadastrados
+                {membros.length} membros cadastrados
               </p>
             </div>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -263,10 +263,10 @@ export default function Members() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={() => setIsDialogOpen(false)}>
+                  <Button onClick={() => setDialogAberto(false)}>
                     Salvar
                   </Button>
                 </div>
@@ -275,29 +275,29 @@ export default function Members() {
           </Dialog>
         </div>
 
-        {/* Search */}
+        {/* Busca */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome ou ministério..."
             className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={buscaTexto}
+            onChange={(e) => setBuscaTexto(e.target.value)}
           />
         </div>
 
         {/* Members List */}
         <div className="space-y-3">
-          {filteredMembers.map((member) => (
-            <MemberCard
-              key={member.id}
-              member={member}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
+          {membrosFiltrados.map((membro) => (
+            <CartaoMembro
+              key={membro.id}
+              membro={membro}
+              aoEditar={editarMembro}
+              aoExcluir={excluirMembro}
             />
           ))}
 
-          {filteredMembers.length === 0 && (
+          {membrosFiltrados.length === 0 && (
             <div className="text-center py-12">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">
@@ -307,6 +307,6 @@ export default function Members() {
           )}
         </div>
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 }

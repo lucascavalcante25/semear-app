@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout";
+import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,10 +25,10 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Devotional } from "@/types";
+import type { Devocional } from "@/types";
 
-// Sample devotionals
-const sampleDevotionals: Devotional[] = [
+// Devocionais de exemplo
+const devocionaisExemplo: Devocional[] = [
   {
     id: "1",
     title: "A Fé que Move Montanhas",
@@ -67,21 +67,21 @@ const sampleDevotionals: Devotional[] = [
   },
 ];
 
-interface DevotionalCardProps {
-  devotional: Devotional;
-  isExpanded?: boolean;
-  onExpand: () => void;
+interface CartaoDevocionalProps {
+  devocional: Devocional;
+  expandido?: boolean;
+  aoExpandir: () => void;
 }
 
-function DevotionalCard({ devotional, isExpanded, onExpand }: DevotionalCardProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
-  const isToday = new Date().toDateString() === devotional.publishDate.toDateString();
+function CartaoDevocional({ devocional, expandido, aoExpandir }: CartaoDevocionalProps) {
+  const [favorito, setFavorito] = useState(false);
+  const ehHoje = new Date().toDateString() === devocional.publishDate.toDateString();
 
-  const handleShare = () => {
-    const text = `📖 ${devotional.title}\n\n${devotional.content}\n\n"${devotional.verseText}" - ${devotional.verseReference}\n\n— Devocional SEMEAR`;
+  const compartilhar = () => {
+    const text = `📖 ${devocional.title}\n\n${devocional.content}\n\n"${devocional.verseText}" - ${devocional.verseReference}\n\n— Devocional Semear`;
     
     if (navigator.share) {
-      navigator.share({ title: devotional.title, text });
+      navigator.share({ title: devocional.title, text });
     } else {
       navigator.clipboard.writeText(text);
     }
@@ -90,8 +90,8 @@ function DevotionalCard({ devotional, isExpanded, onExpand }: DevotionalCardProp
   return (
     <Card className={cn(
       "transition-all duration-200",
-      isToday && "border-gold bg-gold/5",
-      isExpanded && "shadow-lg"
+      ehHoje && "border-gold bg-gold/5",
+      expandido && "shadow-lg"
     )}>
       <CardContent className="p-4">
         <div className="space-y-3">
@@ -99,32 +99,32 @@ function DevotionalCard({ devotional, isExpanded, onExpand }: DevotionalCardProp
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                {isToday && (
+                {ehHoje && (
                   <Badge className="bg-gold text-gold-foreground border-0">
                     Hoje
                   </Badge>
                 )}
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {devotional.publishDate.toLocaleDateString("pt-BR")}
+                  {devocional.publishDate.toLocaleDateString("pt-BR")}
                 </span>
               </div>
-              <h3 className="text-lg font-semibold">{devotional.title}</h3>
-              <p className="text-xs text-muted-foreground">Por {devotional.author}</p>
+              <h3 className="text-lg font-semibold">{devocional.title}</h3>
+              <p className="text-xs text-muted-foreground">Por {devocional.author}</p>
             </div>
             
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={() => setIsFavorite(!isFavorite)}
+                onClick={() => setFavorito(!favorito)}
               >
                 <Star className={cn(
                   "h-4 w-4",
-                  isFavorite && "fill-gold text-gold"
+                  favorito && "fill-gold text-gold"
                 )} />
               </Button>
-              <Button variant="ghost" size="icon-sm" onClick={handleShare}>
+              <Button variant="ghost" size="icon-sm" onClick={compartilhar}>
                 <Share2 className="h-4 w-4" />
               </Button>
             </div>
@@ -132,26 +132,26 @@ function DevotionalCard({ devotional, isExpanded, onExpand }: DevotionalCardProp
 
           {/* Verse */}
           <div className="verse-highlight">
-            <p className="text-sm italic">"{devotional.verseText}"</p>
+            <p className="text-sm italic">"{devocional.verseText}"</p>
             <p className="text-xs font-semibold text-olive mt-1">
-              — {devotional.verseReference}
+              — {devocional.verseReference}
             </p>
           </div>
 
           {/* Content */}
           <p className={cn(
             "text-sm text-muted-foreground",
-            !isExpanded && "line-clamp-3"
+            !expandido && "line-clamp-3"
           )}>
-            {devotional.content}
+            {devocional.content}
           </p>
 
-          {!isExpanded && (
+          {!expandido && (
             <Button
               variant="ghost"
               size="sm"
               className="text-xs text-olive hover:text-olive-dark"
-              onClick={onExpand}
+              onClick={aoExpandir}
             >
               Ler mais
               <ChevronRight className="h-3 w-3 ml-1" />
@@ -174,19 +174,19 @@ function DevotionalCard({ devotional, isExpanded, onExpand }: DevotionalCardProp
   );
 }
 
-export default function DevotionalsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [devotionals] = useState<Devotional[]>(sampleDevotionals);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function PaginaDevocionais() {
+  const [buscaTexto, setBuscaTexto] = useState("");
+  const [devocionais] = useState<Devocional[]>(devocionaisExemplo);
+  const [idExpandido, setIdExpandido] = useState<string | null>(null);
+  const [dialogAberto, setDialogAberto] = useState(false);
 
-  const filteredDevotionals = devotionals.filter((d) =>
-    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.content.toLowerCase().includes(searchQuery.toLowerCase())
+  const devocionaisFiltrados = devocionais.filter((d) =>
+    d.title.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+    d.content.toLowerCase().includes(buscaTexto.toLowerCase())
   );
 
   return (
-    <AppLayout>
+    <LayoutApp>
       <div className="space-y-4 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -202,7 +202,7 @@ export default function DevotionalsPage() {
             </div>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -240,10 +240,10 @@ export default function DevotionalsPage() {
                   <Textarea id="content" placeholder="Escreva a reflexão..." rows={6} />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={() => setIsDialogOpen(false)}>
+                  <Button onClick={() => setDialogAberto(false)}>
                     Publicar
                   </Button>
                 </div>
@@ -252,29 +252,29 @@ export default function DevotionalsPage() {
           </Dialog>
         </div>
 
-        {/* Search */}
+        {/* Busca */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar devocionais..."
             className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={buscaTexto}
+            onChange={(e) => setBuscaTexto(e.target.value)}
           />
         </div>
 
-        {/* Devotionals List */}
+        {/* Lista de devocionais */}
         <div className="space-y-4">
-          {filteredDevotionals.map((devotional) => (
-            <DevotionalCard
-              key={devotional.id}
-              devotional={devotional}
-              isExpanded={expandedId === devotional.id}
-              onExpand={() => setExpandedId(expandedId === devotional.id ? null : devotional.id)}
+          {devocionaisFiltrados.map((devocional) => (
+            <CartaoDevocional
+              key={devocional.id}
+              devocional={devocional}
+              expandido={idExpandido === devocional.id}
+              aoExpandir={() => setIdExpandido(idExpandido === devocional.id ? null : devocional.id)}
             />
           ))}
 
-          {filteredDevotionals.length === 0 && (
+          {devocionaisFiltrados.length === 0 && (
             <div className="text-center py-12">
               <BookMarked className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">
@@ -284,6 +284,6 @@ export default function DevotionalsPage() {
           )}
         </div>
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 }

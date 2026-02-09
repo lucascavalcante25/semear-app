@@ -1,23 +1,23 @@
 import { ReactNode } from "react";
-import { Header } from "./Header";
-import { BottomNav } from "./BottomNav";
-import { Sidebar } from "./Sidebar";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Cabecalho } from "./Header";
+import { NavegacaoInferior } from "./BottomNav";
+import { BarraLateral } from "./Sidebar";
+import { usarEhMobile } from "@/hooks/use-mobile";
 
-interface AppLayoutProps {
+interface LayoutAppProps {
   children: ReactNode;
 }
 
-export function AppLayout({ children }: AppLayoutProps) {
-  const isMobile = useIsMobile();
+export function LayoutApp({ children }: LayoutAppProps) {
+  const isMobile = usarEhMobile();
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Cabecalho />
       
       <div className="flex">
         {/* Desktop Sidebar */}
-        {!isMobile && <Sidebar />}
+        {!isMobile && <BarraLateral />}
         
         {/* Main Content */}
         <main className="flex-1 pb-20 md:pb-6 md:ml-64">
@@ -28,7 +28,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      {isMobile && <BottomNav />}
+      {isMobile && <NavegacaoInferior />}
     </div>
   );
 }

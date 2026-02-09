@@ -52,7 +52,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // SEMEAR custom colors
+        // Semear custom colors
         olive: {
           DEFAULT: "hsl(var(--olive))",
           foreground: "hsl(var(--olive-foreground))",

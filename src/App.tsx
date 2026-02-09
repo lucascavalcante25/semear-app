@@ -1,126 +1,128 @@
-import { Toaster } from "@/components/ui/toaster";
+import { Notificador } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { RequireAuth } from "@/components/auth/RequireAuth";
+import { ProvedorAutenticacao } from "@/contexts/AuthContext";
+import { RequerAutenticacao } from "@/components/auth/RequireAuth";
 import { ROUTE_PERMISSIONS } from "@/auth/permissions";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ProvedorTema } from "@/contexts/ThemeContext";
 
 // Pages
-import Index from "./pages/Index";
-import Bible from "./pages/Bible";
-import Members from "./pages/Members";
-import Praise from "./pages/Praise";
-import Financial from "./pages/Financial";
-import Visitors from "./pages/Visitors";
-import Announcements from "./pages/Announcements";
-import Devotionals from "./pages/Devotionals";
-import More from "./pages/More";
-import Login from "./pages/Login";
-import AccessDenied from "./pages/AccessDenied";
-import NotFound from "./pages/NotFound";
+import Inicio from "./pages/Index";
+import Biblia from "./pages/Bible";
+import Membros from "./pages/Members";
+import Louvores from "./pages/Praise";
+import Financeiro from "./pages/Financial";
+import Visitantes from "./pages/Visitors";
+import Avisos from "./pages/Announcements";
+import Devocionais from "./pages/Devotionals";
+import Mais from "./pages/More";
+import Entrar from "./pages/Login";
+import PreCadastro from "./pages/PreCadastro";
+import AcessoNegado from "./pages/AccessDenied";
+import NaoEncontrado from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
+    <ProvedorTema>
       <TooltipProvider>
-        <Toaster />
+        <Notificador />
         <Sonner />
-        <AuthProvider>
+        <ProvedorAutenticacao>
           <BrowserRouter>
             <Routes>
-              <Route path="/login" element={<Login />} />
+              <Route path="/login" element={<Entrar />} />
+              <Route path="/pre-cadastro" element={<PreCadastro />} />
               <Route
                 path="/acesso-negado"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/acesso-negado"]}>
-                    <AccessDenied />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/acesso-negado"]}>
+                    <AcessoNegado />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/"]}>
-                    <Index />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/"]}>
+                    <Inicio />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/biblia"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/biblia"]}>
-                    <Bible />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/biblia"]}>
+                    <Biblia />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/membros"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/membros"]}>
-                    <Members />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/membros"]}>
+                    <Membros />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/louvores"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/louvores"]}>
-                    <Praise />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/louvores"]}>
+                    <Louvores />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/financeiro"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/financeiro"]}>
-                    <Financial />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/financeiro"]}>
+                    <Financeiro />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/visitantes"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/visitantes"]}>
-                    <Visitors />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/visitantes"]}>
+                    <Visitantes />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/avisos"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/avisos"]}>
-                    <Announcements />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/avisos"]}>
+                    <Avisos />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/devocionais"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/devocionais"]}>
-                    <Devotionals />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/devocionais"]}>
+                    <Devocionais />
+                  </RequerAutenticacao>
                 }
               />
               <Route
                 path="/mais"
                 element={
-                  <RequireAuth allowedRoles={ROUTE_PERMISSIONS["/mais"]}>
-                    <More />
-                  </RequireAuth>
+                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/mais"]}>
+                    <Mais />
+                  </RequerAutenticacao>
                 }
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<NaoEncontrado />} />
             </Routes>
           </BrowserRouter>
-        </AuthProvider>
+        </ProvedorAutenticacao>
       </TooltipProvider>
-    </ThemeProvider>
+    </ProvedorTema>
   </QueryClientProvider>
 );
 

@@ -2,8 +2,8 @@ import { Book, Bell, Menu, LogOut, User, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { MobileMenu } from "./MobileMenu";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { MenuMobile } from "./MobileMenu";
+import { usarEhMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,10 +13,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 import { ROLE_LABELS } from "@/auth/permissions";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "@/contexts/ThemeContext";
+import { usarTema } from "@/contexts/ThemeContext";
 
 type NotificationItem = {
   id: string;
@@ -42,12 +42,12 @@ const NOTIFICATIONS: NotificationItem[] = [
   },
 ];
 
-export function Header() {
-  const isMobile = useIsMobile();
+export function Cabecalho() {
+  const isMobile = usarEhMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout } = usarAutenticacao();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = usarTema();
   const userInitials = user?.name
     ?.split(" ")
     .map((part) => part.charAt(0))
@@ -68,7 +68,7 @@ export function Header() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0">
-                <MobileMenu onClose={() => setIsMenuOpen(false)} />
+                <MenuMobile onClose={() => setIsMenuOpen(false)} />
               </SheetContent>
             </Sheet>
           )}
@@ -79,11 +79,11 @@ export function Header() {
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold tracking-tight text-foreground">
-                SEMEAR
+                Semear
               </span>
               {!isMobile && (
                 <span className="text-[10px] text-muted-foreground -mt-1">
-                  Comunidade Evangélica
+                  Comunidade evangelica Semear
                 </span>
               )}
             </div>

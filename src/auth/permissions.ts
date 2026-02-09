@@ -31,7 +31,7 @@ export const ROUTE_PERMISSIONS: Record<string, Role[]> = {
   "/acesso-negado": ["admin", "pastor", "secretaria", "tesouraria", "lider", "membro", "visitante"],
 };
 
-export const PUBLIC_ROUTES = ["/login"];
+export const PUBLIC_ROUTES = ["/login", "/pre-cadastro"];
 
 export const canAccessRoute = (role: Role | null | undefined, path: string) => {
   if (!role) {

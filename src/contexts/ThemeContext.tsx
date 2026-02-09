@@ -8,7 +8,7 @@ type ThemeContextValue = {
   setTheme: (theme: Theme) => void;
 };
 
-const STORAGE_KEY = "semeare.theme";
+const STORAGE_KEY = "semear.tema";
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
@@ -26,7 +26,7 @@ const getInitialTheme = (): Theme => {
   return prefersDark ? "dark" : "light";
 };
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ProvedorTema({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getInitialTheme());
 
   useEffect(() => {
@@ -59,10 +59,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
-export function useTheme() {
+export function usarTema() {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error("useTheme deve ser usado dentro de ThemeProvider.");
+    throw new Error("usarTema deve ser usado dentro de ProvedorTema.");
   }
   return context;
 }

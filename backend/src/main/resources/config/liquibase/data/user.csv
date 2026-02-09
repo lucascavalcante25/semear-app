@@ -1,0 +1,3 @@
+id;login;password_hash;first_name;last_name;email;image_url;activated;lang_key;created_by;last_modified_by
+1;admin@semear.com;$2b$10$qxy213Ua074wGjzztQLO5eG3HOzu4LxvPagV702j8nl2F5ILdxrAO;Administrador;Semear;admin@semear.com;;true;pt-br;system;system
+2;user;$2a$10$VEjxo0jq2YG9Rbk2HmX9S.k1uZBGYUHdUcid3g/vfiEl7lwWgOH/K;User;User;user@localhost;;true;pt-br;system;system

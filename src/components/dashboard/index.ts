@@ -1,6 +1,6 @@
-export { VerseOfTheDay } from "./VerseOfTheDay";
-export { DailyReading } from "./DailyReading";
-export { QuickActions } from "./QuickActions";
-export { Announcements } from "./Announcements";
-export { Birthdays } from "./Birthdays";
-export { SpiritualProgress } from "./SpiritualProgress";
+export { VersiculoDoDia } from "./VerseOfTheDay";
+export { LeituraDiaria } from "./DailyReading";
+export { AcoesRapidas } from "./QuickActions";
+export { Avisos } from "./Announcements";
+export { Aniversariantes } from "./Birthdays";
+export { ProgressoEspiritual } from "./SpiritualProgress";

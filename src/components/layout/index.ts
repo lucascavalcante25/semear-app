@@ -1,5 +1,5 @@
-export { AppLayout } from "./AppLayout";
-export { Header } from "./Header";
-export { BottomNav } from "./BottomNav";
-export { Sidebar } from "./Sidebar";
-export { MobileMenu } from "./MobileMenu";
+export { LayoutApp } from "./AppLayout";
+export { Cabecalho } from "./Header";
+export { NavegacaoInferior } from "./BottomNav";
+export { BarraLateral } from "./Sidebar";
+export { MenuMobile } from "./MobileMenu";

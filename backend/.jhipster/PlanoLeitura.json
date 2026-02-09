@@ -1,0 +1,49 @@
+{
+  "annotations": {
+    "changelogDate": "20260209173854"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "nome",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "descricao",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "tipo",
+      "fieldType": "TipoPlanoLeitura",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "PRE_DEFINIDO,IGREJA,PERSONALIZADO"
+    },
+    {
+      "fieldName": "ativo",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "criadoEm",
+      "fieldType": "Instant",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "atualizadoEm",
+      "fieldType": "Instant",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "PlanoLeitura",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityName": "diaPlanoLeitura",
+      "relationshipName": "dias",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-many"
+    }
+  ],
+  "searchEngine": "no"
+}

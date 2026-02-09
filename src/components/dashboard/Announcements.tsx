@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Announcement } from "@/types";
+import type { Aviso } from "@/types";
 
-// Sample announcements for demonstration
-const sampleAnnouncements: Announcement[] = [
+// Avisos de exemplo
+const avisosExemplo: Aviso[] = [
   {
     id: "1",
     title: "Culto de Santa Ceia",
@@ -40,11 +40,11 @@ const sampleAnnouncements: Announcement[] = [
   },
 ];
 
-interface AnnouncementItemProps {
-  announcement: Announcement;
+interface ItemAvisoProps {
+  aviso: Aviso;
 }
 
-function AnnouncementItem({ announcement }: AnnouncementItemProps) {
+function ItemAviso({ aviso }: ItemAvisoProps) {
   const typeConfig = {
     fixed: {
       icon: Pin,
@@ -63,7 +63,7 @@ function AnnouncementItem({ announcement }: AnnouncementItemProps) {
     },
   };
 
-  const config = typeConfig[announcement.type];
+  const config = typeConfig[aviso.type];
   const Icon = config.icon;
 
   return (
@@ -71,8 +71,8 @@ function AnnouncementItem({ announcement }: AnnouncementItemProps) {
       <div
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-          announcement.type === "urgent" ? "bg-destructive/10 text-destructive" :
-          announcement.type === "fixed" ? "bg-olive/10 text-olive" :
+          aviso.type === "urgent" ? "bg-destructive/10 text-destructive" :
+          aviso.type === "fixed" ? "bg-olive/10 text-olive" :
           "bg-muted text-muted-foreground"
         )}
       >
@@ -80,7 +80,7 @@ function AnnouncementItem({ announcement }: AnnouncementItemProps) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h4 className="text-sm font-semibold truncate">{announcement.title}</h4>
+          <h4 className="text-sm font-semibold truncate">{aviso.title}</h4>
           {config.badge && (
             <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", config.badgeClass)}>
               {config.badge}
@@ -88,14 +88,14 @@ function AnnouncementItem({ announcement }: AnnouncementItemProps) {
           )}
         </div>
         <p className="text-xs text-muted-foreground line-clamp-2">
-          {announcement.content}
+          {aviso.content}
         </p>
       </div>
     </div>
   );
 }
 
-export function Announcements() {
+export function Avisos() {
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
@@ -114,8 +114,8 @@ export function Announcements() {
       </CardHeader>
 
       <CardContent className="space-y-2">
-        {sampleAnnouncements.map((announcement) => (
-          <AnnouncementItem key={announcement.id} announcement={announcement} />
+        {avisosExemplo.map((aviso) => (
+          <ItemAviso key={aviso.id} aviso={aviso} />
         ))}
       </CardContent>
     </Card>

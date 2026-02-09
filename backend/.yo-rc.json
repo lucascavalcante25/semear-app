@@ -1,0 +1,40 @@
+{
+  "generator-jhipster": {
+    "applicationType": "monolith",
+    "authenticationType": "jwt",
+    "baseName": "semear",
+    "buildTool": "maven",
+    "clientFramework": "react",
+    "creationTimestamp": 1770658453819,
+    "databaseType": "sql",
+    "devDatabaseType": "postgresql",
+    "enableTranslation": false,
+    "entities": [
+      "Endereco",
+      "PreCadastro",
+      "FavoritoBiblia",
+      "DestaqueBiblia",
+      "NotaBiblia",
+      "PlanoLeitura",
+      "DiaPlanoLeitura",
+      "ProgressoLeituraUsuario",
+      "HistoricoLeituraBiblia",
+      "PreferenciaBibliaUsuario",
+      "CapituloBibliaCache"
+    ],
+    "jhipsterVersion": "8.11.0",
+    "jwtSecretKey": "semear-jwt-secret-chave-local",
+    "languages": ["pt-br"],
+    "lastLiquibaseTimestamp": 1770658739000,
+    "monorepository": true,
+    "nativeLanguage": "pt-br",
+    "packageFolder": "br/com/semear",
+    "packageName": "br.com.semear",
+    "prodDatabaseType": "postgresql",
+    "rememberMeKey": "semear-remember-me-key",
+    "serverPort": "8080",
+    "skipClient": true,
+    "skipCommitHook": true,
+    "testFrameworks": []
+  }
+}

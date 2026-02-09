@@ -1,6 +1,6 @@
-// Daily verses for the SEMEAR app
+// Daily verses for the Semear app
 
-export interface Verse {
+export interface Versiculo {
   reference: string;
   text: string;
   book: string;
@@ -8,7 +8,7 @@ export interface Verse {
   verse: number | string;
 }
 
-export const dailyVerses: Verse[] = [
+export const versiculosDiarios: Versiculo[] = [
   {
     reference: "Salmos 1:3",
     text: "Ele é como árvore plantada junto a corrente de águas, que, no devido tempo, dá o seu fruto, e cuja folhagem não murcha; e tudo quanto ele faz será bem sucedido.",
@@ -81,14 +81,14 @@ export const dailyVerses: Verse[] = [
   },
 ];
 
-export function getVerseOfTheDay(): Verse {
+export function obterVersiculoDoDia(): Versiculo {
   const today = new Date();
   const dayOfYear = Math.floor(
     (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
   );
-  return dailyVerses[dayOfYear % dailyVerses.length];
+  return versiculosDiarios[dayOfYear % versiculosDiarios.length];
 }
 
-export function getRandomVerse(): Verse {
-  return dailyVerses[Math.floor(Math.random() * dailyVerses.length)];
+export function obterVersiculoAleatorio(): Versiculo {
+  return versiculosDiarios[Math.floor(Math.random() * versiculosDiarios.length)];
 }

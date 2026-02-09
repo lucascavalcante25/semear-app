@@ -1,0 +1,158 @@
+// JHipster JDL - Modulo Biblia (PostgreSQL) em portugues
+
+enum VersaoBiblia {
+  ALMEIDA,
+  KJV,
+  BBE,
+  WEB,
+  ASV,
+  DRA,
+  OEB_US,
+  OEB_CW,
+  WEBBE,
+  YLT
+}
+
+enum CorDestaque {
+  AMARELO,
+  VERDE,
+  AZUL,
+  VERMELHO,
+  ROXO
+}
+
+enum TipoPlanoLeitura {
+  PRE_DEFINIDO,
+  IGREJA,
+  PERSONALIZADO
+}
+
+enum ModoBiblia {
+  LEITURA,
+  ESTUDO
+}
+
+enum TamanhoFonte {
+  PEQUENA,
+  MEDIA,
+  GRANDE,
+  EXTRA_GRANDE
+}
+
+enum Tema {
+  SISTEMA,
+  CLARO,
+  ESCURO
+}
+
+entity FavoritoBiblia {
+  chaveReferencia String required unique // incluir userId + referencia + versao
+  livroId String required
+  livroNome String required
+  capitulo Integer required min(1)
+  versiculoInicio Integer required min(1)
+  versiculoFim Integer required min(1)
+  versao VersaoBiblia required
+  criadoEm Instant required
+  atualizadoEm Instant
+}
+
+entity DestaqueBiblia {
+  chaveReferencia String required unique // incluir userId + referencia + versao
+  livroId String required
+  livroNome String required
+  capitulo Integer required min(1)
+  versiculoInicio Integer required min(1)
+  versiculoFim Integer required min(1)
+  versao VersaoBiblia required
+  cor CorDestaque required
+  criadoEm Instant required
+  atualizadoEm Instant required
+}
+
+entity NotaBiblia {
+  chaveReferencia String required // incluir userId + referencia + versao
+  livroId String required
+  livroNome String required
+  capitulo Integer required min(1)
+  versiculoInicio Integer required min(1)
+  versiculoFim Integer required min(1)
+  versao VersaoBiblia required
+  conteudo TextBlob required
+  criadoEm Instant required
+  atualizadoEm Instant required
+}
+
+entity PlanoLeitura {
+  nome String required
+  descricao String
+  tipo TipoPlanoLeitura required
+  ativo Boolean required
+  criadoEm Instant required
+  atualizadoEm Instant required
+}
+
+entity DiaPlanoLeitura {
+  numeroDia Integer required min(1)
+  titulo String
+  leiturasJson TextBlob required // lista de passagens serializada
+}
+
+entity ProgressoLeituraUsuario {
+  data LocalDate required
+  concluido Boolean required
+  concluidoEm Instant
+  criadoEm Instant required
+  atualizadoEm Instant required
+}
+
+entity HistoricoLeituraBiblia {
+  livroId String required
+  livroNome String required
+  capitulo Integer required min(1)
+  versiculoInicio Integer required min(1)
+  versiculoFim Integer required min(1)
+  versao VersaoBiblia required
+  lidoEm Instant required
+}
+
+entity PreferenciaBibliaUsuario {
+  modo ModoBiblia required
+  tamanhoFonte TamanhoFonte required
+  tema Tema required
+  mostrarDestaques Boolean required
+  mostrarNotas Boolean required
+  mostrarFavoritos Boolean required
+  criadoEm Instant required
+  atualizadoEm Instant required
+}
+
+entity CapituloBibliaCache {
+  livroId String required
+  livroNome String required
+  capitulo Integer required min(1)
+  versao VersaoBiblia required
+  versiculosJson TextBlob required
+  cacheadoEm Instant required
+}
+
+relationship ManyToOne {
+  FavoritoBiblia{usuario(login)} to User with builtInEntity,
+  DestaqueBiblia{usuario(login)} to User with builtInEntity,
+  NotaBiblia{usuario(login)} to User with builtInEntity,
+  ProgressoLeituraUsuario{usuario(login)} to User with builtInEntity,
+  HistoricoLeituraBiblia{usuario(login)} to User with builtInEntity,
+  PreferenciaBibliaUsuario{usuario(login)} to User with builtInEntity
+}
+
+relationship OneToMany {
+  PlanoLeitura{dias} to DiaPlanoLeitura
+}
+
+relationship ManyToOne {
+  DiaPlanoLeitura{plano} to PlanoLeitura,
+  ProgressoLeituraUsuario{plano} to PlanoLeitura,
+  ProgressoLeituraUsuario{dia} to DiaPlanoLeitura
+}
+
+paginate PlanoLeitura, DiaPlanoLeitura, FavoritoBiblia, NotaBiblia, DestaqueBiblia, HistoricoLeituraBiblia with pagination

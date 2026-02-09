@@ -1,14 +1,13 @@
-import { AppLayout } from "@/components/layout";
+import { LayoutApp } from "@/components/layout";
 import {
-  VerseOfTheDay,
-  DailyReading,
-  QuickActions,
-  Announcements,
-  Birthdays,
-  SpiritualProgress,
+  VersiculoDoDia,
+  AcoesRapidas,
+  Avisos,
+  Aniversariantes,
+  ProgressoEspiritual,
 } from "@/components/dashboard";
 
-const Index = () => {
+const Inicio = () => {
   // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -18,7 +17,7 @@ const Index = () => {
   };
 
   return (
-    <AppLayout>
+    <LayoutApp>
       <div className="space-y-6 animate-fade-in">
         {/* Header Greeting */}
         <div className="space-y-1">
@@ -30,31 +29,28 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Verse of the Day */}
-        <VerseOfTheDay />
+        {/* Versiculo do dia */}
+        <VersiculoDoDia />
 
-        {/* Spiritual Progress */}
-        <SpiritualProgress />
+        {/* Progresso espiritual */}
+        <ProgressoEspiritual />
 
-        {/* Quick Actions */}
+        {/* Acoes rapidas */}
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
             Acesso Rápido
           </h2>
-          <QuickActions />
+          <AcoesRapidas />
         </section>
 
-        {/* Daily Reading */}
-        <DailyReading />
-
-        {/* Announcements & Birthdays Grid */}
+        {/* Avisos e aniversariantes */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Announcements />
-          <Birthdays />
+          <Avisos />
+          <Aniversariantes />
         </div>
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 };
 
-export default Index;
+export default Inicio;

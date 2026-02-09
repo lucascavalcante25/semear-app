@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccessRoute } from "@/auth/permissions";
 
-interface MobileMenuProps {
+interface MenuMobileProps {
   onClose: () => void;
 }
 
@@ -33,9 +33,9 @@ const menuItems = [
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
-export function MobileMenu({ onClose }: MobileMenuProps) {
+export function MenuMobile({ onClose }: MenuMobileProps) {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user } = usarAutenticacao();
   const role = user?.role;
   const filteredItems = menuItems.filter((item) => canAccessRoute(role, item.path));
 
@@ -48,9 +48,9 @@ export function MobileMenu({ onClose }: MobileMenuProps) {
             <Book className="h-5 w-5" />
           </div>
           <div className="flex flex-col">
-            <SheetTitle className="text-left text-lg font-bold">SEMEAR</SheetTitle>
+            <SheetTitle className="text-left text-lg font-bold">Semear</SheetTitle>
             <span className="text-xs text-muted-foreground">
-              Comunidade Evangélica
+              Comunidade evangelica Semear
             </span>
           </div>
         </div>

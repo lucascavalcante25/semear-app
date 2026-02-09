@@ -36,6 +36,28 @@ npm i
 npm run dev
 ```
 
+## Configuracao local (API e Banco)
+
+Para usar o backend local, configure o endereco da API no frontend. Crie um arquivo `.env.local` (na raiz do projeto) com:
+
+```sh
+VITE_API_URL=http://localhost:8080
+```
+
+Se for acessar de outro PC na rede, use o IP da maquina que roda o backend, por exemplo:
+
+```sh
+VITE_API_URL=http://192.168.0.10:8080
+```
+
+No backend, as credenciais do banco podem ser alteradas por variaveis de ambiente:
+
+```powershell
+$env:SEMEAR_DB_URL="jdbc:postgresql://localhost:5432/semearDB"
+$env:SEMEAR_DB_USER="postgres"
+$env:SEMEAR_DB_PASSWORD="postgres"
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

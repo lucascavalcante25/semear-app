@@ -1,7 +1,7 @@
-// SEMEAR App Type Definitions
+// Semear App Type Definitions
 
-// ============ Members ============
-export interface Member {
+// ============ Membros ============
+export interface Membro {
   id: string;
   name: string;
   email?: string;
@@ -27,8 +27,8 @@ export interface Member {
   isActive: boolean;
 }
 
-// ============ Visitors ============
-export interface Visitor {
+// ============ Visitantes ============
+export interface Visitante {
   id: string;
   name: string;
   phone?: string;
@@ -39,8 +39,8 @@ export interface Visitor {
   createdAt: Date;
 }
 
-// ============ Announcements ============
-export interface Announcement {
+// ============ Avisos ============
+export interface Aviso {
   id: string;
   title: string;
   content: string;
@@ -52,8 +52,8 @@ export interface Announcement {
   createdBy: string;
 }
 
-// ============ Praise/Worship ============
-export interface Praise {
+// ============ Louvor/Adoracao ============
+export interface Louvor {
   id: string;
   title: string;
   artist: string;
@@ -69,18 +69,18 @@ export interface Praise {
   updatedAt: Date;
 }
 
-export interface PraiseGroup {
+export interface GrupoLouvor {
   id: string;
   name: string;
   date: Date;
-  praises: string[]; // Array of Praise IDs
+  praises: string[]; // Lista de IDs de louvores
   order: number;
   createdAt: Date;
   createdBy: string;
 }
 
-// ============ Financial ============
-export interface FinancialEntry {
+// ============ Financeiro ============
+export interface LancamentoFinanceiro {
   id: string;
   type: "income" | "expense";
   category: string;
@@ -94,8 +94,8 @@ export interface FinancialEntry {
   createdBy: string;
 }
 
-export type IncomeCategory = "tithe" | "offering" | "donation" | "special" | "other";
-export type ExpenseCategory = 
+export type CategoriaReceita = "tithe" | "offering" | "donation" | "special" | "other";
+export type CategoriaDespesa = 
   | "utilities" 
   | "maintenance" 
   | "supplies" 
@@ -104,8 +104,8 @@ export type ExpenseCategory =
   | "missions" 
   | "other";
 
-// ============ Devotionals ============
-export interface Devotional {
+// ============ Devocionais ============
+export interface Devocional {
   id: string;
   title: string;
   content: string;
@@ -119,8 +119,8 @@ export interface Devotional {
   updatedAt: Date;
 }
 
-// ============ Bible Reading ============
-export interface ReadingProgress {
+// ============ Leitura Biblica ============
+export interface ProgressoLeitura {
   id: string;
   userId: string;
   readingId: string;
@@ -129,7 +129,7 @@ export interface ReadingProgress {
   completedAt?: Date;
 }
 
-export interface UserStats {
+export interface EstatisticasUsuario {
   totalReadings: number;
   completedReadings: number;
   currentStreak: number;
@@ -137,8 +137,8 @@ export interface UserStats {
   percentComplete: number;
 }
 
-// ============ Feed / Sharing ============
-export interface FeedPost {
+// ============ Feed / Compartilhamento ============
+export interface PostagemFeed {
   id: string;
   userId: string;
   userName: string;

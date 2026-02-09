@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <!--
+        Added the constraints for entity DiaPlanoLeitura.
+    -->
+    <changeSet id="20260209173855-2" author="jhipster">
+
+        <addForeignKeyConstraint baseColumnNames="plano_id"
+                                 baseTableName="dia_plano_leitura"
+                                 constraintName="fk_dia_plano_leitura__plano_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="plano_leitura"
+                                 />
+
+        <addForeignKeyConstraint baseColumnNames="plano_leitura_id"
+                                 baseTableName="dia_plano_leitura"
+                                 constraintName="fk_dia_plano_leitura__plano_leitura_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="plano_leitura"
+                                 />
+    </changeSet>
+</databaseChangeLog>

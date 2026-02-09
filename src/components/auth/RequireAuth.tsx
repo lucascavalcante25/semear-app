@@ -1,14 +1,14 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 import { type Role } from "@/auth/permissions";
 
-type RequireAuthProps = {
+type RequerAutenticacaoProps = {
   allowedRoles?: Role[];
   children: React.ReactNode;
 };
 
-export function RequireAuth({ allowedRoles, children }: RequireAuthProps) {
-  const { user } = useAuth();
+export function RequerAutenticacao({ allowedRoles, children }: RequerAutenticacaoProps) {
+  const { user } = usarAutenticacao();
   const location = useLocation();
 
   if (!user) {

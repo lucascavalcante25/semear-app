@@ -1,40 +1,99 @@
-import { useEffect, useState } from "react";
-import { AppLayout } from "@/components/layout";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { 
   BookOpen, 
   Search, 
   Star, 
   Share2, 
   ChevronRight,
-  BookMarked
+  BookMarked,
+  Highlighter,
+  NotebookPen,
+  History,
+  ListChecks,
+  Copy,
+  Settings,
+  ChevronDown,
+  ChevronUp,
+  Trash2
 } from "lucide-react";
-import { bibleBooks, oldTestamentBooks, newTestamentBooks, type BibleBook } from "@/data/bible-books";
+import {
+  livrosBiblia,
+  livrosAntigoTestamento,
+  livrosNovoTestamento,
+  type LivroBiblia,
+} from "@/data/bible-books";
 import { cn } from "@/lib/utils";
+import { usarAutenticacao } from "@/contexts/AuthContext";
+import {
+  adicionarFavorito,
+  adicionarNota,
+  alternarLeituraCapitulo,
+  alternarProgressoLeitura,
+  calcularProgressoLivro,
+  foiCapituloLido,
+  obterCapituloCache,
+  obterDestaquePorVersiculo,
+  obterDestaques,
+  obterDiasPlanoLeitura,
+  obterFavoritoCorrespondente,
+  obterFavoritos,
+  obterHistoricoLeitura,
+  obterIdUsuario,
+  obterLeiturasCapitulos,
+  obterNotas,
+  obterPlanosLeitura,
+  obterPreferencias,
+  obterProgressoLeitura,
+  obterProgressoLeituraPorDia,
+  obterReferenciaSelecao,
+  registrarHistoricoLeitura,
+  removerDestaque,
+  removerFavorito,
+  removerHistorico,
+  removerNota,
+  resolverRotuloIntervalo,
+  salvarCapituloCache,
+  salvarDestaque,
+  salvarPreferencias,
+  buscarNoCache,
+  atualizarNota,
+} from "@/modules/bible/service";
+import { versiculoNoIntervalo } from "@/modules/bible/utils";
+import type {
+  CorDestaque,
+  DestaqueBiblia,
+  FavoritoBiblia,
+  HistoricoLeituraBiblia,
+  LeituraCapitulo,
+  NotaBiblia,
+  PlanoLeitura,
+  DiaPlanoLeitura,
+  PreferenciaBibliaUsuario,
+  ProgressoLeituraUsuario,
+  ResultadoBuscaBiblia,
+} from "@/modules/bible/types";
 
-const API_BASE_URL = "https://bible-api.com";
-const DEFAULT_VERSION = "almeida";
+const URL_API_BIBLIA = "https://bible-api.com";
+const VERSAO_PADRAO = "almeida";
 
-const PREFERRED_VERSION_IDS = [
+const IDS_VERSOES_PREFERIDAS = [
   "almeida",
   "kjv",
-  "bbe",
-  "web",
-  "asv",
-  "darby",
-  "dra",
-  "oeb-us",
-  "oeb-cw",
-  "webbe",
-  "ylt",
 ];
 
-const ENGLISH_BOOK_NAMES: Record<string, string> = {
+const NOMES_LIVROS_INGLES: Record<string, string> = {
   gn: "Genesis",
   ex: "Exodus",
   lv: "Leviticus",
@@ -103,32 +162,32 @@ const ENGLISH_BOOK_NAMES: Record<string, string> = {
   ap: "Revelation",
 };
 
-type ChapterVerse = {
+type VersiculoCapitulo = {
   book_name: string;
   chapter: number;
   verse: number;
   text: string;
 };
 
-type ChapterResponse = {
+type RespostaCapitulo = {
+  verses: VersiculoCapitulo[];
   reference: string;
-  verses: ChapterVerse[];
   translation_id: string;
   translation_name: string;
 };
 
-type VersionInfo = {
+type InfoVersao = {
   identifier: string;
   name: string;
   language: string;
   language_code: string;
 };
 
-type VersionResponse = {
-  translations: VersionInfo[];
+type RespostaVersao = {
+  translations: InfoVersao[];
 };
 
-const FALLBACK_VERSIONS: VersionInfo[] = [
+const VERSOES_FALLBACK: InfoVersao[] = [
   {
     identifier: "almeida",
     name: "João Ferreira de Almeida",
@@ -155,25 +214,33 @@ const FALLBACK_VERSIONS: VersionInfo[] = [
   },
 ];
 
-const getVersionLabel = (version: string, versions: VersionInfo[]) => {
+const CLASSES_MARCACAO: Record<CorDestaque, string> = {
+  yellow: "bg-yellow-100/70 dark:bg-yellow-400/20",
+  green: "bg-green-100/70 dark:bg-green-400/20",
+  blue: "bg-blue-100/70 dark:bg-blue-400/20",
+  red: "bg-red-100/70 dark:bg-red-400/20",
+  purple: "bg-purple-100/70 dark:bg-purple-400/20",
+};
+
+const obterRotuloVersao = (version: string, versions: InfoVersao[]) => {
   const match = versions.find((item) => item.identifier === version);
   return match?.name ?? version.toUpperCase();
 };
 
-const getBookNameForVersion = (book: BibleBook, version?: VersionInfo) => {
+const obterNomeLivroParaVersao = (book: LivroBiblia, version?: InfoVersao) => {
   if (!version || version.language_code === "por") {
     return book.name;
   }
 
-  return ENGLISH_BOOK_NAMES[book.id] ?? book.name;
+  return NOMES_LIVROS_INGLES[book.id] ?? book.name;
 };
 
-const toBibleApiQuery = (bookName: string, chapter: number) => {
+const montarConsultaApiBiblia = (bookName: string, chapter: number) => {
   const rawQuery = `${bookName} ${chapter}`;
   return encodeURIComponent(rawQuery).replace(/%20/g, "+");
 };
 
-function BookCard({ book, onClick }: { book: BibleBook; onClick: () => void }) {
+function CartaoLivro({ book, onClick }: { book: LivroBiblia; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -196,22 +263,50 @@ function BookCard({ book, onClick }: { book: BibleBook; onClick: () => void }) {
   );
 }
 
-export default function Bible() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
+export default function Biblia() {
+  const { user } = usarAutenticacao();
+  const userId = obterIdUsuario(user?.id);
+  const [buscaLivro, setBuscaLivro] = useState("");
+  const [selectedBook, setSelectedBook] = useState<LivroBiblia | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number | null>(null);
-  const [selectedVersion, setSelectedVersion] = useState(DEFAULT_VERSION);
-  const [availableVersions, setAvailableVersions] = useState<VersionInfo[]>([]);
-  const [chapterData, setChapterData] = useState<ChapterResponse | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState(VERSAO_PADRAO);
+  const [availableVersions, setAvailableVersions] = useState<InfoVersao[]>([]);
+  const [chapterData, setChapterData] = useState<RespostaCapitulo | null>(null);
   const [isLoadingChapter, setIsLoadingChapter] = useState(false);
   const [chapterError, setChapterError] = useState<string | null>(null);
-
+  const [favorites, setFavorites] = useState<FavoritoBiblia[]>([]);
+  const [highlights, setHighlights] = useState<DestaqueBiblia[]>([]);
+  const [notes, setNotes] = useState<NotaBiblia[]>([]);
+  const [history, setHistory] = useState<HistoricoLeituraBiblia[]>([]);
+  const [preferences, setPreferences] = useState<PreferenciaBibliaUsuario | null>(null);
+  const [planList, setPlanList] = useState<PlanoLeitura[]>([]);
+  const [planDays, setPlanDays] = useState<DiaPlanoLeitura[]>([]);
+  const [readingProgress, setReadingProgress] = useState<ProgressoLeituraUsuario[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("");
+  const [leiturasCapitulos, setLeiturasCapitulos] = useState<LeituraCapitulo[]>([]);
+  const [versiculoAtivo, setVersiculoAtivo] = useState<number | null>(null);
+  const [versoInicio, setVersoInicio] = useState<number>(1);
+  const [versoFim, setVersoFim] = useState<number>(1);
+  const [corMarcacao, setCorMarcacao] = useState<CorDestaque>("yellow");
+  const [rascunhoNota, setRascunhoNota] = useState("");
+  const [idNotaEditando, setIdNotaEditando] = useState<string | null>(null);
+  const [buscaTexto, setBuscaTexto] = useState("");
+  const [buscaLivroId, setBuscaLivroId] = useState("");
+  const [buscaTestamento, setBuscaTestamento] = useState("");
+  const [resultadosBusca, setResultadosBusca] = useState<ResultadoBuscaBiblia[]>([]);
+  const [shareIncludeReference, setShareIncludeReference] = useState(true);
+  const [shareIncludeVersion, setShareIncludeVersion] = useState(true);
+  const [shareIncludeChurch, setShareIncludeChurch] = useState(true);
+  const [mostrarConfiguracoes, setMostrarConfiguracoes] = useState(false);
+  const [abaPainelEstudo, setAbaPainelEstudo] = useState("favorites");
+  const [painelEstudoAberto, setPainelEstudoAberto] = useState(true);
+  const painelEstudoRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const controller = new AbortController();
 
     const loadVersions = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/data`, {
+        const response = await fetch(`${URL_API_BIBLIA}/data`, {
           signal: controller.signal,
         });
 
@@ -219,12 +314,12 @@ export default function Bible() {
           throw new Error("Não foi possível carregar as versões.");
         }
 
-        const data = (await response.json()) as VersionResponse;
+        const data = (await response.json()) as RespostaVersao;
         const translations = Array.isArray(data?.translations)
           ? data.translations
           : [];
 
-        const preferredSet = new Set(PREFERRED_VERSION_IDS);
+        const preferredSet = new Set(IDS_VERSOES_PREFERIDAS);
         const filtered = translations.filter(
           (version) =>
             preferredSet.has(version.identifier) || version.language_code === "por",
@@ -237,23 +332,23 @@ export default function Bible() {
           }
           return a.name.localeCompare(b.name);
         });
-        const versionsToUse = sorted.length > 0 ? sorted : FALLBACK_VERSIONS;
+        const versionsToUse = sorted.length > 0 ? sorted : VERSOES_FALLBACK;
 
-        const referenceBook = bibleBooks[0];
+        const referenceBook = livrosBiblia[0];
         const referenceChapter = 1;
         const validated = await Promise.all(
           versionsToUse.map(async (version) => {
-            const bookName = getBookNameForVersion(referenceBook, version);
-            const query = toBibleApiQuery(bookName, referenceChapter);
+            const bookName = obterNomeLivroParaVersao(referenceBook, version);
+            const query = montarConsultaApiBiblia(bookName, referenceChapter);
             try {
               const validationResponse = await fetch(
-                `${API_BASE_URL}/${query}?translation=${version.identifier}`,
+                `${URL_API_BIBLIA}/${query}?translation=${version.identifier}`,
                 { signal: controller.signal },
               );
               if (!validationResponse.ok) {
                 return null;
               }
-              const validationData = (await validationResponse.json()) as ChapterResponse;
+              const validationData = (await validationResponse.json()) as RespostaCapitulo;
               if (!Array.isArray(validationData.verses) || validationData.verses.length === 0) {
                 return null;
               }
@@ -268,20 +363,27 @@ export default function Bible() {
         );
 
         const workingVersions = validated.filter(
-          (version): version is VersionInfo => Boolean(version),
+          (version): version is InfoVersao => Boolean(version),
         );
-        const versionsFinal = workingVersions.length > 0 ? workingVersions : [FALLBACK_VERSIONS[0]];
+        const combined = [...workingVersions, ...VERSOES_FALLBACK];
+        const uniqueMap = new Map<string, InfoVersao>();
+        combined.forEach((version) => {
+          if (!uniqueMap.has(version.identifier)) {
+            uniqueMap.set(version.identifier, version);
+          }
+        });
+        const versionsFinal = Array.from(uniqueMap.values());
 
         setAvailableVersions(versionsFinal);
         setSelectedVersion((previous) =>
           versionsFinal.some((version) => version.identifier === previous)
             ? previous
-            : DEFAULT_VERSION,
+            : VERSAO_PADRAO,
         );
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
-          setAvailableVersions([FALLBACK_VERSIONS[0]]);
-          setSelectedVersion(DEFAULT_VERSION);
+          setAvailableVersions([VERSOES_FALLBACK[0]]);
+          setSelectedVersion(VERSAO_PADRAO);
         }
       }
     };
@@ -290,6 +392,47 @@ export default function Bible() {
 
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get("bookId");
+    const chapterParam = params.get("chapter");
+    if (!bookId || !chapterParam) {
+      return;
+    }
+    const book = livrosBiblia.find((item) => item.id === bookId);
+    const chapter = Number(chapterParam);
+    const verseStart = Number(params.get("verseStart") ?? "1");
+    const verseEnd = Number(params.get("verseEnd") ?? verseStart);
+    const version = params.get("version");
+    if (book && chapter) {
+      setSelectedBook(book);
+      setSelectedChapter(chapter);
+      setVersoInicio(verseStart);
+      setVersoFim(verseEnd);
+      setVersiculoAtivo(verseStart);
+    }
+    if (version) {
+      setSelectedVersion(version);
+    }
+  }, []);
+
+  useEffect(() => {
+    setFavorites(obterFavoritos(userId));
+    setHighlights(obterDestaques(userId));
+    setNotes(obterNotas(userId));
+    setHistory(obterHistoricoLeitura(userId));
+    setPreferences(obterPreferencias(userId));
+    setLeiturasCapitulos(obterLeiturasCapitulos(userId));
+    const plans = obterPlanosLeitura(userId);
+    setPlanList(plans);
+    const activePlan = plans.find((plan) => plan.isActive) ?? plans[0];
+    if (activePlan) {
+      setSelectedPlanId(activePlan.id);
+      setPlanDays(obterDiasPlanoLeitura(userId, activePlan.id));
+    }
+    setReadingProgress(obterProgressoLeitura(userId));
+  }, [userId]);
 
   useEffect(() => {
     if (!selectedBook || !selectedChapter) {
@@ -306,10 +449,10 @@ export default function Bible() {
         const selectedVersionInfo = versionsForSelect.find(
           (version) => version.identifier === selectedVersion,
         );
-        const bookName = getBookNameForVersion(selectedBook, selectedVersionInfo);
-        const query = toBibleApiQuery(bookName, selectedChapter);
+        const bookName = obterNomeLivroParaVersao(selectedBook, selectedVersionInfo);
+        const query = montarConsultaApiBiblia(bookName, selectedChapter);
         const response = await fetch(
-          `${API_BASE_URL}/${query}?translation=${selectedVersion}`,
+          `${URL_API_BIBLIA}/${query}?translation=${selectedVersion}`,
           { signal: controller.signal },
         );
 
@@ -317,8 +460,24 @@ export default function Bible() {
           throw new Error("Não foi possível carregar este capítulo.");
         }
 
-        const data = (await response.json()) as ChapterResponse;
+        const data = (await response.json()) as RespostaCapitulo;
         setChapterData(data);
+        if (selectedBook) {
+          salvarCapituloCache(
+            userId,
+            selectedBook,
+            selectedChapter,
+            selectedVersion,
+            data.verses.map((verse) => ({ verse: verse.verse, text: verse.text })),
+          );
+          setHistory(
+            registrarHistoricoLeitura(
+              userId,
+              obterReferenciaSelecao(selectedBook, selectedChapter, 1, 1),
+              selectedVersion,
+            ),
+          );
+        }
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           setChapterError(
@@ -336,18 +495,34 @@ export default function Bible() {
     return () => controller.abort();
   }, [selectedBook, selectedChapter, selectedVersion]);
 
+  useEffect(() => {
+    if (!selectedPlanId) {
+      return;
+    }
+    setPlanDays(obterDiasPlanoLeitura(userId, selectedPlanId));
+  }, [selectedPlanId, userId]);
+
   const versionsForSelect =
-    availableVersions.length > 0 ? availableVersions : FALLBACK_VERSIONS;
+    availableVersions.length > 0 ? availableVersions : VERSOES_FALLBACK;
 
-  const filteredOldTestament = oldTestamentBooks.filter((book) =>
-    book.name.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    if (!chapterData?.verses.length) {
+      return;
+    }
+    const firstVerse = chapterData.verses[0].verse;
+    setVersoInicio(firstVerse);
+    setVersoFim(firstVerse);
+  }, [chapterData]);
+
+  const filteredOldTestament = livrosAntigoTestamento.filter((book) =>
+    book.name.toLowerCase().includes(buscaLivro.toLowerCase())
   );
 
-  const filteredNewTestament = newTestamentBooks.filter((book) =>
-    book.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredNewTestament = livrosNovoTestamento.filter((book) =>
+    book.name.toLowerCase().includes(buscaLivro.toLowerCase())
   );
 
-  const handleBookSelect = (book: BibleBook) => {
+  const handleBookSelect = (book: LivroBiblia) => {
     setSelectedBook(book);
     setSelectedChapter(null);
     setChapterData(null);
@@ -367,10 +542,188 @@ export default function Bible() {
     }
   };
 
+  const handleSelecionarVersiculo = (verso: number) => {
+    setVersiculoAtivo((anterior) => (anterior === verso ? null : verso));
+    setVersoInicio(verso);
+    setVersoFim(verso);
+  };
+
+  const handleAlternarLeituraCapitulo = () => {
+    if (!selectedBook || !selectedChapter) {
+      return;
+    }
+    setLeiturasCapitulos(
+      alternarLeituraCapitulo(userId, selectedBook, selectedChapter, selectedVersion),
+    );
+  };
+
+  const selectionReference = useMemo(() => {
+    if (!selectedBook || !selectedChapter) {
+      return null;
+    }
+    return obterReferenciaSelecao(selectedBook, selectedChapter, versoInicio, versoFim);
+  }, [selectedBook, selectedChapter, versoInicio, versoFim]);
+
+  const isSelectionFavorite = useMemo(() => {
+    if (!selectionReference) {
+      return false;
+    }
+    return favorites.some(
+      (favorite) =>
+        favorite.version === selectedVersion &&
+        favorite.reference.bookId === selectionReference.bookId &&
+        favorite.reference.chapter === selectionReference.chapter &&
+        favorite.reference.verseRange.start === selectionReference.verseRange.start &&
+        favorite.reference.verseRange.end === selectionReference.verseRange.end,
+    );
+  }, [favorites, selectionReference, selectedVersion]);
+
+  const progressoLivro = useMemo(() => {
+    if (!selectedBook || !selectedChapter) {
+      return { lidos: 0, total: 0, percentual: 0 };
+    }
+    return calcularProgressoLivro(
+      leiturasCapitulos,
+      selectedBook.id,
+      selectedVersion,
+      selectedBook.chapters,
+    );
+  }, [leiturasCapitulos, selectedBook, selectedChapter, selectedVersion]);
+
+  const capituloLido = useMemo(() => {
+    if (!selectedBook || !selectedChapter) {
+      return false;
+    }
+    return foiCapituloLido(
+      leiturasCapitulos,
+      selectedBook.id,
+      selectedChapter,
+      selectedVersion,
+    );
+  }, [leiturasCapitulos, selectedBook, selectedChapter, selectedVersion]);
+
+  const handleAlternarFavorito = () => {
+    if (!selectionReference) {
+      return;
+    }
+    const existing = favorites.find(
+      (favorite) =>
+        favorite.version === selectedVersion &&
+        favorite.reference.bookId === selectionReference.bookId &&
+        favorite.reference.chapter === selectionReference.chapter &&
+        favorite.reference.verseRange.start === selectionReference.verseRange.start &&
+        favorite.reference.verseRange.end === selectionReference.verseRange.end,
+    );
+    const next = existing
+      ? removerFavorito(userId, existing.id)
+      : adicionarFavorito(userId, selectionReference, selectedVersion);
+    setFavorites(next);
+  };
+
+  const handleMarcarTexto = () => {
+    if (!selectionReference) {
+      return;
+    }
+    setHighlights(salvarDestaque(userId, selectionReference, selectedVersion, corMarcacao));
+  };
+
+  const handleSalvarNota = () => {
+    if (!rascunhoNota.trim()) {
+      return;
+    }
+    const next = idNotaEditando
+      ? atualizarNota(userId, idNotaEditando, rascunhoNota.trim())
+      : selectionReference
+        ? adicionarNota(userId, selectionReference, selectedVersion, rascunhoNota.trim())
+        : notes;
+    setNotes(next);
+    setRascunhoNota("");
+    setIdNotaEditando(null);
+  };
+
+  const handleEditarNota = (note: NotaBiblia) => {
+    setIdNotaEditando(note.id);
+    setRascunhoNota(note.content);
+  };
+
+  const handleExcluirNota = (noteId: string) => {
+    setNotes(removerNota(userId, noteId));
+  };
+
+  const handleCompartilharSelecao = async () => {
+    if (!selectionReference || !chapterData) {
+      return;
+    }
+    const verseTexts = chapterData.verses
+      .filter((verse) =>
+        verse.verse >= selectionReference.verseRange.start &&
+        verse.verse <= selectionReference.verseRange.end,
+      )
+      .map((verse) => `${verse.verse}. ${verse.text}`)
+      .join(" ");
+    const parts = [`"${verseTexts}"`];
+    if (shareIncludeReference) {
+      parts.push(resolverRotuloIntervalo(selectionReference));
+    }
+    if (shareIncludeVersion) {
+      parts.push(obterRotuloVersao(selectedVersion, versionsForSelect));
+    }
+    if (shareIncludeChurch) {
+      parts.push("Comunidade evangelica Semear");
+    }
+    const text = `📖 ${parts.join(" — ")}`;
+    if (navigator.share) {
+      await navigator.share({ title: "Biblia Semear", text });
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+  };
+
+  const handleBuscar = () => {
+    let results = buscarNoCache(userId, {
+      query: buscaTexto,
+      bookId: buscaLivroId || undefined,
+      version: selectedVersion,
+    });
+    if (buscaTestamento) {
+      const testamentMap = new Map(livrosBiblia.map((book) => [book.id, book.testament]));
+      results = results.filter((result) => testamentMap.get(result.reference.bookId) === buscaTestamento);
+    }
+    setResultadosBusca(results);
+  };
+
+  const handleAbrirPainelEstudo = (aba: string) => {
+    setAbaPainelEstudo(aba);
+    setPainelEstudoAberto(true);
+    if (painelEstudoRef.current) {
+      painelEstudoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleNavegarParaReferencia = (reference: FavoritoBiblia["reference"], version: string) => {
+    const book = livrosBiblia.find((item) => item.id === reference.bookId);
+    if (!book) {
+      return;
+    }
+    setSelectedBook(book);
+    setSelectedChapter(reference.chapter);
+    setSelectedVersion(version);
+    setVersoInicio(reference.verseRange.start);
+    setVersoFim(reference.verseRange.end);
+  };
+
+  const atualizarPreferencias = (partial: Partial<PreferenciaBibliaUsuario>) => {
+    if (!preferences) {
+      return;
+    }
+    const next = { ...preferences, ...partial };
+    setPreferences(salvarPreferencias(userId, next));
+  };
+
   // Chapter selection view
   if (selectedBook && !selectedChapter) {
     return (
-      <AppLayout>
+      <LayoutApp>
         <div className="space-y-4 animate-fade-in">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={handleBack}>
@@ -393,7 +746,7 @@ export default function Bible() {
               <SelectContent>
                 {versionsForSelect.map((version) => (
                   <SelectItem key={version.identifier} value={version.identifier}>
-                    {getVersionLabel(version.identifier, versionsForSelect)}
+                    {obterRotuloVersao(version.identifier, versionsForSelect)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -415,14 +768,14 @@ export default function Bible() {
             )}
           </div>
         </div>
-      </AppLayout>
+      </LayoutApp>
     );
   }
 
   // Chapter reading view
   if (selectedBook && selectedChapter) {
     return (
-      <AppLayout>
+      <LayoutApp>
         <div className="space-y-4 animate-fade-in">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -434,16 +787,19 @@ export default function Bible() {
                   {selectedBook.name} {selectedChapter}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {getVersionLabel(selectedVersion, versionsForSelect)}
+                  {obterRotuloVersao(selectedVersion, versionsForSelect)}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon-sm">
-                <Star className="h-4 w-4" />
+              <Button variant="ghost" size="icon-sm" onClick={handleAlternarFavorito}>
+                <Star className={cn("h-4 w-4", isSelectionFavorite && "fill-gold text-gold")} />
               </Button>
-              <Button variant="ghost" size="icon-sm">
+              <Button variant="ghost" size="icon-sm" onClick={handleCompartilharSelecao}>
                 <Share2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon-sm" onClick={() => setMostrarConfiguracoes(true)}>
+                <Settings className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -457,12 +813,114 @@ export default function Bible() {
               <SelectContent>
                 {versionsForSelect.map((version) => (
                   <SelectItem key={version.identifier} value={version.identifier}>
-                    {getVersionLabel(version.identifier, versionsForSelect)}
+                    {obterRotuloVersao(version.identifier, versionsForSelect)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {preferences && (
+            <Dialog open={mostrarConfiguracoes} onOpenChange={setMostrarConfiguracoes}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Configurações de leitura</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={preferences.mode === "study"}
+                        onCheckedChange={(checked) =>
+                          atualizarPreferencias({ mode: checked ? "study" : "reading" })
+                        }
+                      />
+                      <Label className="text-sm">Modo estudo</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Tamanho da fonte</Label>
+                      <Select
+                        value={preferences.fontSize}
+                        onValueChange={(value) =>
+                          atualizarPreferencias({ fontSize: value as PreferenciaBibliaUsuario["fontSize"] })
+                        }
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Fonte" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sm">Pequena</SelectItem>
+                          <SelectItem value="md">Normal</SelectItem>
+                          <SelectItem value="lg">Grande</SelectItem>
+                          <SelectItem value="xl">Muito grande</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={preferences.showHighlights}
+                        onCheckedChange={(checked) =>
+                        atualizarPreferencias({ showHighlights: checked })
+                        }
+                      />
+                      <Label className="text-sm">Mostrar marcações</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={preferences.showNotes}
+                      onCheckedChange={(checked) => atualizarPreferencias({ showNotes: checked })}
+                      />
+                      <Label className="text-sm">Mostrar notas</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={preferences.showFavorites}
+                      onCheckedChange={(checked) => atualizarPreferencias({ showFavorites: checked })}
+                      />
+                      <Label className="text-sm">Mostrar favoritos</Label>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={shareIncludeReference}
+                        onCheckedChange={setShareIncludeReference}
+                      />
+                      <Label className="text-sm">Incluir referência</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={shareIncludeVersion}
+                        onCheckedChange={setShareIncludeVersion}
+                      />
+                      <Label className="text-sm">Incluir versão</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={shareIncludeChurch}
+                        onCheckedChange={setShareIncludeChurch}
+                      />
+                      <Label className="text-sm">Incluir igreja</Label>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Progresso do livro</span>
+                <span className="font-medium text-olive">
+                  {progressoLivro.lidos}/{progressoLivro.total} · {progressoLivro.percentual}%
+                </span>
+              </div>
+              <Progress value={progressoLivro.percentual} className="h-2" />
+            </CardContent>
+          </Card>
 
           <Card>
             <CardContent className="p-6">
@@ -471,17 +929,144 @@ export default function Bible() {
               ) : chapterError ? (
                 <p className="text-sm text-destructive">{chapterError}</p>
               ) : (
-                <div className="space-y-4 text-base leading-relaxed">
+                <div
+                  className={cn(
+                    "space-y-4 leading-relaxed",
+                    preferences?.fontSize === "sm" && "text-sm",
+                    preferences?.fontSize === "md" && "text-base",
+                    preferences?.fontSize === "lg" && "text-lg",
+                    preferences?.fontSize === "xl" && "text-xl",
+                  )}
+                >
                   {chapterData?.verses.map((verse, index) => (
-                    <p
+                    (() => {
+                      const highlight = preferences?.showHighlights
+                        ? obterDestaquePorVersiculo(
+                            highlights,
+                            selectedVersion,
+                            selectedBook.id,
+                            selectedChapter,
+                            verse.verse,
+                          )
+                        : undefined;
+                      const favorite = preferences?.showFavorites
+                        ? obterFavoritoCorrespondente(
+                            favorites,
+                            selectedVersion,
+                            selectedBook.id,
+                            selectedChapter,
+                            verse.verse,
+                          )
+                        : undefined;
+                      const verseNotes =
+                        preferences?.showNotes
+                          ? notes.filter(
+                              (note) =>
+                                note.version === selectedVersion &&
+                                note.reference.bookId === selectedBook.id &&
+                                note.reference.chapter === selectedChapter &&
+                                versiculoNoIntervalo(verse.verse, note.reference.verseRange),
+                            )
+                          : [];
+                      const ativo = versiculoAtivo === verse.verse;
+                      return (
+                    <div
                       key={verse.verse}
-                      className={cn(index === 0 && "verse-highlight")}
+                      className={cn(
+                        "rounded-md p-2 transition-colors",
+                        ativo && "bg-muted/40",
+                      )}
                     >
-                      <sup className="text-xs text-olive font-bold mr-1">
-                        {verse.verse}
-                      </sup>
-                      {verse.text}
-                    </p>
+                      <p
+                        onClick={() => handleSelecionarVersiculo(verse.verse)}
+                        className={cn(
+                          "cursor-pointer",
+                          index === 0 && "verse-highlight",
+                          highlight && CLASSES_MARCACAO[highlight.color],
+                          favorite && "border-l-4 border-gold pl-2",
+                        )}
+                      >
+                        <sup className="text-xs text-olive font-bold mr-1">
+                          {verse.verse}
+                        </sup>
+                        {verse.text}
+                      </p>
+                      {verseNotes.length > 0 && (
+                        <span className="mt-2 block text-xs text-muted-foreground">
+                          Nota: {verseNotes.map((note) => note.content).join(" · ")}
+                        </span>
+                      )}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {ativo && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={handleAlternarFavorito}>
+                              <Star className="h-4 w-4 mr-2" />
+                              Favoritar
+                            </Button>
+                            <Select
+                              value={corMarcacao}
+                              onValueChange={(value) => setCorMarcacao(value as CorDestaque)}
+                            >
+                              <SelectTrigger className="w-[140px] h-8">
+                                <SelectValue placeholder="Cor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="yellow">Amarelo</SelectItem>
+                                <SelectItem value="green">Verde</SelectItem>
+                                <SelectItem value="blue">Azul</SelectItem>
+                                <SelectItem value="red">Vermelho</SelectItem>
+                                <SelectItem value="purple">Roxo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button variant="outline" size="sm" onClick={handleMarcarTexto}>
+                              <Highlighter className="h-4 w-4 mr-2" />
+                              Marcar
+                            </Button>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <NotebookPen className="h-4 w-4 mr-2" />
+                                  Anotar
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Nova anotação</DialogTitle>
+                                </DialogHeader>
+                                <Textarea
+                                  placeholder="Escreva sua observação..."
+                                  value={rascunhoNota}
+                                  onChange={(event) => setRascunhoNota(event.target.value)}
+                                  className="min-h-[120px]"
+                                />
+                                <DialogFooter>
+                                  <Button variant="outline" onClick={() => setRascunhoNota("")}>
+                                    Limpar
+                                  </Button>
+                                  <Button onClick={handleSalvarNota}>Salvar</Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                            <Button variant="outline" size="sm" onClick={handleCompartilharSelecao}>
+                              <Share2 className="h-4 w-4 mr-2" />
+                              Compartilhar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                await navigator.clipboard.writeText(verse.text);
+                              }}
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copiar
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                      );
+                    })()
                   ))}
                   {!chapterData && (
                     <p className="text-sm text-muted-foreground">
@@ -490,6 +1075,25 @@ export default function Bible() {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">
+                  {capituloLido ? "Capítulo concluído" : "Concluir leitura do capítulo"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Marque este capítulo como lido para atualizar seu progresso.
+                </p>
+              </div>
+              <Button
+                variant={capituloLido ? "reading-complete" : "outline"}
+                onClick={handleAlternarLeituraCapitulo}
+              >
+                {capituloLido ? "Lido" : "Marcar capítulo como lido"}
+              </Button>
             </CardContent>
           </Card>
 
@@ -514,14 +1118,14 @@ export default function Bible() {
             </Button>
           </div>
         </div>
-      </AppLayout>
+      </LayoutApp>
     );
   }
 
   // Book list view
   return (
-    <AppLayout>
-      <div className="space-y-4 animate-fade-in">
+    <LayoutApp>
+      <div className="space-y-3 animate-fade-in">
         {/* Header */}
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-olive text-olive-foreground">
@@ -530,12 +1134,12 @@ export default function Bible() {
           <div>
             <h1 className="text-xl font-bold">Bíblia Sagrada</h1>
             <p className="text-sm text-muted-foreground">
-              {getVersionLabel(selectedVersion, versionsForSelect)}
+              {obterRotuloVersao(selectedVersion, versionsForSelect)}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">Versão</span>
           <Select value={selectedVersion} onValueChange={setSelectedVersion}>
             <SelectTrigger className="w-[240px]">
@@ -544,22 +1148,389 @@ export default function Bible() {
             <SelectContent>
               {versionsForSelect.map((version) => (
                 <SelectItem key={version.identifier} value={version.identifier}>
-                  {getVersionLabel(version.identifier, versionsForSelect)}
+                  {obterRotuloVersao(version.identifier, versionsForSelect)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar livro..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <Card
+          ref={painelEstudoRef}
+          className="sticky top-4 z-30 bg-card/95 backdrop-blur border"
+        >
+          <CardContent className="p-3 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Painel de estudo</h2>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPainelEstudoAberto((prev) => !prev)}
+              >
+                {painelEstudoAberto ? (
+                  <>
+                    Recolher
+                    <ChevronUp className="h-4 w-4 ml-2" />
+                  </>
+                ) : (
+                  <>
+                    Expandir
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {painelEstudoAberto && (
+              <Tabs value={abaPainelEstudo} onValueChange={setAbaPainelEstudo} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+                  <TabsTrigger value="favorites" className="gap-2">
+                    <Star className="h-4 w-4" />
+                    Favoritos
+                  </TabsTrigger>
+                  <TabsTrigger value="highlights" className="gap-2">
+                    <Highlighter className="h-4 w-4" />
+                    Marcações
+                  </TabsTrigger>
+                  <TabsTrigger value="notes" className="gap-2">
+                    <NotebookPen className="h-4 w-4" />
+                    Anotações
+                  </TabsTrigger>
+                  <TabsTrigger value="plan" className="gap-2">
+                    <ListChecks className="h-4 w-4" />
+                    Plano
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-2">
+                    <History className="h-4 w-4" />
+                    Histórico
+                  </TabsTrigger>
+                  <TabsTrigger value="search" className="gap-2">
+                    <Search className="h-4 w-4" />
+                    Busca
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="favorites" className="mt-3 space-y-2">
+                  {favorites.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum favorito salvo ainda.
+                    </p>
+                  ) : (
+                    favorites.map((favorite) => (
+                      <div
+                        key={favorite.id}
+                        className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg border"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">
+                            {resolverRotuloIntervalo(favorite.reference)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {obterRotuloVersao(favorite.version, versionsForSelect)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleNavegarParaReferencia(favorite.reference, favorite.version)}
+                          >
+                            Abrir
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setFavorites(removerFavorito(userId, favorite.id))}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="highlights" className="mt-3 space-y-2">
+                  {highlights.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma marcação registrada.
+                    </p>
+                  ) : (
+                    highlights.map((highlight) => (
+                      <div
+                        key={highlight.id}
+                        className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg border"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">
+                            {resolverRotuloIntervalo(highlight.reference)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {obterRotuloVersao(highlight.version, versionsForSelect)} · {highlight.color}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleNavegarParaReferencia(highlight.reference, highlight.version)}
+                          >
+                            Abrir
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setHighlights(removerDestaque(userId, highlight.id))}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="notes" className="mt-3 space-y-2">
+                  {notes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhuma anotação salva.</p>
+                  ) : (
+                    notes.map((note) => (
+                      <div
+                        key={note.id}
+                        className="flex flex-wrap items-start justify-between gap-2 p-2 rounded-lg border"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
+                            {resolverRotuloIntervalo(note.reference)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {obterRotuloVersao(note.version, versionsForSelect)}
+                          </p>
+                          <p className="text-sm">{note.content}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleNavegarParaReferencia(note.reference, note.version)}
+                          >
+                            Abrir
+                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => handleEditarNota(note)}>
+                                Editar
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Editar anotação</DialogTitle>
+                              </DialogHeader>
+                              <Textarea
+                                value={rascunhoNota}
+                                onChange={(event) => setRascunhoNota(event.target.value)}
+                                className="min-h-[120px]"
+                              />
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => setRascunhoNota("")}>
+                                  Limpar
+                                </Button>
+                                <Button onClick={handleSalvarNota}>Salvar</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                          <Button variant="ghost" size="sm" onClick={() => handleExcluirNota(note.id)}>
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="plan" className="mt-3 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label className="text-sm">Plano ativo</Label>
+                    <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                      <SelectTrigger className="w-[240px]">
+                        <SelectValue placeholder="Selecionar plano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {planList.map((plan) => (
+                          <SelectItem key={plan.id} value={plan.id}>
+                            {plan.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    {planDays.map((day) => {
+                      const progressItem = obterProgressoLeituraPorDia(
+                        readingProgress,
+                        selectedPlanId,
+                        day.id,
+                      );
+                      return (
+                        <div
+                          key={day.id}
+                          className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">
+                              {day.title ?? `Dia ${day.dayNumber}`}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {day.readings.map((reading) => reading.reference).join(" · ")}
+                            </p>
+                          </div>
+                          <Button
+                            variant={progressItem?.completed ? "reading-complete" : "outline"}
+                            size="sm"
+                            onClick={() =>
+                              setReadingProgress(
+                                alternarProgressoLeitura(
+                                  userId,
+                                  selectedPlanId,
+                                  day.id,
+                                  new Date().toISOString(),
+                                  !progressItem?.completed,
+                                ),
+                              )
+                            }
+                          >
+                            {progressItem?.completed ? "Concluído" : "Marcar leitura"}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    {planDays.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Nenhum plano disponível no momento.
+                      </p>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="history" className="mt-3 space-y-2">
+                  {history.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma leitura registrada ainda.
+                    </p>
+                  ) : (
+                    history.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg border"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">
+                            {resolverRotuloIntervalo(entry.reference)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(entry.readAt).toLocaleString("pt-BR")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setHistory(removerHistorico(userId, entry.id))}
+                            aria-label="Remover histórico"
+                            title="Remover histórico"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleNavegarParaReferencia(entry.reference, entry.version)}
+                          >
+                            Continuar
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="search" className="mt-3 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      placeholder="Buscar texto nos versículos já carregados..."
+                      value={buscaTexto}
+                      onChange={(event) => setBuscaTexto(event.target.value)}
+                      className="flex-1 min-w-[240px]"
+                    />
+                    <Select value={buscaTestamento} onValueChange={setBuscaTestamento}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Testamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="old">Antigo</SelectItem>
+                        <SelectItem value="new">Novo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={buscaLivroId} onValueChange={setBuscaLivroId}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Livro" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {livrosBiblia.map((book) => (
+                          <SelectItem key={`search-${book.id}`} value={book.id}>
+                            {book.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" onClick={handleBuscar}>
+                      Buscar
+                    </Button>
+                  </div>
+                  {resultadosBusca.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum resultado encontrado. Carregue capítulos para indexar.
+                    </p>
+                  ) : (
+                    resultadosBusca.map((result) => (
+                      <div key={result.id} className="p-3 rounded-lg border space-y-1">
+                        <p className="text-sm font-medium">
+                          {resolverRotuloIntervalo(result.reference)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {obterRotuloVersao(result.version, versionsForSelect)}
+                        </p>
+                        <p className="text-sm">{result.snippet}</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleNavegarParaReferencia(result.reference, result.version)}
+                        >
+                          Abrir
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
+              </Tabs>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Busca */}
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar livro..."
+              className="pl-10"
+              value={buscaLivro}
+              onChange={(e) => setBuscaLivro(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Tabs */}
@@ -579,7 +1550,7 @@ export default function Bible() {
             <ScrollArea className="h-[calc(100vh-320px)]">
               <div className="space-y-2 pr-4">
                 {filteredOldTestament.map((book) => (
-                  <BookCard
+                  <CartaoLivro
                     key={book.id}
                     book={book}
                     onClick={() => handleBookSelect(book)}
@@ -593,7 +1564,7 @@ export default function Bible() {
             <ScrollArea className="h-[calc(100vh-320px)]">
               <div className="space-y-2 pr-4">
                 {filteredNewTestament.map((book) => (
-                  <BookCard
+                  <CartaoLivro
                     key={book.id}
                     book={book}
                     onClick={() => handleBookSelect(book)}
@@ -603,7 +1574,8 @@ export default function Bible() {
             </ScrollArea>
           </TabsContent>
         </Tabs>
+
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 }

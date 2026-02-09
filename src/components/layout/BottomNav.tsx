@@ -7,7 +7,7 @@ import {
   MoreHorizontal 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccessRoute } from "@/auth/permissions";
 
 const navItems = [
@@ -18,9 +18,9 @@ const navItems = [
   { icon: MoreHorizontal, label: "Mais", path: "/mais" },
 ];
 
-export function BottomNav() {
+export function NavegacaoInferior() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user } = usarAutenticacao();
   const role = user?.role;
   const filteredItems = navItems.filter((item) => canAccessRoute(role, item.path));
 

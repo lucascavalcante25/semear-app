@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const actions = [
+const acoes = [
   {
     icon: BookOpen,
     label: "Bíblia",
@@ -70,28 +70,28 @@ const actions = [
   },
 ];
 
-export function QuickActions() {
+export function AcoesRapidas() {
   return (
     <div className="grid grid-cols-4 gap-3">
-      {actions.map((action) => {
-        const Icon = action.icon;
+      {acoes.map((acao) => {
+        const Icon = acao.icon;
         return (
           <Link
-            key={action.path}
-            to={action.path}
+            key={acao.path}
+            to={acao.path}
             className="group flex flex-col items-center gap-2"
           >
             <div
               className={cn(
                 "flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-200",
                 "group-hover:scale-105 group-active:scale-95",
-                action.color
+                acao.color
               )}
             >
               <Icon className="h-6 w-6" />
             </div>
             <span className="text-[11px] font-medium text-muted-foreground text-center leading-tight">
-              {action.label}
+              {acao.label}
             </span>
           </Link>
         );

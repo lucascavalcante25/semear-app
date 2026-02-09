@@ -12,7 +12,7 @@ import {
   Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccessRoute } from "@/auth/permissions";
 
 const menuGroups = [
@@ -42,9 +42,9 @@ const menuGroups = [
   },
 ];
 
-export function Sidebar() {
+export function BarraLateral() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user } = usarAutenticacao();
   const role = user?.role;
 
   return (

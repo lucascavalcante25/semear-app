@@ -1,7 +1,7 @@
-// Bible books structure for the SEMEAR app
+// Bible books structure for the Semear app
 // Based on Almeida Revista e Atualizada translation
 
-export interface BibleBook {
+export interface LivroBiblia {
   id: string;
   name: string;
   abbrev: string;
@@ -9,8 +9,8 @@ export interface BibleBook {
   testament: "old" | "new";
 }
 
-export const bibleBooks: BibleBook[] = [
-  // Antigo Testamento (Old Testament)
+export const livrosBiblia: LivroBiblia[] = [
+  // Antigo Testamento
   { id: "gn", name: "Gênesis", abbrev: "Gn", chapters: 50, testament: "old" },
   { id: "ex", name: "Êxodo", abbrev: "Êx", chapters: 40, testament: "old" },
   { id: "lv", name: "Levítico", abbrev: "Lv", chapters: 27, testament: "old" },
@@ -51,7 +51,7 @@ export const bibleBooks: BibleBook[] = [
   { id: "zc", name: "Zacarias", abbrev: "Zc", chapters: 14, testament: "old" },
   { id: "ml", name: "Malaquias", abbrev: "Ml", chapters: 4, testament: "old" },
   
-  // Novo Testamento (New Testament)
+  // Novo Testamento
   { id: "mt", name: "Mateus", abbrev: "Mt", chapters: 28, testament: "new" },
   { id: "mc", name: "Marcos", abbrev: "Mc", chapters: 16, testament: "new" },
   { id: "lc", name: "Lucas", abbrev: "Lc", chapters: 24, testament: "new" },
@@ -81,13 +81,13 @@ export const bibleBooks: BibleBook[] = [
   { id: "ap", name: "Apocalipse", abbrev: "Ap", chapters: 22, testament: "new" },
 ];
 
-export const oldTestamentBooks = bibleBooks.filter((b) => b.testament === "old");
-export const newTestamentBooks = bibleBooks.filter((b) => b.testament === "new");
+export const livrosAntigoTestamento = livrosBiblia.filter((b) => b.testament === "old");
+export const livrosNovoTestamento = livrosBiblia.filter((b) => b.testament === "new");
 
-export function getBookById(id: string): BibleBook | undefined {
-  return bibleBooks.find((b) => b.id === id);
+export function obterLivroPorId(id: string): LivroBiblia | undefined {
+  return livrosBiblia.find((b) => b.id === id);
 }
 
-export function getBookByAbbrev(abbrev: string): BibleBook | undefined {
-  return bibleBooks.find((b) => b.abbrev.toLowerCase() === abbrev.toLowerCase());
+export function obterLivroPorAbreviacao(abbrev: string): LivroBiblia | undefined {
+  return livrosBiblia.find((b) => b.abbrev.toLowerCase() === abbrev.toLowerCase());
 }

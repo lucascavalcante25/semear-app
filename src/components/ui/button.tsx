@@ -15,7 +15,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        // SEMEAR custom variants
+        // Semear custom variants
         spiritual: "bg-gradient-to-r from-olive to-olive-dark text-olive-foreground hover:from-olive-dark hover:to-olive shadow-spiritual",
         olive: "bg-olive text-olive-foreground hover:bg-olive-dark shadow-sm",
         gold: "bg-gold text-gold-foreground hover:bg-gold-dark shadow-gold",

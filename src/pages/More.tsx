@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { AppLayout } from "@/components/layout";
+import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   BookMarked,
@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccessRoute } from "@/auth/permissions";
-import { useTheme } from "@/contexts/ThemeContext";
+import { usarTema } from "@/contexts/ThemeContext";
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -76,10 +76,10 @@ function MenuItem({
   );
 }
 
-export default function More() {
-  const { logout, user } = useAuth();
+export default function Mais() {
+  const { logout, user } = usarAutenticacao();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = usarTema();
   const isDarkMode = theme === "dark";
 
   const handleDarkModeToggle = () => {
@@ -95,7 +95,7 @@ export default function More() {
   };
 
   return (
-    <AppLayout>
+    <LayoutApp>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div>
@@ -199,8 +199,8 @@ export default function More() {
                 onClick={() => {
                   if (navigator.share) {
                     navigator.share({
-                      title: "SEMEAR - Igreja Evangélica",
-                      text: "Conheça o app da nossa igreja!",
+                      title: "Comunidade evangelica Semear",
+                      text: "Conheca o app da Comunidade evangelica Semear!",
                       url: window.location.origin,
                     });
                   }
@@ -214,7 +214,7 @@ export default function More() {
               />
               <MenuItem
                 icon={Info}
-                label="Sobre o SEMEAR"
+                label="Sobre a Semear"
                 description="Versão 1.0.0"
                 path="/sobre"
               />
@@ -240,13 +240,13 @@ export default function More() {
         {/* Footer */}
         <div className="text-center py-6">
           <p className="text-sm text-muted-foreground">
-            🌱 Plantando sementes, colhendo frutos
+            🌱 Semeando a palavra, formando discipulos e colhendo vidas.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Igreja SEMEAR © 2026
+            Comunidade evangelica Semear © 2026
           </p>
         </div>
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 }

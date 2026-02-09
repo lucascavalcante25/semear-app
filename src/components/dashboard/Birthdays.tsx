@@ -5,15 +5,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-interface Birthday {
+interface Aniversario {
   id: string;
   name: string;
   date: Date;
   photoUrl?: string;
 }
 
-// Sample birthdays for demonstration
-const sampleBirthdays: Birthday[] = [
+// Aniversarios de exemplo
+const aniversariosExemplo: Aniversario[] = [
   {
     id: "1",
     name: "Maria Santos",
@@ -34,7 +34,7 @@ const sampleBirthdays: Birthday[] = [
   },
 ];
 
-function getInitials(name: string): string {
+function obterIniciais(name: string): string {
   return name
     .split(" ")
     .map((n) => n[0])
@@ -43,7 +43,7 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-function getDaysUntil(date: Date): number {
+function obterDiasAte(date: Date): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const birthdayThisYear = new Date(today.getFullYear(), date.getMonth(), date.getDate());
@@ -53,51 +53,51 @@ function getDaysUntil(date: Date): number {
   return Math.ceil((birthdayThisYear.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-interface BirthdayItemProps {
-  birthday: Birthday;
+interface ItemAniversarioProps {
+  aniversario: Aniversario;
 }
 
-function BirthdayItem({ birthday }: BirthdayItemProps) {
-  const daysUntil = getDaysUntil(birthday.date);
-  const isToday = daysUntil === 0;
+function ItemAniversario({ aniversario }: ItemAniversarioProps) {
+  const diasAte = obterDiasAte(aniversario.date);
+  const ehHoje = diasAte === 0;
 
   return (
     <div
       className={cn(
         "flex items-center gap-3 p-2 rounded-lg transition-colors",
-        isToday ? "bg-gold/10" : "hover:bg-muted/50"
+        ehHoje ? "bg-gold/10" : "hover:bg-muted/50"
       )}
     >
       <Avatar className="h-10 w-10">
-        <AvatarImage src={birthday.photoUrl} alt={birthday.name} />
+        <AvatarImage src={aniversario.photoUrl} alt={aniversario.name} />
         <AvatarFallback className={cn(
           "text-xs font-medium",
-          isToday ? "bg-gold text-gold-foreground" : "bg-olive-light text-olive-dark"
+          ehHoje ? "bg-gold text-gold-foreground" : "bg-olive-light text-olive-dark"
         )}>
-          {getInitials(birthday.name)}
+          {obterIniciais(aniversario.name)}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{birthday.name}</p>
+        <p className="text-sm font-medium truncate">{aniversario.name}</p>
         <p className="text-xs text-muted-foreground">
-          {birthday.date.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
+          {aniversario.date.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}
         </p>
       </div>
-      {isToday ? (
+      {ehHoje ? (
         <Badge className="bg-gold text-gold-foreground border-0 gap-1">
           <Gift className="h-3 w-3" />
           Hoje!
         </Badge>
       ) : (
         <span className="text-xs text-muted-foreground whitespace-nowrap">
-          em {daysUntil} {daysUntil === 1 ? "dia" : "dias"}
+          em {diasAte} {diasAte === 1 ? "dia" : "dias"}
         </span>
       )}
     </div>
   );
 }
 
-export function Birthdays() {
+export function Aniversariantes() {
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
@@ -116,8 +116,8 @@ export function Birthdays() {
       </CardHeader>
 
       <CardContent className="space-y-1">
-        {sampleBirthdays.map((birthday) => (
-          <BirthdayItem key={birthday.id} birthday={birthday} />
+        {aniversariosExemplo.map((aniversario) => (
+          <ItemAniversario key={aniversario.id} aniversario={aniversario} />
         ))}
       </CardContent>
     </Card>

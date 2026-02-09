@@ -1,0 +1,106 @@
+{
+  "annotations": {
+    "changelogDate": "20260209173557"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "nomeCompleto",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "email",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "unique"]
+    },
+    {
+      "fieldName": "telefone",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "telefoneSecundario",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "telefoneEmergencia",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "nomeContatoEmergencia",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "cpf",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "unique"]
+    },
+    {
+      "fieldName": "sexo",
+      "fieldType": "Sexo",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "MASCULINO,FEMININO,OUTRO,NAO_INFORMADO"
+    },
+    {
+      "fieldName": "dataNascimento",
+      "fieldType": "LocalDate",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "login",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "unique"]
+    },
+    {
+      "fieldName": "senha",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "minlength"],
+      "fieldValidateRulesMinlength": "8"
+    },
+    {
+      "fieldName": "perfilSolicitado",
+      "fieldType": "PerfilAcesso",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "ADMIN,PASTOR,SECRETARIA,TESOURARIA,LIDER,MEMBRO,VISITANTE"
+    },
+    {
+      "fieldName": "perfilAprovado",
+      "fieldType": "PerfilAcesso",
+      "fieldValues": "ADMIN,PASTOR,SECRETARIA,TESOURARIA,LIDER,MEMBRO,VISITANTE"
+    },
+    {
+      "fieldName": "status",
+      "fieldType": "StatusCadastro",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "PRIMEIROACESSO,PENDENTE,APROVADO,REJEITADO"
+    },
+    {
+      "fieldName": "observacoes",
+      "fieldType": "TextBlob"
+    },
+    {
+      "fieldName": "criadoEm",
+      "fieldType": "Instant",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "atualizadoEm",
+      "fieldType": "Instant"
+    }
+  ],
+  "name": "PreCadastro",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityName": "endereco",
+      "relationshipName": "endereco",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    }
+  ],
+  "searchEngine": "no"
+}

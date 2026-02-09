@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/layout";
+import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,10 +40,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Praise, PraiseGroup } from "@/types";
+import type { GrupoLouvor, Louvor } from "@/types";
 
-// Sample praises
-const samplePraises: Praise[] = [
+// Louvores de exemplo
+const louvoresExemplo: Louvor[] = [
   {
     id: "1",
     title: "Grandioso És Tu",
@@ -90,8 +90,8 @@ const samplePraises: Praise[] = [
   },
 ];
 
-// Sample groups
-const sampleGroups: PraiseGroup[] = [
+// Grupos de exemplo
+const gruposExemplo: GrupoLouvor[] = [
   {
     id: "1",
     name: "Domingo - Manhã",
@@ -119,15 +119,15 @@ const typeConfig = {
   offering: { label: "Oferta", color: "bg-muted text-muted-foreground border-border" },
 };
 
-interface PraiseCardProps {
-  praise: Praise;
-  onEdit: (praise: Praise) => void;
-  onDelete: (id: string) => void;
+interface CartaoLouvorProps {
+  louvor: Louvor;
+  aoEditar: (louvor: Louvor) => void;
+  aoExcluir: (id: string) => void;
   showDrag?: boolean;
 }
 
-function PraiseCard({ praise, onEdit, onDelete, showDrag }: PraiseCardProps) {
-  const config = typeConfig[praise.type];
+function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag }: CartaoLouvorProps) {
+  const config = typeConfig[louvor.type];
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -138,30 +138,30 @@ function PraiseCard({ praise, onEdit, onDelete, showDrag }: PraiseCardProps) {
           )}
           
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/10 text-gold-dark font-bold text-sm">
-            {praise.key}
+            {louvor.key}
           </div>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold truncate">{praise.title}</h3>
+              <h3 className="font-semibold truncate">{louvor.title}</h3>
               <Badge variant="outline" className={cn("text-xs", config.color)}>
                 {config.label}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{praise.artist}</p>
+            <p className="text-sm text-muted-foreground">{louvor.artist}</p>
           </div>
 
           <div className="flex items-center gap-1">
-            {praise.chordsUrl && (
+            {louvor.chordsUrl && (
               <Button variant="ghost" size="icon-sm" asChild>
-                <a href={praise.chordsUrl} target="_blank" rel="noopener noreferrer">
+                <a href={louvor.chordsUrl} target="_blank" rel="noopener noreferrer">
                   <FileText className="h-4 w-4" />
                 </a>
               </Button>
             )}
-            {praise.youtubeUrl && (
+            {louvor.youtubeUrl && (
               <Button variant="ghost" size="icon-sm" asChild>
-                <a href={praise.youtubeUrl} target="_blank" rel="noopener noreferrer">
+                <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
                   <Youtube className="h-4 w-4" />
                 </a>
               </Button>
@@ -173,12 +173,12 @@ function PraiseCard({ praise, onEdit, onDelete, showDrag }: PraiseCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(praise)}>
+                <DropdownMenuItem onClick={() => aoEditar(louvor)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
                 <DropdownMenuItem 
-                  onClick={() => onDelete(praise.id)}
+                  onClick={() => aoExcluir(louvor.id)}
                   className="text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -193,29 +193,29 @@ function PraiseCard({ praise, onEdit, onDelete, showDrag }: PraiseCardProps) {
   );
 }
 
-export default function PraisePage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [praises] = useState<Praise[]>(samplePraises);
-  const [groups] = useState<PraiseGroup[]>(sampleGroups);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+export default function PaginaLouvores() {
+  const [buscaTexto, setBuscaTexto] = useState("");
+  const [louvores] = useState<Louvor[]>(louvoresExemplo);
+  const [grupos] = useState<GrupoLouvor[]>(gruposExemplo);
+  const [dialogAberto, setDialogAberto] = useState(false);
 
-  const filteredPraises = praises.filter((praise) =>
-    praise.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    praise.artist.toLowerCase().includes(searchQuery.toLowerCase())
+  const louvoresFiltrados = louvores.filter((louvor) =>
+    louvor.title.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+    louvor.artist.toLowerCase().includes(buscaTexto.toLowerCase())
   );
 
-  const handleEdit = (praise: Praise) => {
-    console.log("Edit praise:", praise);
+  const editarLouvor = (louvor: Louvor) => {
+    console.log("Editar louvor:", louvor);
   };
 
-  const handleDelete = (id: string) => {
-    console.log("Delete praise:", id);
+  const excluirLouvor = (id: string) => {
+    console.log("Excluir louvor:", id);
   };
 
-  const getPraiseById = (id: string) => praises.find((p) => p.id === id);
+  const obterLouvorPorId = (id: string) => louvores.find((p) => p.id === id);
 
   return (
-    <AppLayout>
+    <LayoutApp>
       <div className="space-y-4 animate-fade-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -226,12 +226,12 @@ export default function PraisePage() {
             <div>
               <h1 className="text-xl font-bold">Louvores</h1>
               <p className="text-sm text-muted-foreground">
-                {praises.length} louvores cadastrados
+                {louvores.length} louvores cadastrados
               </p>
             </div>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -288,10 +288,10 @@ export default function PraisePage() {
                   <Input id="youtube" placeholder="https://youtube.com/..." />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={() => setIsDialogOpen(false)}>
+                  <Button onClick={() => setDialogAberto(false)}>
                     Salvar
                   </Button>
                 </div>
@@ -314,29 +314,29 @@ export default function PraisePage() {
           </TabsList>
 
           <TabsContent value="all" className="mt-4 space-y-4">
-            {/* Search */}
+            {/* Busca */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar louvor..."
                 className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={buscaTexto}
+                onChange={(e) => setBuscaTexto(e.target.value)}
               />
             </div>
 
-            {/* Praises List */}
+            {/* Lista de louvores */}
             <div className="space-y-3">
-              {filteredPraises.map((praise) => (
-                <PraiseCard
-                  key={praise.id}
-                  praise={praise}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
+              {louvoresFiltrados.map((louvor) => (
+                <CartaoLouvor
+                  key={louvor.id}
+                  louvor={louvor}
+                  aoEditar={editarLouvor}
+                  aoExcluir={excluirLouvor}
                 />
               ))}
 
-              {filteredPraises.length === 0 && (
+              {louvoresFiltrados.length === 0 && (
                 <div className="text-center py-12">
                   <Music className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">
@@ -353,7 +353,7 @@ export default function PraisePage() {
               Criar Novo Grupo
             </Button>
 
-            {groups.map((group) => (
+            {grupos.map((group) => (
               <Card key={group.id}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center justify-between">
@@ -365,14 +365,14 @@ export default function PraisePage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {group.praises.map((praiseId) => {
-                    const praise = getPraiseById(praiseId);
-                    if (!praise) return null;
+                    const louvor = obterLouvorPorId(praiseId);
+                    if (!louvor) return null;
                     return (
-                      <PraiseCard
-                        key={praise.id}
-                        praise={praise}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
+                      <CartaoLouvor
+                        key={louvor.id}
+                        louvor={louvor}
+                        aoEditar={editarLouvor}
+                        aoExcluir={excluirLouvor}
                         showDrag
                       />
                     );
@@ -383,6 +383,6 @@ export default function PraisePage() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppLayout>
+    </LayoutApp>
   );
 }

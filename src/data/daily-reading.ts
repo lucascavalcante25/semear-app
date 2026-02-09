@@ -1,20 +1,20 @@
-// Daily Bible Reading Plan for SEMEAR app
-// One year reading plan covering the entire Bible
+// Plano de leitura diaria da Biblia para o app Semear
+// Plano de um ano cobrindo toda a Biblia
 
-export interface DailyReading {
-  date: string; // Format: MM-DD
-  readings: ReadingPassage[];
+export interface LeituraDiaria {
+  date: string; // Formato: MM-DD
+  readings: TrechoLeitura[];
 }
 
-export interface ReadingPassage {
+export interface TrechoLeitura {
   id: string;
   book: string;
-  reference: string; // e.g., "João 18:38 - 19:16"
+  reference: string; // ex.: "João 18:38 - 19:16"
   type: "gospel" | "oldTestament" | "psalm" | "proverb" | "epistle";
 }
 
-// Sample readings for demonstration - in production this would be complete
-export const dailyReadings: DailyReading[] = [
+// Leituras de exemplo - em producao estaria completo
+export const leiturasDiarias: LeituraDiaria[] = [
   {
     date: "01-20",
     readings: [
@@ -41,13 +41,13 @@ export const dailyReadings: DailyReading[] = [
   },
 ];
 
-export function getTodayReading(): DailyReading | undefined {
+export function obterLeituraDeHoje(): LeituraDiaria | undefined {
   const today = new Date();
   const monthDay = `${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  return dailyReadings.find((r) => r.date === monthDay);
+  return leiturasDiarias.find((r) => r.date === monthDay);
 }
 
-export function formatDate(date: Date): string {
+export function formatarData(date: Date): string {
   return date.toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "numeric",
