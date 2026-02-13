@@ -26,6 +26,9 @@ type ValorContextoAutenticacao = {
 const CHAVE_STORAGE_USUARIO = "semear.usuario";
 const CHAVE_STORAGE_LEGACY = "semear.autenticacao";
 
+/** Usuários master que não precisam de pré-cadastro na tabela pre_cadastro */
+const MASTER_EMAILS = ["admin@semear.com"];
+
 const DEMO_USERS: Array<Usuario & { password: string }> = DEMO_CREDENTIALS.map(
   (credential, index) => ({
     id: String(index + 1),
@@ -165,9 +168,15 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
   const login = async (identificador: string, password: string): Promise<ResultadoLogin> => {
     const identificadorNormalizado = normalizarIdentificador(identificador);
 
-    const statusCadastro = await obterStatusCadastroPorIdentificador(identificadorNormalizado);
-    if (statusCadastro && statusCadastro !== "APROVADO") {
-      return { success: false, message: obterMensagemBloqueio(statusCadastro) };
+    const ehMaster = identificadorNormalizado.includes("@")
+      ? MASTER_EMAILS.includes(identificadorNormalizado)
+      : false;
+
+    if (!ehMaster) {
+      const statusCadastro = await obterStatusCadastroPorIdentificador(identificadorNormalizado);
+      if (statusCadastro && statusCadastro !== "APROVADO") {
+        return { success: false, message: obterMensagemBloqueio(statusCadastro) };
+      }
     }
 
     if (API_ATIVA) {
@@ -190,10 +199,14 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
         salvarToken(token);
         const account = await requisicaoApi<RespostaConta>("/api/account", { auth: true });
         const identificadorConta = account.email || account.login || identificadorNormalizado;
-        const statusPosLogin = await obterStatusCadastroPorIdentificador(identificadorConta);
-        if (statusPosLogin && statusPosLogin !== "APROVADO") {
-          limparToken();
-          return { success: false, message: obterMensagemBloqueio(statusPosLogin) };
+        const ehMasterPosLogin =
+          identificadorConta.includes("@") && MASTER_EMAILS.includes(identificadorConta);
+        if (!ehMasterPosLogin) {
+          const statusPosLogin = await obterStatusCadastroPorIdentificador(identificadorConta);
+          if (statusPosLogin && statusPosLogin !== "APROVADO") {
+            limparToken();
+            return { success: false, message: obterMensagemBloqueio(statusPosLogin) };
+          }
         }
         const mapped = mapearContaParaUsuario(account);
         setUser(mapped);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,14 @@ import {
   Star,
   Share2,
   Heart,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Devocional } from "@/types";
+import { requisicaoApi, URL_BASE_API } from "@/modules/api/client";
 
-// Devocionais de exemplo
+// Devocionais de exemplo (fallback)
 const devocionaisExemplo: Devocional[] = [
   {
     id: "1",
@@ -176,9 +178,68 @@ function CartaoDevocional({ devocional, expandido, aoExpandir }: CartaoDevociona
 
 export default function PaginaDevocionais() {
   const [buscaTexto, setBuscaTexto] = useState("");
-  const [devocionais] = useState<Devocional[]>(devocionaisExemplo);
+  const [devocionais, setDevocionais] = useState<Devocional[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
   const [idExpandido, setIdExpandido] = useState<string | null>(null);
   const [dialogAberto, setDialogAberto] = useState(false);
+
+  // Buscar devocionais da API ao montar o componente
+  useEffect(() => {
+    const buscarDevocionais = async () => {
+      try {
+        setCarregando(true);
+        setErro(null);
+
+        if (!URL_BASE_API) {
+          // Se API não estiver configurada, usar dados de exemplo
+          setDevocionais(devocionaisExemplo);
+          setCarregando(false);
+          return;
+        }
+
+        // Buscar dados da API real
+        const resposta = await requisicaoApi<{
+          content: Array<{
+            id: number;
+            titulo: string;
+            conteudo: string;
+            versiculo: string;
+            versiculoTexto: string;
+            autor: string;
+            dataPublicacao: string;
+            publicado: boolean;
+            dataCriacao: string;
+            dataAtualizacao: string;
+          }>;
+        }>("/api/devocionais?size=100");
+
+        // Mapear dados da API para o formato do frontend
+        const devocionaisMapeados: Devocional[] = (resposta.content || []).map((dev) => ({
+          id: String(dev.id),
+          title: dev.titulo,
+          content: dev.conteudo,
+          verseReference: dev.versiculo,
+          verseText: dev.versiculoTexto,
+          author: dev.autor,
+          publishDate: new Date(dev.dataPublicacao),
+          isPublished: dev.publicado,
+          createdAt: new Date(dev.dataCriacao),
+          updatedAt: new Date(dev.dataAtualizacao),
+        }));
+
+        setDevocionais(devocionaisMapeados.length > 0 ? devocionaisMapeados : devocionaisExemplo);
+      } catch (err) {
+        console.error("Erro ao buscar devocionais:", err);
+        setErro("Erro ao carregar devocionais. Usando dados de exemplo.");
+        setDevocionais(devocionaisExemplo);
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    buscarDevocionais();
+  }, []);
 
   const devocionaisFiltrados = devocionais.filter((d) =>
     d.title.toLowerCase().includes(buscaTexto.toLowerCase()) ||
@@ -188,6 +249,13 @@ export default function PaginaDevocionais() {
   return (
     <LayoutApp>
       <div className="space-y-4 animate-fade-in">
+        {/* Mensagem de erro */}
+        {erro && (
+          <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 border border-amber-200">
+            {erro}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -197,7 +265,7 @@ export default function PaginaDevocionais() {
             <div>
               <h1 className="text-xl font-bold">Devocionais</h1>
               <p className="text-sm text-muted-foreground">
-                Alimento diário para sua alma
+                Alimento diário para sua alma {devocionais.length > 0 && `(${devocionais.length})`}
               </p>
             </div>
           </div>
@@ -265,7 +333,14 @@ export default function PaginaDevocionais() {
 
         {/* Lista de devocionais */}
         <div className="space-y-4">
-          {devocionaisFiltrados.map((devocional) => (
+          {carregando && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Carregando devocionais...</span>
+            </div>
+          )}
+
+          {!carregando && devocionaisFiltrados.map((devocional) => (
             <CartaoDevocional
               key={devocional.id}
               devocional={devocional}
@@ -274,7 +349,7 @@ export default function PaginaDevocionais() {
             />
           ))}
 
-          {devocionaisFiltrados.length === 0 && (
+          {!carregando && devocionaisFiltrados.length === 0 && (
             <div className="text-center py-12">
               <BookMarked className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">

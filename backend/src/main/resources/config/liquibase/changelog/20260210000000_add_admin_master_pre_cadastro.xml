@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Usuário master (admin) que não precisa de pré-cadastro.
+        Correspondente ao jhi_user id=1 (admin@semear.com).
+    -->
+    <changeSet id="20260210000000-1" author="semear">
+        <insert tableName="pre_cadastro">
+            <column name="id" value="0"/>
+            <column name="nome_completo" value="Administrador Semear"/>
+            <column name="email" value="admin@semear.com"/>
+            <column name="telefone" value="0000000000"/>
+            <column name="telefone_secundario" value=""/>
+            <column name="telefone_emergencia" value=""/>
+            <column name="nome_contato_emergencia" value=""/>
+            <column name="cpf" value="00000000000"/>
+            <column name="sexo" value="NAO_INFORMADO"/>
+            <column name="data_nascimento" value="1990-01-01"/>
+            <column name="login" value="admin@semear.com"/>
+            <column name="senha" value="admin"/>
+            <column name="perfil_solicitado" value="ADMIN"/>
+            <column name="perfil_aprovado" value="ADMIN"/>
+            <column name="status" value="APROVADO"/>
+            <column name="observacoes" value="Usuário master do sistema"/>
+            <column name="criado_em" valueComputed="${now}"/>
+            <column name="atualizado_em" valueComputed="${now}"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

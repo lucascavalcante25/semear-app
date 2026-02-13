@@ -14,6 +14,7 @@
     <include file="config/liquibase/changelog/00000000000000_initial_schema.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173556_added_entity_Endereco.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173557_added_entity_PreCadastro.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260210000000_add_admin_master_pre_cadastro.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173851_added_entity_FavoritoBiblia.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173852_added_entity_DestaqueBiblia.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173853_added_entity_NotaBiblia.xml" relativeToChangelogFile="false"/>
@@ -33,5 +34,6 @@
     <include file="config/liquibase/changelog/20260209173857_added_entity_constraints_HistoricoLeituraBiblia.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173858_added_entity_constraints_PreferenciaBibliaUsuario.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
+    <include file="config/liquibase/changelog/20260210000001_update_admin_password.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>
