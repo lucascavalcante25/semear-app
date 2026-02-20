@@ -1,6 +1,28 @@
 const urlBaseBruta = import.meta.env.VITE_API_URL as string | undefined;
 
-export const URL_BASE_API = urlBaseBruta?.replace(/\/$/, "");
+function normalizarUrlBaseApi(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.replace(/\/$/, "");
+
+  // Quando o app é acessado via IP na rede (ex.: celular), "localhost" aponta pro dispositivo,
+  // não para a máquina do backend. Então, se a base estiver em localhost/127.0.0.1, trocamos
+  // pelo hostname atual do navegador.
+  if (typeof window !== "undefined") {
+    try {
+      const url = new URL(trimmed);
+      if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+        url.hostname = window.location.hostname;
+        return url.toString().replace(/\/$/, "");
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return trimmed;
+}
+
+export const URL_BASE_API = normalizarUrlBaseApi(urlBaseBruta);
 export const API_ATIVA = Boolean(URL_BASE_API);
 
 const CHAVE_TOKEN = "semear.token";
