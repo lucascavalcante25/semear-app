@@ -10,8 +10,7 @@ COPY . .
 # Executa o build. 
 # Adicionamos -Dmaven.test.skip=true para acelerar 
 # e -Denforcer.skip=true para ignorar o erro de "Dependency convergence"
-RUN mvn -B clean package -Pprod -DskipTests -Denforcer.skip=true
-
+RUN mvn -B clean package -Pprod -DskipTests -Denforcer.skip=true -Dmodernizer.skip=true
 ## Runtime stage
 FROM eclipse-temurin:17-jre-jammy
 
