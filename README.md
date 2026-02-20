@@ -1,56 +1,49 @@
-# Welcome to your Lovable project
+# Semear App
 
-## Project info
+Aplicação da Comunidade Evangélica Semear – gestão de membros, visitantes, avisos, louvores, devocionais, financeiro e mais.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Tecnologias
 
-## How can I edit this code?
+- **Frontend:** Vite, TypeScript, React, shadcn/ui, Tailwind CSS
+- **Backend:** Spring Boot (JHipster), Java 17, PostgreSQL
 
-There are several ways of editing your application.
+## Desenvolvimento local
 
-**Use Lovable**
+### Pré-requisitos
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- Node.js e npm
+- Java 17
+- PostgreSQL
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Frontend
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone o repositório
 git clone <YOUR_GIT_URL>
+cd semear-app
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
+# Instale as dependências
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-## Configuracao local (API e Banco)
+### Configuração local (API e banco)
 
-Para usar o backend local, configure o endereco da API no frontend. Crie um arquivo `.env.local` (na raiz do projeto) com:
+Para usar o backend local, configure o endereço da API no frontend. Crie um arquivo `.env.local` na raiz do projeto:
 
 ```sh
 VITE_API_URL=http://localhost:8080
 ```
 
-Se for acessar de outro PC na rede, use o IP da maquina que roda o backend, por exemplo:
+Para acessar de outro PC na rede, use o IP da máquina que roda o backend:
 
 ```sh
 VITE_API_URL=http://192.168.0.10:8080
 ```
 
-No backend, as credenciais do banco podem ser alteradas por variaveis de ambiente:
+No backend, as credenciais do banco podem ser alteradas por variáveis de ambiente:
 
 ```powershell
 $env:SEMEAR_DB_URL="jdbc:postgresql://localhost:5432/semearDB"
@@ -58,38 +51,23 @@ $env:SEMEAR_DB_USER="postgres"
 $env:SEMEAR_DB_PASSWORD="postgres"
 ```
 
-**Edit a file directly in GitHub**
+### Backend
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+cd backend
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
-**Use GitHub Codespaces**
+## Deploy em produção
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Consulte o guia em [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) para implantar em ambiente externo (Render, Vercel, Neon/Supabase).
 
-## What technologies are used for this project?
+## Estrutura do projeto
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```
+semear-app/
+├── backend/       # Spring Boot (JHipster)
+├── src/           # Frontend React (Vite)
+├── public/
+└── docs/
+```
