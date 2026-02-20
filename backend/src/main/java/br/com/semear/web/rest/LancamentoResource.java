@@ -39,7 +39,7 @@ public class LancamentoResource {
     }
 
     @PostMapping("")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> createLancamento(@RequestBody Lancamento lancamento) throws URISyntaxException {
         LOG.debug("REST request to save Lancamento : {}", lancamento);
         if (lancamento.getId() != null) {
@@ -59,7 +59,7 @@ public class LancamentoResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> updateLancamento(@PathVariable("id") final Long id, @RequestBody Lancamento lancamento)
         throws URISyntaxException {
         LOG.debug("REST request to update Lancamento : {}, {}", id, lancamento);
@@ -94,7 +94,7 @@ public class LancamentoResource {
     }
 
     @GetMapping("")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<List<Lancamento>> getAllLancamentos(
         @RequestParam(name = "tipo", required = false) TipoLancamento tipo
     ) {
@@ -106,7 +106,7 @@ public class LancamentoResource {
     }
 
     @GetMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> getLancamento(@PathVariable("id") final Long id) {
         LOG.debug("REST request to get Lancamento : {}", id);
         Optional<Lancamento> lancamento = lancamentoRepository.findById(id);
@@ -114,7 +114,7 @@ public class LancamentoResource {
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Void> deleteLancamento(@PathVariable("id") final Long id) {
         LOG.debug("REST request to delete Lancamento : {}", id);
         lancamentoRepository.deleteById(id);

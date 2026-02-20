@@ -63,20 +63,12 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
 /**
  * Módulos máximos permitidos por perfil (limite superior).
  * O usuário só acessa se o módulo estiver habilitado nele E permitido no papel.
+ * Pastor e secretaria podem ter acesso total (incl. financeiro e aprovar) quando o admin conceder.
  */
 export const ROLE_ALLOWED_MODULES: Record<Role, ModuleKey[]> = {
   admin: [...MODULES],
-  pastor: ["dashboard", "biblia", "devocionais", "louvores", "membros", "visitantes", "avisos", "configuracoes"],
-  secretaria: [
-    "dashboard",
-    "biblia",
-    "devocionais",
-    "louvores",
-    "membros",
-    "visitantes",
-    "avisos",
-    "configuracoes",
-  ],
+  pastor: [...MODULES],
+  secretaria: [...MODULES],
   tesouraria: ["dashboard", "biblia", "devocionais", "louvores", "avisos", "financeiro", "configuracoes"],
   lider: ["dashboard", "biblia", "devocionais", "louvores", "membros", "visitantes", "configuracoes"],
   membro: ["dashboard", "biblia", "devocionais", "louvores", "configuracoes"],

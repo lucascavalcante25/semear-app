@@ -170,7 +170,7 @@ export function DatePicker({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <div className={cn("flex w-full gap-1", className)}>
         <Input
           id={id}
@@ -181,12 +181,13 @@ export function DatePicker({
           onChange={handleInputChange}
           onBlur={handleInputBlur}
           className={cn(
-            "flex-1 min-w-0",
+            "flex-1 min-w-[120px]",
             !inputValue && "text-muted-foreground"
           )}
           inputMode="numeric"
           maxLength={10}
           autoComplete="off"
+          data-date-input
         />
         <PopoverTrigger asChild>
           <Button
@@ -200,7 +201,15 @@ export function DatePicker({
           </Button>
         </PopoverTrigger>
       </div>
-      <PopoverContent className="w-auto p-0" align="start" sideOffset={8}>
+      <PopoverContent
+        className="w-auto p-0"
+        align="start"
+        sideOffset={8}
+        onInteractOutside={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest("[data-date-input]")) e.preventDefault();
+        }}
+      >
         <Calendar
           mode="single"
           selected={date}

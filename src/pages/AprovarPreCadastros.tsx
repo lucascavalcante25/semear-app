@@ -22,8 +22,8 @@ import {
   type PreCadastroCompleto,
 } from "@/modules/auth/preCadastro";
 import {
-  MODULES,
   MODULE_LABELS,
+  ROLE_ALLOWED_MODULES,
   ROLE_DEFAULT_MODULES,
   ROLE_LABELS,
   type ModuleKey,
@@ -64,8 +64,10 @@ export default function AprovarPreCadastros() {
   const [processando, setProcessando] = useState<string | null>(null);
   const [confirmarExclusao, setConfirmarExclusao] = useState(false);
 
+  const podeAprovar = user?.role === "admin" || user?.role === "pastor" || user?.role === "secretaria";
+
   useEffect(() => {
-    if (user?.role !== "admin") {
+    if (!podeAprovar) {
       navigate("/", { replace: true });
       return;
     }
@@ -81,7 +83,7 @@ export default function AprovarPreCadastros() {
       }
     };
     void carregar();
-  }, [user?.role, navigate]);
+  }, [podeAprovar, navigate]);
 
   const abrirDetalhe = async (id: string | number) => {
     const item = await obterPreCadastroPorId(id);
@@ -145,7 +147,7 @@ export default function AprovarPreCadastros() {
     }
   };
 
-  if (user?.role !== "admin") {
+  if (!podeAprovar) {
     return null;
   }
 
@@ -240,7 +242,7 @@ export default function AprovarPreCadastros() {
                 <div className="space-y-2">
                   <Label>Módulos de acesso</Label>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {MODULES.map((mod) => {
+                    {(ROLE_ALLOWED_MODULES[perfilSelecionado] ?? []).map((mod) => {
                       const checked = modulesSelecionados.includes(mod);
                       return (
                         <label

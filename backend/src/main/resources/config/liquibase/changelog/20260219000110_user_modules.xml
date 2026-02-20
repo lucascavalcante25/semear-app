@@ -26,7 +26,7 @@
               );
 
             UPDATE jhi_user u
-            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,avisos,mais'
+            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,avisos,financeiro,aprovar-pre-cadastros,configuracoes'
             WHERE u.modules IS NULL
               AND EXISTS (
                 SELECT 1 FROM jhi_user_authority ua
@@ -34,7 +34,7 @@
               );
 
             UPDATE jhi_user u
-            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,avisos,mais'
+            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,avisos,financeiro,aprovar-pre-cadastros,configuracoes'
             WHERE u.modules IS NULL
               AND EXISTS (
                 SELECT 1 FROM jhi_user_authority ua

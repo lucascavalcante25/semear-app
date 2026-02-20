@@ -59,8 +59,8 @@ import {
   type AtualizarMembroPayload,
 } from "@/modules/members/api";
 import {
-  MODULES,
   MODULE_LABELS,
+  ROLE_ALLOWED_MODULES,
   ROLE_DEFAULT_MODULES,
   ROLE_LABELS,
   type ModuleKey,
@@ -218,11 +218,18 @@ function FormMembro({
     }
   }, [aberto, resetarForm]);
 
+  useEffect(() => {
+    const allowed = ROLE_ALLOWED_MODULES[perfil] ?? [];
+    setModulesSelecionados((prev) => prev.filter((m) => allowed.includes(m)));
+  }, [perfil]);
+
   const toggleModulo = (mod: ModuleKey) => {
     setModulesSelecionados((prev) =>
       prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod]
     );
   };
+
+  const allowedForPerfil = ROLE_ALLOWED_MODULES[perfil] ?? [];
 
   const handleSalvar = async () => {
     const loginTrim = login.trim().toLowerCase();
@@ -343,7 +350,7 @@ function FormMembro({
               Selecione exatamente quais módulos este membro poderá acessar.
             </p>
             <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto rounded-md border p-3">
-              {MODULES.map((mod) => (
+              {allowedForPerfil.map((mod) => (
                 <div key={mod} className="flex items-center space-x-2">
                   <Checkbox
                     id={`mod-${mod}`}

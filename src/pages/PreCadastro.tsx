@@ -62,8 +62,6 @@ const estadosUf = [
 const opcoesSexo: Array<{ value: SexoCadastro; label: string }> = [
   { value: "MASCULINO", label: "Masculino" },
   { value: "FEMININO", label: "Feminino" },
-  { value: "OUTRO", label: "Outro" },
-  { value: "NAO_INFORMADO", label: "Prefiro não informar" },
 ];
 
 export default function PreCadastro() {
@@ -75,7 +73,7 @@ export default function PreCadastro() {
     telefoneEmergencia: "",
     nomeContatoEmergencia: "",
     cpf: "",
-    sexo: "NAO_INFORMADO",
+    sexo: "MASCULINO",
     dataNascimento: "",
     senha: "",
     perfilSolicitado: "membro",
@@ -269,7 +267,7 @@ export default function PreCadastro() {
                       id="dataNascimento"
                       value={formulario.dataNascimento}
                       onChange={(v) => atualizarCampo("dataNascimento", v)}
-                      placeholder="Selecione a data"
+                      placeholder="dd/mm/aaaa"
                       className={cn(
                         tentouEnviar && !formulario.dataNascimento && "[&_input]:border-destructive [&_input]:focus-visible:ring-destructive"
                       )}
@@ -335,7 +333,7 @@ export default function PreCadastro() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="telefoneEmergencia">Telefone de emergencia *</Label>
+                    <Label htmlFor="telefoneEmergencia">Telefone de emergencia</Label>
                     <Input
                       id="telefoneEmergencia"
                       placeholder="(00) 00000-0000"
@@ -343,10 +341,6 @@ export default function PreCadastro() {
                       onChange={(e) =>
                         atualizarCampo("telefoneEmergencia", aplicarMascaraTelefone(e.target.value))
                       }
-                      required
-                      className={cn(
-                        tentouEnviar && !formulario.telefoneEmergencia.replace(/\D/g, "").length && "border-destructive focus-visible:ring-destructive"
-                      )}
                     />
                   </div>
                   <div className="space-y-2">
