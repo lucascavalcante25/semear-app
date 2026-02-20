@@ -324,7 +324,7 @@ export default function PreCadastro() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="telefoneSecundario">Telefone secundario *</Label>
+                    <Label htmlFor="telefoneSecundario">Telefone secundario</Label>
                     <Input
                       id="telefoneSecundario"
                       placeholder="(00) 00000-0000"
@@ -332,10 +332,6 @@ export default function PreCadastro() {
                       onChange={(e) =>
                         atualizarCampo("telefoneSecundario", aplicarMascaraTelefone(e.target.value))
                       }
-                      required
-                      className={cn(
-                        tentouEnviar && !formulario.telefoneSecundario.replace(/\D/g, "").length && "border-destructive focus-visible:ring-destructive"
-                      )}
                     />
                   </div>
                   <div className="space-y-2">
