@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Corrige tipo da coluna observacoes (evita CLOB/OID no Postgres) -->
+    <changeSet id="20260219000100-1" author="semear">
+        <sql splitStatements="false">
+            ALTER TABLE pre_cadastro
+            ALTER COLUMN observacoes TYPE text
+            USING observacoes::text;
+        </sql>
+    </changeSet>
+</databaseChangeLog>
+

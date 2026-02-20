@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260221000010-1" author="semear">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="aviso"/>
+            </not>
+        </preConditions>
+        <createTable tableName="aviso">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="titulo" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="conteudo" type="${clobType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_inicio" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_fim" type="date">
+                <constraints nullable="true"/>
+            </column>
+            <column name="ativo" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_por" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="atualizado_em" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="atualizado_por" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
+

@@ -55,9 +55,22 @@ export const requisicaoApi = async <T>(path: string, options: OpcoesApi = {}): P
   if (!response.ok) {
     let message = "Falha na requisicao.";
     try {
-      const errorBody = await response.json();
-      if (typeof errorBody?.message === "string") {
+      const errorBody = (await response.json()) as {
+        message?: string;
+        title?: string;
+        detail?: string;
+        fieldErrors?: Array<{ field: string; message: string }>;
+      };
+      const fieldErrs = errorBody?.fieldErrors;
+      if (Array.isArray(fieldErrs) && fieldErrs.length > 0) {
+        message = fieldErrs.map((e) => `${e.field}: ${e.message}`).join("; ");
+      } else if (typeof errorBody?.title === "string" && errorBody.title.trim()) {
+        message = errorBody.title;
+      } else if (typeof errorBody?.message === "string") {
         message = errorBody.message;
+        if (message.startsWith("error.") && typeof errorBody?.detail === "string" && errorBody.detail.trim()) {
+          message = errorBody.detail;
+        }
       }
     } catch {
       // ignore

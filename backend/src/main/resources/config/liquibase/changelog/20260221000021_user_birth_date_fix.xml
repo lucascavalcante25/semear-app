@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Fix: adiciona birth_date se não existir (para bancos que não rodaram a migração anterior) -->
+    <changeSet id="20260221000021-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="jhi_user" columnName="birth_date"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="jhi_user">
+            <column name="birth_date" type="date">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccessRoute } from "@/auth/permissions";
+import { canAccess } from "@/auth/permissions";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/" },
@@ -21,8 +21,7 @@ const navItems = [
 export function NavegacaoInferior() {
   const location = useLocation();
   const { user } = usarAutenticacao();
-  const role = user?.role;
-  const filteredItems = navItems.filter((item) => canAccessRoute(role, item.path));
+  const filteredItems = navItems.filter((item) => canAccess(user, item.path));
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass safe-bottom">

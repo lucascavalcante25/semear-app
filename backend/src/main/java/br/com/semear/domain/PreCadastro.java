@@ -41,16 +41,13 @@ public class PreCadastro implements Serializable {
     @Column(name = "telefone", nullable = false)
     private String telefone;
 
-    @NotNull
-    @Column(name = "telefone_secundario", nullable = false)
+    @Column(name = "telefone_secundario")
     private String telefoneSecundario;
 
-    @NotNull
-    @Column(name = "telefone_emergencia", nullable = false)
+    @Column(name = "telefone_emergencia")
     private String telefoneEmergencia;
 
-    @NotNull
-    @Column(name = "nome_contato_emergencia", nullable = false)
+    @Column(name = "nome_contato_emergencia")
     private String nomeContatoEmergencia;
 
     @NotNull
@@ -89,11 +86,9 @@ public class PreCadastro implements Serializable {
     @Column(name = "status", nullable = false)
     private StatusCadastro status;
 
-    @Lob
-    @Column(name = "observacoes")
+    @Column(name = "observacoes", columnDefinition = "text")
     private String observacoes;
 
-    @NotNull
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
 
@@ -101,7 +96,7 @@ public class PreCadastro implements Serializable {
     private Instant atualizadoEm;
 
     @JsonIgnoreProperties(value = { "preCadastro" }, allowSetters = true)
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(unique = true)
     private Endereco endereco;
 

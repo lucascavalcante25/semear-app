@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260219000110-1" author="semear">
+        <addColumn tableName="jhi_user">
+            <column name="modules" type="varchar(2000)"/>
+        </addColumn>
+
+        <!-- Inicializa modules para não quebrar acessos existentes -->
+        <sql splitStatements="false">
+            UPDATE jhi_user u
+            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,avisos,financeiro,aprovar-pre-cadastros,configuracoes,mais'
+            WHERE u.modules IS NULL
+              AND EXISTS (
+                SELECT 1 FROM jhi_user_authority ua
+                WHERE ua.user_id = u.id AND ua.authority_name = 'ROLE_ADMIN'
+              );
+
+            UPDATE jhi_user u
+            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,avisos,mais'
+            WHERE u.modules IS NULL
+              AND EXISTS (
+                SELECT 1 FROM jhi_user_authority ua
+                WHERE ua.user_id = u.id AND ua.authority_name = 'ROLE_PASTOR'
+              );
+
+            UPDATE jhi_user u
+            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,avisos,mais'
+            WHERE u.modules IS NULL
+              AND EXISTS (
+                SELECT 1 FROM jhi_user_authority ua
+                WHERE ua.user_id = u.id AND ua.authority_name = 'ROLE_SECRETARIA'
+              );
+
+            UPDATE jhi_user u
+            SET modules = 'dashboard,biblia,devocionais,louvores,avisos,financeiro,mais'
+            WHERE u.modules IS NULL
+              AND EXISTS (
+                SELECT 1 FROM jhi_user_authority ua
+                WHERE ua.user_id = u.id AND ua.authority_name = 'ROLE_TESOURARIA'
+              );
+
+            UPDATE jhi_user u
+            SET modules = 'dashboard,biblia,devocionais,louvores,membros,visitantes,mais'
+            WHERE u.modules IS NULL
+              AND EXISTS (
+                SELECT 1 FROM jhi_user_authority ua
+                WHERE ua.user_id = u.id AND ua.authority_name = 'ROLE_LIDER'
+              );
+
+            UPDATE jhi_user u
+            SET modules = 'dashboard,biblia,devocionais,louvores,mais'
+            WHERE u.modules IS NULL
+              AND EXISTS (
+                SELECT 1 FROM jhi_user_authority ua
+                WHERE ua.user_id = u.id AND ua.authority_name = 'ROLE_MEMBRO'
+              );
+
+            UPDATE jhi_user u
+            SET modules = 'biblia,mais'
+            WHERE u.modules IS NULL
+              AND EXISTS (
+                SELECT 1 FROM jhi_user_authority ua
+                WHERE ua.user_id = u.id AND ua.authority_name = 'ROLE_VISITANTE'
+              );
+        </sql>
+    </changeSet>
+</databaseChangeLog>
+

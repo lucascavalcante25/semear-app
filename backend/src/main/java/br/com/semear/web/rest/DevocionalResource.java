@@ -3,11 +3,11 @@ package br.com.semear.web.rest;
 import br.com.semear.service.DevocionalService;
 import br.com.semear.service.dto.DevocionalDTO;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
-import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -97,6 +97,19 @@ public class DevocionalResource {
         Page<DevocionalDTO> page = devocionalService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+     * {@code GET  /devocionais/hoje} : Devocional do dia (data atual).
+     */
+    @GetMapping("/hoje")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<DevocionalDTO> getDevocionalHoje() {
+        log.debug("REST request to get Devocional do dia");
+        LocalDate hoje = LocalDate.now();
+        return devocionalService.findHoje(hoje)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping("/{id}")

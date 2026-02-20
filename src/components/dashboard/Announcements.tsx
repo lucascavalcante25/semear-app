@@ -1,47 +1,13 @@
-import { Megaphone, Pin, AlertTriangle, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Megaphone, Pin, AlertTriangle, ChevronRight, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Aviso } from "@/types";
-
-// Avisos de exemplo
-const avisosExemplo: Aviso[] = [
-  {
-    id: "1",
-    title: "Culto de Santa Ceia",
-    content: "Neste domingo teremos culto de Santa Ceia às 19h. Venha preparado para comungar com Cristo.",
-    type: "fixed",
-    startDate: new Date(),
-    isActive: true,
-    createdAt: new Date(),
-    createdBy: "Pastor João",
-  },
-  {
-    id: "2",
-    title: "Retiro Espiritual",
-    content: "Inscrições abertas para o retiro de carnaval. Vagas limitadas!",
-    type: "urgent",
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    isActive: true,
-    createdAt: new Date(),
-    createdBy: "Secretaria",
-  },
-  {
-    id: "3",
-    title: "Ensaio do Louvor",
-    content: "Ensaio do ministério de louvor toda quarta-feira às 20h.",
-    type: "normal",
-    startDate: new Date(),
-    isActive: true,
-    createdAt: new Date(),
-    createdBy: "Líder de Louvor",
-  },
-];
+import { listarAvisos, type AvisoApp } from "@/modules/announcements/api";
 
 interface ItemAvisoProps {
-  aviso: Aviso;
+  aviso: AvisoApp;
 }
 
 function ItemAviso({ aviso }: ItemAvisoProps) {
@@ -96,6 +62,24 @@ function ItemAviso({ aviso }: ItemAvisoProps) {
 }
 
 export function Avisos() {
+  const [lista, setLista] = useState<AvisoApp[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    const carregar = async () => {
+      setCarregando(true);
+      try {
+        const dados = await listarAvisos(true, 3);
+        setLista(dados);
+      } catch {
+        setLista([]);
+      } finally {
+        setCarregando(false);
+      }
+    };
+    void carregar();
+  }, []);
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
@@ -114,9 +98,17 @@ export function Avisos() {
       </CardHeader>
 
       <CardContent className="space-y-2">
-        {avisosExemplo.map((aviso) => (
-          <ItemAviso key={aviso.id} aviso={aviso} />
-        ))}
+        {carregando ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : lista.length > 0 ? (
+          lista.map((aviso) => <ItemAviso key={aviso.id} aviso={aviso} />)
+        ) : (
+          <div className="text-sm text-muted-foreground py-4">
+            Nenhum aviso cadastrado ainda.
+          </div>
+        )}
       </CardContent>
     </Card>
   );

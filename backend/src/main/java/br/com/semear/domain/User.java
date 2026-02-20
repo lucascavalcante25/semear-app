@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -81,6 +82,16 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     @Column(name = "reset_date")
     private Instant resetDate = null;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    /**
+     * Lista de módulos habilitados para o usuário (override granular), armazenada como CSV.
+     * Ex.: "dashboard,biblia,devocionais"
+     */
+    @Column(name = "modules", length = 2000)
+    private String modules;
 
     @JsonIgnore
     @ManyToMany
@@ -180,6 +191,22 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     public void setResetDate(Instant resetDate) {
         this.resetDate = resetDate;
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public String getModules() {
+        return modules;
+    }
+
+    public void setModules(String modules) {
+        this.modules = modules;
     }
 
     public String getLangKey() {

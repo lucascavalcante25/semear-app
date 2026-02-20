@@ -1,9 +1,11 @@
-import { Book, Bell, Menu, LogOut, User, Moon, Sun } from "lucide-react";
+import { Bell, Menu, LogOut, User, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MenuMobile } from "./MobileMenu";
 import { usarEhMobile } from "@/hooks/use-mobile";
+import { listarPreCadastrosParaAprovacao } from "@/modules/auth/preCadastro";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,37 +17,29 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { ROLE_LABELS } from "@/auth/permissions";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usarTema } from "@/contexts/ThemeContext";
 
-type NotificationItem = {
-  id: string;
-  title: string;
-  description: string;
-};
-
-const NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "1",
-    title: "Novo visitante registrado",
-    description: "Confira o cadastro em Visitantes.",
-  },
-  {
-    id: "2",
-    title: "Aviso publicado",
-    description: "Um novo aviso foi adicionado.",
-  },
-  {
-    id: "3",
-    title: "Contribuição registrada",
-    description: "Atualização em Financeiro.",
-  },
-];
 
 export function Cabecalho() {
   const isMobile = usarEhMobile();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [pendentesCount, setPendentesCount] = useState(0);
   const { user, logout } = usarAutenticacao();
+
+  useEffect(() => {
+    if (user?.role !== "admin") return;
+    const carregar = async () => {
+      try {
+        const lista = await listarPreCadastrosParaAprovacao();
+        setPendentesCount(lista.length);
+      } catch {
+        setPendentesCount(0);
+      }
+    };
+    void carregar();
+  }, [user?.role, location.pathname]);
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
   const userInitials = user?.name
@@ -57,9 +51,9 @@ export function Cabecalho() {
 
   return (
     <header className="sticky top-0 z-50 glass safe-top">
-      <div className="container flex h-14 md:h-16 items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-2">
+      <div className="flex h-14 md:h-16 items-center">
+        {/* Marca (alinhada com a sidebar no desktop) */}
+        <div className="flex items-center gap-2 px-4 h-full w-full md:w-64 md:border-r md:border-border bg-sidebar">
           {isMobile && (
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
@@ -72,47 +66,62 @@ export function Cabecalho() {
               </SheetContent>
             </Sheet>
           )}
-          
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive text-olive-foreground">
-              <Book className="h-5 w-5" />
+
+          <Link to="/" className="flex items-center gap-2 min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive-light/60 ring-1 ring-olive/20">
+              <img
+                src="/logo-semear.png"
+                alt="Semear"
+                className="h-6 w-6 object-contain"
+              />
             </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold tracking-tight text-foreground">
+            <div className="flex flex-col min-w-0">
+              <span className="text-lg font-bold tracking-tight text-foreground truncate">
                 Semear
               </span>
               {!isMobile && (
-                <span className="text-[10px] text-muted-foreground -mt-1">
+                <span className="text-[10px] text-muted-foreground -mt-1 truncate">
                   Comunidade evangelica Semear
                 </span>
               )}
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex-1">
+          <div className="container flex h-14 md:h-16 items-center justify-end gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon-sm" className="relative">
                 <Bell className="h-5 w-5" />
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-gold text-[10px] font-bold text-gold-foreground flex items-center justify-center">
-                  {NOTIFICATIONS.length}
-                </span>
+                {user?.role === "admin" && pendentesCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
+                    {pendentesCount}
+                  </span>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72">
               <DropdownMenuLabel>Notificações</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {NOTIFICATIONS.map((notification) => (
-                <DropdownMenuItem key={notification.id} className="flex flex-col items-start gap-1">
-                  <span className="text-sm font-medium">{notification.title}</span>
+              {user?.role === "admin" ? (
+                <DropdownMenuItem
+                  className="flex flex-col items-start gap-1 cursor-pointer"
+                  onClick={() => navigate("/aprovar-pre-cadastros")}
+                >
+                  <span className="text-sm font-medium">
+                    {pendentesCount > 0
+                      ? `${pendentesCount} pré-cadastro(s) pendente(s)`
+                      : "Aprovar pré-cadastros"}
+                  </span>
                   <span className="text-xs text-muted-foreground">
-                    {notification.description}
+                    {pendentesCount > 0
+                      ? "Clique para aprovar ou rejeitar"
+                      : "Ver solicitações pendentes"}
                   </span>
                 </DropdownMenuItem>
-              ))}
-              {NOTIFICATIONS.length === 0 && (
+              ) : (
                 <DropdownMenuItem className="text-sm text-muted-foreground">
                   Sem notificações no momento
                 </DropdownMenuItem>
@@ -164,6 +173,7 @@ export function Cabecalho() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </div>
     </header>

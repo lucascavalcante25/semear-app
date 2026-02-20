@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,12 +12,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ROLE_LABELS, type Role } from "@/auth/permissions";
+import { Search, Loader2, Eye, EyeOff } from "lucide-react";
 import {
   enviarPreCadastro,
   type PreCadastroPayload,
   type SexoCadastro,
 } from "@/modules/auth/preCadastro";
+import { buscarCep } from "@/lib/viacep";
+import {
+  aplicarMascaraCep,
+  aplicarMascaraCpf,
+  aplicarMascaraTelefone,
+  validarCpf,
+  validarEmail,
+} from "@/lib/mascara-telefone";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const estadosUf = [
   "AC",
@@ -48,16 +58,6 @@ const estadosUf = [
   "TO",
 ];
 
-const perfisSolicitaveis: Role[] = [
-  "membro",
-  "visitante",
-  "lider",
-  "pastor",
-  "secretaria",
-  "tesouraria",
-  "admin",
-];
-
 const opcoesSexo: Array<{ value: SexoCadastro; label: string }> = [
   { value: "MASCULINO", label: "Masculino" },
   { value: "FEMININO", label: "Feminino" },
@@ -76,7 +76,6 @@ export default function PreCadastro() {
     cpf: "",
     sexo: "NAO_INFORMADO",
     dataNascimento: "",
-    login: "",
     senha: "",
     perfilSolicitado: "membro",
     observacoes: "",
@@ -94,6 +93,10 @@ export default function PreCadastro() {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroCep, setErroCep] = useState<string | null>(null);
+  const [buscandoCep, setBuscandoCep] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
 
   const atualizarCampo = (field: keyof PreCadastroPayload, value: string) => {
     setFormulario((prev) => ({ ...prev, [field]: value }));
@@ -101,6 +104,39 @@ export default function PreCadastro() {
 
   const atualizarEndereco = (field: keyof PreCadastroPayload["endereco"], value: string) => {
     setFormulario((prev) => ({ ...prev, endereco: { ...prev.endereco, [field]: value } }));
+  };
+
+  const buscarCepHandler = async () => {
+    const cep = formulario.endereco.cep.replace(/\D/g, "");
+    if (cep.length !== 8) {
+      setErroCep("Informe um CEP válido com 8 dígitos.");
+      return;
+    }
+    setBuscandoCep(true);
+    setErroCep(null);
+    try {
+      const dados = await buscarCep(cep);
+      if (dados) {
+        const cepFormatado = aplicarMascaraCep(dados.cep.replace(/\D/g, ""));
+        setFormulario((prev) => ({
+          ...prev,
+          endereco: {
+            ...prev.endereco,
+            cep: cepFormatado,
+            logradouro: dados.logradouro ?? prev.endereco.logradouro,
+            bairro: dados.bairro ?? prev.endereco.bairro,
+            cidade: dados.localidade ?? prev.endereco.cidade,
+            estado: dados.uf ?? prev.endereco.estado,
+          },
+        }));
+      } else {
+        setErroCep("CEP não encontrado.");
+      }
+    } catch {
+      setErroCep("Erro ao buscar CEP. Tente novamente.");
+    } finally {
+      setBuscandoCep(false);
+    }
   };
 
   const validarSenha = (senha: string) => {
@@ -114,9 +150,13 @@ export default function PreCadastro() {
     event.preventDefault();
     setErro(null);
 
-    const loginInformado = formulario.login.trim() || formulario.cpf.trim() || formulario.email.trim();
-    if (!loginInformado) {
-      setErro("Informe o CPF ou e-mail para login.");
+    const cpfDigits = formulario.cpf.replace(/\D/g, "");
+    if (!validarCpf(formulario.cpf)) {
+      setErro("Informe um CPF válido.");
+      return;
+    }
+    if (!validarEmail(formulario.email)) {
+      setErro("Informe um e-mail válido.");
       return;
     }
 
@@ -134,8 +174,9 @@ export default function PreCadastro() {
     try {
       await enviarPreCadastro({
         ...formulario,
-        login: loginInformado,
+        cpf: cpfDigits,
         email: formulario.email.trim().toLowerCase(),
+        perfilSolicitado: "membro",
       });
       setEnviado(true);
     } catch (err) {
@@ -149,6 +190,11 @@ export default function PreCadastro() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8">
       <Card className="w-full max-w-2xl">
         <CardContent className="p-6 space-y-6">
+          <div className="flex justify-start">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/login">Voltar para o login</Link>
+            </Button>
+          </div>
           <div className="space-y-2 text-center">
             <h1 className="text-2xl font-bold">Pre-cadastro</h1>
             <p className="text-sm text-muted-foreground">
@@ -185,8 +231,9 @@ export default function PreCadastro() {
                     <Label htmlFor="cpf">CPF</Label>
                     <Input
                       id="cpf"
+                      placeholder="000.000.000-00"
                       value={formulario.cpf}
-                      onChange={(event) => atualizarCampo("cpf", event.target.value)}
+                      onChange={(e) => atualizarCampo("cpf", aplicarMascaraCpf(e.target.value))}
                       required
                     />
                   </div>
@@ -195,6 +242,7 @@ export default function PreCadastro() {
                     <Input
                       id="email"
                       type="email"
+                      placeholder="seuemail@exemplo.com"
                       value={formulario.email}
                       onChange={(event) => atualizarCampo("email", event.target.value)}
                       required
@@ -202,12 +250,11 @@ export default function PreCadastro() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dataNascimento">Data de nascimento</Label>
-                    <Input
+                    <DatePicker
                       id="dataNascimento"
-                      type="date"
                       value={formulario.dataNascimento}
-                      onChange={(event) => atualizarCampo("dataNascimento", event.target.value)}
-                      required
+                      onChange={(v) => atualizarCampo("dataNascimento", v)}
+                      placeholder="Selecione a data"
                     />
                   </div>
                   <div className="space-y-2">
@@ -229,22 +276,11 @@ export default function PreCadastro() {
                     </Select>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Perfil solicitado</Label>
-                    <Select
-                      value={formulario.perfilSolicitado}
-                      onValueChange={(value) => atualizarCampo("perfilSolicitado", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um perfil" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {perfisSolicitaveis.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {ROLE_LABELS[role]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label>Perfil</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Todo pré-cadastro entra como <span className="font-medium">Membro</span>. O administrador
+                      definirá o perfil correto na aprovação.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -258,8 +294,11 @@ export default function PreCadastro() {
                     <Label htmlFor="telefone">Telefone principal</Label>
                     <Input
                       id="telefone"
+                      placeholder="(00) 00000-0000"
                       value={formulario.telefone}
-                      onChange={(event) => atualizarCampo("telefone", event.target.value)}
+                      onChange={(e) =>
+                        atualizarCampo("telefone", aplicarMascaraTelefone(e.target.value))
+                      }
                       required
                     />
                   </div>
@@ -267,9 +306,10 @@ export default function PreCadastro() {
                     <Label htmlFor="telefoneSecundario">Telefone secundario</Label>
                     <Input
                       id="telefoneSecundario"
+                      placeholder="(00) 00000-0000"
                       value={formulario.telefoneSecundario}
-                      onChange={(event) =>
-                        atualizarCampo("telefoneSecundario", event.target.value)
+                      onChange={(e) =>
+                        atualizarCampo("telefoneSecundario", aplicarMascaraTelefone(e.target.value))
                       }
                       required
                     />
@@ -278,23 +318,20 @@ export default function PreCadastro() {
                     <Label htmlFor="telefoneEmergencia">Telefone de emergencia</Label>
                     <Input
                       id="telefoneEmergencia"
+                      placeholder="(00) 00000-0000"
                       value={formulario.telefoneEmergencia}
-                      onChange={(event) =>
-                        atualizarCampo("telefoneEmergencia", event.target.value)
+                      onChange={(e) =>
+                        atualizarCampo("telefoneEmergencia", aplicarMascaraTelefone(e.target.value))
                       }
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nomeContatoEmergencia">
-                      Nome do contato de emergencia
-                    </Label>
+                    <Label htmlFor="nomeContatoEmergencia">Nome do contato de emergencia</Label>
                     <Input
                       id="nomeContatoEmergencia"
                       value={formulario.nomeContatoEmergencia}
-                      onChange={(event) =>
-                        atualizarCampo("nomeContatoEmergencia", event.target.value)
-                      }
+                      onChange={(e) => atualizarCampo("nomeContatoEmergencia", e.target.value)}
                       required
                     />
                   </div>
@@ -306,6 +343,41 @@ export default function PreCadastro() {
                   Endereco
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="cep">CEP</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="cep"
+                        placeholder="00000-000"
+                        value={formulario.endereco.cep}
+                        onChange={(e) =>
+                          atualizarEndereco("cep", aplicarMascaraCep(e.target.value))
+                        }
+                        onBlur={() => {
+                          if (formulario.endereco.cep.replace(/\D/g, "").length === 8) {
+                            buscarCepHandler();
+                          }
+                        }}
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        title="Buscar endereço pelo CEP"
+                        onClick={buscarCepHandler}
+                        disabled={buscandoCep || formulario.endereco.cep.replace(/\D/g, "").length !== 8}
+                      >
+                        {buscandoCep ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <span className="text-xs text-destructive whitespace-nowrap">
+                        {erroCep ?? ""}
+                      </span>
+                    </div>
+                  </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="logradouro">Logradouro</Label>
                     <Input
@@ -328,7 +400,7 @@ export default function PreCadastro() {
                     <Label htmlFor="complemento">Complemento</Label>
                     <Input
                       id="complemento"
-                      value={formulario.endereco.complemento}
+                      value={formulario.endereco.complemento ?? ""}
                       onChange={(event) => atualizarEndereco("complemento", event.target.value)}
                     />
                   </div>
@@ -368,15 +440,6 @@ export default function PreCadastro() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cep">CEP</Label>
-                    <Input
-                      id="cep"
-                      value={formulario.endereco.cep}
-                      onChange={(event) => atualizarEndereco("cep", event.target.value)}
-                      required
-                    />
-                  </div>
                 </div>
               </div>
 
@@ -384,48 +447,75 @@ export default function PreCadastro() {
                 <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   Credenciais
                 </h2>
+                <p className="text-sm text-muted-foreground">
+                  O login sera feito com o CPF informado acima.
+                </p>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="login">CPF ou e-mail (login)</Label>
-                    <Input
-                      id="login"
-                      value={formulario.login}
-                      onChange={(event) => atualizarCampo("login", event.target.value)}
-                      placeholder="CPF ou seuemail@semear.com"
-                      required
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="senha">Senha</Label>
-                    <Input
-                      id="senha"
-                      type="password"
-                      value={formulario.senha}
-                      onChange={(event) => atualizarCampo("senha", event.target.value)}
-                      placeholder="Minimo 8 caracteres"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="senha"
+                        type={mostrarSenha ? "text" : "password"}
+                        value={formulario.senha}
+                        onChange={(event) => atualizarCampo("senha", event.target.value)}
+                        placeholder="Minimo 8 caracteres"
+                        required
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMostrarSenha((v) => !v)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                        title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                      >
+                        {mostrarSenha ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmarSenha">Confirmar senha</Label>
-                    <Input
-                      id="confirmarSenha"
-                      type="password"
-                      value={confirmarSenha}
-                      onChange={(event) => setConfirmarSenha(event.target.value)}
-                      placeholder="Repita a senha"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirmarSenha"
+                        type={mostrarConfirmarSenha ? "text" : "password"}
+                        value={confirmarSenha}
+                        onChange={(event) => setConfirmarSenha(event.target.value)}
+                        placeholder="Repita a senha"
+                        required
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMostrarConfirmarSenha((v) => !v)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={mostrarConfirmarSenha ? "Ocultar senha" : "Mostrar senha"}
+                        title={mostrarConfirmarSenha ? "Ocultar senha" : "Mostrar senha"}
+                      >
+                        {mostrarConfirmarSenha ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="observacoes">Observacoes</Label>
-                <Input
+                <Textarea
                   id="observacoes"
+                  placeholder="Opcional"
                   value={formulario.observacoes ?? ""}
                   onChange={(event) => atualizarCampo("observacoes", event.target.value)}
+                  rows={3}
                 />
               </div>
 

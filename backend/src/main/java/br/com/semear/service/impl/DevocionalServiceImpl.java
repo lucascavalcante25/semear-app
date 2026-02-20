@@ -5,6 +5,7 @@ import br.com.semear.repository.DevocionalRepository;
 import br.com.semear.service.DevocionalService;
 import br.com.semear.service.dto.DevocionalDTO;
 import br.com.semear.service.mapper.DevocionalMapper;
+import java.time.LocalDate;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,20 @@ public class DevocionalServiceImpl implements DevocionalService {
     public Optional<DevocionalDTO> findOne(Long id) {
         log.debug("Request to get Devocional : {}", id);
         return devocionalRepository.findById(id).map(devocionalMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<DevocionalDTO> findHoje(LocalDate hoje) {
+        log.debug("Request to get Devocional do dia : {}", hoje);
+        return devocionalRepository.findFirstByDataPublicacaoOrderByIdDesc(hoje).map(devocionalMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<DevocionalDTO> findPassados(LocalDate hoje, Pageable pageable) {
+        log.debug("Request to get Devocionais passados before : {}", hoje);
+        return devocionalRepository.findByDataPublicacaoBeforeOrderByDataPublicacaoDesc(hoje, pageable).map(devocionalMapper::toDto);
     }
 
     @Override

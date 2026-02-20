@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260221000011-1" author="semear">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="visitante"/>
+            </not>
+        </preConditions>
+        <createTable tableName="visitante">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="telefone" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="data_visita" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="como_conheceu" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="observacoes" type="${clobType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="criado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_por" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="atualizado_em" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="atualizado_por" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
+

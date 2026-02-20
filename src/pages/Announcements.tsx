@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -31,7 +41,8 @@ import {
   Calendar,
   Edit,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -40,53 +51,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Aviso } from "@/types";
-
-// Avisos de exemplo
-const avisosExemplo: Aviso[] = [
-  {
-    id: "1",
-    title: "Culto de Santa Ceia",
-    content: "Neste domingo teremos culto de Santa Ceia às 19h. Venha preparado para comungar com Cristo. Traga sua família e amigos para este momento especial.",
-    type: "fixed",
-    startDate: new Date(),
-    isActive: true,
-    createdAt: new Date(),
-    createdBy: "Pastor João",
-  },
-  {
-    id: "2",
-    title: "Retiro Espiritual de Carnaval",
-    content: "Inscrições abertas para o retiro de carnaval! Serão 3 dias de comunhão, louvor e Palavra. Vagas limitadas a 50 pessoas. Valor: R$ 350.",
-    type: "urgent",
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-    isActive: true,
-    createdAt: new Date(),
-    createdBy: "Secretaria",
-  },
-  {
-    id: "3",
-    title: "Ensaio do Louvor",
-    content: "Ensaio do ministério de louvor toda quarta-feira às 20h na igreja. Todos os músicos e vocalistas devem comparecer.",
-    type: "normal",
-    startDate: new Date(),
-    isActive: true,
-    createdAt: new Date(),
-    createdBy: "Líder de Louvor",
-  },
-  {
-    id: "4",
-    title: "Campanha de Arrecadação",
-    content: "Estamos arrecadando roupas e alimentos para famílias carentes. Traga sua doação até o final do mês.",
-    type: "normal",
-    startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
-    isActive: true,
-    createdAt: new Date(),
-    createdBy: "Diaconia",
-  },
-];
+import { toast } from "sonner";
+import { usarAutenticacao } from "@/contexts/AuthContext";
+import {
+  criarAviso,
+  excluirAviso as apiExcluirAviso,
+  listarAvisos,
+  atualizarAviso as apiAtualizarAviso,
+  tipoUiParaApi,
+  type AvisoApp,
+  type AvisoDTO,
+} from "@/modules/announcements/api";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const typeConfig = {
   fixed: {
@@ -110,9 +86,9 @@ const typeConfig = {
 };
 
 interface CartaoAvisoProps {
-  aviso: Aviso;
-  aoEditar: (aviso: Aviso) => void;
-  aoExcluir: (id: string) => void;
+  aviso: AvisoApp;
+  aoEditar: (aviso: AvisoApp) => void;
+  aoExcluir: (aviso: AvisoApp) => void;
 }
 
 function CartaoAviso({ aviso, aoEditar, aoExcluir }: CartaoAvisoProps) {
@@ -168,8 +144,8 @@ function CartaoAviso({ aviso, aoEditar, aoExcluir }: CartaoAvisoProps) {
                 Editar
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => aoExcluir(aviso.id)}
-                className="text-destructive"
+                onClick={() => aoExcluir(aviso)}
+                className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Excluir
@@ -183,25 +159,126 @@ function CartaoAviso({ aviso, aoEditar, aoExcluir }: CartaoAvisoProps) {
 }
 
 export default function PaginaAvisos() {
+  const { user } = usarAutenticacao();
   const [buscaTexto, setBuscaTexto] = useState("");
-  const [avisos] = useState<Aviso[]>(avisosExemplo);
+  const [avisos, setAvisos] = useState<AvisoApp[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [dialogAberto, setDialogAberto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [avisoEmEdicao, setAvisoEmEdicao] = useState<AvisoApp | null>(null);
+  const [confirmarExclusao, setConfirmarExclusao] = useState<AvisoApp | null>(null);
 
-  const avisosFiltrados = avisos.filter((a) =>
-    a.title.toLowerCase().includes(buscaTexto.toLowerCase()) ||
-    a.content.toLowerCase().includes(buscaTexto.toLowerCase())
+  const [formTitulo, setFormTitulo] = useState("");
+  const [formConteudo, setFormConteudo] = useState("");
+  const [formTipo, setFormTipo] = useState<AvisoApp["type"]>("normal");
+  const [formInicio, setFormInicio] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [formFim, setFormFim] = useState<string>("");
+  const [formAtivo, setFormAtivo] = useState(true);
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    try {
+      const lista = await listarAvisos(true, 500);
+      setAvisos(lista);
+    } catch (err) {
+      setAvisos([]);
+      toast.error(err instanceof Error ? err.message : "Erro ao carregar avisos.");
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  const avisosFiltrados = useMemo(
+    () =>
+      avisos.filter(
+        (a) =>
+          a.title.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+          a.content.toLowerCase().includes(buscaTexto.toLowerCase()),
+      ),
+    [avisos, buscaTexto],
   );
 
   const avisosFixos = avisosFiltrados.filter((a) => a.type === "fixed");
   const avisosUrgentes = avisosFiltrados.filter((a) => a.type === "urgent");
   const avisosNormais = avisosFiltrados.filter((a) => a.type === "normal");
 
-  const editarAviso = (aviso: Aviso) => {
-    console.log("Editar aviso:", aviso);
+  const abrirNovo = () => {
+    setAvisoEmEdicao(null);
+    setFormTitulo("");
+    setFormConteudo("");
+    setFormTipo("normal");
+    setFormInicio(new Date().toISOString().slice(0, 10));
+    setFormFim("");
+    setFormAtivo(true);
+    setDialogAberto(true);
   };
 
-  const excluirAviso = (id: string) => {
-    console.log("Excluir aviso:", id);
+  const editarAviso = (aviso: AvisoApp) => {
+    setAvisoEmEdicao(aviso);
+    setFormTitulo(aviso.title);
+    setFormConteudo(aviso.content);
+    setFormTipo(aviso.type);
+    setFormInicio(aviso.startDate.toISOString().slice(0, 10));
+    setFormFim(aviso.endDate ? aviso.endDate.toISOString().slice(0, 10) : "");
+    setFormAtivo(aviso.isActive);
+    setDialogAberto(true);
+  };
+
+  const excluirAviso = (aviso: AvisoApp) => setConfirmarExclusao(aviso);
+
+  const salvar = async () => {
+    if (!formTitulo.trim() || !formConteudo.trim()) {
+      toast.error("Título e conteúdo são obrigatórios.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      if (!avisoEmEdicao) {
+        await criarAviso({
+          title: formTitulo,
+          content: formConteudo,
+          type: formTipo,
+          startDate: new Date(`${formInicio}T00:00:00`),
+          endDate: formFim ? new Date(`${formFim}T00:00:00`) : undefined,
+          isActive: formAtivo,
+        });
+        toast.success("Aviso criado.");
+      } else if (avisoEmEdicao.idNum) {
+        const dto: AvisoDTO = {
+          id: avisoEmEdicao.idNum,
+          titulo: formTitulo.trim(),
+          conteudo: formConteudo.trim(),
+          tipo: tipoUiParaApi(formTipo),
+          dataInicio: formInicio,
+          dataFim: formFim || null,
+          ativo: formAtivo,
+        };
+        await apiAtualizarAviso(dto);
+        toast.success("Aviso atualizado.");
+      }
+      setDialogAberto(false);
+      await carregar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar aviso.");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const confirmarExcluir = async () => {
+    if (!confirmarExclusao?.idNum) return;
+    try {
+      await apiExcluirAviso(confirmarExclusao.idNum);
+      toast.success("Aviso excluído.");
+      setConfirmarExclusao(null);
+      await carregar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir aviso.");
+    }
   };
 
   return (
@@ -223,31 +300,42 @@ export default function PaginaAvisos() {
 
           <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={abrirNovo} disabled={user?.role !== "admin"}>
                 <Plus className="h-4 w-4" />
                 Novo
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Novo Aviso</DialogTitle>
+                <DialogTitle>{avisoEmEdicao ? "Editar Aviso" : "Novo Aviso"}</DialogTitle>
                 <DialogDescription>
-                  Crie um novo aviso para a igreja.
+                  {avisoEmEdicao ? "Atualize o aviso." : "Crie um novo aviso para a igreja."}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Título *</Label>
-                  <Input id="title" placeholder="Título do aviso" />
+                  <Input
+                    id="title"
+                    placeholder="Título do aviso"
+                    value={formTitulo}
+                    onChange={(e) => setFormTitulo(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="content">Conteúdo *</Label>
-                  <Textarea id="content" placeholder="Escreva o aviso..." rows={4} />
+                  <Textarea
+                    id="content"
+                    placeholder="Escreva o aviso..."
+                    rows={4}
+                    value={formConteudo}
+                    onChange={(e) => setFormConteudo(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="type">Tipo</Label>
-                  <Select defaultValue="normal">
-                    <SelectTrigger>
+                  <Select value={formTipo} onValueChange={(v) => setFormTipo(v as AvisoApp["type"])}>
+                    <SelectTrigger id="type">
                       <SelectValue placeholder="Tipo de aviso" />
                     </SelectTrigger>
                     <SelectContent>
@@ -260,22 +348,33 @@ export default function PaginaAvisos() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="startDate">Data início</Label>
-                    <Input id="startDate" type="date" />
+                    <DatePicker
+                      id="startDate"
+                      value={formInicio}
+                      onChange={setFormInicio}
+                      placeholder="Selecione a data"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="endDate">Data fim (opcional)</Label>
-                    <Input id="endDate" type="date" />
+                    <DatePicker
+                      id="endDate"
+                      value={formFim}
+                      onChange={setFormFim}
+                      placeholder="Selecione a data"
+                    />
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="active">Ativo</Label>
-                  <Switch id="active" defaultChecked />
+                  <Switch id="active" checked={formAtivo} onCheckedChange={setFormAtivo} />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={() => setDialogAberto(false)}>
+                  <Button onClick={salvar} disabled={salvando}>
+                    {salvando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Salvar
                   </Button>
                 </div>
@@ -295,6 +394,12 @@ export default function PaginaAvisos() {
           />
         </div>
 
+        {carregando ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+        <>
         {/* Avisos fixos */}
         {avisosFixos.length > 0 && (
           <section>
@@ -362,7 +467,29 @@ export default function PaginaAvisos() {
             </p>
           </div>
         )}
+        </>
+        )}
       </div>
+
+      <AlertDialog open={!!confirmarExclusao} onOpenChange={(v) => { if (!v) setConfirmarExclusao(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir aviso</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{confirmarExclusao?.title}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarExcluir}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </LayoutApp>
   );
 }

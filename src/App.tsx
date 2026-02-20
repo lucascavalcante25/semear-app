@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProvedorAutenticacao } from "@/contexts/AuthContext";
 import { RequerAutenticacao } from "@/components/auth/RequireAuth";
-import { ROUTE_PERMISSIONS } from "@/auth/permissions";
 import { ProvedorTema } from "@/contexts/ThemeContext";
 
 // Pages
@@ -20,6 +19,7 @@ import Devocionais from "./pages/Devotionals";
 import Mais from "./pages/More";
 import Entrar from "./pages/Login";
 import PreCadastro from "./pages/PreCadastro";
+import AprovarPreCadastros from "./pages/AprovarPreCadastros";
 import AcessoNegado from "./pages/AccessDenied";
 import NaoEncontrado from "./pages/NotFound";
 
@@ -39,7 +39,7 @@ const App = () => (
               <Route
                 path="/acesso-negado"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/acesso-negado"]}>
+                  <RequerAutenticacao>
                     <AcessoNegado />
                   </RequerAutenticacao>
                 }
@@ -47,7 +47,7 @@ const App = () => (
               <Route
                 path="/"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/"]}>
+                  <RequerAutenticacao>
                     <Inicio />
                   </RequerAutenticacao>
                 }
@@ -55,7 +55,7 @@ const App = () => (
               <Route
                 path="/biblia"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/biblia"]}>
+                  <RequerAutenticacao>
                     <Biblia />
                   </RequerAutenticacao>
                 }
@@ -63,7 +63,7 @@ const App = () => (
               <Route
                 path="/membros"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/membros"]}>
+                  <RequerAutenticacao>
                     <Membros />
                   </RequerAutenticacao>
                 }
@@ -71,7 +71,7 @@ const App = () => (
               <Route
                 path="/louvores"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/louvores"]}>
+                  <RequerAutenticacao>
                     <Louvores />
                   </RequerAutenticacao>
                 }
@@ -79,7 +79,7 @@ const App = () => (
               <Route
                 path="/financeiro"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/financeiro"]}>
+                  <RequerAutenticacao>
                     <Financeiro />
                   </RequerAutenticacao>
                 }
@@ -87,7 +87,7 @@ const App = () => (
               <Route
                 path="/visitantes"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/visitantes"]}>
+                  <RequerAutenticacao>
                     <Visitantes />
                   </RequerAutenticacao>
                 }
@@ -95,7 +95,7 @@ const App = () => (
               <Route
                 path="/avisos"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/avisos"]}>
+                  <RequerAutenticacao>
                     <Avisos />
                   </RequerAutenticacao>
                 }
@@ -103,7 +103,7 @@ const App = () => (
               <Route
                 path="/devocionais"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/devocionais"]}>
+                  <RequerAutenticacao>
                     <Devocionais />
                   </RequerAutenticacao>
                 }
@@ -111,8 +111,16 @@ const App = () => (
               <Route
                 path="/mais"
                 element={
-                  <RequerAutenticacao allowedRoles={ROUTE_PERMISSIONS["/mais"]}>
+                  <RequerAutenticacao>
                     <Mais />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/aprovar-pre-cadastros"
+                element={
+                  <RequerAutenticacao>
+                    <AprovarPreCadastros />
                   </RequerAutenticacao>
                 }
               />

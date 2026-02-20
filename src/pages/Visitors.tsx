@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -19,39 +29,29 @@ import {
   Search, 
   Plus,
   Calendar,
-  Phone,
-  MessageSquare
+  MessageSquare,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Loader2
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Visitante } from "@/types";
-
-// Visitantes de exemplo
-const visitantesExemplo: Visitante[] = [
-  {
-    id: "1",
-    name: "Carlos Eduardo",
-    phone: "(11) 99999-8888",
-    visitDate: new Date(),
-    howHeard: "Indicação de amigo",
-    notes: "Primeira vez na igreja",
-    createdAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "Fernanda Lima",
-    phone: "(11) 98888-7777",
-    visitDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    howHeard: "Redes sociais",
-    createdAt: new Date(),
-  },
-  {
-    id: "3",
-    name: "Ricardo Santos",
-    visitDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    howHeard: "Passou em frente",
-    createdAt: new Date(),
-  },
-];
+import { toast } from "sonner";
+import {
+  atualizarVisitante,
+  criarVisitante,
+  excluirVisitante,
+  listarVisitantes,
+  type VisitanteApp,
+  type VisitanteDTO,
+} from "@/modules/visitors/api";
+import { DatePicker } from "@/components/ui/date-picker";
 
 function isToday(date: Date): boolean {
   const today = new Date();
@@ -65,10 +65,12 @@ function isThisWeek(date: Date): boolean {
 }
 
 interface CartaoVisitanteProps {
-  visitante: Visitante;
+  visitante: VisitanteApp;
+  aoEditar: (visitante: VisitanteApp) => void;
+  aoExcluir: (visitante: VisitanteApp) => void;
 }
 
-function CartaoVisitante({ visitante }: CartaoVisitanteProps) {
+function CartaoVisitante({ visitante, aoEditar, aoExcluir }: CartaoVisitanteProps) {
   const visitaHoje = isToday(visitante.visitDate);
 
   return (
@@ -88,13 +90,35 @@ function CartaoVisitante({ visitante }: CartaoVisitanteProps) {
           </div>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold truncate">{visitante.name}</h3>
-              {visitaHoje && (
-                <Badge className="bg-gold text-gold-foreground border-0">
-                  Hoje!
-                </Badge>
-              )}
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="font-semibold truncate">{visitante.name}</h3>
+                {visitaHoje && (
+                  <Badge className="bg-gold text-gold-foreground border-0">
+                    Hoje!
+                  </Badge>
+                )}
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon-sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => aoEditar(visitante)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => aoExcluir(visitante)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             
             <div className="space-y-1 text-sm text-muted-foreground">
@@ -106,13 +130,6 @@ function CartaoVisitante({ visitante }: CartaoVisitanteProps) {
                   month: "long",
                 })}
               </p>
-              
-              {visitante.phone && (
-                <a href={`tel:${visitante.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
-                  <Phone className="h-3.5 w-3.5" />
-                  {visitante.phone}
-                </a>
-              )}
               
               {visitante.howHeard && (
                 <p className="flex items-center gap-1.5">
@@ -136,11 +153,113 @@ function CartaoVisitante({ visitante }: CartaoVisitanteProps) {
 
 export default function Visitantes() {
   const [buscaTexto, setBuscaTexto] = useState("");
-  const [visitantes] = useState<Visitante[]>(visitantesExemplo);
+  const [visitantes, setVisitantes] = useState<VisitanteApp[]>([]);
+  const [carregando, setCarregando] = useState(true);
   const [dialogAberto, setDialogAberto] = useState(false);
+  const [visitanteEmEdicao, setVisitanteEmEdicao] = useState<VisitanteApp | null>(null);
+  const [confirmarExclusao, setConfirmarExclusao] = useState<VisitanteApp | null>(null);
+  const [salvando, setSalvando] = useState(false);
 
-  const visitantesFiltrados = visitantes.filter((visitante) =>
-    visitante.name.toLowerCase().includes(buscaTexto.toLowerCase())
+  const [formNome, setFormNome] = useState("");
+  const [formComoConheceu, setFormComoConheceu] = useState("");
+  const [formObservacoes, setFormObservacoes] = useState("");
+  const [formDataVisita, setFormDataVisita] = useState<string>(() => new Date().toISOString().slice(0, 10));
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    try {
+      const lista = await listarVisitantes();
+      setVisitantes(lista);
+    } catch (err) {
+      setVisitantes([]);
+      toast.error(err instanceof Error ? err.message : "Erro ao carregar visitantes.");
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
+
+  const abrirNovo = () => {
+    setVisitanteEmEdicao(null);
+    setFormNome("");
+    setFormComoConheceu("");
+    setFormObservacoes("");
+    setFormDataVisita(new Date().toISOString().slice(0, 10));
+    setDialogAberto(true);
+  };
+
+  const abrirEditar = (v: VisitanteApp) => {
+    setVisitanteEmEdicao(v);
+    setFormNome(v.name);
+    setFormComoConheceu(v.howHeard ?? "");
+    setFormObservacoes(v.notes ?? "");
+    setFormDataVisita(v.visitDate.toISOString().slice(0, 10));
+    setDialogAberto(true);
+  };
+
+  const solicitarExcluir = (v: VisitanteApp) => setConfirmarExclusao(v);
+
+  const salvar = async () => {
+    if (!formNome.trim()) {
+      toast.error("Nome é obrigatório.");
+      return;
+    }
+    if (!formDataVisita) {
+      toast.error("Data da visita é obrigatória.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      if (!visitanteEmEdicao) {
+        await criarVisitante({
+          nome: formNome,
+          comoConheceu: formComoConheceu,
+          observacoes: formObservacoes,
+          dataVisita: formDataVisita,
+        });
+        toast.success("Visitante cadastrado.");
+      } else {
+        const dto: VisitanteDTO = {
+          id: Number(visitanteEmEdicao.id),
+          nome: formNome.trim(),
+          telefone: null,
+          dataVisita: formDataVisita,
+          comoConheceu: formComoConheceu.trim() || null,
+          observacoes: formObservacoes.trim() || null,
+        };
+        await atualizarVisitante(dto);
+        toast.success("Visitante atualizado.");
+      }
+      setDialogAberto(false);
+      await carregar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar visitante.");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const confirmarExcluirVisitante = async () => {
+    if (!confirmarExclusao) return;
+    try {
+      await excluirVisitante(Number(confirmarExclusao.id));
+      toast.success("Visitante excluído.");
+      setConfirmarExclusao(null);
+      await carregar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir visitante.");
+    }
+  };
+
+  const visitantesFiltrados = useMemo(
+    () =>
+      visitantes.filter((visitante) =>
+        visitante.name.toLowerCase().includes(buscaTexto.toLowerCase()),
+      ),
+    [visitantes, buscaTexto],
   );
 
   const visitantesHoje = visitantesFiltrados.filter((v) => isToday(v.visitDate));
@@ -166,40 +285,61 @@ export default function Visitantes() {
 
           <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={abrirNovo}>
                 <Plus className="h-4 w-4" />
                 Novo
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Novo Visitante</DialogTitle>
+                <DialogTitle>{visitanteEmEdicao ? "Editar Visitante" : "Novo Visitante"}</DialogTitle>
                 <DialogDescription>
-                  Registre um novo visitante.
+                  {visitanteEmEdicao ? "Atualize os dados do visitante." : "Registre um novo visitante."}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome *</Label>
-                  <Input id="name" placeholder="Nome do visitante" />
+                  <Input
+                    id="name"
+                    placeholder="Nome do visitante"
+                    value={formNome}
+                    onChange={(e) => setFormNome(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input id="phone" placeholder="(00) 00000-0000" />
+                  <Label htmlFor="visitDate">Data da visita *</Label>
+                  <DatePicker
+                    id="visitDate"
+                    value={formDataVisita}
+                    onChange={setFormDataVisita}
+                    placeholder="Selecione a data"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="howHeard">Como conheceu a igreja?</Label>
-                  <Input id="howHeard" placeholder="Ex: Indicação de amigo" />
+                  <Input
+                    id="howHeard"
+                    placeholder="Ex: Indicação de amigo"
+                    value={formComoConheceu}
+                    onChange={(e) => setFormComoConheceu(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Observações</Label>
-                  <Textarea id="notes" placeholder="Alguma observação..." />
+                  <Textarea
+                    id="notes"
+                    placeholder="Alguma observação..."
+                    value={formObservacoes}
+                    onChange={(e) => setFormObservacoes(e.target.value)}
+                  />
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={() => setDialogAberto(false)}>
+                  <Button onClick={salvar} disabled={salvando}>
+                    {salvando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Salvar
                   </Button>
                 </div>
@@ -219,6 +359,12 @@ export default function Visitantes() {
           />
         </div>
 
+        {carregando ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+        <>
         {/* Visitantes de hoje */}
         {visitantesHoje.length > 0 && (
           <section>
@@ -228,7 +374,12 @@ export default function Visitantes() {
             </h2>
             <div className="space-y-3">
               {visitantesHoje.map((visitante) => (
-                <CartaoVisitante key={visitante.id} visitante={visitante} />
+                <CartaoVisitante
+                  key={visitante.id}
+                  visitante={visitante}
+                  aoEditar={abrirEditar}
+                  aoExcluir={solicitarExcluir}
+                />
               ))}
             </div>
           </section>
@@ -242,7 +393,12 @@ export default function Visitantes() {
             </h2>
             <div className="space-y-3">
               {visitantesSemana.map((visitante) => (
-                <CartaoVisitante key={visitante.id} visitante={visitante} />
+                <CartaoVisitante
+                  key={visitante.id}
+                  visitante={visitante}
+                  aoEditar={abrirEditar}
+                  aoExcluir={solicitarExcluir}
+                />
               ))}
             </div>
           </section>
@@ -256,7 +412,12 @@ export default function Visitantes() {
             </h2>
             <div className="space-y-3">
               {visitantesAnteriores.map((visitante) => (
-                <CartaoVisitante key={visitante.id} visitante={visitante} />
+                <CartaoVisitante
+                  key={visitante.id}
+                  visitante={visitante}
+                  aoEditar={abrirEditar}
+                  aoExcluir={solicitarExcluir}
+                />
               ))}
             </div>
           </section>
@@ -270,7 +431,29 @@ export default function Visitantes() {
             </p>
           </div>
         )}
+        </>
+        )}
       </div>
+
+      <AlertDialog open={!!confirmarExclusao} onOpenChange={(v) => { if (!v) setConfirmarExclusao(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir visitante</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{confirmarExclusao?.name}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarExcluirVisitante}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </LayoutApp>
   );
 }

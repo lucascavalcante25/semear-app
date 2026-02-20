@@ -4,6 +4,7 @@ import br.com.semear.config.Constants;
 import br.com.semear.domain.Authority;
 import br.com.semear.domain.User;
 import jakarta.validation.constraints.*;
+import java.util.Arrays;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Set;
@@ -51,6 +52,8 @@ public class AdminUserDTO implements Serializable {
 
     private Set<String> authorities;
 
+    private Set<String> modules;
+
     public AdminUserDTO() {
         // Empty constructor needed for Jackson.
     }
@@ -69,6 +72,12 @@ public class AdminUserDTO implements Serializable {
         this.lastModifiedBy = user.getLastModifiedBy();
         this.lastModifiedDate = user.getLastModifiedDate();
         this.authorities = user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet());
+        if (user.getModules() != null && !user.getModules().isBlank()) {
+            this.modules = Arrays.stream(user.getModules().split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.toSet());
+        }
     }
 
     public Long getId() {
@@ -175,6 +184,14 @@ public class AdminUserDTO implements Serializable {
         this.authorities = authorities;
     }
 
+    public Set<String> getModules() {
+        return modules;
+    }
+
+    public void setModules(Set<String> modules) {
+        this.modules = modules;
+    }
+
     // prettier-ignore
     @Override
     public String toString() {
@@ -191,6 +208,7 @@ public class AdminUserDTO implements Serializable {
             ", lastModifiedBy='" + lastModifiedBy + '\'' +
             ", lastModifiedDate=" + lastModifiedDate +
             ", authorities=" + authorities +
+            ", modules=" + modules +
             "}";
     }
 }

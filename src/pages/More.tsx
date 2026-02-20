@@ -19,7 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccessRoute } from "@/auth/permissions";
+import { canAccess } from "@/auth/permissions";
 import { usarTema } from "@/contexts/ThemeContext";
 
 interface MenuItemProps {
@@ -86,12 +86,11 @@ export default function Mais() {
     toggleTheme();
   };
 
-  const role = user?.role;
-  const canAccess = (path?: string) => {
+  const canShow = (path?: string) => {
     if (!path) {
       return true;
     }
-    return canAccessRoute(role, path);
+    return canAccess(user, path);
   };
 
   return (
@@ -112,7 +111,7 @@ export default function Mais() {
           </h2>
           <Card>
             <CardContent className="p-0">
-              {canAccess("/devocionais") && (
+              {canShow("/devocionais") && (
                 <MenuItem
                   icon={BookMarked}
                   label="Devocionais"
@@ -120,7 +119,7 @@ export default function Mais() {
                   path="/devocionais"
                 />
               )}
-              {canAccess("/visitantes") && (
+              {canShow("/visitantes") && (
                 <MenuItem
                   icon={UserPlus}
                   label="Visitantes"
@@ -128,7 +127,7 @@ export default function Mais() {
                   path="/visitantes"
                 />
               )}
-              {canAccess("/avisos") && (
+              {canShow("/avisos") && (
                 <MenuItem
                   icon={Megaphone}
                   label="Avisos"
@@ -136,7 +135,7 @@ export default function Mais() {
                   path="/avisos"
                 />
               )}
-              {canAccess("/financeiro") && (
+              {canShow("/financeiro") && (
                 <MenuItem
                   icon={Wallet}
                   label="Financeiro"
@@ -167,7 +166,7 @@ export default function Mais() {
                   />
                 }
               />
-              {canAccess("/configuracoes") && (
+              {canShow("/configuracoes") && (
                 <MenuItem
                   icon={Settings}
                   label="Configurações"

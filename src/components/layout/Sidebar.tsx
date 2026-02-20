@@ -10,10 +10,11 @@ import {
   Wallet,
   Settings,
   Heart,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccessRoute } from "@/auth/permissions";
+import { canAccess } from "@/auth/permissions";
 
 const menuGroups = [
   {
@@ -36,6 +37,7 @@ const menuGroups = [
   {
     label: "Administração",
     items: [
+      { icon: UserCheck, label: "Aprovar pré-cadastros", path: "/aprovar-pre-cadastros" },
       { icon: Wallet, label: "Financeiro", path: "/financeiro" },
       { icon: Settings, label: "Configurações", path: "/configuracoes" },
     ],
@@ -45,7 +47,6 @@ const menuGroups = [
 export function BarraLateral() {
   const location = useLocation();
   const { user } = usarAutenticacao();
-  const role = user?.role;
 
   return (
     <aside className="fixed left-0 top-14 md:top-16 bottom-0 w-64 border-r border-border bg-sidebar overflow-y-auto">
@@ -54,7 +55,7 @@ export function BarraLateral() {
         <div className="flex-1 space-y-6 px-3">
           {menuGroups.map((group) => {
             const items = group.items.filter((item) =>
-              canAccessRoute(role, item.path),
+              canAccess(user, item.path),
             );
             if (items.length === 0) {
               return null;

@@ -8,6 +8,7 @@ import br.com.semear.repository.UserRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.AdminUserDTO;
+import br.com.semear.web.rest.errors.EmailAlreadyUsedException;
 import br.com.semear.service.dto.UserDTO;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -164,7 +165,10 @@ public class UserService {
         user.setResetKey(RandomUtil.generateResetKey());
         user.setResetDate(Instant.now());
         user.setActivated(true);
-        if (userDTO.getAuthorities() != null) {
+        if (userDTO.getModules() != null && !userDTO.getModules().isEmpty()) {
+            user.setModules(String.join(",", userDTO.getModules()));
+        }
+        if (userDTO.getAuthorities() != null && !userDTO.getAuthorities().isEmpty()) {
             Set<Authority> authorities = userDTO
                 .getAuthorities()
                 .stream()
@@ -173,10 +177,51 @@ public class UserService {
                 .map(Optional::get)
                 .collect(Collectors.toSet());
             user.setAuthorities(authorities);
+        } else {
+            authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(a -> user.setAuthorities(Set.of(a)));
         }
         userRepository.save(user);
         this.clearUserCaches(user);
         LOG.debug("Created Information for User: {}", user);
+        return user;
+    }
+
+    /**
+     * Cria usuário a partir de pré-cadastro aprovado, usando a senha informada no cadastro.
+     */
+    public User createUserFromPreCadastro(AdminUserDTO userDTO, String plainPassword) {
+        if (userRepository.findOneByLogin(userDTO.getLogin().toLowerCase()).isPresent()) {
+            throw new UsernameAlreadyUsedException();
+        }
+        if (userRepository.findOneByEmailIgnoreCase(userDTO.getEmail()).isPresent()) {
+            throw new EmailAlreadyUsedException();
+        }
+        User user = new User();
+        user.setLogin(userDTO.getLogin().toLowerCase());
+        user.setFirstName(userDTO.getFirstName());
+        user.setLastName(userDTO.getLastName());
+        user.setEmail(userDTO.getEmail().toLowerCase());
+        user.setPassword(passwordEncoder.encode(plainPassword));
+        user.setLangKey(Constants.DEFAULT_LANGUAGE);
+        user.setActivated(true);
+        if (userDTO.getModules() != null && !userDTO.getModules().isEmpty()) {
+            user.setModules(String.join(",", userDTO.getModules()));
+        }
+        if (userDTO.getAuthorities() != null && !userDTO.getAuthorities().isEmpty()) {
+            Set<Authority> authorities = userDTO
+                .getAuthorities()
+                .stream()
+                .map(authorityRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toSet());
+            user.setAuthorities(authorities);
+        } else {
+            authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(a -> user.setAuthorities(Set.of(a)));
+        }
+        userRepository.save(user);
+        this.clearUserCaches(user);
+        LOG.debug("Created User from PreCadastro: {}", user.getLogin());
         return user;
     }
 
@@ -201,15 +246,20 @@ public class UserService {
                 user.setImageUrl(userDTO.getImageUrl());
                 user.setActivated(userDTO.isActivated());
                 user.setLangKey(userDTO.getLangKey());
+                if (userDTO.getModules() != null) {
+                    user.setModules(userDTO.getModules().isEmpty() ? null : String.join(",", userDTO.getModules()));
+                }
                 Set<Authority> managedAuthorities = user.getAuthorities();
                 managedAuthorities.clear();
-                userDTO
-                    .getAuthorities()
-                    .stream()
-                    .map(authorityRepository::findById)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .forEach(managedAuthorities::add);
+                if (userDTO.getAuthorities() != null && !userDTO.getAuthorities().isEmpty()) {
+                    userDTO
+                        .getAuthorities()
+                        .stream()
+                        .map(authorityRepository::findById)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .forEach(managedAuthorities::add);
+                }
                 userRepository.save(user);
                 this.clearUserCaches(user);
                 LOG.debug("Changed Information for User: {}", user);

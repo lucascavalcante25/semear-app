@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Altera login do admin de email para CPF fake, permitindo login apenas com CPF -->
+    <changeSet id="20260220000001-1" author="semear">
+        <sql splitStatements="false">
+            UPDATE jhi_user
+            SET login = '11111111111'
+            WHERE login = 'admin@semear.com';
+        </sql>
+    </changeSet>
+</databaseChangeLog>

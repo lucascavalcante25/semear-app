@@ -9,13 +9,13 @@ import {
   Megaphone,
   Wallet,
   Settings,
-  Book,
   Heart,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccessRoute } from "@/auth/permissions";
+import { canAccess } from "@/auth/permissions";
 
 interface MenuMobileProps {
   onClose: () => void;
@@ -29,6 +29,7 @@ const menuItems = [
   { icon: Users, label: "Membros", path: "/membros" },
   { icon: UserPlus, label: "Visitantes", path: "/visitantes" },
   { icon: Megaphone, label: "Avisos", path: "/avisos" },
+  { icon: UserCheck, label: "Aprovar pré-cadastros", path: "/aprovar-pre-cadastros" },
   { icon: Wallet, label: "Financeiro", path: "/financeiro" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
@@ -36,16 +37,19 @@ const menuItems = [
 export function MenuMobile({ onClose }: MenuMobileProps) {
   const location = useLocation();
   const { user } = usarAutenticacao();
-  const role = user?.role;
-  const filteredItems = menuItems.filter((item) => canAccessRoute(role, item.path));
+  const filteredItems = menuItems.filter((item) => canAccess(user, item.path));
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
       {/* Header */}
       <SheetHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-olive text-olive-foreground">
-            <Book className="h-5 w-5" />
+        <Link to="/" onClick={onClose} className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-olive-light/60 ring-1 ring-olive/20">
+            <img
+              src="/logo-semear.png"
+              alt="Semear"
+              className="h-7 w-7 object-contain"
+            />
           </div>
           <div className="flex flex-col">
             <SheetTitle className="text-left text-lg font-bold">Semear</SheetTitle>
@@ -53,7 +57,7 @@ export function MenuMobile({ onClose }: MenuMobileProps) {
               Comunidade evangelica Semear
             </span>
           </div>
-        </div>
+        </Link>
       </SheetHeader>
 
       {/* Menu Items */}

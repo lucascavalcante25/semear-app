@@ -1,15 +1,25 @@
 package br.com.semear.web.rest;
 
 import br.com.semear.domain.PreCadastro;
+import br.com.semear.domain.enumeration.PerfilAcesso;
+import br.com.semear.domain.enumeration.StatusCadastro;
+import br.com.semear.domain.Endereco;
+import br.com.semear.repository.EnderecoRepository;
 import br.com.semear.repository.PreCadastroRepository;
+import br.com.semear.repository.UserRepository;
+import br.com.semear.security.AuthoritiesConstants;
+import br.com.semear.service.PreCadastroService;
+import br.com.semear.web.rest.vm.AprovarPreCadastroVM;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
@@ -40,9 +51,20 @@ public class PreCadastroResource {
     private String applicationName;
 
     private final PreCadastroRepository preCadastroRepository;
+    private final PreCadastroService preCadastroService;
+    private final UserRepository userRepository;
+    private final EnderecoRepository enderecoRepository;
 
-    public PreCadastroResource(PreCadastroRepository preCadastroRepository) {
+    public PreCadastroResource(
+        PreCadastroRepository preCadastroRepository,
+        PreCadastroService preCadastroService,
+        UserRepository userRepository,
+        EnderecoRepository enderecoRepository
+    ) {
         this.preCadastroRepository = preCadastroRepository;
+        this.preCadastroService = preCadastroService;
+        this.userRepository = userRepository;
+        this.enderecoRepository = enderecoRepository;
     }
 
     /**
@@ -58,10 +80,111 @@ public class PreCadastroResource {
         if (preCadastro.getId() != null) {
             throw new BadRequestAlertException("A new preCadastro cannot already have an ID", ENTITY_NAME, "idexists");
         }
-        preCadastro = preCadastroRepository.save(preCadastro);
+        if (StringUtils.isNotBlank(preCadastro.getEmail())) {
+            preCadastro.setEmail(preCadastro.getEmail().trim().toLowerCase());
+        }
+        if (StringUtils.isNotBlank(preCadastro.getCpf())) {
+            preCadastro.setCpf(preCadastro.getCpf().replaceAll("\\D", ""));
+        }
+        if (StringUtils.isNotBlank(preCadastro.getLogin())) {
+            preCadastro.setLogin(preCadastro.getLogin().trim());
+        }
+
+        // Se já existe usuário (já aprovado em algum momento), não faz sentido criar pré-cadastro de novo.
+        if (preCadastro.getLogin() != null && userRepository.findOneByLogin(preCadastro.getLogin()).isPresent()) {
+            throw new BadRequestAlertException("Você já possui acesso. Faça login.", ENTITY_NAME, "userexists");
+        }
+        if (preCadastro.getEmail() != null && userRepository.findOneByEmailIgnoreCase(preCadastro.getEmail()).isPresent()) {
+            throw new BadRequestAlertException("Você já possui acesso. Faça login.", ENTITY_NAME, "userexists");
+        }
+
+        // Se já existe pré-cadastro, decide conforme status (permite reenviar se foi REJEITADO).
+        Optional<PreCadastro> existente = Optional.empty();
+        if (preCadastro.getLogin() != null) {
+            existente = preCadastroRepository.findOneByLogin(preCadastro.getLogin());
+        }
+        if (existente.isEmpty() && preCadastro.getCpf() != null) {
+            existente = preCadastroRepository.findOneByCpf(preCadastro.getCpf());
+        }
+        if (existente.isEmpty() && preCadastro.getEmail() != null) {
+            existente = preCadastroRepository.findOneByEmailIgnoreCase(preCadastro.getEmail());
+        }
+
+        if (existente.isPresent()) {
+            PreCadastro atual = preCadastroRepository.findByIdWithEndereco(existente.get().getId()).orElse(existente.get());
+            if (atual.getStatus() == StatusCadastro.REJEITADO) {
+                // Reenvio: atualiza o registro rejeitado e volta para PRIMEIROACESSO.
+                atual.setNomeCompleto(preCadastro.getNomeCompleto());
+                atual.setEmail(preCadastro.getEmail());
+                atual.setTelefone(preCadastro.getTelefone());
+                atual.setTelefoneSecundario(preCadastro.getTelefoneSecundario());
+                atual.setTelefoneEmergencia(preCadastro.getTelefoneEmergencia());
+                atual.setNomeContatoEmergencia(preCadastro.getNomeContatoEmergencia());
+                atual.setCpf(preCadastro.getCpf());
+                atual.setSexo(preCadastro.getSexo());
+                atual.setDataNascimento(preCadastro.getDataNascimento());
+                atual.setLogin(preCadastro.getLogin());
+                atual.setSenha(preCadastro.getSenha());
+                atual.setObservacoes(preCadastro.getObservacoes());
+                atual.setAtualizadoEm(Instant.now());
+
+                // Regra do negócio: todo pré-cadastro entra como MEMBRO; admin define o perfil na aprovação.
+                atual.setPerfilSolicitado(PerfilAcesso.MEMBRO);
+                atual.setPerfilAprovado(null);
+                atual.setStatus(StatusCadastro.PRIMEIROACESSO);
+
+                Endereco novoEnd = preCadastro.getEndereco();
+                if (novoEnd != null) {
+                    Endereco endAtual = atual.getEndereco();
+                    if (endAtual == null) {
+                        Endereco saved = enderecoRepository.save(novoEnd);
+                        atual.setEndereco(saved);
+                    } else {
+                        endAtual.setLogradouro(novoEnd.getLogradouro());
+                        endAtual.setNumero(novoEnd.getNumero());
+                        endAtual.setComplemento(novoEnd.getComplemento());
+                        endAtual.setBairro(novoEnd.getBairro());
+                        endAtual.setCidade(novoEnd.getCidade());
+                        endAtual.setEstado(novoEnd.getEstado());
+                        endAtual.setCep(novoEnd.getCep());
+                    }
+                }
+
+                PreCadastro salvo = preCadastroRepository.saveAndFlush(atual);
+                return ResponseEntity.ok().body(salvo);
+            }
+
+            if (atual.getStatus() == StatusCadastro.APROVADO) {
+                throw new BadRequestAlertException("Solicitação já aprovada. Faça login.", ENTITY_NAME, "alreadyapproved");
+            }
+            throw new BadRequestAlertException("Já existe uma solicitação em análise para estes dados.", ENTITY_NAME, "alreadyexists");
+        }
+        // Regra do negócio: todo pré-cadastro entra como MEMBRO; admin define o perfil na aprovação.
+        preCadastro.setPerfilSolicitado(PerfilAcesso.MEMBRO);
+        preCadastro.setPerfilAprovado(null);
+        preCadastro.setStatus(StatusCadastro.PRIMEIROACESSO);
+        if (preCadastro.getCriadoEm() == null) {
+            preCadastro.setCriadoEm(Instant.now());
+        }
+        preCadastro = preCadastroRepository.saveAndFlush(preCadastro);
         return ResponseEntity.created(new URI("/api/pre-cadastros/" + preCadastro.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, preCadastro.getId().toString()))
             .body(preCadastro);
+    }
+
+    /**
+     * {@code POST  /pre-cadastros/:id/aprovar} : Aprova um pré-cadastro e cria o usuário.
+     */
+    @PostMapping("/{id}/aprovar")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<PreCadastro> aprovarPreCadastro(
+        @PathVariable Long id,
+        @Valid @RequestBody AprovarPreCadastroVM body
+    ) {
+        LOG.debug("REST request to approve PreCadastro : {}", id);
+        PerfilAcesso perfil = PerfilAcesso.valueOf(body.getPerfilAprovado());
+        PreCadastro preCadastro = preCadastroService.aprovar(id, perfil, body.getModules());
+        return ResponseEntity.ok().body(preCadastro);
     }
 
     /**
@@ -191,6 +314,19 @@ public class PreCadastroResource {
     }
 
     /**
+     * {@code GET  /pre-cadastros/pendentes} : get preCadastros pending approval (PRIMEIROACESSO, PENDENTE).
+     */
+    @GetMapping("/pendentes")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<List<PreCadastro>> getPreCadastrosPendentes() {
+        LOG.debug("REST request to get pending PreCadastros");
+        List<PreCadastro> list = preCadastroRepository.findByStatusIn(
+            List.of(StatusCadastro.PRIMEIROACESSO, StatusCadastro.PENDENTE)
+        );
+        return ResponseEntity.ok().body(list);
+    }
+
+    /**
      * {@code GET  /pre-cadastros} : get all the preCadastros.
      *
      * @param pageable the pagination information.
@@ -210,10 +346,10 @@ public class PreCadastroResource {
      * @param id the id of the preCadastro to retrieve.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the preCadastro, or with status {@code 404 (Not Found)}.
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<PreCadastro> getPreCadastro(@PathVariable("id") Long id) {
         LOG.debug("REST request to get PreCadastro : {}", id);
-        Optional<PreCadastro> preCadastro = preCadastroRepository.findById(id);
+        Optional<PreCadastro> preCadastro = preCadastroRepository.findByIdWithEndereco(id);
         return ResponseUtil.wrapOrNotFound(preCadastro);
     }
 
@@ -224,6 +360,7 @@ public class PreCadastroResource {
      * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<Void> deletePreCadastro(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete PreCadastro : {}", id);
         preCadastroRepository.deleteById(id);

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { aplicarMascaraCpf } from "@/lib/mascara-telefone";
+import { Eye, EyeOff } from "lucide-react";
 
 type LocationState = {
   from?: { pathname?: string };
@@ -16,6 +18,7 @@ export default function Entrar() {
   const location = useLocation();
   const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,6 +50,15 @@ export default function Entrar() {
       <Card className="w-full max-w-md">
         <CardContent className="p-6 space-y-6">
           <div className="space-y-2 text-center">
+            <div className="flex justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-olive-light/60 ring-1 ring-olive/20">
+                <img
+                  src="/logo-semear.png"
+                  alt="Semear"
+                  className="h-8 w-8 object-contain"
+                />
+              </div>
+            </div>
             <h1 className="text-2xl font-bold">Bem-vindo(a)</h1>
             <p className="text-sm text-muted-foreground">
               Entre para acessar as áreas da igreja
@@ -55,29 +67,46 @@ export default function Entrar() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="identificador">CPF ou e-mail</Label>
+              <Label htmlFor="identificador">CPF</Label>
               <Input
                 id="identificador"
                 type="text"
                 value={identificador}
-                onChange={(event) => setIdentificador(event.target.value)}
-                placeholder="CPF ou seuemail@semear.com"
+                onChange={(e) => setIdentificador(aplicarMascaraCpf(e.target.value))}
+                placeholder="000.000.000-00"
                 autoComplete="username"
+                maxLength={14}
                 required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={mostrarSenha ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                  title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {mostrarSenha ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && (

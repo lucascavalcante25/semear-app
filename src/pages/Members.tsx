@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { LayoutApp } from "@/components/layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,8 +12,18 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,15 +32,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  Phone, 
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import {
+  Users,
+  Search,
   Mail,
   MoreVertical,
   Edit,
-  Trash2
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -37,49 +49,33 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Membro } from "@/types";
+import {
+  listarMembros,
+  atualizarMembro,
+  excluirMembro,
+  roleParaAuthority,
+  type MembroApi,
+  type AtualizarMembroPayload,
+} from "@/modules/members/api";
+import {
+  MODULES,
+  MODULE_LABELS,
+  ROLE_DEFAULT_MODULES,
+  ROLE_LABELS,
+  type ModuleKey,
+  type Role,
+} from "@/auth/permissions";
+import { usarAutenticacao } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
-// Membros de exemplo
-const membrosExemplo: Membro[] = [
-  {
-    id: "1",
-    name: "Maria Santos da Silva",
-    email: "maria@email.com",
-    phone: "(11) 99999-1234",
-    birthDate: new Date("1985-03-15"),
-    ministry: "Louvor",
-    role: "Líder",
-    maritalStatus: "married",
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    name: "João Pedro Oliveira",
-    email: "joao@email.com",
-    phone: "(11) 98888-5678",
-    birthDate: new Date("1990-07-22"),
-    ministry: "Diaconia",
-    role: "Diácono",
-    maritalStatus: "single",
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    name: "Ana Paula Costa",
-    email: "ana@email.com",
-    phone: "(11) 97777-9012",
-    birthDate: new Date("1978-11-08"),
-    ministry: "Infantil",
-    role: "Professora",
-    maritalStatus: "married",
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
+const PERFIS_DISPONIVEIS: Role[] = [
+  "membro",
+  "lider",
+  "pastor",
+  "secretaria",
+  "tesouraria",
+  "admin",
+  "visitante",
 ];
 
 function obterIniciais(name: string): string {
@@ -92,9 +88,9 @@ function obterIniciais(name: string): string {
 }
 
 interface CartaoMembroProps {
-  membro: Membro;
-  aoEditar: (membro: Membro) => void;
-  aoExcluir: (id: string) => void;
+  membro: MembroApi;
+  aoEditar: (membro: MembroApi) => void;
+  aoExcluir: (membro: MembroApi) => void;
 }
 
 function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
@@ -103,33 +99,31 @@ function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={membro.photoUrl} alt={membro.name} />
+            <AvatarImage src={membro.imageUrl} alt={membro.name} />
             <AvatarFallback className="bg-olive-light text-olive-dark font-medium">
               {obterIniciais(membro.name)}
             </AvatarFallback>
           </Avatar>
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="font-semibold truncate">{membro.name}</h3>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {membro.ministry && (
-                    <Badge variant="secondary" className="text-xs">
-                      {membro.ministry}
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <Badge variant="secondary" className="text-xs">
+                    {ROLE_LABELS[membro.role]}
+                  </Badge>
+                  {!membro.activated && (
+                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                      Inativo
                     </Badge>
-                  )}
-                  {membro.role && (
-                    <span className="text-xs text-muted-foreground">
-                      {membro.role}
-                    </span>
                   )}
                 </div>
               </div>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-sm">
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -138,9 +132,9 @@ function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
                     <Edit className="h-4 w-4 mr-2" />
                     Editar
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => aoExcluir(membro.id)}
-                    className="text-destructive"
+                  <DropdownMenuItem
+                    onClick={() => aoExcluir(membro)}
+                    className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Excluir
@@ -148,15 +142,18 @@ function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            
+
             <div className="flex flex-col gap-1 mt-2 text-sm text-muted-foreground">
-              <a href={`tel:${membro.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
-                <Phone className="h-3.5 w-3.5" />
-                {membro.phone}
-              </a>
+              <span className="flex items-center gap-1.5">
+                <span className="font-medium text-foreground/80">Login:</span>
+                {membro.login}
+              </span>
               {membro.email && (
-                <a href={`mailto:${membro.email}`} className="flex items-center gap-1.5 hover:text-foreground">
-                  <Mail className="h-3.5 w-3.5" />
+                <a
+                  href={`mailto:${membro.email}`}
+                  className="flex items-center gap-1.5 hover:text-foreground"
+                >
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
                   {membro.email}
                 </a>
               )}
@@ -168,28 +165,286 @@ function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
   );
 }
 
-export default function Membros() {
-  const [buscaTexto, setBuscaTexto] = useState("");
-  const [membros] = useState<Membro[]>(membrosExemplo);
-  const [dialogAberto, setDialogAberto] = useState(false);
+interface FormMembroProps {
+  membroEdicao?: MembroApi | null;
+  aberto: boolean;
+  onAbertoChange: (aberto: boolean) => void;
+  onSucesso: () => void;
+}
 
-  const membrosFiltrados = membros.filter((membro) =>
-    membro.name.toLowerCase().includes(buscaTexto.toLowerCase()) ||
-    membro.ministry?.toLowerCase().includes(buscaTexto.toLowerCase())
+function FormMembro({
+  membroEdicao,
+  aberto,
+  onAbertoChange,
+  onSucesso,
+}: FormMembroProps) {
+  const [login, setLogin] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [activated, setActivated] = useState(true);
+  const [perfil, setPerfil] = useState<Role>("membro");
+  const [modulesSelecionados, setModulesSelecionados] = useState<ModuleKey[]>([]);
+  const [salvando, setSalvando] = useState(false);
+
+  const resetarForm = useCallback(() => {
+    if (membroEdicao) {
+      const defaultForRole = ROLE_DEFAULT_MODULES[membroEdicao.role] ?? ROLE_DEFAULT_MODULES.membro;
+      setLogin(membroEdicao.login);
+      setFirstName(membroEdicao.firstName);
+      setLastName(membroEdicao.lastName);
+      setEmail(membroEdicao.email);
+      setActivated(membroEdicao.activated);
+      setPerfil(membroEdicao.role);
+      setModulesSelecionados(
+        membroEdicao.modules?.length ? [...membroEdicao.modules] : defaultForRole
+      );
+    } else {
+      setLogin("");
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setActivated(true);
+      setPerfil("membro");
+      setModulesSelecionados(ROLE_DEFAULT_MODULES.membro);
+    }
+  }, [membroEdicao]);
+
+  useEffect(() => {
+    if (aberto) {
+      resetarForm();
+    }
+  }, [aberto, resetarForm]);
+
+  const toggleModulo = (mod: ModuleKey) => {
+    setModulesSelecionados((prev) =>
+      prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod]
+    );
+  };
+
+  const handleSalvar = async () => {
+    const loginTrim = login.trim().toLowerCase();
+    const firstNameTrim = firstName.trim();
+    const lastNameTrim = lastName.trim();
+    const emailTrim = email.trim();
+
+    if (!loginTrim) return;
+    if (!firstNameTrim || !lastNameTrim) {
+      toast.error("Nome e sobrenome são obrigatórios.");
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      if (membroEdicao?.idNum) {
+        const payload: AtualizarMembroPayload = {
+          id: membroEdicao.idNum,
+          login: loginTrim,
+          firstName: firstNameTrim,
+          lastName: lastNameTrim,
+          email: emailTrim || undefined,
+          activated,
+          authorities: [roleParaAuthority(perfil)],
+          modules: modulesSelecionados,
+        };
+        await atualizarMembro(payload);
+        toast.success("Membro atualizado com sucesso.");
+      }
+      onAbertoChange(false);
+      onSucesso();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar membro.");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const titulo = "Editar Membro";
+  const descricao = "Altere os dados do membro e os módulos de acesso.";
+
+  return (
+    <Dialog open={aberto} onOpenChange={onAbertoChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{titulo}</DialogTitle>
+          <DialogDescription>{descricao}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Nome *</Label>
+              <Input
+                id="firstName"
+                placeholder="Nome"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Sobrenome *</Label>
+              <Input
+                id="lastName"
+                placeholder="Sobrenome"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="login">Login (usuário para acesso) *</Label>
+            <Input
+              id="login"
+              placeholder="ex: joao.silva ou CPF"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
+              disabled
+            />
+            <p className="text-xs text-muted-foreground">O login não pode ser alterado.</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="email@exemplo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Perfil</Label>
+            <Select value={perfil} onValueChange={(v) => setPerfil(v as Role)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PERFIS_DISPONIVEIS.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {ROLE_LABELS[p]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <Label htmlFor="activated">Ativo</Label>
+              <p className="text-sm text-muted-foreground">
+                Usuários inativos não conseguem acessar o sistema.
+              </p>
+            </div>
+            <Switch id="activated" checked={activated} onCheckedChange={setActivated} />
+          </div>
+          <div className="space-y-3">
+            <Label>Módulos de acesso</Label>
+            <p className="text-sm text-muted-foreground">
+              Selecione exatamente quais módulos este membro poderá acessar.
+            </p>
+            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto rounded-md border p-3">
+              {MODULES.map((mod) => (
+                <div key={mod} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`mod-${mod}`}
+                    checked={modulesSelecionados.includes(mod)}
+                    onCheckedChange={() => toggleModulo(mod)}
+                  />
+                  <label
+                    htmlFor={`mod-${mod}`}
+                    className="text-sm font-medium leading-none cursor-pointer"
+                  >
+                    {MODULE_LABELS[mod]}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onAbertoChange(false)} disabled={salvando}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSalvar} disabled={salvando}>
+            {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function Membros() {
+  const { user } = usarAutenticacao();
+  const [buscaTexto, setBuscaTexto] = useState("");
+  const [membros, setMembros] = useState<MembroApi[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [membroEmEdicao, setMembroEmEdicao] = useState<MembroApi | null>(null);
+  const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
+  const [membroParaExcluir, setMembroParaExcluir] = useState<MembroApi | null>(null);
+
+  const carregarMembros = useCallback(async () => {
+    if (user?.role !== "admin") return;
+    setCarregando(true);
+    try {
+      const lista = await listarMembros();
+      setMembros(lista);
+    } catch {
+      setMembros([]);
+      toast.error("Erro ao carregar membros.");
+    } finally {
+      setCarregando(false);
+    }
+  }, [user?.role]);
+
+  useEffect(() => {
+    void carregarMembros();
+  }, [carregarMembros]);
+
+  const membrosFiltrados = membros.filter(
+    (m) =>
+      m.name.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+      m.login.toLowerCase().includes(buscaTexto.toLowerCase()) ||
+      (m.email?.toLowerCase().includes(buscaTexto.toLowerCase()) ?? false) ||
+      ROLE_LABELS[m.role].toLowerCase().includes(buscaTexto.toLowerCase())
   );
 
-  const editarMembro = (membro: Membro) => {
-    console.log("Editar membro:", membro);
+  const editarMembro = (membro: MembroApi) => {
+    setMembroEmEdicao(membro);
+    setDialogEditarAberto(true);
   };
 
-  const excluirMembro = (id: string) => {
-    console.log("Excluir membro:", id);
+  const abrirExcluir = (membro: MembroApi) => {
+    setMembroParaExcluir(membro);
   };
+
+  const confirmarExcluir = async () => {
+    if (!membroParaExcluir) return;
+    try {
+      await excluirMembro(membroParaExcluir.login);
+      toast.success("Membro excluído com sucesso.");
+      setMembroParaExcluir(null);
+      void carregarMembros();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao excluir membro.");
+    }
+  };
+
+  if (user?.role !== "admin") {
+    return (
+      <LayoutApp>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Users className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">
+            Apenas administradores podem gerenciar membros.
+          </p>
+        </div>
+      </LayoutApp>
+    );
+  }
 
   return (
     <LayoutApp>
       <div className="space-y-4 animate-fade-in">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-olive text-olive-foreground">
@@ -198,115 +453,85 @@ export default function Membros() {
             <div>
               <h1 className="text-xl font-bold">Membros</h1>
               <p className="text-sm text-muted-foreground">
-                {membros.length} membros cadastrados
+                {carregando ? "Carregando..." : `${membros.length} membros cadastrados`}
               </p>
             </div>
           </div>
 
-          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Novo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Novo Membro</DialogTitle>
-                <DialogDescription>
-                  Preencha os dados para cadastrar um novo membro.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome completo *</Label>
-                  <Input id="name" placeholder="Nome do membro" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone *</Label>
-                    <Input id="phone" placeholder="(00) 00000-0000" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input id="email" type="email" placeholder="email@exemplo.com" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="birthDate">Data de nascimento</Label>
-                    <Input id="birthDate" type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="maritalStatus">Estado civil</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="single">Solteiro(a)</SelectItem>
-                        <SelectItem value="married">Casado(a)</SelectItem>
-                        <SelectItem value="widowed">Viúvo(a)</SelectItem>
-                        <SelectItem value="divorced">Divorciado(a)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ministry">Ministério</Label>
-                    <Input id="ministry" placeholder="Ex: Louvor" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Cargo</Label>
-                    <Input id="role" placeholder="Ex: Líder" />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={() => setDialogAberto(false)}>
-                    Salvar
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button asChild variant="outline">
+            <Link to="/aprovar-pre-cadastros">Aprovar pré-cadastros</Link>
+          </Button>
         </div>
 
-        {/* Busca */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome ou ministério..."
+            placeholder="Buscar por nome, login, e-mail ou perfil..."
             className="pl-10"
             value={buscaTexto}
             onChange={(e) => setBuscaTexto(e.target.value)}
           />
         </div>
 
-        {/* Members List */}
-        <div className="space-y-3">
-          {membrosFiltrados.map((membro) => (
-            <CartaoMembro
-              key={membro.id}
-              membro={membro}
-              aoEditar={editarMembro}
-              aoExcluir={excluirMembro}
-            />
-          ))}
+        {carregando ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {membrosFiltrados.map((membro) => (
+              <CartaoMembro
+                key={membro.id}
+                membro={membro}
+                aoEditar={editarMembro}
+                aoExcluir={abrirExcluir}
+              />
+            ))}
 
-          {membrosFiltrados.length === 0 && (
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">
-                Nenhum membro encontrado
-              </p>
-            </div>
-          )}
-        </div>
+            {membrosFiltrados.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">
+                  {membros.length === 0
+                    ? "Nenhum membro cadastrado. Clique em Novo para adicionar."
+                    : "Nenhum membro encontrado na busca."}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      <FormMembro
+        membroEdicao={membroEmEdicao}
+        aberto={dialogEditarAberto}
+        onAbertoChange={(aberto) => {
+          setDialogEditarAberto(aberto);
+          if (!aberto) setMembroEmEdicao(null);
+        }}
+        onSucesso={carregarMembros}
+      />
+
+      <AlertDialog open={!!membroParaExcluir} onOpenChange={() => setMembroParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir membro</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir <strong>{membroParaExcluir?.name}</strong>? Esta ação
+              não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarExcluir}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </LayoutApp>
   );
 }

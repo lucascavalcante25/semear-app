@@ -3,12 +3,13 @@ export type DemoCredential = {
   email: string;
   role: string;
   password: string;
+  modules?: string[];
 };
 
 export const DEMO_CREDENTIALS: DemoCredential[] = [
   {
     name: "Administração",
-    email: "admin@semear.com",
+    email: "11111111111",
     role: "admin",
     password: "admin123",
   },

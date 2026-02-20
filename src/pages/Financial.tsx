@@ -33,6 +33,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { LancamentoFinanceiro } from "@/types";
 import { 
   ChartConfig, 
@@ -159,6 +160,7 @@ function CartaoLancamento({ lancamento }: CartaoLancamentoProps) {
 export default function Financeiro() {
   const [dialogAberto, setDialogAberto] = useState(false);
   const [tipoLancamento, setTipoLancamento] = useState<"income" | "expense">("income");
+  const [formData, setFormData] = useState<string>(() => new Date().toISOString().slice(0, 10));
 
   const totalReceitas = lancamentosExemplo
     .filter((e) => e.type === "income")
@@ -187,7 +189,7 @@ export default function Financeiro() {
             </div>
           </div>
 
-          <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+          <Dialog open={dialogAberto} onOpenChange={(open) => { setDialogAberto(open); if (open) setFormData(new Date().toISOString().slice(0, 10)); }}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -274,7 +276,12 @@ export default function Financeiro() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date">Data</Label>
-                    <Input id="date" type="date" />
+                    <DatePicker
+                      id="date"
+                      value={formData}
+                      onChange={setFormData}
+                      placeholder="Selecione a data"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="payment">Pagamento</Label>

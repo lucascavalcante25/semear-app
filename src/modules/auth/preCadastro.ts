@@ -25,7 +25,6 @@ export type PreCadastroPayload = {
   cpf: string;
   sexo: SexoCadastro;
   dataNascimento: string;
-  login: string;
   senha: string;
   perfilSolicitado: Role;
   observacoes?: string;
@@ -36,6 +35,7 @@ const CHAVE_STORAGE = "semear.preCadastro";
 
 type PreCadastroLocal = PreCadastroPayload & {
   id: string;
+  login: string;
   status: StatusCadastro;
   perfilAprovado?: Role;
   criadoEm: string;
@@ -45,7 +45,11 @@ type PreCadastroLocal = PreCadastroPayload & {
 const normalizarCpf = (value: string) => value.replace(/\D/g, "");
 
 const normalizarEmail = (value: string) =>
-  value.trim().toLowerCase().replace("@semeare.com", "@semear.com");
+  value
+    .trim()
+    .toLowerCase()
+    .replace("@semeare.com", "@semear.com")
+    .replace("@semear.com.br", "@semear.com");
 
 const mapearPerfilParaApi = (perfil: Role) => {
   const mapa: Record<Role, string> = {
@@ -137,22 +141,128 @@ export const listarPreCadastrosPorStatus = async (status: StatusCadastro) => {
   return lerLocal().filter((item) => item.status === status);
 };
 
-export const listarPreCadastrosParaAprovacao = async () => {
+export type PreCadastroCompleto = PreCadastroApi & {
+  nomeCompleto?: string;
+  email?: string;
+  telefone?: string;
+  telefoneSecundario?: string;
+  telefoneEmergencia?: string;
+  nomeContatoEmergencia?: string;
+  cpf?: string;
+  sexo?: string;
+  dataNascimento?: string;
+  perfilSolicitado?: string;
+  perfilAprovado?: string;
+  observacoes?: string;
+  criadoEm?: string;
+  endereco?: EnderecoPayload & { id?: number };
+};
+
+export const listarPreCadastrosParaAprovacao = async (): Promise<PreCadastroCompleto[]> => {
   const statusAprovacao: StatusCadastro[] = ["PRIMEIROACESSO", "PENDENTE"];
+  const filtrarCpfValido = (items: PreCadastroCompleto[]) =>
+    items.filter((item) => {
+      const cpf = (item.cpf ?? "").replace(/\D/g, "");
+      return cpf.length === 11;
+    });
   if (API_ATIVA) {
-    const params = new URLSearchParams();
-    params.set("status.in", statusAprovacao.join(","));
-    return requisicaoApi<PreCadastroApi[]>(`/api/pre-cadastros?${params.toString()}`, {
+    try {
+      const pendentes = await requisicaoApi<PreCadastroCompleto[]>("/api/pre-cadastros/pendentes", {
+        auth: true,
+      });
+      return filtrarCpfValido(Array.isArray(pendentes) ? pendentes : []);
+    } catch {
+      try {
+        const todos = await requisicaoApi<PreCadastroCompleto[]>(
+          "/api/pre-cadastros?page=0&size=100",
+          { auth: true },
+        );
+        const lista = Array.isArray(todos) ? todos : [];
+        return filtrarCpfValido(
+          lista.filter((item) => statusAprovacao.includes((item.status ?? "") as StatusCadastro)),
+        );
+      } catch {
+        return [];
+      }
+    }
+  }
+  return filtrarCpfValido(
+    lerLocal().filter((item) => statusAprovacao.includes(item.status)) as PreCadastroCompleto[],
+  );
+};
+
+export const obterPreCadastroPorId = async (id: string | number): Promise<PreCadastroCompleto | null> => {
+  if (API_ATIVA) {
+    try {
+      return await requisicaoApi<PreCadastroCompleto>(`/api/pre-cadastros/${id}`, { auth: true });
+    } catch {
+      return null;
+    }
+  }
+  const item = lerLocal().find((i) => String(i.id) === String(id));
+  return item ? (item as PreCadastroCompleto) : null;
+};
+
+export const aprovarPreCadastro = async (
+  id: string | number,
+  perfilAprovado: Role,
+  modules: string[] = [],
+): Promise<void> => {
+  const perfilApi = mapearPerfilParaApi(perfilAprovado);
+  if (API_ATIVA) {
+    await requisicaoApi(`/api/pre-cadastros/${id}/aprovar`, {
+      method: "POST",
+      body: JSON.stringify({ perfilAprovado: perfilApi, modules }),
       auth: true,
     });
+    return;
   }
-  return lerLocal().filter((item) => statusAprovacao.includes(item.status));
+  const items = lerLocal();
+  const idx = items.findIndex((i) => String(i.id) === String(id));
+  if (idx >= 0) {
+    items[idx] = {
+      ...items[idx],
+      status: "APROVADO",
+      perfilAprovado,
+    };
+    salvarLocal(items);
+  }
+};
+
+export const rejeitarPreCadastro = async (id: string | number): Promise<void> => {
+  if (API_ATIVA) {
+    await requisicaoApi(`/api/pre-cadastros/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        id: Number(id),
+        status: "REJEITADO",
+      }),
+      auth: true,
+    });
+    return;
+  }
+  const items = lerLocal();
+  const idx = items.findIndex((i) => String(i.id) === String(id));
+  if (idx >= 0) {
+    items[idx] = { ...items[idx], status: "REJEITADO" };
+    salvarLocal(items);
+  }
+};
+
+export const excluirPreCadastro = async (id: string | number): Promise<void> => {
+  if (API_ATIVA) {
+    await requisicaoApi(`/api/pre-cadastros/${id}`, {
+      method: "DELETE",
+      auth: true,
+    });
+    return;
+  }
+  const items = lerLocal().filter((i) => String(i.id) !== String(id));
+  salvarLocal(items);
 };
 
 export const enviarPreCadastro = async (payload: PreCadastroPayload) => {
-  const loginNormalizado = payload.login.includes("@")
-    ? normalizarEmail(payload.login)
-    : normalizarCpf(payload.login);
+  const loginNormalizado = normalizarCpf(payload.cpf);
 
   if (API_ATIVA) {
     await requisicaoApi("/api/pre-cadastros", {
@@ -161,9 +271,12 @@ export const enviarPreCadastro = async (payload: PreCadastroPayload) => {
         ...payload,
         cpf: normalizarCpf(payload.cpf),
         email: normalizarEmail(payload.email),
-        login: loginNormalizado,
+        login: loginNormalizado, // login = CPF (somente digitos)
         perfilSolicitado: mapearPerfilParaApi(payload.perfilSolicitado),
         status: "PRIMEIROACESSO",
+        telefoneSecundario: payload.telefoneSecundario,
+        telefoneEmergencia: payload.telefoneEmergencia,
+        nomeContatoEmergencia: payload.nomeContatoEmergencia,
       }),
     });
     return;

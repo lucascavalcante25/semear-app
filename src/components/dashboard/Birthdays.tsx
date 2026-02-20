@@ -1,38 +1,19 @@
+import { useEffect, useState } from "react";
 import { Cake, Gift, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
+import { listarAniversariantes } from "@/modules/members/birthdays";
 
-interface Aniversario {
+type Aniversario = {
   id: string;
   name: string;
   date: Date;
   photoUrl?: string;
-}
-
-// Aniversarios de exemplo
-const aniversariosExemplo: Aniversario[] = [
-  {
-    id: "1",
-    name: "Maria Santos",
-    date: new Date(),
-    photoUrl: undefined,
-  },
-  {
-    id: "2",
-    name: "João Silva",
-    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    photoUrl: undefined,
-  },
-  {
-    id: "3",
-    name: "Ana Paula Oliveira",
-    date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    photoUrl: undefined,
-  },
-];
+};
 
 function obterIniciais(name: string): string {
   return name
@@ -98,6 +79,24 @@ function ItemAniversario({ aniversario }: ItemAniversarioProps) {
 }
 
 export function Aniversariantes() {
+  const [lista, setLista] = useState<Aniversario[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    const carregar = async () => {
+      setCarregando(true);
+      try {
+        const dados = await listarAniversariantes(14);
+        setLista(dados);
+      } catch {
+        setLista([]);
+      } finally {
+        setCarregando(false);
+      }
+    };
+    void carregar();
+  }, []);
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
@@ -116,9 +115,19 @@ export function Aniversariantes() {
       </CardHeader>
 
       <CardContent className="space-y-1">
-        {aniversariosExemplo.map((aniversario) => (
-          <ItemAniversario key={aniversario.id} aniversario={aniversario} />
-        ))}
+        {carregando ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : lista.length > 0 ? (
+          lista.map((aniversario) => (
+            <ItemAniversario key={aniversario.id} aniversario={aniversario} />
+          ))
+        ) : (
+          <div className="text-sm text-muted-foreground py-4">
+            Nenhum aniversariante nos próximos dias.
+          </div>
+        )}
       </CardContent>
     </Card>
   );

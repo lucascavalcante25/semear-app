@@ -1,5 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { getDefaultRouteForRole, type Role } from "@/auth/permissions";
+import {
+  getDefaultRouteForRole,
+  ROLE_ALLOWED_MODULES,
+  type ModuleKey,
+  type Role,
+} from "@/auth/permissions";
 import { DEMO_CREDENTIALS } from "@/data/demo-credentials";
 import { API_ATIVA, limparToken, obterToken, requisicaoApi, salvarToken } from "@/modules/api/client";
 import { obterStatusCadastroPorIdentificador, type StatusCadastro } from "@/modules/auth/preCadastro";
@@ -9,6 +14,7 @@ type Usuario = {
   name: string;
   email: string;
   role: Role;
+  modules: ModuleKey[];
 };
 
 type ResultadoLogin = {
@@ -26,8 +32,8 @@ type ValorContextoAutenticacao = {
 const CHAVE_STORAGE_USUARIO = "semear.usuario";
 const CHAVE_STORAGE_LEGACY = "semear.autenticacao";
 
-/** Usuários master que não precisam de pré-cadastro na tabela pre_cadastro */
-const MASTER_EMAILS = ["admin@semear.com"];
+/** Usuários master que não precisam de pré-cadastro na tabela pre_cadastro (login = CPF) */
+const MASTER_CPFS = ["11111111111"];
 
 const DEMO_USERS: Array<Usuario & { password: string }> = DEMO_CREDENTIALS.map(
   (credential, index) => ({
@@ -36,10 +42,30 @@ const DEMO_USERS: Array<Usuario & { password: string }> = DEMO_CREDENTIALS.map(
     email: credential.email,
     role: credential.role as Role,
     password: credential.password,
+    modules:
+      (credential.modules as ModuleKey[] | undefined) ??
+      ROLE_ALLOWED_MODULES[(credential.role as Role) ?? "membro"] ??
+      [],
   }),
 );
 
 const AuthContext = createContext<ValorContextoAutenticacao | undefined>(undefined);
+
+const normalizarUsuario = (user: Partial<Usuario> | null): Usuario | null => {
+  if (!user?.role) return null;
+  const role = user.role as Role;
+  const modules =
+    Array.isArray((user as any).modules) && (user as any).modules.length > 0
+      ? ((user as any).modules as ModuleKey[])
+      : ROLE_ALLOWED_MODULES[role] ?? [];
+  return {
+    id: String(user.id ?? "0"),
+    name: String(user.name ?? "Usuario"),
+    email: String(user.email ?? ""),
+    role,
+    modules,
+  };
+};
 
 const obterUsuarioArmazenado = () => {
   if (typeof window === "undefined") {
@@ -53,7 +79,7 @@ const obterUsuarioArmazenado = () => {
       return null;
     }
     try {
-      return JSON.parse(legacyRaw) as Usuario;
+      return normalizarUsuario(JSON.parse(legacyRaw) as Partial<Usuario>);
     } catch {
       return null;
     }
@@ -63,7 +89,7 @@ const obterUsuarioArmazenado = () => {
   }
 
   try {
-    return JSON.parse(raw) as Usuario;
+    return normalizarUsuario(JSON.parse(raw) as Partial<Usuario>);
   } catch {
     return null;
   }
@@ -89,6 +115,7 @@ type RespostaConta = {
   firstName?: string;
   lastName?: string;
   authorities?: string[];
+  modules?: string[];
 };
 
 const mapearAutoridadesParaPerfil = (authorities: string[] = []): Role => {
@@ -107,11 +134,17 @@ const mapearAutoridadesParaPerfil = (authorities: string[] = []): Role => {
 
 const mapearContaParaUsuario = (account: RespostaConta): Usuario => {
   const name = [account.firstName, account.lastName].filter(Boolean).join(" ").trim();
+  const role = mapearAutoridadesParaPerfil(account.authorities);
+  const modulesFromApi = Array.isArray(account.modules) ? (account.modules as string[]) : [];
+  const modules = modulesFromApi
+    .map((m) => m as ModuleKey)
+    .filter((m) => (ROLE_ALLOWED_MODULES[role] ?? []).includes(m));
   return {
     id: String(account.id ?? account.login ?? account.email ?? "0"),
     name: name || account.login || account.email || "Usuario",
     email: account.email || account.login || "",
-    role: mapearAutoridadesParaPerfil(account.authorities),
+    role,
+    modules: modules.length > 0 ? modules : (ROLE_ALLOWED_MODULES[role] ?? []),
   };
 };
 
@@ -120,7 +153,11 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
   const [carregandoConta, setCarregandoConta] = useState(false);
 
   const normalizarEmail = (value: string) =>
-    value.trim().toLowerCase().replace("@semeare.com", "@semear.com");
+    value
+      .trim()
+      .toLowerCase()
+      .replace("@semeare.com", "@semear.com")
+      .replace("@semear.com.br", "@semear.com");
 
   const normalizarCpf = (value: string) => value.replace(/\D/g, "");
 
@@ -168,9 +205,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
   const login = async (identificador: string, password: string): Promise<ResultadoLogin> => {
     const identificadorNormalizado = normalizarIdentificador(identificador);
 
-    const ehMaster = identificadorNormalizado.includes("@")
-      ? MASTER_EMAILS.includes(identificadorNormalizado)
-      : false;
+    const ehMaster = !identificadorNormalizado.includes("@") && MASTER_CPFS.includes(identificadorNormalizado);
 
     if (!ehMaster) {
       const statusCadastro = await obterStatusCadastroPorIdentificador(identificadorNormalizado);
@@ -198,9 +233,9 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
         }
         salvarToken(token);
         const account = await requisicaoApi<RespostaConta>("/api/account", { auth: true });
-        const identificadorConta = account.email || account.login || identificadorNormalizado;
+        const identificadorConta = account.login || account.email || identificadorNormalizado;
         const ehMasterPosLogin =
-          identificadorConta.includes("@") && MASTER_EMAILS.includes(identificadorConta);
+          !identificadorConta.includes("@") && MASTER_CPFS.includes(normalizarCpf(identificadorConta));
         if (!ehMasterPosLogin) {
           const statusPosLogin = await obterStatusCadastroPorIdentificador(identificadorConta);
           if (statusPosLogin && statusPosLogin !== "APROVADO") {
@@ -214,12 +249,16 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
         return { success: true };
       } catch (error) {
         limparToken();
+        const msg = error instanceof Error ? error.message : "";
+        const is401 =
+          msg.includes("401") ||
+          msg.toLowerCase().includes("unauthorized") ||
+          msg.toLowerCase().includes("error.http");
         return {
           success: false,
-          message:
-            error instanceof Error
-              ? `${error.message} Se ainda não tem cadastro, faça seu pré-cadastro.`
-              : "Falha ao autenticar. Se ainda não tem cadastro, faça seu pré-cadastro.",
+          message: is401
+            ? "CPF ou senha incorretos. Verifique e tente novamente. Se ainda não tem cadastro, faça seu pré-cadastro."
+            : msg || "Falha ao autenticar. Se ainda não tem cadastro, faça seu pré-cadastro.",
         };
       }
     }
@@ -233,7 +272,8 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
     if (!match) {
       return {
         success: false,
-        message: "Usuário ou senha inválidos. Se ainda não tem cadastro, faça seu pré-cadastro.",
+        message:
+          "CPF ou senha incorretos. Verifique e tente novamente. Se ainda não tem cadastro, faça seu pré-cadastro.",
       };
     }
 
