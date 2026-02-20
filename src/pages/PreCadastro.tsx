@@ -26,6 +26,7 @@ import {
   validarCpf,
   validarEmail,
 } from "@/lib/mascara-telefone";
+import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
 
 const estadosUf = [
@@ -93,6 +94,7 @@ export default function PreCadastro() {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [tentouEnviar, setTentouEnviar] = useState(false);
   const [erroCep, setErroCep] = useState<string | null>(null);
   const [buscandoCep, setBuscandoCep] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -139,6 +141,9 @@ export default function PreCadastro() {
     }
   };
 
+  const senhasNaoConferem =
+    !!formulario.senha && !!confirmarSenha && formulario.senha !== confirmarSenha;
+
   const validarSenha = (senha: string) => {
     const minLength = senha.length >= 8;
     const temNumero = /\d/.test(senha);
@@ -148,6 +153,7 @@ export default function PreCadastro() {
 
   const enviarFormulario = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setTentouEnviar(true);
     setErro(null);
 
     const cpfDigits = formulario.cpf.replace(/\D/g, "");
@@ -219,26 +225,32 @@ export default function PreCadastro() {
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="nomeCompleto">Nome completo</Label>
+                    <Label htmlFor="nomeCompleto">Nome completo *</Label>
                     <Input
                       id="nomeCompleto"
                       value={formulario.nomeCompleto}
                       onChange={(event) => atualizarCampo("nomeCompleto", event.target.value)}
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.nomeCompleto.trim() && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
+                    <Label htmlFor="cpf">CPF *</Label>
                     <Input
                       id="cpf"
                       placeholder="000.000.000-00"
                       value={formulario.cpf}
                       onChange={(e) => atualizarCampo("cpf", aplicarMascaraCpf(e.target.value))}
                       required
+                      className={cn(
+                        tentouEnviar && (!formulario.cpf.trim() || !validarCpf(formulario.cpf)) && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">E-mail</Label>
+                    <Label htmlFor="email">E-mail *</Label>
                     <Input
                       id="email"
                       type="email"
@@ -246,15 +258,21 @@ export default function PreCadastro() {
                       value={formulario.email}
                       onChange={(event) => atualizarCampo("email", event.target.value)}
                       required
+                      className={cn(
+                        tentouEnviar && (!formulario.email.trim() || !validarEmail(formulario.email)) && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dataNascimento">Data de nascimento</Label>
+                    <Label htmlFor="dataNascimento">Data de nascimento *</Label>
                     <DatePicker
                       id="dataNascimento"
                       value={formulario.dataNascimento}
                       onChange={(v) => atualizarCampo("dataNascimento", v)}
                       placeholder="Selecione a data"
+                      className={cn(
+                        tentouEnviar && !formulario.dataNascimento && "[&_input]:border-destructive [&_input]:focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
@@ -291,7 +309,7 @@ export default function PreCadastro() {
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="telefone">Telefone principal</Label>
+                    <Label htmlFor="telefone">Telefone principal *</Label>
                     <Input
                       id="telefone"
                       placeholder="(00) 00000-0000"
@@ -300,10 +318,13 @@ export default function PreCadastro() {
                         atualizarCampo("telefone", aplicarMascaraTelefone(e.target.value))
                       }
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.telefone.replace(/\D/g, "").length && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="telefoneSecundario">Telefone secundario</Label>
+                    <Label htmlFor="telefoneSecundario">Telefone secundario *</Label>
                     <Input
                       id="telefoneSecundario"
                       placeholder="(00) 00000-0000"
@@ -312,10 +333,13 @@ export default function PreCadastro() {
                         atualizarCampo("telefoneSecundario", aplicarMascaraTelefone(e.target.value))
                       }
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.telefoneSecundario.replace(/\D/g, "").length && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="telefoneEmergencia">Telefone de emergencia</Label>
+                    <Label htmlFor="telefoneEmergencia">Telefone de emergencia *</Label>
                     <Input
                       id="telefoneEmergencia"
                       placeholder="(00) 00000-0000"
@@ -324,15 +348,21 @@ export default function PreCadastro() {
                         atualizarCampo("telefoneEmergencia", aplicarMascaraTelefone(e.target.value))
                       }
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.telefoneEmergencia.replace(/\D/g, "").length && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nomeContatoEmergencia">Nome do contato de emergencia</Label>
+                    <Label htmlFor="nomeContatoEmergencia">Nome do contato de emergencia *</Label>
                     <Input
                       id="nomeContatoEmergencia"
                       value={formulario.nomeContatoEmergencia}
                       onChange={(e) => atualizarCampo("nomeContatoEmergencia", e.target.value)}
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.nomeContatoEmergencia.trim() && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                 </div>
@@ -344,7 +374,7 @@ export default function PreCadastro() {
                 </h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="cep">CEP</Label>
+                    <Label htmlFor="cep">CEP *</Label>
                     <div className="flex items-center gap-2">
                       <Input
                         id="cep"
@@ -359,6 +389,9 @@ export default function PreCadastro() {
                           }
                         }}
                         required
+                        className={cn(
+                          tentouEnviar && formulario.endereco.cep.replace(/\D/g, "").length !== 8 && "border-destructive focus-visible:ring-destructive"
+                        )}
                       />
                       <Button
                         type="button"
@@ -379,21 +412,27 @@ export default function PreCadastro() {
                     </div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="logradouro">Logradouro</Label>
+                    <Label htmlFor="logradouro">Logradouro *</Label>
                     <Input
                       id="logradouro"
                       value={formulario.endereco.logradouro}
                       onChange={(event) => atualizarEndereco("logradouro", event.target.value)}
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.endereco.logradouro.trim() && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="numero">Numero</Label>
+                    <Label htmlFor="numero">Numero *</Label>
                     <Input
                       id="numero"
                       value={formulario.endereco.numero}
                       onChange={(event) => atualizarEndereco("numero", event.target.value)}
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.endereco.numero.trim() && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
@@ -405,21 +444,27 @@ export default function PreCadastro() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bairro">Bairro</Label>
+                    <Label htmlFor="bairro">Bairro *</Label>
                     <Input
                       id="bairro"
                       value={formulario.endereco.bairro}
                       onChange={(event) => atualizarEndereco("bairro", event.target.value)}
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.endereco.bairro.trim() && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cidade">Cidade</Label>
+                    <Label htmlFor="cidade">Cidade *</Label>
                     <Input
                       id="cidade"
                       value={formulario.endereco.cidade}
                       onChange={(event) => atualizarEndereco("cidade", event.target.value)}
                       required
+                      className={cn(
+                        tentouEnviar && !formulario.endereco.cidade.trim() && "border-destructive focus-visible:ring-destructive"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
@@ -452,16 +497,20 @@ export default function PreCadastro() {
                 </p>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="senha">Senha</Label>
+                    <Label htmlFor="senha">Senha *</Label>
                     <div className="relative">
                       <Input
                         id="senha"
                         type={mostrarSenha ? "text" : "password"}
                         value={formulario.senha}
                         onChange={(event) => atualizarCampo("senha", event.target.value)}
-                        placeholder="Minimo 8 caracteres"
+                        placeholder="Minimo 8 caracteres, letras e numeros"
                         required
-                        className="pr-10"
+                        className={cn(
+                          "pr-10",
+                          (tentouEnviar && !formulario.senha) && "border-destructive focus-visible:ring-destructive",
+                          senhasNaoConferem && "border-destructive focus-visible:ring-destructive"
+                        )}
                       />
                       <button
                         type="button"
@@ -479,7 +528,7 @@ export default function PreCadastro() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmarSenha">Confirmar senha</Label>
+                    <Label htmlFor="confirmarSenha">Confirmar senha *</Label>
                     <div className="relative">
                       <Input
                         id="confirmarSenha"
@@ -488,7 +537,11 @@ export default function PreCadastro() {
                         onChange={(event) => setConfirmarSenha(event.target.value)}
                         placeholder="Repita a senha"
                         required
-                        className="pr-10"
+                        className={cn(
+                          "pr-10",
+                          (tentouEnviar && !confirmarSenha) && "border-destructive focus-visible:ring-destructive",
+                          senhasNaoConferem && "border-destructive focus-visible:ring-destructive"
+                        )}
                       />
                       <button
                         type="button"
@@ -504,6 +557,9 @@ export default function PreCadastro() {
                         )}
                       </button>
                     </div>
+                    {senhasNaoConferem && (
+                      <p className="text-sm text-destructive">As senhas não conferem.</p>
+                    )}
                   </div>
                 </div>
               </div>
