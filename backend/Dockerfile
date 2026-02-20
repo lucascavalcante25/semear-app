@@ -5,17 +5,15 @@ WORKDIR /workspace
 
 # Copia apenas o necessário para resolver dependências e build
 COPY pom.xml ./
-COPY mvnw ./
-COPY .mvn ./.mvn
 
 # Baixa dependências (cache de camadas)
-RUN chmod +x ./mvnw && ./mvnw -B -q -DskipTests dependency:go-offline
+RUN mvn -B -q -DskipTests dependency:go-offline
 
 # Agora copia o código-fonte
 COPY src ./src
 
 # Build pulando testes, profile prod
-RUN ./mvnw -B -DskipTests -Pprod clean package && cp target/*.jar /workspace/app.jar
+RUN mvn -B -DskipTests -Pprod clean package && cp target/*.jar /workspace/app.jar
 
 ## Runtime stage
 FROM eclipse-temurin:17-jre-jammy
