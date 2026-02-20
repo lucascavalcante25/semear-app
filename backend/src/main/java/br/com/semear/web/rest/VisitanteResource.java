@@ -5,7 +5,6 @@ import br.com.semear.repository.VisitanteRepository;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -45,10 +44,13 @@ public class VisitanteResource {
 
     @PostMapping("")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
-    public ResponseEntity<Visitante> createVisitante(@Valid @RequestBody Visitante visitante) throws URISyntaxException {
+    public ResponseEntity<Visitante> createVisitante(@RequestBody Visitante visitante) throws URISyntaxException {
         LOG.debug("REST request to save Visitante : {}", visitante);
         if (visitante.getId() != null) {
             throw new BadRequestAlertException("A new visitante cannot already have an ID", ENTITY_NAME, "idexists");
+        }
+        if (visitante.getNome() == null || visitante.getNome().isBlank()) {
+            throw new BadRequestAlertException("Nome é obrigatório.", ENTITY_NAME, "nomeobrigatorio");
         }
         if (visitante.getCriadoEm() == null) {
             visitante.setCriadoEm(Instant.now());
@@ -69,7 +71,7 @@ public class VisitanteResource {
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
     public ResponseEntity<Visitante> updateVisitante(
         @PathVariable("id") final Long id,
-        @Valid @RequestBody Visitante visitante
+        @RequestBody Visitante visitante
     ) throws URISyntaxException {
         LOG.debug("REST request to update Visitante : {}, {}", id, visitante);
         if (visitante.getId() == null) {
@@ -78,12 +80,25 @@ public class VisitanteResource {
         if (!Objects.equals(id, visitante.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-        if (!visitanteRepository.existsById(id)) {
+        Optional<Visitante> existenteOpt = visitanteRepository.findById(id);
+        if (existenteOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        visitante.setAtualizadoEm(Instant.now());
-        visitante.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
-        Visitante result = visitanteRepository.save(visitante);
+
+        Visitante existente = existenteOpt.get();
+        if (visitante.getNome() == null || visitante.getNome().isBlank()) {
+            throw new BadRequestAlertException("Nome é obrigatório.", ENTITY_NAME, "nomeobrigatorio");
+        }
+
+        existente.setNome(visitante.getNome());
+        existente.setTelefone(visitante.getTelefone());
+        existente.setComoConheceu(visitante.getComoConheceu());
+        existente.setObservacoes(visitante.getObservacoes());
+        existente.setDataVisita(visitante.getDataVisita() != null ? visitante.getDataVisita() : existente.getDataVisita());
+        existente.setAtualizadoEm(Instant.now());
+        existente.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
+
+        Visitante result = visitanteRepository.save(existente);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
             .body(result);

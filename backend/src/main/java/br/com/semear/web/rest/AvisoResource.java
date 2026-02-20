@@ -5,7 +5,6 @@ import br.com.semear.repository.AvisoRepository;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -44,10 +43,19 @@ public class AvisoResource {
 
     @PostMapping("")
     @RolesAllowed("ROLE_ADMIN")
-    public ResponseEntity<Aviso> createAviso(@Valid @RequestBody Aviso aviso) throws URISyntaxException {
+    public ResponseEntity<Aviso> createAviso(@RequestBody Aviso aviso) throws URISyntaxException {
         LOG.debug("REST request to save Aviso : {}", aviso);
         if (aviso.getId() != null) {
             throw new BadRequestAlertException("A new aviso cannot already have an ID", ENTITY_NAME, "idexists");
+        }
+        if (aviso.getTitulo() == null || aviso.getTitulo().isBlank()) {
+            throw new BadRequestAlertException("Título é obrigatório.", ENTITY_NAME, "tituloobrigatorio");
+        }
+        if (aviso.getConteudo() == null || aviso.getConteudo().isBlank()) {
+            throw new BadRequestAlertException("Conteúdo é obrigatório.", ENTITY_NAME, "conteudoobrigatorio");
+        }
+        if (aviso.getDataInicio() == null) {
+            throw new BadRequestAlertException("Data início é obrigatória.", ENTITY_NAME, "datainicioobrigatoria");
         }
         if (aviso.getCriadoEm() == null) {
             aviso.setCriadoEm(Instant.now());
@@ -63,7 +71,7 @@ public class AvisoResource {
 
     @PutMapping("/{id}")
     @RolesAllowed("ROLE_ADMIN")
-    public ResponseEntity<Aviso> updateAviso(@PathVariable("id") final Long id, @Valid @RequestBody Aviso aviso)
+    public ResponseEntity<Aviso> updateAviso(@PathVariable("id") final Long id, @RequestBody Aviso aviso)
         throws URISyntaxException {
         LOG.debug("REST request to update Aviso : {}, {}", id, aviso);
         if (aviso.getId() == null) {
@@ -72,12 +80,32 @@ public class AvisoResource {
         if (!Objects.equals(id, aviso.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-        if (!avisoRepository.existsById(id)) {
+        Optional<Aviso> existenteOpt = avisoRepository.findById(id);
+        if (existenteOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        aviso.setAtualizadoEm(Instant.now());
-        aviso.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
-        Aviso result = avisoRepository.save(aviso);
+
+        if (aviso.getTitulo() == null || aviso.getTitulo().isBlank()) {
+            throw new BadRequestAlertException("Título é obrigatório.", ENTITY_NAME, "tituloobrigatorio");
+        }
+        if (aviso.getConteudo() == null || aviso.getConteudo().isBlank()) {
+            throw new BadRequestAlertException("Conteúdo é obrigatório.", ENTITY_NAME, "conteudoobrigatorio");
+        }
+        if (aviso.getDataInicio() == null) {
+            throw new BadRequestAlertException("Data início é obrigatória.", ENTITY_NAME, "datainicioobrigatoria");
+        }
+
+        Aviso existente = existenteOpt.get();
+        existente.setTitulo(aviso.getTitulo());
+        existente.setConteudo(aviso.getConteudo());
+        existente.setTipo(aviso.getTipo());
+        existente.setDataInicio(aviso.getDataInicio());
+        existente.setDataFim(aviso.getDataFim());
+        existente.setAtivo(aviso.getAtivo());
+        existente.setAtualizadoEm(Instant.now());
+        existente.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
+
+        Aviso result = avisoRepository.save(existente);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
             .body(result);

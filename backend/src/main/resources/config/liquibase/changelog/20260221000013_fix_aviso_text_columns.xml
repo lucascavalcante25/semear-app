@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Fix idempotente: garante colunas de texto essenciais em 'aviso' -->
+
+    <changeSet id="20260221000013-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="titulo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="titulo" type="varchar(255)" defaultValue="">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000013-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="conteudo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="conteudo" type="${clobType}" defaultValue="">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
+

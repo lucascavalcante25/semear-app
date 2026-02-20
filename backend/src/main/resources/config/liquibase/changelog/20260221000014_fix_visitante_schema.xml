@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Fix idempotente: em bancos onde a tabela 'visitante' já existe, mas foi criada com schema incompleto,
+      adiciona colunas faltantes sem quebrar o startup.
+    -->
+
+    <changeSet id="20260221000014-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="criado_em"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="criado_em" type="${datetimeType}" defaultValueComputed="${now}">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000014-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="criado_por"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="criado_por" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000014-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="atualizado_em"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="atualizado_em" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000014-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="atualizado_por"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="atualizado_por" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000014-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="telefone"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="telefone" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000014-6" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="como_conheceu"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="como_conheceu" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000014-7" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="observacoes"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="observacoes" type="${clobType}">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000014-8" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="visitante"/>
+                <not>
+                    <columnExists tableName="visitante" columnName="data_visita"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="data_visita" type="date" defaultValueComputed="CURRENT_DATE">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
+

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { listarAvisos, type AvisoApp } from "@/modules/announcements/api";
+import { Link } from "react-router-dom";
 
 interface ItemAvisoProps {
   aviso: AvisoApp;
@@ -90,9 +91,11 @@ export function Avisos() {
             </div>
             <CardTitle className="text-base">Avisos</CardTitle>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-            Ver todos
-            <ChevronRight className="h-3 w-3 ml-1" />
+          <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground">
+            <Link to="/avisos">
+              Ver todos
+              <ChevronRight className="h-3 w-3 ml-1" />
+            </Link>
           </Button>
         </div>
       </CardHeader>

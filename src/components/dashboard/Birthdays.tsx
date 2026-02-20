@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { listarAniversariantes } from "@/modules/members/birthdays";
+import { Link } from "react-router-dom";
 
 type Aniversario = {
   id: string;
@@ -107,9 +108,11 @@ export function Aniversariantes() {
             </div>
             <CardTitle className="text-base">Aniversariantes</CardTitle>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-            Ver todos
-            <ChevronRight className="h-3 w-3 ml-1" />
+          <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground">
+            <Link to="/membros">
+              Ver todos
+              <ChevronRight className="h-3 w-3 ml-1" />
+            </Link>
           </Button>
         </div>
       </CardHeader>

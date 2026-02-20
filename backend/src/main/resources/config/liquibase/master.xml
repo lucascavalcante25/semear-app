@@ -27,7 +27,10 @@
     <include file="config/liquibase/changelog/20260209173859_added_entity_CapituloBibliaCache.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
     <include file="config/liquibase/changelog/20260221000010_added_entity_Aviso.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000012_fix_aviso_schema.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000013_fix_aviso_text_columns.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260221000011_added_entity_Visitante.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000014_fix_visitante_schema.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260221000020_user_birth_date.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260221000021_user_birth_date_fix.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173557_added_entity_constraints_PreCadastro.xml" relativeToChangelogFile="false"/>

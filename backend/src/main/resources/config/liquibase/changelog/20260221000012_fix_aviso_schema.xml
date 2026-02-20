@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+      Fix idempotente: em bancos onde a tabela 'aviso' já existe, mas foi criada com schema incompleto,
+      adiciona colunas faltantes sem quebrar o startup.
+    -->
+
+    <changeSet id="20260221000012-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="ativo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="ativo" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000012-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="criado_em"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="criado_em" type="${datetimeType}" defaultValueComputed="${now}">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000012-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="criado_por"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="criado_por" type="varchar(255)" defaultValue="system">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000012-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="atualizado_em"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="atualizado_em" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000012-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="atualizado_por"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="atualizado_por" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000012-6" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="tipo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="tipo" type="varchar(50)" defaultValue="NORMAL">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000012-7" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="data_inicio"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="data_inicio" type="date" defaultValueComputed="CURRENT_DATE">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260221000012-8" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="aviso"/>
+                <not>
+                    <columnExists tableName="aviso" columnName="data_fim"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="aviso">
+            <column name="data_fim" type="date">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
+
