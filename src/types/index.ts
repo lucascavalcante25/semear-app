@@ -59,10 +59,10 @@ export interface Louvor {
   artist: string;
   key: string; // Tonality
   tempo?: string;
-  type: "worship" | "jubilee" | "communion" | "offering";
-  lyricsUrl?: string;
+  type: "jubilo" | "adoracao" | "ceia";
   chordsUrl?: string; // PDF URL
   youtubeUrl?: string;
+  hasCifra?: boolean;
   isActive: boolean;
   notes?: string;
   createdAt: Date;
@@ -71,12 +71,10 @@ export interface Louvor {
 
 export interface GrupoLouvor {
   id: string;
+  idNum: number;
   name: string;
-  date: Date;
-  praises: string[]; // Lista de IDs de louvores
-  order: number;
-  createdAt: Date;
-  createdBy: string;
+  ordem: number;
+  louvorIds: string[]; // IDs dos louvores na ordem do grupo
 }
 
 // ============ Financeiro ============

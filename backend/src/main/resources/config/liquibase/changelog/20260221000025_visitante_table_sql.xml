@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Garante tabela visitante via SQL nativo - idempotente para PostgreSQL -->
+    <changeSet id="20260221000025-1" author="semear">
+        <sql dbms="postgresql">
+            CREATE TABLE IF NOT EXISTS visitante (
+                id BIGINT NOT NULL PRIMARY KEY,
+                nome VARCHAR(255) NOT NULL,
+                telefone VARCHAR(255),
+                data_visita DATE NOT NULL,
+                como_conheceu VARCHAR(255),
+                observacoes TEXT,
+                criado_em TIMESTAMP NOT NULL,
+                criado_por VARCHAR(255),
+                atualizado_em TIMESTAMP,
+                atualizado_por VARCHAR(255)
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

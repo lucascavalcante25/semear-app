@@ -1,4 +1,5 @@
 import { Bell, Menu, LogOut, User, Moon, Sun } from "lucide-react";
+import { PixOfertaCompacto } from "@/components/pix/PixOferta";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -7,6 +8,11 @@ import { MenuMobile } from "./MobileMenu";
 import { usarEhMobile } from "@/hooks/use-mobile";
 import { listarPreCadastrosParaAprovacao } from "@/modules/auth/preCadastro";
 import {
+  listarNotificacoesNaoVistas,
+  marcarNotificacaoComoVista,
+  type NotificacaoItem,
+} from "@/modules/notifications/api";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -14,9 +20,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { ROLE_LABELS } from "@/auth/permissions";
+import { useAvatarUrlCurrentUser } from "@/hooks/use-avatar-url";
+import { ROLE_LABELS, canAccess } from "@/auth/permissions";
 import { Link, useNavigate } from "react-router-dom";
 import { usarTema } from "@/contexts/ThemeContext";
 
@@ -26,7 +33,9 @@ export function Cabecalho() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [pendentesCount, setPendentesCount] = useState(0);
+  const [notificacoes, setNotificacoes] = useState<NotificacaoItem[]>([]);
   const { user, logout } = usarAutenticacao();
+  const avatarUrl = useAvatarUrlCurrentUser();
 
   useEffect(() => {
     if (user?.role !== "admin") return;
@@ -40,6 +49,19 @@ export function Cabecalho() {
     };
     void carregar();
   }, [user?.role, location.pathname]);
+
+  useEffect(() => {
+    const carregar = async () => {
+      try {
+        const lista = await listarNotificacoesNaoVistas();
+        setNotificacoes(lista);
+      } catch {
+        setNotificacoes([]);
+      }
+    };
+    void carregar();
+  }, [location.pathname]);
+
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
   const userInitials = user?.name
@@ -91,38 +113,58 @@ export function Cabecalho() {
         {/* Right Actions */}
         <div className="flex-1">
           <div className="container flex h-14 md:h-16 items-center justify-end gap-1">
+          <PixOfertaCompacto />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon-sm" className="relative">
                 <Bell className="h-5 w-5" />
-                {user?.role === "admin" && pendentesCount > 0 && (
+                {((user?.role === "admin" && pendentesCount > 0) || notificacoes.length > 0) && (
                   <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
-                    {pendentesCount}
+                    {user?.role === "admin" ? pendentesCount + notificacoes.length : notificacoes.length}
                   </span>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuContent align="end" className="w-72 max-h-80 overflow-y-auto">
               <DropdownMenuLabel>Notificações</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {user?.role === "admin" ? (
+              {user?.role === "admin" && pendentesCount > 0 && (
                 <DropdownMenuItem
                   className="flex flex-col items-start gap-1 cursor-pointer"
                   onClick={() => navigate("/aprovar-pre-cadastros")}
                 >
                   <span className="text-sm font-medium">
-                    {pendentesCount > 0
-                      ? `${pendentesCount} pré-cadastro(s) pendente(s)`
-                      : "Aprovar pré-cadastros"}
+                    {pendentesCount} pré-cadastro(s) pendente(s)
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {pendentesCount > 0
-                      ? "Clique para aprovar ou rejeitar"
-                      : "Ver solicitações pendentes"}
+                    Clique para aprovar ou rejeitar
                   </span>
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem className="text-sm text-muted-foreground">
+              )}
+              {notificacoes.map((n) => (
+                <DropdownMenuItem
+                  key={`${n.tipo}-${n.referenciaId}`}
+                  className="flex flex-col items-start gap-1 cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      await marcarNotificacaoComoVista(n.tipo, n.referenciaId);
+                      setNotificacoes((prev) =>
+                        prev.filter(
+                          (x) => !(x.tipo === n.tipo && x.referenciaId === n.referenciaId)
+                        )
+                      );
+                      navigate(n.link);
+                    } catch {
+                      navigate(n.link);
+                    }
+                  }}
+                >
+                  <span className="text-sm font-medium">{n.titulo}</span>
+                  <span className="text-xs text-muted-foreground line-clamp-2">{n.descricao}</span>
+                </DropdownMenuItem>
+              ))}
+              {(user?.role !== "admin" || pendentesCount === 0) && notificacoes.length === 0 && (
+                <DropdownMenuItem className="text-sm text-muted-foreground" disabled>
                   Sem notificações no momento
                 </DropdownMenuItem>
               )}
@@ -130,9 +172,14 @@ export function Cabecalho() {
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="relative">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback>{userInitials ?? <User className="h-4 w-4" />}</AvatarFallback>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="relative rounded-full data-[state=open]:ring-2 data-[state=open]:ring-olive/30 data-[state=open]:ring-offset-2 data-[state=open]:shadow-md"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={avatarUrl ?? undefined} alt={user?.name} />
+                  <AvatarFallback>{userInitials ?? <User className="h-5 w-5" />}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -149,7 +196,11 @@ export function Cabecalho() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/mais")}>
+              <DropdownMenuItem
+                onClick={() =>
+                  navigate(canAccess(user, "/configuracoes") ? "/configuracoes" : "/mais")
+                }
+              >
                 Minha conta
               </DropdownMenuItem>
               <DropdownMenuItem onClick={toggleTheme}>

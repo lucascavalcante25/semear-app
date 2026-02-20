@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
+import { PixOfertaBloco } from "@/components/pix/PixOferta";
 
 const menuGroups = [
   {
@@ -95,7 +96,8 @@ export function BarraLateral() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-sidebar-border px-4 py-4 mt-4">
+        <div className="border-t border-sidebar-border px-4 py-4 mt-4 space-y-3">
+          <PixOfertaBloco compact />
           <div className="flex items-center gap-3 rounded-lg bg-olive-light/50 px-3 py-2">
             <Heart className="h-4 w-4 text-olive" />
             <div className="flex flex-col">

@@ -66,7 +66,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
  */
 export const ROLE_ALLOWED_MODULES: Record<Role, ModuleKey[]> = {
   admin: [...MODULES],
-  pastor: ["dashboard", "biblia", "devocionais", "louvores", "membros", "visitantes", "avisos"],
+  pastor: ["dashboard", "biblia", "devocionais", "louvores", "membros", "visitantes", "avisos", "configuracoes"],
   secretaria: [
     "dashboard",
     "biblia",
@@ -75,11 +75,12 @@ export const ROLE_ALLOWED_MODULES: Record<Role, ModuleKey[]> = {
     "membros",
     "visitantes",
     "avisos",
+    "configuracoes",
   ],
-  tesouraria: ["dashboard", "biblia", "devocionais", "louvores", "avisos", "financeiro"],
-  lider: ["dashboard", "biblia", "devocionais", "louvores", "membros", "visitantes"],
-  membro: ["dashboard", "biblia", "devocionais", "louvores"],
-  visitante: ["biblia"],
+  tesouraria: ["dashboard", "biblia", "devocionais", "louvores", "avisos", "financeiro", "configuracoes"],
+  lider: ["dashboard", "biblia", "devocionais", "louvores", "membros", "visitantes", "configuracoes"],
+  membro: ["dashboard", "biblia", "devocionais", "louvores", "configuracoes"],
+  visitante: ["biblia", "configuracoes"],
 };
 
 /**

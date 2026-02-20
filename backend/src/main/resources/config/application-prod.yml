@@ -82,8 +82,16 @@ server:
 #
 # Full reference is available at: https://www.jhipster.tech/common-application-properties/
 # ===================================================================
-
+# CORS: permitir frontend em produção. Defina SEMEAR_CORS_ORIGINS com a URL do frontend.
+# Ex: https://semear-app.vercel.app ou https://seu-dominio.com
 jhipster:
+  cors:
+    allowed-origins: ${SEMEAR_CORS_ORIGINS:}
+    allowed-methods: '*'
+    allowed-headers: '*'
+    exposed-headers: 'Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params'
+    allow-credentials: true
+    max-age: 1800
   http:
     cache: # Used by the CachingHttpHeadersFilter
       timeToLiveInDays: 1461

@@ -1,5 +1,6 @@
 package br.com.semear.service;
 
+import br.com.semear.domain.Endereco;
 import br.com.semear.domain.PreCadastro;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.PerfilAcesso;
@@ -59,6 +60,20 @@ public class PreCadastroService {
         String[] nomes = preCadastro.getNomeCompleto().trim().split("\\s+", 2);
         userDTO.setFirstName(nomes.length > 0 ? nomes[0] : preCadastro.getNomeCompleto());
         userDTO.setLastName(nomes.length > 1 ? nomes[1] : "");
+        userDTO.setPhone(preCadastro.getTelefone());
+        userDTO.setPhoneSecondary(preCadastro.getTelefoneSecundario());
+        userDTO.setPhoneEmergency(preCadastro.getTelefoneEmergencia());
+        userDTO.setNomeContatoEmergencia(preCadastro.getNomeContatoEmergencia());
+        if (preCadastro.getEndereco() != null) {
+            Endereco end = preCadastro.getEndereco();
+            userDTO.setLogradouro(end.getLogradouro());
+            userDTO.setNumero(end.getNumero());
+            userDTO.setComplemento(end.getComplemento());
+            userDTO.setBairro(end.getBairro());
+            userDTO.setCidade(end.getCidade());
+            userDTO.setEstado(end.getEstado());
+            userDTO.setCep(end.getCep());
+        }
         userDTO.setActivated(true);
         userDTO.setAuthorities(Set.of("ROLE_" + perfilAprovado.name()));
         if (modules != null && !modules.isEmpty()) {

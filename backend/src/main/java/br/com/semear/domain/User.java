@@ -86,6 +86,50 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
+    @Size(max = 50)
+    @Column(name = "phone", length = 50)
+    private String phone;
+
+    @Size(max = 50)
+    @Column(name = "phone_secondary", length = 50)
+    private String phoneSecondary;
+
+    @Size(max = 50)
+    @Column(name = "phone_emergency", length = 50)
+    private String phoneEmergency;
+
+    @Size(max = 255)
+    @Column(name = "nome_contato_emergencia", length = 255)
+    private String nomeContatoEmergencia;
+
+    @Size(max = 255)
+    @Column(name = "logradouro", length = 255)
+    private String logradouro;
+
+    @Size(max = 50)
+    @Column(name = "numero", length = 50)
+    private String numero;
+
+    @Size(max = 255)
+    @Column(name = "complemento", length = 255)
+    private String complemento;
+
+    @Size(max = 100)
+    @Column(name = "bairro", length = 100)
+    private String bairro;
+
+    @Size(max = 100)
+    @Column(name = "cidade", length = 100)
+    private String cidade;
+
+    @Size(max = 2)
+    @Column(name = "estado", length = 2)
+    private String estado;
+
+    @Size(max = 20)
+    @Column(name = "cep", length = 20)
+    private String cep;
+
     /**
      * Lista de módulos habilitados para o usuário (override granular), armazenada como CSV.
      * Ex.: "dashboard,biblia,devocionais"
@@ -199,6 +243,94 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getPhoneSecondary() {
+        return phoneSecondary;
+    }
+
+    public void setPhoneSecondary(String phoneSecondary) {
+        this.phoneSecondary = phoneSecondary;
+    }
+
+    public String getPhoneEmergency() {
+        return phoneEmergency;
+    }
+
+    public void setPhoneEmergency(String phoneEmergency) {
+        this.phoneEmergency = phoneEmergency;
+    }
+
+    public String getNomeContatoEmergencia() {
+        return nomeContatoEmergencia;
+    }
+
+    public void setNomeContatoEmergencia(String nomeContatoEmergencia) {
+        this.nomeContatoEmergencia = nomeContatoEmergencia;
+    }
+
+    public String getLogradouro() {
+        return logradouro;
+    }
+
+    public void setLogradouro(String logradouro) {
+        this.logradouro = logradouro;
+    }
+
+    public String getNumero() {
+        return numero;
+    }
+
+    public void setNumero(String numero) {
+        this.numero = numero;
+    }
+
+    public String getComplemento() {
+        return complemento;
+    }
+
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
+    }
+
+    public String getBairro() {
+        return bairro;
+    }
+
+    public void setBairro(String bairro) {
+        this.bairro = bairro;
+    }
+
+    public String getCidade() {
+        return cidade;
+    }
+
+    public void setCidade(String cidade) {
+        this.cidade = cidade;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 
     public String getModules() {

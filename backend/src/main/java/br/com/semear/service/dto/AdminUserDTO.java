@@ -37,6 +37,39 @@ public class AdminUserDTO implements Serializable {
     @Size(max = 256)
     private String imageUrl;
 
+    @Size(max = 50)
+    private String phone;
+
+    @Size(max = 50)
+    private String phoneSecondary;
+
+    @Size(max = 50)
+    private String phoneEmergency;
+
+    @Size(max = 255)
+    private String nomeContatoEmergencia;
+
+    @Size(max = 255)
+    private String logradouro;
+
+    @Size(max = 50)
+    private String numero;
+
+    @Size(max = 255)
+    private String complemento;
+
+    @Size(max = 100)
+    private String bairro;
+
+    @Size(max = 100)
+    private String cidade;
+
+    @Size(max = 2)
+    private String estado;
+
+    @Size(max = 20)
+    private String cep;
+
     private boolean activated = false;
 
     @Size(min = 2, max = 10)
@@ -66,6 +99,17 @@ public class AdminUserDTO implements Serializable {
         this.email = user.getEmail();
         this.activated = user.isActivated();
         this.imageUrl = user.getImageUrl();
+        this.phone = user.getPhone();
+        this.phoneSecondary = user.getPhoneSecondary();
+        this.phoneEmergency = user.getPhoneEmergency();
+        this.nomeContatoEmergencia = user.getNomeContatoEmergencia();
+        this.logradouro = user.getLogradouro();
+        this.numero = user.getNumero();
+        this.complemento = user.getComplemento();
+        this.bairro = user.getBairro();
+        this.cidade = user.getCidade();
+        this.estado = user.getEstado();
+        this.cep = user.getCep();
         this.langKey = user.getLangKey();
         this.createdBy = user.getCreatedBy();
         this.createdDate = user.getCreatedDate();
@@ -126,6 +170,94 @@ public class AdminUserDTO implements Serializable {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getPhoneSecondary() {
+        return phoneSecondary;
+    }
+
+    public void setPhoneSecondary(String phoneSecondary) {
+        this.phoneSecondary = phoneSecondary;
+    }
+
+    public String getPhoneEmergency() {
+        return phoneEmergency;
+    }
+
+    public void setPhoneEmergency(String phoneEmergency) {
+        this.phoneEmergency = phoneEmergency;
+    }
+
+    public String getNomeContatoEmergencia() {
+        return nomeContatoEmergencia;
+    }
+
+    public void setNomeContatoEmergencia(String nomeContatoEmergencia) {
+        this.nomeContatoEmergencia = nomeContatoEmergencia;
+    }
+
+    public String getLogradouro() {
+        return logradouro;
+    }
+
+    public void setLogradouro(String logradouro) {
+        this.logradouro = logradouro;
+    }
+
+    public String getNumero() {
+        return numero;
+    }
+
+    public void setNumero(String numero) {
+        this.numero = numero;
+    }
+
+    public String getComplemento() {
+        return complemento;
+    }
+
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
+    }
+
+    public String getBairro() {
+        return bairro;
+    }
+
+    public void setBairro(String bairro) {
+        this.bairro = bairro;
+    }
+
+    public String getCidade() {
+        return cidade;
+    }
+
+    public void setCidade(String cidade) {
+        this.cidade = cidade;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 
     public boolean isActivated() {

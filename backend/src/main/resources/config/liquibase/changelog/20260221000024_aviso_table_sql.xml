@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Garante tabela aviso via SQL nativo - idempotente para PostgreSQL -->
+    <changeSet id="20260221000024-1" author="semear">
+        <sql dbms="postgresql">
+            CREATE TABLE IF NOT EXISTS aviso (
+                id BIGINT NOT NULL PRIMARY KEY,
+                titulo VARCHAR(255) NOT NULL,
+                conteudo TEXT NOT NULL,
+                tipo VARCHAR(50) NOT NULL,
+                data_inicio DATE NOT NULL,
+                data_fim DATE,
+                ativo BOOLEAN NOT NULL,
+                criado_em TIMESTAMP NOT NULL,
+                criado_por VARCHAR(255) NOT NULL,
+                atualizado_em TIMESTAMP,
+                atualizado_por VARCHAR(255)
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

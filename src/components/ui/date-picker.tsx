@@ -63,17 +63,19 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start text-left font-normal h-10",
+            "w-full justify-start text-left font-normal h-10 min-w-0 overflow-hidden",
             !date && "text-muted-foreground",
             className
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? (
-            format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-          ) : (
-            <span>{placeholder}</span>
-          )}
+          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+          <span className="truncate">
+            {date ? (
+              format(date, "dd/MM/yyyy", { locale: ptBR })
+            ) : (
+              placeholder
+            )}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

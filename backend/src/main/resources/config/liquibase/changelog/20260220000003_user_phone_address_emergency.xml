@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260220000003-1" author="semear">
+        <addColumn tableName="jhi_user">
+            <column name="phone" type="varchar(50)"/>
+            <column name="phone_secondary" type="varchar(50)"/>
+            <column name="phone_emergency" type="varchar(50)"/>
+            <column name="nome_contato_emergencia" type="varchar(255)"/>
+            <column name="logradouro" type="varchar(255)"/>
+            <column name="numero" type="varchar(50)"/>
+            <column name="complemento" type="varchar(255)"/>
+            <column name="bairro" type="varchar(100)"/>
+            <column name="cidade" type="varchar(100)"/>
+            <column name="estado" type="varchar(2)"/>
+            <column name="cep" type="varchar(20)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

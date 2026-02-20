@@ -10,6 +10,10 @@ import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.AdminUserDTO;
 import br.com.semear.web.rest.errors.EmailAlreadyUsedException;
 import br.com.semear.service.dto.UserDTO;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -21,8 +25,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import tech.jhipster.security.RandomUtil;
 
 /**
@@ -41,6 +47,13 @@ public class UserService {
     private final AuthorityRepository authorityRepository;
 
     private final CacheManager cacheManager;
+
+    @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
+    private String uploadDir;
+
+    private static final String[] ALLOWED_AVATAR_TYPES = {
+        "image/jpeg", "image/png", "image/gif", "image/webp"
+    };
 
     public UserService(
         UserRepository userRepository,
@@ -204,6 +217,17 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(plainPassword));
         user.setLangKey(Constants.DEFAULT_LANGUAGE);
         user.setActivated(true);
+        user.setPhone(userDTO.getPhone());
+        user.setPhoneSecondary(userDTO.getPhoneSecondary());
+        user.setPhoneEmergency(userDTO.getPhoneEmergency());
+        user.setNomeContatoEmergencia(userDTO.getNomeContatoEmergencia());
+        user.setLogradouro(userDTO.getLogradouro());
+        user.setNumero(userDTO.getNumero());
+        user.setComplemento(userDTO.getComplemento());
+        user.setBairro(userDTO.getBairro());
+        user.setCidade(userDTO.getCidade());
+        user.setEstado(userDTO.getEstado());
+        user.setCep(userDTO.getCep());
         if (userDTO.getModules() != null && !userDTO.getModules().isEmpty()) {
             user.setModules(String.join(",", userDTO.getModules()));
         }
@@ -287,7 +311,24 @@ public class UserService {
      * @param langKey   language key.
      * @param imageUrl  image URL of user.
      */
-    public void updateUser(String firstName, String lastName, String email, String langKey, String imageUrl) {
+    public void updateUser(
+        String firstName,
+        String lastName,
+        String email,
+        String langKey,
+        String imageUrl,
+        String phone,
+        String phoneSecondary,
+        String phoneEmergency,
+        String nomeContatoEmergencia,
+        String logradouro,
+        String numero,
+        String complemento,
+        String bairro,
+        String cidade,
+        String estado,
+        String cep
+    ) {
         SecurityUtils.getCurrentUserLogin()
             .flatMap(userRepository::findOneByLogin)
             .ifPresent(user -> {
@@ -298,10 +339,99 @@ public class UserService {
                 }
                 user.setLangKey(langKey);
                 user.setImageUrl(imageUrl);
+                user.setPhone(phone);
+                user.setPhoneSecondary(phoneSecondary);
+                user.setPhoneEmergency(phoneEmergency);
+                user.setNomeContatoEmergencia(nomeContatoEmergencia);
+                user.setLogradouro(logradouro);
+                user.setNumero(numero);
+                user.setComplemento(complemento);
+                user.setBairro(bairro);
+                user.setCidade(cidade);
+                user.setEstado(estado);
+                user.setCep(cep);
                 userRepository.save(user);
                 this.clearUserCaches(user);
                 LOG.debug("Changed Information for User: {}", user);
             });
+    }
+
+    public Optional<AdminUserDTO> updateAvatar(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return Optional.empty();
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !isAllowedAvatarType(contentType)) {
+            throw new IllegalArgumentException("Tipo de arquivo não permitido. Use JPEG, PNG, GIF ou WebP.");
+        }
+        return SecurityUtils.getCurrentUserLogin()
+            .flatMap(userRepository::findOneByLogin)
+            .map(user -> {
+                try {
+                    String ext = getImageExtension(contentType);
+                    String filename = "user_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
+                    String storedName = "avatars/" + filename;
+                    Path basePath = Paths.get(uploadDir, "avatars").toAbsolutePath().normalize();
+                    Files.createDirectories(basePath);
+                    Path targetPath = basePath.resolve(filename);
+                    if (user.getImageUrl() != null && !user.getImageUrl().isBlank()) {
+                        Path oldPath = Paths.get(uploadDir, user.getImageUrl()).toAbsolutePath().normalize();
+                        if (Files.exists(oldPath)) {
+                            Files.delete(oldPath);
+                        }
+                    }
+                    file.transferTo(targetPath.toFile());
+                    user.setImageUrl(storedName);
+                    userRepository.save(user);
+                    this.clearUserCaches(user);
+                    LOG.debug("User avatar updated: {}", user.getLogin());
+                    return new AdminUserDTO(user);
+                } catch (IOException e) {
+                    LOG.error("Erro ao salvar avatar", e);
+                    throw new RuntimeException("Erro ao salvar avatar: " + e.getMessage());
+                }
+            });
+    }
+
+    public Optional<byte[]> getAvatarBytes() {
+        return SecurityUtils.getCurrentUserLogin()
+            .flatMap(userRepository::findOneByLogin)
+            .flatMap(this::readAvatarBytes);
+    }
+
+    public Optional<byte[]> getAvatarBytesByUserId(Long userId) {
+        return userRepository.findById(userId)
+            .filter(u -> u.getImageUrl() != null && !u.getImageUrl().isBlank())
+            .flatMap(this::readAvatarBytes);
+    }
+
+    private Optional<byte[]> readAvatarBytes(User user) {
+        try {
+            Path targetPath = Paths.get(uploadDir, user.getImageUrl()).toAbsolutePath().normalize();
+            if (Files.exists(targetPath)) {
+                return Optional.of(Files.readAllBytes(targetPath));
+            }
+        } catch (IOException e) {
+            LOG.error("Erro ao ler avatar", e);
+        }
+        return Optional.empty();
+    }
+
+    private static boolean isAllowedAvatarType(String contentType) {
+        for (String allowed : ALLOWED_AVATAR_TYPES) {
+            if (contentType.startsWith(allowed) || contentType.equals(allowed)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String getImageExtension(String contentType) {
+        if (contentType == null) return ".jpg";
+        if (contentType.contains("png")) return ".png";
+        if (contentType.contains("gif")) return ".gif";
+        if (contentType.contains("webp")) return ".webp";
+        return ".jpg";
     }
 
     @Transactional

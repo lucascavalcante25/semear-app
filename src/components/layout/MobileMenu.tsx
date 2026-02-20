@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
+import { PixOfertaBloco } from "@/components/pix/PixOferta";
 
 interface MenuMobileProps {
   onClose: () => void;
@@ -89,7 +90,8 @@ export function MenuMobile({ onClose }: MenuMobileProps) {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-4 space-y-3">
+        <PixOfertaBloco />
         <div className="flex items-center gap-3 rounded-lg bg-olive-light/50 px-3 py-3">
           <Heart className="h-5 w-5 text-olive" />
           <div className="flex flex-col">

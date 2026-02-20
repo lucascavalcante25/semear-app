@@ -37,13 +37,11 @@ public class Devocional implements Serializable {
     private String versiculoBase;
 
     @NotNull
-    @Lob
-    @Column(name = "texto_versiculo", nullable = false)
+    @Column(name = "texto_versiculo", nullable = false, columnDefinition = "text")
     private String textoVersiculo;
 
     @NotNull
-    @Lob
-    @Column(name = "conteudo", nullable = false)
+    @Column(name = "conteudo", nullable = false, columnDefinition = "text")
     private String conteudo;
 
     @NotNull

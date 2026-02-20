@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Garante coluna modules via SQL nativo - idempotente para PostgreSQL -->
+    <changeSet id="20260221000023-1" author="semear">
+        <sql dbms="postgresql">
+            ALTER TABLE jhi_user ADD COLUMN IF NOT EXISTS modules VARCHAR(2000) NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

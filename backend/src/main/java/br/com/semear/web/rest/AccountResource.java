@@ -15,8 +15,12 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * REST controller for managing the current user's account.
@@ -99,6 +103,36 @@ public class AccountResource {
      * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is already used.
      * @throws RuntimeException {@code 500 (Internal Server Error)} if the user login wasn't found.
      */
+    /**
+     * {@code POST  /account/avatar} : upload avatar for the current user.
+     *
+     * @param file the avatar image file (JPEG, PNG, GIF, WebP).
+     * @return the updated user.
+     */
+    @PostMapping(value = "/account/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<AdminUserDTO> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        return userService
+            .updateAvatar(file)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.badRequest().build());
+    }
+
+    /**
+     * {@code GET  /account/avatar} : get the current user's avatar image.
+     *
+     * @return the avatar image bytes or 404 if not found.
+     */
+    @GetMapping("/account/avatar")
+    public ResponseEntity<byte[]> getAvatar() {
+        return userService
+            .getAvatarBytes()
+            .map(bytes -> ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")
+                .body(bytes))
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/account")
     public void saveAccount(@Valid @RequestBody AdminUserDTO userDTO) {
         String userLogin = SecurityUtils.getCurrentUserLogin()
@@ -116,7 +150,18 @@ public class AccountResource {
             userDTO.getLastName(),
             userDTO.getEmail(),
             userDTO.getLangKey(),
-            userDTO.getImageUrl()
+            userDTO.getImageUrl(),
+            userDTO.getPhone(),
+            userDTO.getPhoneSecondary(),
+            userDTO.getPhoneEmergency(),
+            userDTO.getNomeContatoEmergencia(),
+            userDTO.getLogradouro(),
+            userDTO.getNumero(),
+            userDTO.getComplemento(),
+            userDTO.getBairro(),
+            userDTO.getCidade(),
+            userDTO.getEstado(),
+            userDTO.getCep()
         );
     }
 

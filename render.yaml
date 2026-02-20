@@ -1,0 +1,27 @@
+# Render Blueprint - Semear Backend
+# Documentação: https://render.com/docs/blueprint-spec
+# Use este arquivo para deploy via "New → Blueprint" no Render
+
+services:
+  - type: web
+    name: semear-api
+    runtime: native
+    region: oregon  # ou sao para São Paulo quando disponível
+
+    # Raiz do backend
+    rootDir: backend
+
+    buildCommand: ./mvnw -B -Pprod clean package -DskipTests
+    startCommand: java -Djava.security.egd=file:/dev/./urandom -jar target/semear-*.jar --spring.profiles.active=prod
+
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SEMEAR_DB_URL
+        sync: false  # Definir manualmente no dashboard
+      - key: SEMEAR_DB_USER
+        sync: false
+      - key: SEMEAR_DB_PASSWORD
+        sync: false
+      - key: SEMEAR_CORS_ORIGINS
+        sync: false  # URL do frontend (ex: https://semear-app.vercel.app)

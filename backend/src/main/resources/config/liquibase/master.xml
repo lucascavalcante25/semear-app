@@ -33,6 +33,15 @@
     <include file="config/liquibase/changelog/20260221000014_fix_visitante_schema.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260221000020_user_birth_date.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260221000021_user_birth_date_fix.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000022_user_birth_date_sql.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000023_user_modules_sql.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000024_aviso_table_sql.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000025_visitante_table_sql.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000026_fix_devocional_text_columns.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000030_added_entity_Louvor.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000031_add_cifra_url_louvor.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000032_add_cifra_conteudo_louvor.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260221000040_added_entity_GrupoLouvor.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173557_added_entity_constraints_PreCadastro.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173851_added_entity_constraints_FavoritoBiblia.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260209173852_added_entity_constraints_DestaqueBiblia.xml" relativeToChangelogFile="false"/>
@@ -45,6 +54,9 @@
     <include file="config/liquibase/changelog/20260210000001_update_admin_password.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260220000000_pre_cadastro_telefones_opcionais.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260220000001_admin_login_cpf.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260220000002_usuario_notificacao_vista.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260220000003_user_phone_address_emergency.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260220000004_added_entity_Lancamento.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260219000100_pre_cadastro_observacoes_text.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260219000110_user_modules.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->

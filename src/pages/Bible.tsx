@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -264,6 +265,7 @@ function CartaoLivro({ book, onClick }: { book: LivroBiblia; onClick: () => void
 }
 
 export default function Biblia() {
+  const [searchParams] = useSearchParams();
   const { user } = usarAutenticacao();
   const userId = obterIdUsuario(user?.id);
   const [buscaLivro, setBuscaLivro] = useState("");
@@ -299,7 +301,7 @@ export default function Biblia() {
   const [shareIncludeChurch, setShareIncludeChurch] = useState(true);
   const [mostrarConfiguracoes, setMostrarConfiguracoes] = useState(false);
   const [abaPainelEstudo, setAbaPainelEstudo] = useState("favorites");
-  const [painelEstudoAberto, setPainelEstudoAberto] = useState(true);
+  const [painelEstudoAberto, setPainelEstudoAberto] = useState(false);
   const painelEstudoRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -394,17 +396,16 @@ export default function Biblia() {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const bookId = params.get("bookId");
-    const chapterParam = params.get("chapter");
+    const bookId = searchParams.get("bookId");
+    const chapterParam = searchParams.get("chapter");
     if (!bookId || !chapterParam) {
       return;
     }
     const book = livrosBiblia.find((item) => item.id === bookId);
     const chapter = Number(chapterParam);
-    const verseStart = Number(params.get("verseStart") ?? "1");
-    const verseEnd = Number(params.get("verseEnd") ?? verseStart);
-    const version = params.get("version");
+    const verseStart = Number(searchParams.get("verseStart") ?? "1");
+    const verseEnd = Number(searchParams.get("verseEnd") ?? verseStart);
+    const version = searchParams.get("version");
     if (book && chapter) {
       setSelectedBook(book);
       setSelectedChapter(chapter);
@@ -415,7 +416,7 @@ export default function Biblia() {
     if (version) {
       setSelectedVersion(version);
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     setFavorites(obterFavoritos(userId));
@@ -494,6 +495,19 @@ export default function Biblia() {
 
     return () => controller.abort();
   }, [selectedBook, selectedChapter, selectedVersion]);
+
+  // Rola até o versículo quando vem de link (ex: Jeremias 29:11)
+  useEffect(() => {
+    const verseFromUrl = searchParams.get("verseStart");
+    if (!chapterData || versiculoAtivo == null || !verseFromUrl) return;
+    const el = document.querySelector(`[data-verse="${versiculoAtivo}"]`);
+    if (el) {
+      const timer = setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [chapterData, versiculoAtivo, searchParams]);
 
   useEffect(() => {
     if (!selectedPlanId) {
@@ -972,6 +986,7 @@ export default function Biblia() {
                       return (
                     <div
                       key={verse.verse}
+                      data-verse={verse.verse}
                       className={cn(
                         "rounded-md p-2 transition-colors",
                         ativo && "bg-muted/40",

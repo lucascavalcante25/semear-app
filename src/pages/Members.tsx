@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAvatarUrlByUserId } from "@/hooks/use-avatar-url";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -94,12 +95,13 @@ interface CartaoMembroProps {
 }
 
 function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
+  const avatarUrl = useAvatarUrlByUserId(membro.idNum ?? membro.id);
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={membro.imageUrl} alt={membro.name} />
+            <AvatarImage src={avatarUrl ?? undefined} alt={membro.name} />
             <AvatarFallback className="bg-olive-light text-olive-dark font-medium">
               {obterIniciais(membro.name)}
             </AvatarFallback>

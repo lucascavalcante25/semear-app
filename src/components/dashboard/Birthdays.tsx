@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { listarAniversariantes } from "@/modules/members/birthdays";
+import { useAvatarUrlByUserId } from "@/hooks/use-avatar-url";
 import { Link } from "react-router-dom";
 
 type Aniversario = {
@@ -42,6 +43,7 @@ interface ItemAniversarioProps {
 function ItemAniversario({ aniversario }: ItemAniversarioProps) {
   const diasAte = obterDiasAte(aniversario.date);
   const ehHoje = diasAte === 0;
+  const avatarUrl = useAvatarUrlByUserId(aniversario.id);
 
   return (
     <div
@@ -51,7 +53,7 @@ function ItemAniversario({ aniversario }: ItemAniversarioProps) {
       )}
     >
       <Avatar className="h-10 w-10">
-        <AvatarImage src={aniversario.photoUrl} alt={aniversario.name} />
+        <AvatarImage src={avatarUrl ?? undefined} alt={aniversario.name} />
         <AvatarFallback className={cn(
           "text-xs font-medium",
           ehHoje ? "bg-gold text-gold-foreground" : "bg-olive-light text-olive-dark"

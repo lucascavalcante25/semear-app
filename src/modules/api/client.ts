@@ -58,7 +58,9 @@ export const requisicaoApi = async <T>(path: string, options: OpcoesApi = {}): P
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
 
-  if (!(options.body instanceof FormData)) {
+  if (options.body instanceof FormData) {
+    headers.delete("Content-Type");
+  } else {
     headers.set("Content-Type", "application/json");
   }
 

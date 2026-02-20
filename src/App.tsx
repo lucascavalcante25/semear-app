@@ -17,6 +17,7 @@ import Visitantes from "./pages/Visitors";
 import Avisos from "./pages/Announcements";
 import Devocionais from "./pages/Devotionals";
 import Mais from "./pages/More";
+import Configuracoes from "./pages/Settings";
 import Entrar from "./pages/Login";
 import PreCadastro from "./pages/PreCadastro";
 import AprovarPreCadastros from "./pages/AprovarPreCadastros";
@@ -113,6 +114,14 @@ const App = () => (
                 element={
                   <RequerAutenticacao>
                     <Mais />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/configuracoes"
+                element={
+                  <RequerAutenticacao>
+                    <Configuracoes />
                   </RequerAutenticacao>
                 }
               />

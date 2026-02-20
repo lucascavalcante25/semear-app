@@ -10,6 +10,12 @@
         Added the entity Devocional.
     -->
     <changeSet id="20260209173850-1" author="jhipster">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="devocional"/>
+            </not>
+        </preConditions>
         <createTable tableName="devocional">
             <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>

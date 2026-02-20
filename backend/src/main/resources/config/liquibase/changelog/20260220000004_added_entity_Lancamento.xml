@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260220000004-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="lancamento"/>
+            </not>
+        </preConditions>
+        <createTable tableName="lancamento">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tipo" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="categoria" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valor" type="decimal(19,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_lancamento" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="metodo_pagamento" type="varchar(30)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="referencia" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="observacoes" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="criado_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_por" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="atualizado_em" type="timestamp">
+                <constraints nullable="true"/>
+            </column>
+            <column name="atualizado_por" type="varchar(255)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

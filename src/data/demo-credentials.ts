@@ -11,7 +11,7 @@ export const DEMO_CREDENTIALS: DemoCredential[] = [
     name: "Administração",
     email: "11111111111",
     role: "admin",
-    password: "admin123",
+    password: "admin@SemearApp",
   },
   {
     name: "Pastor",

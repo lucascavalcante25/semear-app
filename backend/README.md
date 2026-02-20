@@ -27,12 +27,32 @@ To start your application in the dev profile, run:
 
 ## Configuracao local (Windows)
 
-Se voce possui o Java 17 instalado em `C:\Program Files\Java\jdk-17.0.10`, defina o `JAVA_HOME` apenas na sessao do terminal (fica dinamico para cada PC):
+**IMPORTANTE:** O projeto requer Java 17. O Java 8 (padrão em muitos PCs) causa erro.
+
+### Opção 1: Script automático (recomendado)
+
+No terminal integrado, na pasta do projeto:
 
 ```powershell
-$env:JAVA_HOME="C:\Program Files\Java\jdk-17.0.10"
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
+cd backend
+.\run-backend.ps1
 ```
+
+### Opção 2: Definir JAVA_HOME manualmente
+
+Se o Java 17 está em `C:\Users\009869c9\Documents\Aplicativos\Java\jdk-17`:
+
+```powershell
+$env:JAVA_HOME="C:\Users\009869c9\Documents\Aplicativos\Java\jdk-17"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+cd backend
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
+### Opção 3: Pelo Cursor/VS Code
+
+1. Pressione `F5` ou vá em Run > Start Debugging
+2. Selecione **"Semear Backend"** na lista de configurações
 
 O banco pode ser configurado via variaveis de ambiente (com padroes para `semearDB`):
 

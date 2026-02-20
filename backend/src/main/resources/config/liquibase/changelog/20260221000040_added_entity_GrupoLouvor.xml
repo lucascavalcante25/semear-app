@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260221000040-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="grupo_louvor"/>
+            </not>
+        </preConditions>
+        <createTable tableName="grupo_louvor">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ordem" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="20260221000040-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="grupo_louvor_item"/>
+            </not>
+        </preConditions>
+        <createTable tableName="grupo_louvor_item">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="grupo_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="louvor_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ordem" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="20260221000040-3" author="semear">
+        <addForeignKeyConstraint baseTableName="grupo_louvor_item" baseColumnNames="grupo_id"
+            constraintName="fk_grupo_louvor_item_grupo" referencedTableName="grupo_louvor" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260221000040-4" author="semear">
+        <addForeignKeyConstraint baseTableName="grupo_louvor_item" baseColumnNames="louvor_id"
+            constraintName="fk_grupo_louvor_item_louvor" referencedTableName="louvor" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260221000040-5" author="semear">
+        <addUniqueConstraint tableName="grupo_louvor_item" columnNames="grupo_id, louvor_id" constraintName="ux_grupo_louvor_item_grupo_louvor"/>
+    </changeSet>
+
+</databaseChangeLog>

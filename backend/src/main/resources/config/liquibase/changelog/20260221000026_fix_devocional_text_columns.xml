@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Corrige colunas texto_versiculo e conteudo: em PostgreSQL "clob" pode virar oid, causando erro ao ler como String.
+         Converte OID para TEXT (conteúdo em large object) ou mantém se já for TEXT. -->
+    <changeSet id="20260221000026-1" author="semear">
+        <sql dbms="postgresql" splitStatements="false">
+            DO $$
+            DECLARE
+                col_type text;
+            BEGIN
+                SELECT t.typname INTO col_type
+                FROM pg_attribute a
+                JOIN pg_type t ON t.oid = a.atttypid
+                WHERE a.attrelid = 'devocional'::regclass AND a.attname = 'texto_versiculo' AND a.attnum > 0 AND NOT a.attisdropped;
+                IF col_type = 'oid' THEN
+                    ALTER TABLE devocional ADD COLUMN IF NOT EXISTS texto_versiculo_new TEXT;
+                    UPDATE devocional SET texto_versiculo_new = COALESCE(convert_from(lo_get(texto_versiculo::bigint), 'UTF8'), '') WHERE texto_versiculo IS NOT NULL AND texto_versiculo::bigint != 0;
+                    UPDATE devocional SET texto_versiculo_new = '' WHERE texto_versiculo_new IS NULL;
+                    ALTER TABLE devocional DROP COLUMN texto_versiculo;
+                    ALTER TABLE devocional RENAME COLUMN texto_versiculo_new TO texto_versiculo;
+                    ALTER TABLE devocional ALTER COLUMN texto_versiculo SET NOT NULL;
+                ELSIF col_type != 'text' THEN
+                    ALTER TABLE devocional ALTER COLUMN texto_versiculo TYPE TEXT USING texto_versiculo::text;
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260221000026-2" author="semear">
+        <sql dbms="postgresql" splitStatements="false">
+            DO $$
+            DECLARE
+                col_type text;
+            BEGIN
+                SELECT t.typname INTO col_type
+                FROM pg_attribute a
+                JOIN pg_type t ON t.oid = a.atttypid
+                WHERE a.attrelid = 'devocional'::regclass AND a.attname = 'conteudo' AND a.attnum > 0 AND NOT a.attisdropped;
+                IF col_type = 'oid' THEN
+                    ALTER TABLE devocional ADD COLUMN IF NOT EXISTS conteudo_new TEXT;
+                    UPDATE devocional SET conteudo_new = COALESCE(convert_from(lo_get(conteudo::bigint), 'UTF8'), '') WHERE conteudo IS NOT NULL AND conteudo::bigint != 0;
+                    UPDATE devocional SET conteudo_new = '' WHERE conteudo_new IS NULL;
+                    ALTER TABLE devocional DROP COLUMN conteudo;
+                    ALTER TABLE devocional RENAME COLUMN conteudo_new TO conteudo;
+                    ALTER TABLE devocional ALTER COLUMN conteudo SET NOT NULL;
+                ELSIF col_type != 'text' THEN
+                    ALTER TABLE devocional ALTER COLUMN conteudo TYPE TEXT USING conteudo::text;
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

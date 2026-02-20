@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260220000002-1" author="semear">
+        <createSequence sequenceName="seq_usuario_notificacao_vista" startValue="1" incrementBy="1"/>
+        <createTable tableName="usuario_notificacao_vista">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_usuario_notificacao_vista_user" references="jhi_user(id)"/>
+            </column>
+            <column name="tipo" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="referencia_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="visto_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="20260220000002-2" author="semear">
+        <createIndex indexName="idx_usuario_notificacao_vista_user_tipo_ref"
+                     tableName="usuario_notificacao_vista">
+            <column name="user_id"/>
+            <column name="tipo"/>
+            <column name="referencia_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260220000002-3" author="semear">
+        <addUniqueConstraint tableName="usuario_notificacao_vista"
+                             columnNames="user_id, tipo, referencia_id"
+                             constraintName="uk_usuario_notificacao_vista_user_tipo_ref"/>
+    </changeSet>
+</databaseChangeLog>

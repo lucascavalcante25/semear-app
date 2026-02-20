@@ -48,6 +48,8 @@ spring:
     enabled: true
     # Remove 'faker' if you do not want the sample data to be loaded automatically
     contexts: dev, faker
+    # Evita falha por checksum em ambiente dev quando changelogs evoluem
+    clear-checksums: true
   mail:
     host: localhost
     port: 25
@@ -111,4 +113,13 @@ jhipster:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
+# Diretório para upload de arquivos (cifras de louvores)
+# Usa caminho absoluto para evitar problemas com diretório de trabalho do Undertow
+semear:
+  upload-dir: ${user.home}/semear-app/uploads
+
 # application:
+application:
+  liquibase:
+    # Em dev, rode o Liquibase de forma síncrona para evitar corrida com seeders/CommandLineRunner
+    async-start: false

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260221000030-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="louvor"/>
+            </not>
+        </preConditions>
+        <createTable tableName="louvor">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="titulo" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="artista" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tonalidade" type="varchar(20)"/>
+            <column name="tempo" type="varchar(50)"/>
+            <column name="tipo" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="youtube_url" type="varchar(500)"/>
+            <column name="cifra_file_name" type="varchar(255)"/>
+            <column name="cifra_content_type" type="varchar(100)"/>
+            <column name="observacoes" type="text"/>
+            <column name="ativo" type="boolean" valueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${datetimeType}"/>
+            <column name="updated_at" type="${datetimeType}"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

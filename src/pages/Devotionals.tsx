@@ -493,7 +493,7 @@ export default function PaginaDevocionais() {
           { auth: true }
         );
         if (hoje) {
-          const data = new Date(hoje.dataPublicacao);
+          const data = new Date(`${hoje.dataPublicacao}T00:00:00`);
           setDevocional({
             titulo: hoje.titulo,
             mes: MESES[data.getMonth()],
