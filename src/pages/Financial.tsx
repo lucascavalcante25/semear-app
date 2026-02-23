@@ -35,6 +35,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usarAutenticacao } from "@/contexts/AuthContext";
+import { canWrite } from "@/auth/permissions";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   ChartConfig,
@@ -189,6 +191,8 @@ function CartaoLancamento({ lancamento, onExcluir, podeExcluir }: CartaoLancamen
 }
 
 export default function Financeiro() {
+  const { user } = usarAutenticacao();
+  const podeEscreverFinanceiro = canWrite(user, "/financeiro");
   const [lancamentos, setLancamentos] = useState<LancamentoApp[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -321,7 +325,7 @@ export default function Financeiro() {
             }}
           >
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" disabled={!podeEscreverFinanceiro}>
                 <Plus className="h-4 w-4" />
                 Novo
               </Button>
@@ -570,7 +574,7 @@ export default function Financeiro() {
                       key={entry.id}
                       lancamento={entry}
                       onExcluir={handleExcluir}
-                      podeExcluir
+                      podeExcluir={podeEscreverFinanceiro}
                     />
                   ))
                 )}
@@ -584,7 +588,7 @@ export default function Financeiro() {
                       key={entry.id}
                       lancamento={entry}
                       onExcluir={handleExcluir}
-                      podeExcluir
+                      podeExcluir={podeEscreverFinanceiro}
                     />
                   ))}
                 {lancamentos.filter((e) => e.type === "income").length === 0 && (
@@ -602,7 +606,7 @@ export default function Financeiro() {
                       key={entry.id}
                       lancamento={entry}
                       onExcluir={handleExcluir}
-                      podeExcluir
+                      podeExcluir={podeEscreverFinanceiro}
                     />
                   ))}
                 {lancamentos.filter((e) => e.type === "expense").length === 0 && (

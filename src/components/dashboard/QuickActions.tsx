@@ -7,9 +7,10 @@ import {
   UserPlus,
   Megaphone,
   Wallet,
-  Heart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usarAutenticacao } from "@/contexts/AuthContext";
+import { canAccess } from "@/auth/permissions";
 
 const acoes = [
   {
@@ -61,19 +62,15 @@ const acoes = [
     color: "bg-olive text-olive-foreground",
     bgLight: "bg-olive-light",
   },
-  {
-    icon: Heart,
-    label: "Oração",
-    path: "/oracao",
-    color: "bg-deep-blue text-deep-blue-foreground",
-    bgLight: "bg-deep-blue-light",
-  },
 ];
 
 export function AcoesRapidas() {
+  const { user } = usarAutenticacao();
+  const acoesVisiveis = acoes.filter((acao) => canAccess(user, acao.path));
+
   return (
     <div className="grid grid-cols-4 gap-3">
-      {acoes.map((acao) => {
+      {acoesVisiveis.map((acao) => {
         const Icon = acao.icon;
         return (
           <Link

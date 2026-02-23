@@ -176,7 +176,7 @@ public class PreCadastroResource {
      * {@code POST  /pre-cadastros/:id/aprovar} : Aprova um pré-cadastro e cria o usuário.
      */
     @PostMapping("/{id}/aprovar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_SECRETARIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
     public ResponseEntity<PreCadastro> aprovarPreCadastro(
         @PathVariable Long id,
         @Valid @RequestBody AprovarPreCadastroVM body
@@ -317,7 +317,7 @@ public class PreCadastroResource {
      * {@code GET  /pre-cadastros/pendentes} : get preCadastros pending approval (PRIMEIROACESSO, PENDENTE).
      */
     @GetMapping("/pendentes")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_SECRETARIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
     public ResponseEntity<List<PreCadastro>> getPreCadastrosPendentes() {
         LOG.debug("REST request to get pending PreCadastros");
         List<PreCadastro> list = preCadastroRepository.findByStatusIn(
@@ -360,7 +360,7 @@ public class PreCadastroResource {
      * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_SECRETARIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
     public ResponseEntity<Void> deletePreCadastro(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete PreCadastro : {}", id);
         preCadastroRepository.deleteById(id);

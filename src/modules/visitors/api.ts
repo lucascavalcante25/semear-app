@@ -44,6 +44,19 @@ export const listarVisitantes = async (): Promise<VisitanteApp[]> => {
   return (lista ?? []).map(mapearVisitante);
 };
 
+/** Retorna visitantes cuja data da visita é hoje */
+export const listarVisitantesDoDia = async (): Promise<VisitanteApp[]> => {
+  const todos = await listarVisitantes();
+  const hoje = new Date();
+  const yyyy = hoje.getFullYear();
+  const mm = hoje.getMonth();
+  const dd = hoje.getDate();
+  return todos.filter((v) => {
+    const d = v.visitDate;
+    return d.getFullYear() === yyyy && d.getMonth() === mm && d.getDate() === dd;
+  });
+};
+
 export type CriarVisitantePayload = {
   nome: string;
   dataVisita?: string; // yyyy-mm-dd

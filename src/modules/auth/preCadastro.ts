@@ -26,7 +26,7 @@ export type PreCadastroPayload = {
   sexo: SexoCadastro;
   dataNascimento: string;
   senha: string;
-  perfilSolicitado: Role;
+  perfilSolicitado: Role; // admin, pastor, copastor, secretaria, tesouraria, lider, membro, visitante
   observacoes?: string;
   endereco: EnderecoPayload;
 };
@@ -55,6 +55,7 @@ const mapearPerfilParaApi = (perfil: Role) => {
   const mapa: Record<Role, string> = {
     admin: "ADMIN",
     pastor: "PASTOR",
+    copastor: "COPASTOR",
     secretaria: "SECRETARIA",
     tesouraria: "TESOURARIA",
     lider: "LIDER",

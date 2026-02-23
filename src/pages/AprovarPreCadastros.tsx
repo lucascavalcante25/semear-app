@@ -22,14 +22,17 @@ import {
   type PreCadastroCompleto,
 } from "@/modules/auth/preCadastro";
 import {
+  FULL_ACCESS_PERMISSIONS,
+  MEMBRO_DEFAULT_PERMISSIONS,
   MODULE_LABELS,
+  permissionsToModules,
   ROLE_ALLOWED_MODULES,
-  ROLE_DEFAULT_MODULES,
   ROLE_LABELS,
   type ModuleKey,
   type Role,
 } from "@/auth/permissions";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +49,7 @@ const PERFIS_APROVACAO: Role[] = [
   "membro",
   "lider",
   "pastor",
+  "copastor",
   "secretaria",
   "tesouraria",
   "admin",
@@ -53,18 +57,19 @@ const PERFIS_APROVACAO: Role[] = [
 
 export default function AprovarPreCadastros() {
   const { user } = usarAutenticacao();
+  const { refreshNotificacoes } = usarNotificacoes();
   const navigate = useNavigate();
   const [lista, setLista] = useState<PreCadastroCompleto[]>([]);
   const [detalhe, setDetalhe] = useState<PreCadastroCompleto | null>(null);
   const [perfilSelecionado, setPerfilSelecionado] = useState<Role>("membro");
   const [modulesSelecionados, setModulesSelecionados] = useState<ModuleKey[]>(
-    ROLE_DEFAULT_MODULES.membro,
+    MEMBRO_DEFAULT_PERMISSIONS.map((p) => p.module),
   );
   const [carregando, setCarregando] = useState(true);
   const [processando, setProcessando] = useState<string | null>(null);
   const [confirmarExclusao, setConfirmarExclusao] = useState(false);
 
-  const podeAprovar = user?.role === "admin" || user?.role === "pastor" || user?.role === "secretaria";
+  const podeAprovar = ["admin", "pastor", "copastor", "secretaria"].includes(user?.role ?? "");
 
   useEffect(() => {
     if (!podeAprovar) {
@@ -103,16 +108,30 @@ export default function AprovarPreCadastros() {
   }, [detalhe]);
 
   useEffect(() => {
-    // sempre que o perfil muda, sugere módulos padrão (admin pode ajustar nos checkboxes)
-    setModulesSelecionados(ROLE_DEFAULT_MODULES[perfilSelecionado] ?? ROLE_DEFAULT_MODULES.membro);
+    if (perfilSelecionado === "membro") {
+      setModulesSelecionados(MEMBRO_DEFAULT_PERMISSIONS.map((p) => p.module));
+    } else {
+      setModulesSelecionados(ROLE_ALLOWED_MODULES[perfilSelecionado] ?? []);
+    }
   }, [perfilSelecionado]);
 
   const handleAprovar = async (id: string | number, perfil: Role) => {
     setProcessando(String(id));
     try {
-      await aprovarPreCadastro(id, perfil, modulesSelecionados);
+      const isMembro = perfil === "membro";
+      const isFullAccess = ["admin", "pastor", "copastor", "lider", "secretaria"].includes(perfil);
+      const modulesParaEnviar =
+        isMembro
+          ? permissionsToModules(MEMBRO_DEFAULT_PERMISSIONS)
+          : isFullAccess
+            ? permissionsToModules(FULL_ACCESS_PERMISSIONS)
+            : permissionsToModules(
+                modulesSelecionados.map((m) => ({ module: m, access: "WRITE" as const })),
+              );
+      await aprovarPreCadastro(id, perfil, modulesParaEnviar);
       setLista((prev) => prev.filter((i) => String(i.id) !== String(id)));
       setDetalhe(null);
+      await refreshNotificacoes();
     } catch (err) {
       console.error(err);
     } finally {
@@ -126,6 +145,7 @@ export default function AprovarPreCadastros() {
       await rejeitarPreCadastro(id);
       setLista((prev) => prev.filter((i) => String(i.id) !== String(id)));
       setDetalhe(null);
+      await refreshNotificacoes();
     } catch (err) {
       console.error(err);
     } finally {
@@ -140,6 +160,7 @@ export default function AprovarPreCadastros() {
       setLista((prev) => prev.filter((i) => String(i.id) !== String(id)));
       setDetalhe(null);
       setConfirmarExclusao(false);
+      await refreshNotificacoes();
     } catch (err) {
       console.error(err);
     } finally {

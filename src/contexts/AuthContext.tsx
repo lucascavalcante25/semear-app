@@ -1,20 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   getDefaultRouteForRole,
-  ROLE_ALLOWED_MODULES,
-  type ModuleKey,
+  MEMBRO_DEFAULT_PERMISSIONS,
+  permissionsToModules,
   type Role,
+  type UserAccess,
 } from "@/auth/permissions";
 import { DEMO_CREDENTIALS } from "@/data/demo-credentials";
 import { API_ATIVA, limparToken, obterToken, requisicaoApi, salvarToken } from "@/modules/api/client";
 import { obterStatusCadastroPorIdentificador, type StatusCadastro } from "@/modules/auth/preCadastro";
 
-type Usuario = {
+type Usuario = UserAccess & {
   id: string;
   name: string;
   email: string;
-  role: Role;
-  modules: ModuleKey[];
 };
 
 type ResultadoLogin = {
@@ -36,17 +35,20 @@ const CHAVE_STORAGE_LEGACY = "semear.autenticacao";
 const MASTER_CPFS = ["11111111111"];
 
 const DEMO_USERS: Array<Usuario & { password: string }> = DEMO_CREDENTIALS.map(
-  (credential, index) => ({
-    id: String(index + 1),
-    name: credential.name,
-    email: credential.email,
-    role: credential.role as Role,
-    password: credential.password,
-    modules:
-      (credential.modules as ModuleKey[] | undefined) ??
-      ROLE_ALLOWED_MODULES[(credential.role as Role) ?? "membro"] ??
-      [],
-  }),
+  (credential, index) => {
+    const role = (credential.role as Role) ?? "membro";
+    const modules =
+      credential.modules ??
+      (role === "membro" ? permissionsToModules(MEMBRO_DEFAULT_PERMISSIONS) : undefined);
+    return {
+      id: String(index + 1),
+      name: credential.name,
+      email: credential.email,
+      role,
+      password: credential.password,
+      modules,
+    };
+  },
 );
 
 const AuthContext = createContext<ValorContextoAutenticacao | undefined>(undefined);
@@ -54,16 +56,19 @@ const AuthContext = createContext<ValorContextoAutenticacao | undefined>(undefin
 const normalizarUsuario = (user: Partial<Usuario> | null): Usuario | null => {
   if (!user?.role) return null;
   const role = user.role as Role;
-  const modules =
-    Array.isArray((user as any).modules) && (user as any).modules.length > 0
-      ? ((user as any).modules as ModuleKey[])
-      : ROLE_ALLOWED_MODULES[role] ?? [];
+  const rawModules = (user as any).modules;
+  const modules = Array.isArray(rawModules)
+    ? rawModules
+    : typeof rawModules === "string"
+      ? rawModules.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
   return {
     id: String(user.id ?? "0"),
     name: String(user.name ?? "Usuario"),
     email: String(user.email ?? ""),
     role,
-    modules,
+    modules: modules.length > 0 ? modules : undefined,
+    permissions: (user as any).permissions,
   };
 };
 
@@ -122,6 +127,7 @@ const mapearAutoridadesParaPerfil = (authorities: string[] = []): Role => {
   const roleMap: Record<string, Role> = {
     ROLE_ADMIN: "admin",
     ROLE_PASTOR: "pastor",
+    ROLE_COPASTOR: "copastor",
     ROLE_SECRETARIA: "secretaria",
     ROLE_TESOURARIA: "tesouraria",
     ROLE_LIDER: "lider",
@@ -136,15 +142,13 @@ const mapearContaParaUsuario = (account: RespostaConta): Usuario => {
   const name = [account.firstName, account.lastName].filter(Boolean).join(" ").trim();
   const role = mapearAutoridadesParaPerfil(account.authorities);
   const modulesFromApi = Array.isArray(account.modules) ? (account.modules as string[]) : [];
-  const modules = modulesFromApi
-    .map((m) => m as ModuleKey)
-    .filter((m) => (ROLE_ALLOWED_MODULES[role] ?? []).includes(m));
   return {
     id: String(account.id ?? account.login ?? account.email ?? "0"),
     name: name || account.login || account.email || "Usuario",
     email: account.email || account.login || "",
     role,
-    modules: modules.length > 0 ? modules : (ROLE_ALLOWED_MODULES[role] ?? []),
+    modules: modulesFromApi.length > 0 ? modulesFromApi : undefined,
+    permissions: (account as any).permissions,
   };
 };
 

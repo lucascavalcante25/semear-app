@@ -1,8 +1,9 @@
 package br.com.semear.web.rest;
 
 import br.com.semear.domain.Aviso;
+import br.com.semear.domain.User;
 import br.com.semear.repository.AvisoRepository;
-import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.UserService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
 import java.net.URI;
@@ -36,13 +37,23 @@ public class AvisoResource {
     private String applicationName;
 
     private final AvisoRepository avisoRepository;
+    private final UserService userService;
 
-    public AvisoResource(AvisoRepository avisoRepository) {
+    public AvisoResource(AvisoRepository avisoRepository, UserService userService) {
         this.avisoRepository = avisoRepository;
+        this.userService = userService;
+    }
+
+    private static String obterNomeCompleto(User user) {
+        if (user == null) return "Sistema";
+        String first = user.getFirstName() != null ? user.getFirstName().trim() : "";
+        String last = user.getLastName() != null ? user.getLastName().trim() : "";
+        String nome = (first + " " + last).trim();
+        return nome.isEmpty() ? user.getLogin() : nome;
     }
 
     @PostMapping("")
-    @RolesAllowed("ROLE_ADMIN")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Aviso> createAviso(@RequestBody Aviso aviso) throws URISyntaxException {
         LOG.debug("REST request to save Aviso : {}", aviso);
         if (aviso.getId() != null) {
@@ -61,7 +72,10 @@ public class AvisoResource {
             aviso.setCriadoEm(Instant.now());
         }
         if (aviso.getCriadoPor() == null || aviso.getCriadoPor().isBlank()) {
-            aviso.setCriadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
+            String nomeCriador = userService.getUserWithAuthorities()
+                .map(AvisoResource::obterNomeCompleto)
+                .orElse("Sistema");
+            aviso.setCriadoPor(nomeCriador);
         }
         Aviso result = avisoRepository.save(aviso);
         return ResponseEntity.created(new URI("/api/avisos/" + result.getId()))
@@ -70,7 +84,7 @@ public class AvisoResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed("ROLE_ADMIN")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Aviso> updateAviso(@PathVariable("id") final Long id, @RequestBody Aviso aviso)
         throws URISyntaxException {
         LOG.debug("REST request to update Aviso : {}, {}", id, aviso);
@@ -103,7 +117,9 @@ public class AvisoResource {
         existente.setDataFim(aviso.getDataFim());
         existente.setAtivo(aviso.getAtivo());
         existente.setAtualizadoEm(Instant.now());
-        existente.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
+        existente.setAtualizadoPor(userService.getUserWithAuthorities()
+            .map(AvisoResource::obterNomeCompleto)
+            .orElse("Sistema"));
 
         Aviso result = avisoRepository.save(existente);
         return ResponseEntity.ok()
@@ -130,7 +146,7 @@ public class AvisoResource {
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed("ROLE_ADMIN")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Void> deleteAviso(@PathVariable("id") final Long id) {
         LOG.debug("REST request to delete Aviso : {}", id);
         avisoRepository.deleteById(id);

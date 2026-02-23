@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Adiciona colunas faltantes na tabela louvor (idempotente) -->
+    <changeSet id="20260223000000-0a" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="titulo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="titulo" type="varchar(255)" defaultValue="">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-0b" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="artista"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="artista" type="varchar(255)" defaultValue="">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="cifra_content_type"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="cifra_content_type" type="varchar(100)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="cifra_file_name"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="cifra_file_name" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="cifra_url"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="cifra_url" type="varchar(500)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="cifra_conteudo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="cifra_conteudo" type="text"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="created_at"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="created_at" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-6" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="updated_at"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="updated_at" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260223000000-7" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="ativo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="ativo" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- Adiciona observacoes se a tabela louvor foi criada sem essa coluna -->
+    <changeSet id="20260223000000-8" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="observacoes"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="observacoes" type="text">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- Adiciona tonalidade se a tabela louvor foi criada sem essa coluna -->
+    <changeSet id="20260223000000-9" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="tonalidade"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="tonalidade" type="varchar(20)"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Adiciona tempo se a tabela louvor foi criada sem essa coluna -->
+    <changeSet id="20260223000000-10" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="tempo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="tempo" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Adiciona tipo se a tabela louvor foi criada sem essa coluna -->
+    <changeSet id="20260223000000-11" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="tipo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="tipo" type="varchar(50)" defaultValue="ADORACAO">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- Adiciona youtube_url se a tabela louvor foi criada sem essa coluna -->
+    <changeSet id="20260223000000-12" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="louvor"/>
+                <not>
+                    <columnExists tableName="louvor" columnName="youtube_url"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="youtube_url" type="varchar(500)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -106,6 +106,7 @@
     </changeSet>
 
     <changeSet id="20260221000014-7" author="semear">
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <and>
                 <tableExists tableName="visitante"/>
@@ -115,7 +116,7 @@
             </and>
         </preConditions>
         <addColumn tableName="visitante">
-            <column name="observacoes" type="${clobType}">
+            <column name="observacoes" type="text">
                 <constraints nullable="true"/>
             </column>
         </addColumn>

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProvedorAutenticacao } from "@/contexts/AuthContext";
+import { ProvedorNotificacoes } from "@/contexts/NotificationsContext";
 import { RequerAutenticacao } from "@/components/auth/RequireAuth";
 import { ProvedorTema } from "@/contexts/ThemeContext";
 
@@ -33,7 +34,8 @@ const App = () => (
         <Notificador />
         <Sonner />
         <ProvedorAutenticacao>
-          <BrowserRouter>
+          <ProvedorNotificacoes>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
               <Route path="/login" element={<Entrar />} />
               <Route path="/pre-cadastro" element={<PreCadastro />} />
@@ -137,6 +139,7 @@ const App = () => (
               <Route path="*" element={<NaoEncontrado />} />
             </Routes>
           </BrowserRouter>
+          </ProvedorNotificacoes>
         </ProvedorAutenticacao>
       </TooltipProvider>
     </ProvedorTema>

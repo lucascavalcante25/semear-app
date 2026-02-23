@@ -53,6 +53,8 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { usarNotificacoes } from "@/contexts/NotificationsContext";
+import { canWrite } from "@/auth/permissions";
 import {
   criarAviso,
   excluirAviso as apiExcluirAviso,
@@ -89,9 +91,10 @@ interface CartaoAvisoProps {
   aviso: AvisoApp;
   aoEditar: (aviso: AvisoApp) => void;
   aoExcluir: (aviso: AvisoApp) => void;
+  podeEditar: boolean;
 }
 
-function CartaoAviso({ aviso, aoEditar, aoExcluir }: CartaoAvisoProps) {
+function CartaoAviso({ aviso, aoEditar, aoExcluir, podeEditar }: CartaoAvisoProps) {
   const config = typeConfig[aviso.type];
   const Icon = config.icon;
 
@@ -132,26 +135,28 @@ function CartaoAviso({ aviso, aoEditar, aoExcluir }: CartaoAvisoProps) {
             </div>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => aoEditar(aviso)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => aoExcluir(aviso)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {podeEditar && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => aoEditar(aviso)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => aoExcluir(aviso)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -160,6 +165,8 @@ function CartaoAviso({ aviso, aoEditar, aoExcluir }: CartaoAvisoProps) {
 
 export default function PaginaAvisos() {
   const { user } = usarAutenticacao();
+  const { refreshNotificacoes } = usarNotificacoes();
+  const podeEscreverAvisos = canWrite(user, "/avisos");
   const [buscaTexto, setBuscaTexto] = useState("");
   const [avisos, setAvisos] = useState<AvisoApp[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -262,6 +269,7 @@ export default function PaginaAvisos() {
       }
       setDialogAberto(false);
       await carregar();
+      await refreshNotificacoes();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar aviso.");
     } finally {
@@ -276,6 +284,7 @@ export default function PaginaAvisos() {
       toast.success("Aviso excluído.");
       setConfirmarExclusao(null);
       await carregar();
+      await refreshNotificacoes();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir aviso.");
     }
@@ -300,7 +309,7 @@ export default function PaginaAvisos() {
 
           <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
-              <Button className="gap-2" onClick={abrirNovo} disabled={user?.role !== "admin"}>
+              <Button className="gap-2" onClick={abrirNovo} disabled={!podeEscreverAvisos}>
                 <Plus className="h-4 w-4" />
                 Novo
               </Button>
@@ -414,6 +423,7 @@ export default function PaginaAvisos() {
                   aviso={a}
                   aoEditar={editarAviso}
                   aoExcluir={excluirAviso}
+                  podeEditar={podeEscreverAvisos}
                 />
               ))}
             </div>
@@ -434,6 +444,7 @@ export default function PaginaAvisos() {
                   aviso={a}
                   aoEditar={editarAviso}
                   aoExcluir={excluirAviso}
+                  podeEditar={podeEscreverAvisos}
                 />
               ))}
             </div>
@@ -453,6 +464,7 @@ export default function PaginaAvisos() {
                   aviso={a}
                   aoEditar={editarAviso}
                   aoExcluir={excluirAviso}
+                  podeEditar={podeEscreverAvisos}
                 />
               ))}
             </div>

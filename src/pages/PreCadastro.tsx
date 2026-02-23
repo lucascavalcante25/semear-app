@@ -22,12 +22,15 @@ import { buscarCep } from "@/lib/viacep";
 import {
   aplicarMascaraCep,
   aplicarMascaraCpf,
+  aplicarMascaraData,
   aplicarMascaraTelefone,
+  dataMascaraParaApi,
+  mensagemErroData,
   validarCpf,
+  validarData,
   validarEmail,
 } from "@/lib/mascara-telefone";
 import { cn } from "@/lib/utils";
-import { DatePicker } from "@/components/ui/date-picker";
 
 const estadosUf = [
   "AC",
@@ -142,12 +145,7 @@ export default function PreCadastro() {
   const senhasNaoConferem =
     !!formulario.senha && !!confirmarSenha && formulario.senha !== confirmarSenha;
 
-  const validarSenha = (senha: string) => {
-    const minLength = senha.length >= 8;
-    const temNumero = /\d/.test(senha);
-    const temLetra = /[A-Za-z]/.test(senha);
-    return minLength && temNumero && temLetra;
-  };
+  const validarSenha = (senha: string) => senha.length >= 8;
 
   const enviarFormulario = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -164,8 +162,14 @@ export default function PreCadastro() {
       return;
     }
 
+    const erroData = mensagemErroData(formulario.dataNascimento, true);
+    if (erroData) {
+      setErro(erroData);
+      return;
+    }
+
     if (!validarSenha(formulario.senha)) {
-      setErro("A senha deve ter ao menos 8 caracteres, incluindo letras e números.");
+      setErro("A senha deve ter ao menos 8 caracteres.");
       return;
     }
 
@@ -180,6 +184,7 @@ export default function PreCadastro() {
         ...formulario,
         cpf: cpfDigits,
         email: formulario.email.trim().toLowerCase(),
+        dataNascimento: dataMascaraParaApi(formulario.dataNascimento),
         perfilSolicitado: "membro",
       });
       setEnviado(true);
@@ -226,6 +231,7 @@ export default function PreCadastro() {
                     <Label htmlFor="nomeCompleto">Nome completo *</Label>
                     <Input
                       id="nomeCompleto"
+                      autoComplete="name"
                       value={formulario.nomeCompleto}
                       onChange={(event) => atualizarCampo("nomeCompleto", event.target.value)}
                       required
@@ -238,6 +244,7 @@ export default function PreCadastro() {
                     <Label htmlFor="cpf">CPF *</Label>
                     <Input
                       id="cpf"
+                      autoComplete="username"
                       placeholder="000.000.000-00"
                       value={formulario.cpf}
                       onChange={(e) => atualizarCampo("cpf", aplicarMascaraCpf(e.target.value))}
@@ -252,6 +259,7 @@ export default function PreCadastro() {
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="seuemail@exemplo.com"
                       value={formulario.email}
                       onChange={(event) => atualizarCampo("email", event.target.value)}
@@ -263,13 +271,16 @@ export default function PreCadastro() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dataNascimento">Data de nascimento *</Label>
-                    <DatePicker
+                    <Input
                       id="dataNascimento"
-                      value={formulario.dataNascimento}
-                      onChange={(v) => atualizarCampo("dataNascimento", v)}
+                      autoComplete="bday"
                       placeholder="dd/mm/aaaa"
+                      value={formulario.dataNascimento}
+                      onChange={(e) => atualizarCampo("dataNascimento", aplicarMascaraData(e.target.value))}
+                      maxLength={10}
+                      required
                       className={cn(
-                        tentouEnviar && !formulario.dataNascimento && "[&_input]:border-destructive [&_input]:focus-visible:ring-destructive"
+                        tentouEnviar && (!formulario.dataNascimento || !validarData(formulario.dataNascimento)) && "border-destructive focus-visible:ring-destructive"
                       )}
                     />
                   </div>
@@ -310,6 +321,7 @@ export default function PreCadastro() {
                     <Label htmlFor="telefone">Telefone principal *</Label>
                     <Input
                       id="telefone"
+                      autoComplete="tel"
                       placeholder="(00) 00000-0000"
                       value={formulario.telefone}
                       onChange={(e) =>
@@ -325,6 +337,7 @@ export default function PreCadastro() {
                     <Label htmlFor="telefoneSecundario">Telefone secundario</Label>
                     <Input
                       id="telefoneSecundario"
+                      autoComplete="tel"
                       placeholder="(00) 00000-0000"
                       value={formulario.telefoneSecundario}
                       onChange={(e) =>
@@ -336,6 +349,7 @@ export default function PreCadastro() {
                     <Label htmlFor="telefoneEmergencia">Telefone de emergencia</Label>
                     <Input
                       id="telefoneEmergencia"
+                      autoComplete="tel"
                       placeholder="(00) 00000-0000"
                       value={formulario.telefoneEmergencia}
                       onChange={(e) =>
@@ -347,6 +361,7 @@ export default function PreCadastro() {
                     <Label htmlFor="nomeContatoEmergencia">Nome do contato de emergencia *</Label>
                     <Input
                       id="nomeContatoEmergencia"
+                      autoComplete="name"
                       value={formulario.nomeContatoEmergencia}
                       onChange={(e) => atualizarCampo("nomeContatoEmergencia", e.target.value)}
                       required
@@ -368,6 +383,7 @@ export default function PreCadastro() {
                     <div className="flex items-center gap-2">
                       <Input
                         id="cep"
+                        autoComplete="postal-code"
                         placeholder="00000-000"
                         value={formulario.endereco.cep}
                         onChange={(e) =>
@@ -405,6 +421,7 @@ export default function PreCadastro() {
                     <Label htmlFor="logradouro">Logradouro *</Label>
                     <Input
                       id="logradouro"
+                      autoComplete="street-address"
                       value={formulario.endereco.logradouro}
                       onChange={(event) => atualizarEndereco("logradouro", event.target.value)}
                       required
@@ -417,6 +434,7 @@ export default function PreCadastro() {
                     <Label htmlFor="numero">Numero *</Label>
                     <Input
                       id="numero"
+                      autoComplete="off"
                       value={formulario.endereco.numero}
                       onChange={(event) => atualizarEndereco("numero", event.target.value)}
                       required
@@ -437,6 +455,7 @@ export default function PreCadastro() {
                     <Label htmlFor="bairro">Bairro *</Label>
                     <Input
                       id="bairro"
+                      autoComplete="address-level3"
                       value={formulario.endereco.bairro}
                       onChange={(event) => atualizarEndereco("bairro", event.target.value)}
                       required
@@ -449,6 +468,7 @@ export default function PreCadastro() {
                     <Label htmlFor="cidade">Cidade *</Label>
                     <Input
                       id="cidade"
+                      autoComplete="address-level2"
                       value={formulario.endereco.cidade}
                       onChange={(event) => atualizarEndereco("cidade", event.target.value)}
                       required
@@ -492,9 +512,10 @@ export default function PreCadastro() {
                       <Input
                         id="senha"
                         type={mostrarSenha ? "text" : "password"}
+                        autoComplete="new-password"
                         value={formulario.senha}
                         onChange={(event) => atualizarCampo("senha", event.target.value)}
-                        placeholder="Minimo 8 caracteres, letras e numeros"
+                        placeholder="Mínimo 8 caracteres"
                         required
                         className={cn(
                           "pr-10",
@@ -523,6 +544,7 @@ export default function PreCadastro() {
                       <Input
                         id="confirmarSenha"
                         type={mostrarConfirmarSenha ? "text" : "password"}
+                        autoComplete="new-password"
                         value={confirmarSenha}
                         onChange={(event) => setConfirmarSenha(event.target.value)}
                         placeholder="Repita a senha"

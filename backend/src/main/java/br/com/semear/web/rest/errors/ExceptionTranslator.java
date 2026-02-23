@@ -105,10 +105,10 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
         if (problem.getType() == null || problem.getType().equals(URI.create("about:blank"))) problem.setType(getMappedType(err));
 
-        // higher precedence to Custom/ResponseStatus types
-        String title = extractTitle(err, problem.getStatus());
+        // Preserve custom title from BadRequestAlertException (e.g. "Você já possui acesso. Faça login.")
         String problemTitle = problem.getTitle();
-        if (problemTitle == null || !problemTitle.equals(title)) {
+        if (problemTitle == null || problemTitle.isBlank()) {
+            String title = extractTitle(err, problem.getStatus());
             problem.setTitle(title);
         }
 

@@ -43,6 +43,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { usarAutenticacao } from "@/contexts/AuthContext";
+import { canWrite } from "@/auth/permissions";
 import {
   atualizarVisitante,
   criarVisitante,
@@ -68,9 +70,10 @@ interface CartaoVisitanteProps {
   visitante: VisitanteApp;
   aoEditar: (visitante: VisitanteApp) => void;
   aoExcluir: (visitante: VisitanteApp) => void;
+  podeEditar: boolean;
 }
 
-function CartaoVisitante({ visitante, aoEditar, aoExcluir }: CartaoVisitanteProps) {
+function CartaoVisitante({ visitante, aoEditar, aoExcluir, podeEditar }: CartaoVisitanteProps) {
   const visitaHoje = isToday(visitante.visitDate);
 
   return (
@@ -99,26 +102,28 @@ function CartaoVisitante({ visitante, aoEditar, aoExcluir }: CartaoVisitanteProp
                   </Badge>
                 )}
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-sm">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => aoEditar(visitante)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => aoExcluir(visitante)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {podeEditar && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon-sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => aoEditar(visitante)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => aoExcluir(visitante)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             
             <div className="space-y-1 text-sm text-muted-foreground">
@@ -152,6 +157,8 @@ function CartaoVisitante({ visitante, aoEditar, aoExcluir }: CartaoVisitanteProp
 }
 
 export default function Visitantes() {
+  const { user } = usarAutenticacao();
+  const podeEscreverVisitantes = canWrite(user, "/visitantes");
   const [buscaTexto, setBuscaTexto] = useState("");
   const [visitantes, setVisitantes] = useState<VisitanteApp[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -285,7 +292,7 @@ export default function Visitantes() {
 
           <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
             <DialogTrigger asChild>
-              <Button className="gap-2" onClick={abrirNovo}>
+              <Button className="gap-2" onClick={abrirNovo} disabled={!podeEscreverVisitantes}>
                 <Plus className="h-4 w-4" />
                 Novo
               </Button>
@@ -379,6 +386,7 @@ export default function Visitantes() {
                   visitante={visitante}
                   aoEditar={abrirEditar}
                   aoExcluir={solicitarExcluir}
+                  podeEditar={podeEscreverVisitantes}
                 />
               ))}
             </div>
@@ -398,6 +406,7 @@ export default function Visitantes() {
                   visitante={visitante}
                   aoEditar={abrirEditar}
                   aoExcluir={solicitarExcluir}
+                  podeEditar={podeEscreverVisitantes}
                 />
               ))}
             </div>
@@ -417,6 +426,7 @@ export default function Visitantes() {
                   visitante={visitante}
                   aoEditar={abrirEditar}
                   aoExcluir={solicitarExcluir}
+                  podeEditar={podeEscreverVisitantes}
                 />
               ))}
             </div>

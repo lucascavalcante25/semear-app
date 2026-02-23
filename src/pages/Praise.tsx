@@ -53,11 +53,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -300,6 +295,7 @@ export default function PaginaLouvores() {
   const [dialogGrupoAberto, setDialogGrupoAberto] = useState(false);
   const [nomeNovoGrupo, setNomeNovoGrupo] = useState("");
   const [excluindoGrupo, setExcluindoGrupo] = useState<GrupoLouvorApp | null>(null);
+  const [grupoModalAdicionar, setGrupoModalAdicionar] = useState<GrupoLouvorApp | null>(null);
 
   // Form state
   const [titulo, setTitulo] = useState("");
@@ -719,45 +715,60 @@ export default function PaginaLouvores() {
                     <Card key={grupo.id}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <CardTitle className="text-base truncate">{grupo.name}</CardTitle>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1 shrink-0">
+                          <div className="flex-1 min-w-0" />
+                          <CardTitle className="text-base truncate flex-1 text-center">
+                            {grupo.name}
+                          </CardTitle>
+                          <div className="flex items-center gap-2 shrink-0 flex-1 justify-end">
+                            {podeCadastrar && (
+                              <Dialog open={grupoModalAdicionar?.id === grupo.id} onOpenChange={(open) => !open && setGrupoModalAdicionar(null)}>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1"
+                                  onClick={() => setGrupoModalAdicionar(grupo)}
+                                >
                                   <Plus className="h-4 w-4" />
                                   Adicionar
                                 </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-[420px] p-0" align="start">
-                                <Command>
-                                  <CommandInput placeholder="Buscar louvor..." />
-                                  <CommandList>
-                                    <CommandEmpty>Nenhum louvor disponível.</CommandEmpty>
-                                    <CommandGroup>
-                                      {louvoresDisponiveis.map((louvor) => {
-                                        const cfg = typeConfig[louvor.type];
-                                        return (
-                                          <CommandItem
-                                            key={louvor.id}
-                                            onSelect={() => adicionarLouvor(grupo, louvor)}
-                                          >
-                                            <Music className="h-4 w-4 mr-2 shrink-0" />
-                                            <div className="flex flex-col min-w-0 flex-1">
-                                              <span className="truncate">{louvor.title} — {louvor.artist}</span>
-                                              <span className="text-xs text-muted-foreground">
-                                                Tom: {louvor.key || "—"} · {cfg.label}
-                                              </span>
-                                            </div>
-                                          </CommandItem>
-                                        );
-                                      })}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                                <DialogContent className="max-w-md max-h-[85vh]">
+                                  <DialogHeader>
+                                    <DialogTitle>Adicionar louvor ao grupo</DialogTitle>
+                                    <DialogDescription>
+                                      Selecione o louvor para adicionar ao grupo &quot;{grupo.name}&quot;.
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <Command className="mt-2">
+                                    <CommandInput placeholder="Buscar louvor..." />
+                                    <CommandList className="max-h-[50vh]">
+                                      <CommandEmpty>Nenhum louvor disponível.</CommandEmpty>
+                                      <CommandGroup>
+                                        {louvoresDisponiveis.map((louvor) => {
+                                          const cfg = typeConfig[louvor.type];
+                                          return (
+                                            <CommandItem
+                                              key={louvor.id}
+                                              onSelect={() => {
+                                                adicionarLouvor(grupo, louvor);
+                                                setGrupoModalAdicionar(null);
+                                              }}
+                                            >
+                                              <Music className="h-4 w-4 mr-2 shrink-0" />
+                                              <div className="flex flex-col min-w-0 flex-1">
+                                                <span className="truncate">{louvor.title} — {louvor.artist}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                  Tom: {louvor.key || "—"} · {cfg.label}
+                                                </span>
+                                              </div>
+                                            </CommandItem>
+                                          );
+                                        })}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </DialogContent>
+                              </Dialog>
+                            )}
                             <Badge variant="secondary" className="text-xs">
                               {grupo.louvorIds.length} louvores
                             </Badge>

@@ -33,7 +33,7 @@ const extrairModules = (raw: AdminUserDTO["modules"]): string[] => {
 
 const authorityParaRole = (auth: string): Role => {
   const nome = auth.replace(/^ROLE_/, "").toLowerCase();
-  const roles: Role[] = ["admin", "pastor", "secretaria", "tesouraria", "lider", "membro", "visitante"];
+  const roles: Role[] = ["admin", "pastor", "copastor", "secretaria", "tesouraria", "lider", "membro", "visitante"];
   return roles.includes(nome as Role) ? (nome as Role) : "membro";
 };
 

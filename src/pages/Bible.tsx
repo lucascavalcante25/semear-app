@@ -1172,59 +1172,57 @@ export default function Biblia() {
 
         <Card
           ref={painelEstudoRef}
-          className="sticky top-4 z-30 bg-card/95 backdrop-blur border"
+          className="sticky top-2 sm:top-4 z-30 bg-card/95 backdrop-blur border min-w-0 overflow-hidden"
         >
-          <CardContent className="p-3 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold">Painel de estudo</h2>
+          <CardContent className="p-2 sm:p-3 space-y-2 sm:space-y-3 min-w-0">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <h2 className="text-sm font-semibold truncate">Painel de estudo</h2>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
+                className="shrink-0"
                 onClick={() => setPainelEstudoAberto((prev) => !prev)}
               >
+                <span className="hidden sm:inline">
+                  {painelEstudoAberto ? "Recolher" : "Expandir"}
+                </span>
                 {painelEstudoAberto ? (
-                  <>
-                    Recolher
-                    <ChevronUp className="h-4 w-4 ml-2" />
-                  </>
+                  <ChevronUp className="h-4 w-4 sm:ml-2" />
                 ) : (
-                  <>
-                    Expandir
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </>
+                  <ChevronDown className="h-4 w-4 sm:ml-2" />
                 )}
               </Button>
             </div>
 
             {painelEstudoAberto && (
-              <Tabs value={abaPainelEstudo} onValueChange={setAbaPainelEstudo} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
-                  <TabsTrigger value="favorites" className="gap-2">
-                    <Star className="h-4 w-4" />
-                    Favoritos
+              <Tabs value={abaPainelEstudo} onValueChange={setAbaPainelEstudo} className="w-full min-w-0">
+                <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 p-1.5 w-full h-auto min-h-0">
+                  <TabsTrigger value="favorites" className="gap-1.5 justify-start sm:justify-center px-2 py-2 text-xs sm:text-sm">
+                    <Star className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Favoritos</span>
                   </TabsTrigger>
-                  <TabsTrigger value="highlights" className="gap-2">
-                    <Highlighter className="h-4 w-4" />
-                    Marcações
+                  <TabsTrigger value="highlights" className="gap-1.5 justify-start sm:justify-center px-2 py-2 text-xs sm:text-sm">
+                    <Highlighter className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Marcações</span>
                   </TabsTrigger>
-                  <TabsTrigger value="notes" className="gap-2">
-                    <NotebookPen className="h-4 w-4" />
-                    Anotações
+                  <TabsTrigger value="notes" className="gap-1.5 justify-start sm:justify-center px-2 py-2 text-xs sm:text-sm">
+                    <NotebookPen className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Anotações</span>
                   </TabsTrigger>
-                  <TabsTrigger value="plan" className="gap-2">
-                    <ListChecks className="h-4 w-4" />
-                    Plano
+                  <TabsTrigger value="plan" className="gap-1.5 justify-start sm:justify-center px-2 py-2 text-xs sm:text-sm">
+                    <ListChecks className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Plano</span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-2">
-                    <History className="h-4 w-4" />
-                    Histórico
+                  <TabsTrigger value="history" className="gap-1.5 justify-start sm:justify-center px-2 py-2 text-xs sm:text-sm">
+                    <History className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Histórico</span>
                   </TabsTrigger>
-                  <TabsTrigger value="search" className="gap-2">
-                    <Search className="h-4 w-4" />
-                    Busca
+                  <TabsTrigger value="search" className="gap-1.5 justify-start sm:justify-center px-2 py-2 text-xs sm:text-sm">
+                    <Search className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Busca</span>
                   </TabsTrigger>
                 </TabsList>
 

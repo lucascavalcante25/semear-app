@@ -60,6 +60,8 @@ import {
 } from "@/modules/members/api";
 import {
   MODULE_LABELS,
+  modulesToKeys,
+  permissionsToModules,
   ROLE_ALLOWED_MODULES,
   ROLE_DEFAULT_MODULES,
   ROLE_LABELS,
@@ -67,12 +69,14 @@ import {
   type Role,
 } from "@/auth/permissions";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { canAccess, canWrite } from "@/auth/permissions";
 import { toast } from "sonner";
 
 const PERFIS_DISPONIVEIS: Role[] = [
   "membro",
   "lider",
   "pastor",
+  "copastor",
   "secretaria",
   "tesouraria",
   "admin",
@@ -92,9 +96,10 @@ interface CartaoMembroProps {
   membro: MembroApi;
   aoEditar: (membro: MembroApi) => void;
   aoExcluir: (membro: MembroApi) => void;
+  podeEditar: boolean;
 }
 
-function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
+function CartaoMembro({ membro, aoEditar, aoExcluir, podeEditar }: CartaoMembroProps) {
   const avatarUrl = useAvatarUrlByUserId(membro.idNum ?? membro.id);
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -123,26 +128,28 @@ function CartaoMembro({ membro, aoEditar, aoExcluir }: CartaoMembroProps) {
                 </div>
               </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => aoEditar(membro)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => aoExcluir(membro)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {podeEditar && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => aoEditar(membro)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => aoExcluir(membro)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
 
             <div className="flex flex-col gap-1 mt-2 text-sm text-muted-foreground">
@@ -199,7 +206,9 @@ function FormMembro({
       setActivated(membroEdicao.activated);
       setPerfil(membroEdicao.role);
       setModulesSelecionados(
-        membroEdicao.modules?.length ? [...membroEdicao.modules] : defaultForRole
+        membroEdicao.modules?.length
+          ? modulesToKeys(membroEdicao.modules as string[])
+          : defaultForRole
       );
     } else {
       setLogin("");
@@ -246,6 +255,10 @@ function FormMembro({
     setSalvando(true);
     try {
       if (membroEdicao?.idNum) {
+        const access = perfil === "membro" ? "READ" as const : "WRITE" as const;
+        const modulesParaApi = permissionsToModules(
+          modulesSelecionados.map((m) => ({ module: m, access })),
+        );
         const payload: AtualizarMembroPayload = {
           id: membroEdicao.idNum,
           login: loginTrim,
@@ -254,7 +267,7 @@ function FormMembro({
           email: emailTrim || undefined,
           activated,
           authorities: [roleParaAuthority(perfil)],
-          modules: modulesSelecionados,
+          modules: modulesParaApi,
         };
         await atualizarMembro(payload);
         toast.success("Membro atualizado com sucesso.");
@@ -391,8 +404,9 @@ export default function Membros() {
   const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
   const [membroParaExcluir, setMembroParaExcluir] = useState<MembroApi | null>(null);
 
+  const podeEscreverMembros = canWrite(user, "/membros");
   const carregarMembros = useCallback(async () => {
-    if (user?.role !== "admin") return;
+    if (!canAccess(user, "/membros")) return;
     setCarregando(true);
     try {
       const lista = await listarMembros();
@@ -438,13 +452,13 @@ export default function Membros() {
     }
   };
 
-  if (user?.role !== "admin") {
+  if (!canAccess(user, "/membros")) {
     return (
       <LayoutApp>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Users className="h-12 w-12 text-muted-foreground mb-4" />
           <p className="text-muted-foreground">
-            Apenas administradores podem gerenciar membros.
+            Você não tem acesso a este módulo.
           </p>
         </div>
       </LayoutApp>
@@ -494,6 +508,7 @@ export default function Membros() {
                 membro={membro}
                 aoEditar={editarMembro}
                 aoExcluir={abrirExcluir}
+                podeEditar={podeEscreverMembros}
               />
             ))}
 

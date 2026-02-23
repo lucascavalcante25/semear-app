@@ -1,17 +1,12 @@
 import { Bell, Menu, LogOut, User, Moon, Sun } from "lucide-react";
 import { PixOfertaCompacto } from "@/components/pix/PixOferta";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MenuMobile } from "./MobileMenu";
 import { usarEhMobile } from "@/hooks/use-mobile";
-import { listarPreCadastrosParaAprovacao } from "@/modules/auth/preCadastro";
-import {
-  listarNotificacoesNaoVistas,
-  marcarNotificacaoComoVista,
-  type NotificacaoItem,
-} from "@/modules/notifications/api";
+import { marcarNotificacaoComoVista } from "@/modules/notifications/api";
+import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,37 +25,10 @@ import { usarTema } from "@/contexts/ThemeContext";
 
 export function Cabecalho() {
   const isMobile = usarEhMobile();
-  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [pendentesCount, setPendentesCount] = useState(0);
-  const [notificacoes, setNotificacoes] = useState<NotificacaoItem[]>([]);
+  const { pendentesCount, notificacoes, removerNotificacaoLocal } = usarNotificacoes();
   const { user, logout } = usarAutenticacao();
   const avatarUrl = useAvatarUrlCurrentUser();
-
-  useEffect(() => {
-    if (user?.role !== "admin") return;
-    const carregar = async () => {
-      try {
-        const lista = await listarPreCadastrosParaAprovacao();
-        setPendentesCount(lista.length);
-      } catch {
-        setPendentesCount(0);
-      }
-    };
-    void carregar();
-  }, [user?.role, location.pathname]);
-
-  useEffect(() => {
-    const carregar = async () => {
-      try {
-        const lista = await listarNotificacoesNaoVistas();
-        setNotificacoes(lista);
-      } catch {
-        setNotificacoes([]);
-      }
-    };
-    void carregar();
-  }, [location.pathname]);
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
@@ -148,11 +116,7 @@ export function Cabecalho() {
                   onClick={async () => {
                     try {
                       await marcarNotificacaoComoVista(n.tipo, n.referenciaId);
-                      setNotificacoes((prev) =>
-                        prev.filter(
-                          (x) => !(x.tipo === n.tipo && x.referenciaId === n.referenciaId)
-                        )
-                      );
+                      removerNotificacaoLocal(n.tipo, n.referenciaId);
                       navigate(n.link);
                     } catch {
                       navigate(n.link);

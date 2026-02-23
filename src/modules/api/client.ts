@@ -92,8 +92,17 @@ export const requisicaoApi = async <T>(path: string, options: OpcoesApi = {}): P
         message = errorBody.title;
       } else if (typeof errorBody?.message === "string") {
         message = errorBody.message;
-        if (message.startsWith("error.") && typeof errorBody?.detail === "string" && errorBody.detail.trim()) {
-          message = errorBody.detail;
+        if (message.startsWith("error.")) {
+          if (typeof errorBody?.detail === "string" && errorBody.detail.trim()) {
+            message = errorBody.detail;
+          } else {
+            const msgMap: Record<string, string> = {
+              "error.userexists": "Você já possui acesso. Faça login.",
+              "error.alreadyexists": "Já existe uma solicitação em análise para estes dados.",
+              "error.alreadyapproved": "Solicitação já aprovada. Faça login.",
+            };
+            message = msgMap[message] ?? message;
+          }
         }
       }
     } catch {

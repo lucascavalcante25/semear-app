@@ -4,6 +4,7 @@ import {
   AcoesRapidas,
   Avisos,
   Aniversariantes,
+  VisitantesDoDia,
   ProgressoEspiritual,
 } from "@/components/dashboard";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -65,10 +66,11 @@ const Inicio = () => {
           <AcoesRapidas />
         </section>
 
-        {/* Avisos e aniversariantes */}
+        {/* Avisos, aniversariantes e visitantes do dia */}
         <div className="grid gap-4 md:grid-cols-2">
           <Avisos />
           <Aniversariantes />
+          <VisitantesDoDia />
         </div>
       </div>
     </LayoutApp>
