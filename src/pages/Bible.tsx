@@ -241,7 +241,17 @@ const montarConsultaApiBiblia = (bookName: string, chapter: number) => {
   return encodeURIComponent(rawQuery).replace(/%20/g, "+");
 };
 
+// Exemplo de estrutura: chaptersRead é um objeto { [bookId]: [array de capítulos lidos] }
+const chaptersRead: { [bookId: string]: number[] } = {};
+
+function getChaptersRead(bookId: string): number {
+  return chaptersRead[bookId]?.length || 0;
+}
+
 function CartaoLivro({ book, onClick }: { book: LivroBiblia; onClick: () => void }) {
+  const chaptersRead = getChaptersRead(book.id); // Function to calculate chapters read
+  const progress = Math.round((chaptersRead / book.chapters) * 100);
+
   return (
     <button
       onClick={onClick}
@@ -257,7 +267,9 @@ function CartaoLivro({ book, onClick }: { book: LivroBiblia; onClick: () => void
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{book.name}</p>
-        <p className="text-xs text-muted-foreground">{book.chapters} capítulos</p>
+        <p className="text-xs text-muted-foreground">
+          {book.chapters} capítulos - Progresso: {chaptersRead}/{book.chapters} ({progress}%)
+        </p>
       </div>
       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
     </button>

@@ -2,6 +2,7 @@ package br.com.semear.service.dto;
 
 import br.com.semear.domain.User;
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -12,17 +13,22 @@ public class UserDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Long id;
-
     private String login;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private LocalDate birthDate;
 
     public UserDTO() {
-        // Empty constructor needed for Jackson.
     }
 
     public UserDTO(User user) {
         this.id = user.getId();
-        // Customize it here if you need, or not, firstName/lastName/etc
         this.login = user.getLogin();
+        this.firstName = user.getFirstName();
+        this.lastName = user.getLastName();
+        this.email = user.getEmail();
+        this.birthDate = user.getBirthDate();
     }
 
     public Long getId() {
@@ -41,6 +47,38 @@ public class UserDTO implements Serializable {
         this.login = login;
     }
 
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -49,26 +87,27 @@ public class UserDTO implements Serializable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         UserDTO userDTO = (UserDTO) o;
         if (userDTO.getId() == null || getId() == null) {
             return false;
         }
-
-        return Objects.equals(getId(), userDTO.getId()) && Objects.equals(getLogin(), userDTO.getLogin());
+        return Objects.equals(getId(), userDTO.getId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getLogin());
+        return Objects.hash(getId());
     }
 
-    // prettier-ignore
     @Override
     public String toString() {
         return "UserDTO{" +
-            "id='" + id + '\'' +
+            "id=" + id +
             ", login='" + login + '\'' +
-            "}";
+            ", firstName='" + firstName + '\'' +
+            ", lastName='" + lastName + '\'' +
+            ", email='" + email + '\'' +
+            ", birthDate=" + birthDate +
+            '}';
     }
 }

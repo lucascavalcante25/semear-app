@@ -19,7 +19,7 @@ export function useAvatarUrlCurrentUser(): string | null {
         const res = await fetch(`${URL_BASE_API}/api/account/avatar`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (res.ok) {
+        if (res.ok && res.status !== 204) {
           const blob = await res.blob();
           objectUrl = URL.createObjectURL(blob);
           setUrl(objectUrl);
@@ -59,7 +59,7 @@ export function useAvatarUrlByUserId(userId: string | number | null | undefined)
         const res = await fetch(`${URL_BASE_API}/api/avatars/${userId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        if (res.ok) {
+        if (res.ok && res.status !== 204) {
           const blob = await res.blob();
           objectUrl = URL.createObjectURL(blob);
           setUrl(objectUrl);

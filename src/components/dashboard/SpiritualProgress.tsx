@@ -208,7 +208,7 @@ export function ProgressoEspiritual() {
   };
 
   return (
-    <Card className="shadow-spiritual overflow-hidden">
+    <Card className="shadow-spiritual overflow-hidden min-w-0">
       <div className="gradient-spiritual p-4">
         <div className="flex items-center gap-2 mb-2">
           <TrendingUp className="h-5 w-5 text-white/90" />

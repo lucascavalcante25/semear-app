@@ -154,9 +154,9 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow min-w-0 overflow-hidden">
       <CardContent className="p-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {showDrag && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -177,17 +177,17 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
             {louvor.key || "—"}
           </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex items-center gap-2 min-w-0">
               <h3 className="font-semibold truncate">{louvor.title}</h3>
-              <Badge variant="outline" className={cn("text-xs shrink-0", config.color)}>
+              <Badge variant="outline" className={cn("text-xs shrink-0 flex-shrink-0", config.color)}>
                 {config.label}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">{louvor.artist}</p>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 flex-shrink-0">
             {louvor.hasCifra && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -516,13 +516,13 @@ export default function PaginaLouvores() {
 
   return (
     <LayoutApp>
-      <div className="space-y-4 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold text-gold-foreground">
+      <div className="space-y-4 animate-fade-in min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold text-gold-foreground">
               <Music className="h-6 w-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-xl font-bold">Louvores</h1>
               <p className="text-sm text-muted-foreground">
                 {louvores.length} louvores cadastrados
@@ -532,7 +532,7 @@ export default function PaginaLouvores() {
 
           <Dialog open={dialogAberto} onOpenChange={(open) => { setDialogAberto(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="gap-2" onClick={abrirNovo} disabled={!podeCadastrar} title={!podeCadastrar ? "Apenas administradores podem cadastrar louvores" : undefined}>
+              <Button className="gap-2 shrink-0 w-full sm:w-auto" onClick={abrirNovo} disabled={!podeCadastrar} title={!podeCadastrar ? "Apenas administradores podem cadastrar louvores" : undefined}>
                   <Plus className="h-4 w-4" />
                   Novo
               </Button>
@@ -646,15 +646,15 @@ export default function PaginaLouvores() {
             </Dialog>
         </div>
 
-        <Tabs defaultValue="groups" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="groups" className="gap-2">
-              <List className="h-4 w-4" />
-              Grupos
+        <Tabs defaultValue="groups" className="w-full min-w-0">
+          <TabsList className="grid w-full grid-cols-2 min-w-0">
+            <TabsTrigger value="groups" className="gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
+              <List className="h-4 w-4 shrink-0" />
+              <span className="truncate">Grupos</span>
             </TabsTrigger>
-            <TabsTrigger value="all" className="gap-2">
-              <Music className="h-4 w-4" />
-              Repertório
+            <TabsTrigger value="all" className="gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
+              <Music className="h-4 w-4 shrink-0" />
+              <span className="truncate">Repertório</span>
             </TabsTrigger>
           </TabsList>
 
@@ -712,14 +712,13 @@ export default function PaginaLouvores() {
                   );
 
                   return (
-                    <Card key={grupo.id}>
+                    <Card key={grupo.id} className="min-w-0 overflow-hidden">
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex-1 min-w-0" />
-                          <CardTitle className="text-base truncate flex-1 text-center">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
+                          <CardTitle className="text-base truncate text-center sm:text-center">
                             {grupo.name}
                           </CardTitle>
-                          <div className="flex items-center gap-2 shrink-0 flex-1 justify-end">
+                          <div className="flex items-center justify-center sm:justify-end gap-2 shrink-0 flex-wrap">
                             {podeCadastrar && (
                               <Dialog open={grupoModalAdicionar?.id === grupo.id} onOpenChange={(open) => !open && setGrupoModalAdicionar(null)}>
                                 <Button
@@ -769,7 +768,7 @@ export default function PaginaLouvores() {
                                 </DialogContent>
                               </Dialog>
                             )}
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs shrink-0 whitespace-nowrap">
                               {grupo.louvorIds.length} louvores
                             </Badge>
                             {podeCadastrar && (

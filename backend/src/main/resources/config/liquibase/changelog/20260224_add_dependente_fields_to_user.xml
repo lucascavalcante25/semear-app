@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260224-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="jhi_user" columnName="is_dependente"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="jhi_user">
+            <column name="is_dependente" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260224-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="jhi_user" columnName="pai_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="jhi_user">
+            <column name="pai_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260224-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="jhi_user" columnName="mae_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="jhi_user">
+            <column name="mae_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260224-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyTableName="jhi_user" foreignKeyName="fk_jhi_user_pai_id"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint
+            baseTableName="jhi_user"
+            baseColumnNames="pai_id"
+            constraintName="fk_jhi_user_pai_id"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260224-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <foreignKeyConstraintExists foreignKeyTableName="jhi_user" foreignKeyName="fk_jhi_user_mae_id"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint
+            baseTableName="jhi_user"
+            baseColumnNames="mae_id"
+            constraintName="fk_jhi_user_mae_id"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

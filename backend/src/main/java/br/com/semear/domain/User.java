@@ -28,6 +28,7 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
@@ -69,6 +70,15 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @Size(max = 256)
     @Column(name = "image_url", length = 256)
     private String imageUrl;
+
+    @Column(name = "image_data", columnDefinition = "bytea")
+    @JsonIgnore
+    private byte[] imageData;
+
+    @Size(max = 100)
+    @Column(name = "image_content_type", length = 100)
+    @JsonIgnore
+    private String imageContentType;
 
     @Size(max = 20)
     @Column(name = "activation_key", length = 20)
@@ -137,6 +147,21 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @Column(name = "modules", length = 2000)
     private String modules;
 
+    /**
+     * Indica se é dependente (criança/jovem sem login).
+     * Dependentes não podem fazer login e não aparecem como opção de login.
+     */
+    @Column(name = "is_dependente", nullable = false)
+    private boolean isDependente = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pai_id")
+    private User pai;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mae_id")
+    private User mae;
+
     @JsonIgnore
     @ManyToMany
     @JoinTable(
@@ -203,6 +228,22 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public byte[] getImageData() {
+        return imageData;
+    }
+
+    public void setImageData(byte[] imageData) {
+        this.imageData = imageData;
+    }
+
+    public String getImageContentType() {
+        return imageContentType;
+    }
+
+    public void setImageContentType(String imageContentType) {
+        this.imageContentType = imageContentType;
     }
 
     public boolean isActivated() {
@@ -337,8 +378,33 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
         return modules;
     }
 
+
     public void setModules(String modules) {
         this.modules = modules;
+    }
+
+    public boolean isDependente() {
+        return isDependente;
+    }
+
+    public void setDependente(boolean dependente) {
+        isDependente = dependente;
+    }
+
+    public User getPai() {
+        return pai;
+    }
+
+    public void setPai(User pai) {
+        this.pai = pai;
+    }
+
+    public User getMae() {
+        return mae;
+    }
+
+    public void setMae(User mae) {
+        this.mae = mae;
     }
 
     public String getLangKey() {

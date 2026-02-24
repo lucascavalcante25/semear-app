@@ -69,7 +69,7 @@ export function AcoesRapidas() {
   const acoesVisiveis = acoes.filter((acao) => canAccess(user, acao.path));
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 min-w-0">
       {acoesVisiveis.map((acao) => {
         const Icon = acao.icon;
         return (

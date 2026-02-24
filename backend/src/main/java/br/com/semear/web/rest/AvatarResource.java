@@ -32,11 +32,11 @@ public class AvatarResource {
     @GetMapping("/{userId}")
     public ResponseEntity<byte[]> getAvatar(@PathVariable Long userId) {
         return userService
-            .getAvatarBytesByUserId(userId)
-            .map(bytes -> ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
+            .getAvatarByUserId(userId)
+            .map(avatar -> ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(avatar.contentType()))
                 .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")
-                .body(bytes))
-            .orElse(ResponseEntity.notFound().build());
+                .body(avatar.bytes()))
+            .orElse(ResponseEntity.noContent().build());
     }
 }

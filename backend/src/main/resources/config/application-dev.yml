@@ -44,6 +44,9 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        javax:
+          cache:
+            missing_cache_strategy: create
   liquibase:
     enabled: true
     # Remove 'faker' if you do not want the sample data to be loaded automatically

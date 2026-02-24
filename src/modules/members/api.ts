@@ -18,6 +18,20 @@ export type AdminUserDTO = {
   lastModifiedDate?: string;
   authorities?: string[] | Array<{ name: string }>;
   modules?: string[] | string;
+  birthDate?: string;
+  isDependente?: boolean;
+  paiId?: number;
+  maeId?: number;
+  paiNome?: string;
+  maeNome?: string;
+};
+
+/** Payload para criar dependente (criança/jovem sem login) */
+export type DependenteCreatePayload = {
+  nome: string;
+  birthDate: string; // yyyy-mm-dd
+  paiId?: number;
+  maeId?: number;
 };
 
 const extrairAuthorities = (raw: AdminUserDTO["authorities"]): string[] => {
@@ -59,6 +73,12 @@ export const mapearParaMembro = (dto: AdminUserDTO) => {
     role,
     authorities,
     modules: modules as ModuleKey[],
+    isDependente: dto.isDependente ?? false,
+    birthDate: dto.birthDate,
+    paiId: dto.paiId,
+    maeId: dto.maeId,
+    paiNome: dto.paiNome,
+    maeNome: dto.maeNome,
   };
 };
 
@@ -121,6 +141,16 @@ export const excluirMembro = async (login: string): Promise<void> => {
     `/api/admin/users/${encodeURIComponent(login)}`,
     { method: "DELETE", auth: true }
   );
+};
+
+export const cadastrarDependente = async (
+  payload: DependenteCreatePayload
+): Promise<AdminUserDTO> => {
+  return requisicaoApi<AdminUserDTO>("/api/membros/dependentes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    auth: true,
+  });
 };
 
 export { roleParaAuthority };

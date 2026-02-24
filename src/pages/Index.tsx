@@ -41,7 +41,7 @@ const Inicio = () => {
 
   return (
     <LayoutApp>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in min-w-0">
         {/* Header Greeting */}
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-foreground">

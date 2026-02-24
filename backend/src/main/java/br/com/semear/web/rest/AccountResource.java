@@ -125,12 +125,12 @@ public class AccountResource {
     @GetMapping("/account/avatar")
     public ResponseEntity<byte[]> getAvatar() {
         return userService
-            .getAvatarBytes()
-            .map(bytes -> ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
+            .getAvatarForCurrentUser()
+            .map(avatar -> ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(avatar.contentType()))
                 .header(HttpHeaders.CACHE_CONTROL, "max-age=3600")
-                .body(bytes))
-            .orElse(ResponseEntity.notFound().build());
+                .body(avatar.bytes()))
+            .orElse(ResponseEntity.noContent().build());
     }
 
     @PostMapping("/account")

@@ -8,6 +8,7 @@ import br.com.semear.repository.UserRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.AdminUserDTO;
+import br.com.semear.service.dto.DependenteCreateDTO;
 import br.com.semear.web.rest.errors.EmailAlreadyUsedException;
 import br.com.semear.service.dto.UserDTO;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
@@ -200,6 +202,69 @@ public class UserService {
     }
 
     /**
+     * Cria dependente (criança/jovem sem login).
+     * Dependentes não podem fazer login e não aparecem como opção de login.
+     */
+    public User createDependente(DependenteCreateDTO dto) {
+        String nome = dto.getNome() != null ? dto.getNome().trim() : "";
+        if (nome.isBlank()) {
+            throw new IllegalArgumentException("Nome é obrigatório");
+        }
+        if (dto.getBirthDate() == null) {
+            throw new IllegalArgumentException("Data de nascimento é obrigatória");
+        }
+
+        String login;
+        int tentativas = 0;
+        do {
+            login = "dep-" + UUID.randomUUID().toString().substring(0, 8).toLowerCase();
+            if (userRepository.findOneByLogin(login).isEmpty()) {
+                break;
+            }
+            tentativas++;
+            if (tentativas > 10) {
+                throw new RuntimeException("Não foi possível gerar login único para dependente");
+            }
+        } while (true);
+
+        String[] partes = nome.split("\\s+", 2);
+        String firstName = partes[0];
+        String lastName = partes.length > 1 ? partes[1] : "";
+
+        User user = new User();
+        user.setLogin(login);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setBirthDate(dto.getBirthDate());
+        user.setPassword(passwordEncoder.encode(RandomUtil.generatePassword()));
+        user.setActivated(false);
+        user.setDependente(true);
+        user.setLangKey(Constants.DEFAULT_LANGUAGE);
+
+        if (dto.getPaiId() != null) {
+            User pai = userRepository.findById(dto.getPaiId())
+                .orElseThrow(() -> new IllegalArgumentException("Pai não encontrado"));
+            if (pai.isDependente()) {
+                throw new IllegalArgumentException("O pai selecionado não pode ser dependente");
+            }
+            user.setPai(pai);
+        }
+        if (dto.getMaeId() != null) {
+            User mae = userRepository.findById(dto.getMaeId())
+                .orElseThrow(() -> new IllegalArgumentException("Mãe não encontrada"));
+            if (mae.isDependente()) {
+                throw new IllegalArgumentException("A mãe selecionada não pode ser dependente");
+            }
+            user.setMae(mae);
+        }
+
+        userRepository.save(user);
+        this.clearUserCaches(user);
+        LOG.debug("Created dependente: {}", user.getLogin());
+        return user;
+    }
+
+    /**
      * Cria usuário a partir de pré-cadastro aprovado, usando a senha informada no cadastro.
      */
     public User createUserFromPreCadastro(AdminUserDTO userDTO, String plainPassword) {
@@ -368,27 +433,55 @@ public class UserService {
             .flatMap(userRepository::findOneByLogin)
             .map(user -> {
                 try {
-                    String ext = getImageExtension(contentType);
-                    String filename = "user_" + user.getId() + "_" + UUID.randomUUID().toString().substring(0, 8) + ext;
-                    String storedName = "avatars/" + filename;
-                    Path basePath = Paths.get(uploadDir, "avatars").toAbsolutePath().normalize();
-                    Files.createDirectories(basePath);
-                    Path targetPath = basePath.resolve(filename);
-                    if (user.getImageUrl() != null && !user.getImageUrl().isBlank()) {
-                        Path oldPath = Paths.get(uploadDir, user.getImageUrl()).toAbsolutePath().normalize();
-                        if (Files.exists(oldPath)) {
-                            Files.delete(oldPath);
+                    String oldImageUrl = user.getImageUrl();
+                    byte[] bytes = file.getBytes();
+                    user.setImageData(bytes);
+                    user.setImageContentType(contentType);
+                    user.setImageUrl("db"); // Marca que avatar está no banco
+                    // Remove arquivo antigo do disco se existir (migração de avatares antigos)
+                    if (oldImageUrl != null && !oldImageUrl.isBlank() && !"db".equals(oldImageUrl)) {
+                        try {
+                            Path oldPath = Paths.get(uploadDir, oldImageUrl).toAbsolutePath().normalize();
+                            if (Files.exists(oldPath)) {
+                                Files.delete(oldPath);
+                            }
+                        } catch (IOException ignored) {
+                            // Ignora se não conseguir remover arquivo antigo
                         }
                     }
-                    file.transferTo(targetPath.toFile());
-                    user.setImageUrl(storedName);
                     userRepository.save(user);
                     this.clearUserCaches(user);
-                    LOG.debug("User avatar updated: {}", user.getLogin());
+                    LOG.debug("User avatar updated (stored in DB): {}", user.getLogin());
                     return new AdminUserDTO(user);
                 } catch (IOException e) {
                     LOG.error("Erro ao salvar avatar", e);
                     throw new RuntimeException("Erro ao salvar avatar: " + e.getMessage());
+                }
+            });
+    }
+
+    public Optional<AdminUserDTO> removeAvatar() {
+        return SecurityUtils.getCurrentUserLogin()
+            .flatMap(userRepository::findOneByLogin)
+            .map(user -> {
+                try {
+                    String oldImageUrl = user.getImageUrl();
+                    user.setImageData(null);
+                    user.setImageContentType(null);
+                    user.setImageUrl(null);
+                    if (oldImageUrl != null && !oldImageUrl.isBlank() && !"db".equals(oldImageUrl)) {
+                        Path oldPath = Paths.get(uploadDir, oldImageUrl).toAbsolutePath().normalize();
+                        if (Files.exists(oldPath)) {
+                            Files.delete(oldPath);
+                        }
+                    }
+                    userRepository.save(user);
+                    this.clearUserCaches(user);
+                    LOG.debug("User avatar removed: {}", user.getLogin());
+                    return new AdminUserDTO(user);
+                } catch (IOException e) {
+                    LOG.error("Erro ao remover avatar", e);
+                    throw new RuntimeException("Erro ao remover avatar: " + e.getMessage());
                 }
             });
     }
@@ -399,20 +492,46 @@ public class UserService {
             .flatMap(this::readAvatarBytes);
     }
 
+    public Optional<AvatarResult> getAvatarForCurrentUser() {
+        return SecurityUtils.getCurrentUserLogin()
+            .flatMap(userRepository::findOneByLogin)
+            .flatMap(this::readAvatar);
+    }
+
     public Optional<byte[]> getAvatarBytesByUserId(Long userId) {
         return userRepository.findById(userId)
-            .filter(u -> u.getImageUrl() != null && !u.getImageUrl().isBlank())
             .flatMap(this::readAvatarBytes);
     }
 
+    public record AvatarResult(byte[] bytes, String contentType) {}
+
+    public Optional<AvatarResult> getAvatarByUserId(Long userId) {
+        return userRepository.findById(userId)
+            .flatMap(this::readAvatar);
+    }
+
     private Optional<byte[]> readAvatarBytes(User user) {
-        try {
-            Path targetPath = Paths.get(uploadDir, user.getImageUrl()).toAbsolutePath().normalize();
-            if (Files.exists(targetPath)) {
-                return Optional.of(Files.readAllBytes(targetPath));
+        return readAvatar(user).map(AvatarResult::bytes);
+    }
+
+    private Optional<AvatarResult> readAvatar(User user) {
+        if (user.getImageData() != null && user.getImageData().length > 0) {
+            String contentType = user.getImageContentType();
+            if (contentType == null || contentType.isBlank()) {
+                contentType = "image/jpeg";
             }
-        } catch (IOException e) {
-            LOG.error("Erro ao ler avatar", e);
+            return Optional.of(new AvatarResult(user.getImageData(), contentType));
+        }
+        if (user.getImageUrl() != null && !user.getImageUrl().isBlank() && !"db".equals(user.getImageUrl())) {
+            try {
+                Path targetPath = Paths.get(uploadDir, user.getImageUrl()).toAbsolutePath().normalize();
+                if (Files.exists(targetPath)) {
+                    byte[] bytes = Files.readAllBytes(targetPath);
+                    return Optional.of(new AvatarResult(bytes, "image/jpeg"));
+                }
+            } catch (IOException e) {
+                LOG.error("Erro ao ler avatar do disco", e);
+            }
         }
         return Optional.empty();
     }
@@ -501,4 +620,5 @@ public class UserService {
             Objects.requireNonNull(cacheManager.getCache(UserRepository.USERS_BY_EMAIL_CACHE)).evictIfPresent(user.getEmail());
         }
     }
+
 }

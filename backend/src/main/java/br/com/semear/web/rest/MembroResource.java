@@ -2,6 +2,15 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.User;
 import br.com.semear.repository.UserRepository;
+import br.com.semear.service.UserService;
+import br.com.semear.service.dto.AdminUserDTO;
+import br.com.semear.service.dto.DependenteCreateDTO;
+import jakarta.validation.Valid;
+import java.net.URI;
+import java.net.URISyntaxException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -18,9 +27,11 @@ public class MembroResource {
     private static final Logger LOG = LoggerFactory.getLogger(MembroResource.class);
 
     private final UserRepository userRepository;
+    private final UserService userService;
 
-    public MembroResource(UserRepository userRepository) {
+    public MembroResource(UserRepository userRepository, UserService userService) {
         this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     public record AniversarianteVM(Long id, String name, LocalDate birthDate, String imageUrl) {}
@@ -33,7 +44,7 @@ public class MembroResource {
         LocalDate hoje = LocalDate.now();
         LocalDate limite = hoje.plusDays(janela);
 
-        return userRepository.findAllByBirthDateIsNotNullAndActivatedIsTrue().stream()
+        return userRepository.findAllComBirthDateParaAniversariantes().stream()
             .map(u -> new Object[] { u, proximoAniversario(hoje, u.getBirthDate()) })
             .filter(arr -> arr[1] != null)
             .filter(arr -> {
@@ -46,9 +57,15 @@ public class MembroResource {
                 User u = (User) arr[0];
                 LocalDate prox = (LocalDate) arr[1];
                 String name = montarNome(u);
-                return new AniversarianteVM(u.getId(), name, prox, u.getImageUrl());
+                String avatarUrl = temAvatar(u) ? "/api/avatars/" + u.getId() : null;
+                return new AniversarianteVM(u.getId(), name, prox, avatarUrl);
             })
             .collect(Collectors.toList());
+    }
+
+    private static boolean temAvatar(User u) {
+        return (u.getImageData() != null && u.getImageData().length > 0)
+            || (u.getImageUrl() != null && !u.getImageUrl().isBlank());
     }
 
     private static String montarNome(User u) {
@@ -64,5 +81,20 @@ public class MembroResource {
         if (!thisYear.isBefore(hoje)) return thisYear;
         return thisYear.plusYears(1);
     }
+
+    /**
+     * {@code POST  /membros/dependentes} : Cria um dependente (criança/jovem sem login).
+     * Apenas ADMIN, PASTOR, COPASTOR ou LIDER podem cadastrar.
+     */
+    @PostMapping("/dependentes")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_PASTOR','ROLE_COPASTOR','ROLE_LIDER')")
+    public ResponseEntity<AdminUserDTO> criarDependente(@Valid @RequestBody DependenteCreateDTO dto) throws URISyntaxException {
+        LOG.debug("REST request to create dependente: {}", dto.getNome());
+        User created = userService.createDependente(dto);
+        AdminUserDTO result = new AdminUserDTO(created);
+        return ResponseEntity.created(new URI("/api/admin/users/" + created.getLogin()))
+            .body(result);
+    }
+
 }
 

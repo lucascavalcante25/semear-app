@@ -7,6 +7,7 @@ import jakarta.validation.constraints.*;
 import java.util.Arrays;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -87,6 +88,18 @@ public class AdminUserDTO implements Serializable {
 
     private Set<String> modules;
 
+    private LocalDate birthDate;
+
+    private Boolean isDependente;
+
+    private Long paiId;
+
+    private Long maeId;
+
+    private String paiNome;
+
+    private String maeNome;
+
     public AdminUserDTO() {
         // Empty constructor needed for Jackson.
     }
@@ -98,6 +111,12 @@ public class AdminUserDTO implements Serializable {
         this.lastName = user.getLastName();
         this.email = user.getEmail();
         this.activated = user.isActivated();
+        this.birthDate = user.getBirthDate();
+        this.isDependente = user.isDependente();
+        this.paiId = user.getPai() != null ? user.getPai().getId() : null;
+        this.maeId = user.getMae() != null ? user.getMae().getId() : null;
+        this.paiNome = user.getPai() != null ? montarNome(user.getPai()) : null;
+        this.maeNome = user.getMae() != null ? montarNome(user.getMae()) : null;
         this.imageUrl = user.getImageUrl();
         this.phone = user.getPhone();
         this.phoneSecondary = user.getPhoneSecondary();
@@ -122,6 +141,13 @@ public class AdminUserDTO implements Serializable {
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toSet());
         }
+    }
+
+    private static String montarNome(User u) {
+        String first = u.getFirstName();
+        String last = u.getLastName();
+        String full = (java.util.Objects.toString(first, "") + " " + java.util.Objects.toString(last, "")).trim();
+        return full.isBlank() ? u.getLogin() : full;
     }
 
     public Long getId() {
@@ -322,6 +348,54 @@ public class AdminUserDTO implements Serializable {
 
     public void setModules(Set<String> modules) {
         this.modules = modules;
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
+    }
+
+    public void setBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public Boolean getIsDependente() {
+        return isDependente;
+    }
+
+    public void setIsDependente(Boolean isDependente) {
+        this.isDependente = isDependente;
+    }
+
+    public Long getPaiId() {
+        return paiId;
+    }
+
+    public void setPaiId(Long paiId) {
+        this.paiId = paiId;
+    }
+
+    public Long getMaeId() {
+        return maeId;
+    }
+
+    public void setMaeId(Long maeId) {
+        this.maeId = maeId;
+    }
+
+    public String getPaiNome() {
+        return paiNome;
+    }
+
+    public void setPaiNome(String paiNome) {
+        this.paiNome = paiNome;
+    }
+
+    public String getMaeNome() {
+        return maeNome;
+    }
+
+    public void setMaeNome(String maeNome) {
+        this.maeNome = maeNome;
     }
 
     // prettier-ignore

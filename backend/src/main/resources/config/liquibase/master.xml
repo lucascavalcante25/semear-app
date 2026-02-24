@@ -61,5 +61,7 @@
     <include file="config/liquibase/changelog/20260219000110_user_modules.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260222000000_update_admin_password_nova.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260224000000_add_role_copastor.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260224_add_dependente_fields_to_user.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260225000000_user_avatar_in_db.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>
