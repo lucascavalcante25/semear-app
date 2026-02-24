@@ -40,10 +40,10 @@ export function Cabecalho() {
     .toUpperCase();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass safe-top">
+    <header className="fixed top-0 left-0 right-0 z-50 glass safe-top overflow-visible">
       <div className="flex h-14 md:h-16 items-center">
         {/* Marca (alinhada com a sidebar no desktop) */}
-        <div className="flex items-center gap-2 px-3 md:px-4 h-full w-full md:w-64 md:border-r md:border-border">
+        <div className="flex items-center gap-2 px-3 md:px-4 h-full shrink-0 min-w-0 md:w-64 md:border-r md:border-border">
           {isMobile && (
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
@@ -80,7 +80,7 @@ export function Cabecalho() {
 
         {/* Right Actions */}
         <div className="flex-1 min-w-0">
-          <div className="flex h-14 md:h-16 items-center justify-end gap-1 px-2 md:px-4">
+          <div className="flex h-14 md:h-16 items-center justify-end gap-1 pl-2 pr-3 md:px-4">
           <PixOfertaCompacto />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
