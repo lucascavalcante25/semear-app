@@ -222,8 +222,7 @@ export default function Entrar() {
               )}
 
               <Button
-                className="w-full"
-                variant="olive"
+                className="w-full bg-[hsl(80,40%,35%)] text-white hover:bg-[hsl(80,45%,28%)] shadow-md border-0"
                 type="submit"
                 disabled={isSubmitting}
               >
@@ -237,7 +236,7 @@ export default function Entrar() {
               <Button
                 asChild
                 variant="outline"
-                className="w-full border-white/30 text-white hover:bg-white/10 hover:text-white"
+                className="w-full !bg-transparent border-2 border-white/50 !text-white hover:!bg-white/15 hover:!text-white hover:border-white/70"
               >
                 <Link to="/pre-cadastro">Primeiro acesso / Pre-cadastro</Link>
               </Button>
