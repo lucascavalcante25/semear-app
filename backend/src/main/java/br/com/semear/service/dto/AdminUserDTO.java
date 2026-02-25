@@ -3,6 +3,7 @@ package br.com.semear.service.dto;
 import br.com.semear.config.Constants;
 import br.com.semear.domain.Authority;
 import br.com.semear.domain.User;
+import br.com.semear.domain.enumeration.Sexo;
 import jakarta.validation.constraints.*;
 import java.util.Arrays;
 import java.io.Serializable;
@@ -90,6 +91,8 @@ public class AdminUserDTO implements Serializable {
 
     private LocalDate birthDate;
 
+    private Sexo sexo;
+
     private Boolean isDependente;
 
     private Long paiId;
@@ -112,6 +115,7 @@ public class AdminUserDTO implements Serializable {
         this.email = user.getEmail();
         this.activated = user.isActivated();
         this.birthDate = user.getBirthDate();
+        this.sexo = user.getSexo();
         this.isDependente = user.isDependente();
         this.paiId = user.getPai() != null ? user.getPai().getId() : null;
         this.maeId = user.getMae() != null ? user.getMae().getId() : null;
@@ -356,6 +360,14 @@ public class AdminUserDTO implements Serializable {
 
     public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public Sexo getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(Sexo sexo) {
+        this.sexo = sexo;
     }
 
     public Boolean getIsDependente() {

@@ -6,6 +6,7 @@ export type ContaDTO = {
   firstName?: string;
   lastName?: string;
   email?: string;
+  birthDate?: string | null;
   imageUrl?: string | null;
   phone?: string | null;
   phoneSecondary?: string | null;
@@ -30,6 +31,7 @@ export const atualizarConta = async (dados: {
   firstName?: string;
   lastName?: string;
   email?: string;
+  birthDate?: string | null;
   langKey?: string;
   imageUrl?: string | null;
   phone?: string | null;

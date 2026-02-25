@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -293,6 +294,8 @@ public class UserService {
         user.setCidade(userDTO.getCidade());
         user.setEstado(userDTO.getEstado());
         user.setCep(userDTO.getCep());
+        user.setBirthDate(userDTO.getBirthDate());
+        user.setSexo(userDTO.getSexo());
         if (userDTO.getModules() != null && !userDTO.getModules().isEmpty()) {
             user.setModules(String.join(",", userDTO.getModules()));
         }
@@ -335,6 +338,18 @@ public class UserService {
                 user.setImageUrl(userDTO.getImageUrl());
                 user.setActivated(userDTO.isActivated());
                 user.setLangKey(userDTO.getLangKey());
+                user.setBirthDate(userDTO.getBirthDate());
+                user.setSexo(userDTO.getSexo());
+                if (userDTO.getPaiId() != null) {
+                    user.setPai(userRepository.findById(userDTO.getPaiId()).orElse(null));
+                } else {
+                    user.setPai(null);
+                }
+                if (userDTO.getMaeId() != null) {
+                    user.setMae(userRepository.findById(userDTO.getMaeId()).orElse(null));
+                } else {
+                    user.setMae(null);
+                }
                 if (userDTO.getModules() != null) {
                     user.setModules(userDTO.getModules().isEmpty() ? null : String.join(",", userDTO.getModules()));
                 }
@@ -392,7 +407,8 @@ public class UserService {
         String bairro,
         String cidade,
         String estado,
-        String cep
+        String cep,
+        LocalDate birthDate
     ) {
         SecurityUtils.getCurrentUserLogin()
             .flatMap(userRepository::findOneByLogin)
@@ -415,6 +431,7 @@ public class UserService {
                 user.setCidade(cidade);
                 user.setEstado(estado);
                 user.setCep(cep);
+                user.setBirthDate(birthDate);
                 userRepository.save(user);
                 this.clearUserCaches(user);
                 LOG.debug("Changed Information for User: {}", user);

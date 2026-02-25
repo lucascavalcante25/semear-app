@@ -19,6 +19,7 @@ export type AdminUserDTO = {
   authorities?: string[] | Array<{ name: string }>;
   modules?: string[] | string;
   birthDate?: string;
+  sexo?: "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO";
   isDependente?: boolean;
   paiId?: number;
   maeId?: number;
@@ -75,6 +76,7 @@ export const mapearParaMembro = (dto: AdminUserDTO) => {
     modules: modules as ModuleKey[],
     isDependente: dto.isDependente ?? false,
     birthDate: dto.birthDate,
+    sexo: dto.sexo,
     paiId: dto.paiId,
     maeId: dto.maeId,
     paiNome: dto.paiNome,
@@ -90,9 +92,13 @@ export type AtualizarMembroPayload = {
   firstName: string;
   lastName: string;
   email?: string;
+  birthDate?: string | null;
+  sexo?: "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO" | null;
   activated?: boolean;
   authorities: string[];
   modules: string[];
+  paiId?: number | null;
+  maeId?: number | null;
 };
 
 export const listarMembros = async (): Promise<MembroApi[]> => {
@@ -124,9 +130,13 @@ export const atualizarMembro = async (
     firstName: payload.firstName.trim(),
     lastName: payload.lastName.trim(),
     email: payload.email?.trim() || undefined,
+    birthDate: payload.birthDate || undefined,
+    sexo: payload.sexo || undefined,
     activated: payload.activated ?? true,
     authorities: payload.authorities,
     modules: payload.modules,
+    paiId: payload.paiId ?? undefined,
+    maeId: payload.maeId ?? undefined,
   };
   const updated = await requisicaoApi<AdminUserDTO>("/api/admin/users", {
     method: "PUT",

@@ -75,6 +75,8 @@ public class PreCadastroService {
             userDTO.setCep(end.getCep());
         }
         userDTO.setActivated(true);
+        userDTO.setBirthDate(preCadastro.getDataNascimento());
+        userDTO.setSexo(preCadastro.getSexo());
         userDTO.setAuthorities(Set.of("ROLE_" + perfilAprovado.name()));
         if (modules != null && !modules.isEmpty()) {
             userDTO.setModules(new LinkedHashSet<>(modules));

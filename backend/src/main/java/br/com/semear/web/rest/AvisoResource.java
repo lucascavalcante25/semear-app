@@ -3,14 +3,17 @@ package br.com.semear.web.rest;
 import br.com.semear.domain.Aviso;
 import br.com.semear.domain.User;
 import br.com.semear.repository.AvisoRepository;
+import br.com.semear.repository.UserRepository;
 import br.com.semear.service.UserService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,10 +41,12 @@ public class AvisoResource {
 
     private final AvisoRepository avisoRepository;
     private final UserService userService;
+    private final UserRepository userRepository;
 
-    public AvisoResource(AvisoRepository avisoRepository, UserService userService) {
+    public AvisoResource(AvisoRepository avisoRepository, UserService userService, UserRepository userRepository) {
         this.avisoRepository = avisoRepository;
         this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     private static String obterNomeCompleto(User user) {
@@ -52,9 +57,29 @@ public class AvisoResource {
         return nome.isEmpty() ? user.getLogin() : nome;
     }
 
+    /**
+     * Resolve criadoPor para nome completo quando o valor armazenado for CPF (login com 11 dígitos).
+     */
+    private String resolverCriadoPorDisplayName(String criadoPor) {
+        if (criadoPor == null || criadoPor.isBlank()) {
+            return "Sistema";
+        }
+        String apenasDigitos = criadoPor.replaceAll("\\D", "");
+        if (apenasDigitos.length() == 11) {
+            return userRepository.findOneByLogin(apenasDigitos)
+                .map(AvisoResource::obterNomeCompleto)
+                .orElse(criadoPor);
+        }
+        return criadoPor;
+    }
+
+    private AvisoResponseDTO toResponseDTO(Aviso aviso) {
+        return AvisoResponseDTO.from(aviso, resolverCriadoPorDisplayName(aviso.getCriadoPor()));
+    }
+
     @PostMapping("")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
-    public ResponseEntity<Aviso> createAviso(@RequestBody Aviso aviso) throws URISyntaxException {
+    public ResponseEntity<AvisoResponseDTO> createAviso(@RequestBody Aviso aviso) throws URISyntaxException {
         LOG.debug("REST request to save Aviso : {}", aviso);
         if (aviso.getId() != null) {
             throw new BadRequestAlertException("A new aviso cannot already have an ID", ENTITY_NAME, "idexists");
@@ -80,12 +105,12 @@ public class AvisoResource {
         Aviso result = avisoRepository.save(aviso);
         return ResponseEntity.created(new URI("/api/avisos/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
-            .body(result);
+            .body(toResponseDTO(result));
     }
 
     @PutMapping("/{id}")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
-    public ResponseEntity<Aviso> updateAviso(@PathVariable("id") final Long id, @RequestBody Aviso aviso)
+    public ResponseEntity<AvisoResponseDTO> updateAviso(@PathVariable("id") final Long id, @RequestBody Aviso aviso)
         throws URISyntaxException {
         LOG.debug("REST request to update Aviso : {}, {}", id, aviso);
         if (aviso.getId() == null) {
@@ -124,25 +149,26 @@ public class AvisoResource {
         Aviso result = avisoRepository.save(existente);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
-            .body(result);
+            .body(toResponseDTO(result));
     }
 
     @GetMapping("")
-    public ResponseEntity<java.util.List<Aviso>> getAllAvisos(
+    public ResponseEntity<List<AvisoResponseDTO>> getAllAvisos(
         @RequestParam(name = "ativos", required = false, defaultValue = "true") boolean ativos,
         @org.springdoc.core.annotations.ParameterObject Pageable pageable
     ) {
         LOG.debug("REST request to get a page of Avisos");
         Page<Aviso> page = ativos ? avisoRepository.findAllByAtivoIsTrue(pageable) : avisoRepository.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        return ResponseEntity.ok().headers(headers).body(page.getContent());
+        List<AvisoResponseDTO> body = page.getContent().stream().map(this::toResponseDTO).collect(Collectors.toList());
+        return ResponseEntity.ok().headers(headers).body(body);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Aviso> getAviso(@PathVariable("id") final Long id) {
+    public ResponseEntity<AvisoResponseDTO> getAviso(@PathVariable("id") final Long id) {
         LOG.debug("REST request to get Aviso : {}", id);
         Optional<Aviso> aviso = avisoRepository.findById(id);
-        return ResponseUtil.wrapOrNotFound(aviso);
+        return ResponseUtil.wrapOrNotFound(aviso.map(this::toResponseDTO));
     }
 
     @DeleteMapping("/{id}")

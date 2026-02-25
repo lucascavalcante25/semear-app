@@ -241,16 +241,23 @@ const montarConsultaApiBiblia = (bookName: string, chapter: number) => {
   return encodeURIComponent(rawQuery).replace(/%20/g, "+");
 };
 
-// Exemplo de estrutura: chaptersRead é um objeto { [bookId]: [array de capítulos lidos] }
-const chaptersRead: { [bookId: string]: number[] } = {};
-
-function getChaptersRead(bookId: string): number {
-  return chaptersRead[bookId]?.length || 0;
-}
-
-function CartaoLivro({ book, onClick }: { book: LivroBiblia; onClick: () => void }) {
-  const chaptersRead = getChaptersRead(book.id); // Function to calculate chapters read
-  const progress = Math.round((chaptersRead / book.chapters) * 100);
+function CartaoLivro({
+  book,
+  leiturasCapitulos,
+  selectedVersion,
+  onClick,
+}: {
+  book: LivroBiblia;
+  leiturasCapitulos: LeituraCapitulo[];
+  selectedVersion: string;
+  onClick: () => void;
+}) {
+  const { lidos, total, percentual } = calcularProgressoLivro(
+    leiturasCapitulos,
+    book.id,
+    selectedVersion,
+    book.chapters,
+  );
 
   return (
     <button
@@ -268,7 +275,7 @@ function CartaoLivro({ book, onClick }: { book: LivroBiblia; onClick: () => void
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{book.name}</p>
         <p className="text-xs text-muted-foreground">
-          {book.chapters} capítulos - Progresso: {chaptersRead}/{book.chapters} ({progress}%)
+          {book.chapters} capítulos - Progresso: {lidos}/{total} ({percentual}%)
         </p>
       </div>
       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -781,16 +788,27 @@ export default function Biblia() {
 
           <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
             {Array.from({ length: selectedBook.chapters }, (_, i) => i + 1).map(
-              (chapter) => (
-                <Button
-                  key={chapter}
-                  variant="outline"
-                  className="h-12 text-lg font-medium hover:bg-olive hover:text-olive-foreground hover:border-olive"
-                  onClick={() => handleChapterSelect(chapter)}
-                >
-                  {chapter}
-                </Button>
-              )
+              (chapter) => {
+                const lido = foiCapituloLido(
+                  leiturasCapitulos,
+                  selectedBook.id,
+                  chapter,
+                  selectedVersion,
+                );
+                return (
+                  <Button
+                    key={chapter}
+                    variant="outline"
+                    className={cn(
+                      "h-12 text-lg font-medium hover:bg-olive hover:text-olive-foreground hover:border-olive",
+                      lido && "bg-olive/20 text-olive border-olive font-semibold",
+                    )}
+                    onClick={() => handleChapterSelect(chapter)}
+                  >
+                    {chapter}
+                  </Button>
+                );
+              },
             )}
           </div>
         </div>
@@ -1578,6 +1596,8 @@ export default function Biblia() {
                   <CartaoLivro
                     key={book.id}
                     book={book}
+                    leiturasCapitulos={leiturasCapitulos}
+                    selectedVersion={selectedVersion}
                     onClick={() => handleBookSelect(book)}
                   />
                 ))}
@@ -1592,6 +1612,8 @@ export default function Biblia() {
                   <CartaoLivro
                     key={book.id}
                     book={book}
+                    leiturasCapitulos={leiturasCapitulos}
+                    selectedVersion={selectedVersion}
                     onClick={() => handleBookSelect(book)}
                   />
                 ))}

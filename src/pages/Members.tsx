@@ -150,12 +150,10 @@ function CartaoMembro({ membro, aoEditar, aoExcluir, podeEditar, isDependente }:
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {!isDependente && (
-                      <DropdownMenuItem onClick={() => aoEditar(membro)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem onClick={() => aoEditar(membro)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => aoExcluir(membro)}
                       className="text-destructive focus:text-destructive"
@@ -221,6 +219,8 @@ function FormMembro({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [sexo, setSexo] = useState<"MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO">("NAO_INFORMADO");
   const [activated, setActivated] = useState(true);
   const [perfil, setPerfil] = useState<Role>("membro");
   const [modulesSelecionados, setModulesSelecionados] = useState<ModuleKey[]>([]);
@@ -233,6 +233,9 @@ function FormMembro({
       setFirstName(membroEdicao.firstName);
       setLastName(membroEdicao.lastName);
       setEmail(membroEdicao.email);
+      const bd = membroEdicao.birthDate;
+      setBirthDate(bd ? (() => { const [y, m, d] = bd.split("-"); return `${d}/${m}/${y}`; })() : "");
+      setSexo((membroEdicao.sexo as "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO") ?? "NAO_INFORMADO");
       setActivated(membroEdicao.activated);
       setPerfil(membroEdicao.role);
       setModulesSelecionados(
@@ -245,6 +248,8 @@ function FormMembro({
       setFirstName("");
       setLastName("");
       setEmail("");
+      setBirthDate("");
+      setSexo("NAO_INFORMADO");
       setActivated(true);
       setPerfil("membro");
       setModulesSelecionados(ROLE_DEFAULT_MODULES.membro);
@@ -289,12 +294,15 @@ function FormMembro({
         const modulesParaApi = permissionsToModules(
           modulesSelecionados.map((m) => ({ module: m, access })),
         );
+        const birthDateApi = birthDate.trim() ? (dataMascaraParaApi(birthDate.trim()) || undefined) : undefined;
         const payload: AtualizarMembroPayload = {
           id: membroEdicao.idNum,
           login: loginTrim,
           firstName: firstNameTrim,
           lastName: lastNameTrim,
           email: emailTrim || undefined,
+          birthDate: birthDateApi,
+          sexo: sexo !== "NAO_INFORMADO" ? sexo : undefined,
           activated,
           authorities: [roleParaAuthority(perfil)],
           modules: modulesParaApi,
@@ -362,6 +370,33 @@ function FormMembro({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">Data de nascimento</Label>
+              <Input
+                id="birthDate"
+                autoComplete="bday"
+                placeholder="dd/mm/aaaa"
+                value={birthDate}
+                onChange={(e) => setBirthDate(aplicarMascaraData(e.target.value))}
+                maxLength={10}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sexo">Sexo</Label>
+              <Select value={sexo} onValueChange={(v) => setSexo(v as typeof sexo)}>
+                <SelectTrigger id="sexo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="MASCULINO">Masculino</SelectItem>
+                  <SelectItem value="FEMININO">Feminino</SelectItem>
+                  <SelectItem value="OUTRO">Outro</SelectItem>
+                  <SelectItem value="NAO_INFORMADO">Não informado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Perfil</Label>
@@ -497,6 +532,8 @@ function FormDependente({
   };
 
   const membrosNaoDependentes = membrosParaPaiMae.filter((m) => !m.isDependente);
+  const membrosMasculinos = membrosNaoDependentes.filter((m) => m.sexo === "MASCULINO");
+  const membrosFemininos = membrosNaoDependentes.filter((m) => m.sexo === "FEMININO");
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
@@ -535,7 +572,7 @@ function FormDependente({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__nenhum__">Nenhum</SelectItem>
-                {membrosNaoDependentes.map((m) => (
+                {membrosMasculinos.map((m) => (
                   <SelectItem key={m.id} value={String(m.idNum ?? m.id)}>
                     {m.name}
                   </SelectItem>
@@ -551,7 +588,171 @@ function FormDependente({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__nenhum__">Nenhum</SelectItem>
-                {membrosNaoDependentes.map((m) => (
+                {membrosFemininos.map((m) => (
+                  <SelectItem key={m.id} value={String(m.idNum ?? m.id)}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onAbertoChange(false)} disabled={salvando}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSalvar} disabled={salvando}>
+            {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface FormDependenteEdicaoProps {
+  dependente: MembroApi | null;
+  aberto: boolean;
+  onAbertoChange: (aberto: boolean) => void;
+  onSucesso: () => void;
+  membrosParaPaiMae: MembroApi[];
+}
+
+function FormDependenteEdicao({
+  dependente,
+  aberto,
+  onAbertoChange,
+  onSucesso,
+  membrosParaPaiMae,
+}: FormDependenteEdicaoProps) {
+  const [nome, setNome] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
+  const [paiId, setPaiId] = useState<string>("");
+  const [maeId, setMaeId] = useState<string>("");
+  const [salvando, setSalvando] = useState(false);
+
+  const membrosNaoDependentes = membrosParaPaiMae.filter((m) => !m.isDependente);
+  const membrosMasculinos = membrosNaoDependentes.filter((m) => m.sexo === "MASCULINO");
+  const membrosFemininos = membrosNaoDependentes.filter((m) => m.sexo === "FEMININO");
+
+  useEffect(() => {
+    if (aberto && dependente) {
+      setNome(dependente.name);
+      const bd = dependente.birthDate;
+      if (bd) {
+        const [y, m, d] = bd.split("-");
+        setDataNascimento(`${d}/${m}/${y}`);
+      } else {
+        setDataNascimento("");
+      }
+      setPaiId(dependente.paiId ? String(dependente.paiId) : "");
+      setMaeId(dependente.maeId ? String(dependente.maeId) : "");
+    }
+  }, [aberto, dependente]);
+
+  const handleSalvar = async () => {
+    if (!dependente?.idNum) return;
+    const nomeTrim = nome.trim();
+    if (!nomeTrim) {
+      toast.error("Nome é obrigatório.");
+      return;
+    }
+    if (!dataNascimento || dataNascimento.replace(/\D/g, "").length !== 8) {
+      toast.error("Data de nascimento é obrigatória (dd/mm/aaaa).");
+      return;
+    }
+    if (!validarData(dataNascimento)) {
+      toast.error("Data de nascimento inválida.");
+      return;
+    }
+    const birthDateApi = dataMascaraParaApi(dataNascimento);
+    if (!birthDateApi) {
+      toast.error("Data de nascimento inválida.");
+      return;
+    }
+    const [firstName, ...rest] = nomeTrim.split(/\s+/);
+    const lastName = rest.join(" ") || "";
+
+    setSalvando(true);
+    try {
+      await atualizarMembro({
+        id: dependente.idNum,
+        login: dependente.login,
+        firstName,
+        lastName,
+        birthDate: birthDateApi,
+        paiId: paiId && paiId !== "__nenhum__" ? Number(paiId) : undefined,
+        maeId: maeId && maeId !== "__nenhum__" ? Number(maeId) : undefined,
+        authorities: [],
+        modules: [],
+      });
+      toast.success("Criança/jovem atualizado com sucesso.");
+      onAbertoChange(false);
+      onSucesso();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  if (!dependente) return null;
+
+  return (
+    <Dialog open={aberto} onOpenChange={onAbertoChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Editar criança/adolescente</DialogTitle>
+          <DialogDescription>
+            Altere os dados da criança ou do adolescente.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label htmlFor="nome-edit-dep">Nome *</Label>
+            <Input
+              id="nome-edit-dep"
+              placeholder="Nome completo"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="dataNascimento-edit-dep">Data de nascimento *</Label>
+            <Input
+              id="dataNascimento-edit-dep"
+              placeholder="dd/mm/aaaa"
+              value={dataNascimento}
+              onChange={(e) => setDataNascimento(aplicarMascaraData(e.target.value))}
+              maxLength={10}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pai-edit-dep">Pai</Label>
+            <Select value={paiId || "__nenhum__"} onValueChange={(v) => setPaiId(v === "__nenhum__" ? "" : v)}>
+              <SelectTrigger id="pai-edit-dep">
+                <SelectValue placeholder="Selecione o pai (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__nenhum__">Nenhum</SelectItem>
+                {membrosMasculinos.map((m) => (
+                  <SelectItem key={m.id} value={String(m.idNum ?? m.id)}>
+                    {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mae-edit-dep">Mãe</Label>
+            <Select value={maeId || "__nenhum__"} onValueChange={(v) => setMaeId(v === "__nenhum__" ? "" : v)}>
+              <SelectTrigger id="mae-edit-dep">
+                <SelectValue placeholder="Selecione a mãe (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__nenhum__">Nenhum</SelectItem>
+                {membrosFemininos.map((m) => (
                   <SelectItem key={m.id} value={String(m.idNum ?? m.id)}>
                     {m.name}
                   </SelectItem>
@@ -581,7 +782,9 @@ export default function Members() {
   const [membros, setMembros] = useState<MembroApi[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [membroEmEdicao, setMembroEmEdicao] = useState<MembroApi | null>(null);
+  const [dependenteEmEdicao, setDependenteEmEdicao] = useState<MembroApi | null>(null);
   const [dialogEditarAberto, setDialogEditarAberto] = useState(false);
+  const [dialogEditarDependenteAberto, setDialogEditarDependenteAberto] = useState(false);
   const [membroParaExcluir, setMembroParaExcluir] = useState<MembroApi | null>(null);
   const [buscaTexto, setBuscaTexto] = useState("");
   const [dialogDependenteAberto, setDialogDependenteAberto] = useState(false);
@@ -617,8 +820,13 @@ export default function Members() {
   );
 
   const editarMembro = (membro: MembroApi) => {
-    setMembroEmEdicao(membro);
-    setDialogEditarAberto(true);
+    if (membro.isDependente) {
+      setDependenteEmEdicao(membro);
+      setDialogEditarDependenteAberto(true);
+    } else {
+      setMembroEmEdicao(membro);
+      setDialogEditarAberto(true);
+    }
   };
 
   const abrirExcluir = (membro: MembroApi) => {
@@ -736,6 +944,17 @@ export default function Members() {
       <FormDependente
         aberto={dialogDependenteAberto}
         onAbertoChange={setDialogDependenteAberto}
+        onSucesso={carregarMembros}
+        membrosParaPaiMae={membros}
+      />
+
+      <FormDependenteEdicao
+        dependente={dependenteEmEdicao}
+        aberto={dialogEditarDependenteAberto}
+        onAbertoChange={(aberto) => {
+          setDialogEditarDependenteAberto(aberto);
+          if (!aberto) setDependenteEmEdicao(null);
+        }}
         onSucesso={carregarMembros}
         membrosParaPaiMae={membros}
       />

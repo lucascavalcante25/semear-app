@@ -161,7 +161,8 @@ public class AccountResource {
             userDTO.getBairro(),
             userDTO.getCidade(),
             userDTO.getEstado(),
-            userDTO.getCep()
+            userDTO.getCep(),
+            userDTO.getBirthDate()
         );
     }
 

@@ -15,6 +15,7 @@ import {
   type ContaDTO,
 } from "@/modules/account/api";
 import { useAvatarUrlCurrentUser } from "@/hooks/use-avatar-url";
+import { DatePicker } from "@/components/ui/date-picker";
 import { formatarTelefone, telefoneApenasDigitos, formatarCep, cepApenasDigitos } from "@/lib/masks";
 import { buscarCep } from "@/modules/viacep/api";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ export default function Settings() {
     firstName: "",
     lastName: "",
     email: "",
+    birthDate: "",
     phone: "",
     phoneSecondary: "",
     phoneEmergency: "",
@@ -58,6 +60,7 @@ export default function Settings() {
           firstName: dados.firstName ?? "",
           lastName: dados.lastName ?? "",
           email: dados.email ?? "",
+          birthDate: dados.birthDate ?? "",
           phone: formatarTelefone(dados.phone ?? ""),
           phoneSecondary: formatarTelefone(dados.phoneSecondary ?? ""),
           phoneEmergency: formatarTelefone(dados.phoneEmergency ?? ""),
@@ -86,6 +89,7 @@ export default function Settings() {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim().toLowerCase(),
+        birthDate: form.birthDate.trim() || null,
         phone: telefoneApenasDigitos(form.phone).trim() || null,
         phoneSecondary: telefoneApenasDigitos(form.phoneSecondary).trim() || null,
         phoneEmergency: telefoneApenasDigitos(form.phoneEmergency).trim() || null,
@@ -291,6 +295,16 @@ export default function Settings() {
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                     placeholder="seu@email.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="birthDate">Data de nascimento</Label>
+                  <DatePicker
+                    id="birthDate"
+                    value={form.birthDate || undefined}
+                    onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
+                    placeholder="dd/mm/aaaa"
                   />
                 </div>
 

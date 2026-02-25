@@ -1,6 +1,7 @@
 package br.com.semear.domain;
 
 import br.com.semear.config.Constants;
+import br.com.semear.domain.enumeration.Sexo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -95,6 +96,10 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     @Column(name = "birth_date")
     private LocalDate birthDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sexo", length = 50)
+    private Sexo sexo;
 
     @Size(max = 50)
     @Column(name = "phone", length = 50)
@@ -284,6 +289,14 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public Sexo getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(Sexo sexo) {
+        this.sexo = sexo;
     }
 
     public String getPhone() {
