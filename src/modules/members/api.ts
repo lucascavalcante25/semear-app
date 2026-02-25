@@ -107,7 +107,7 @@ export const listarMembros = async (): Promise<MembroApi[]> => {
   params.set("size", "500");
   params.set("sort", "lastName,asc");
   const lista = await requisicaoApi<AdminUserDTO[]>(
-    `/api/admin/users?${params.toString()}`,
+    `/api/membros?${params.toString()}`,
     { auth: true }
   );
   return (lista ?? []).map(mapearParaMembro);
