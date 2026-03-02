@@ -33,6 +33,7 @@ import {
   DollarSign,
   Loader2,
   Trash2,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -114,6 +115,17 @@ const METODOS_PAGAMENTO = [
   { value: "transfer", label: "Transferência" },
 ];
 
+const MESES_COMPLETOS = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+const DADOS_IGREJA = {
+  nome: "Comunidade Evangélica Semear",
+  cnpj: "10.884.335/0001-73",
+  endereco: "Eusébio - CE",
+};
+
 function agregarPorMes(lancamentos: LancamentoApp[], ano: number) {
   const porMes: Record<number, { entradas: number; saidas: number }> = {};
   for (let m = 1; m <= 12; m++) {
@@ -131,9 +143,205 @@ function agregarPorMes(lancamentos: LancamentoApp[], ano: number) {
   }
   return MESES.map((nome, i) => ({
     month: nome,
+    monthIndex: i + 1,
     entradas: porMes[i + 1].entradas,
     saidas: porMes[i + 1].saidas,
   }));
+}
+
+function filtrarLancamentosPorMes(
+  lancamentos: LancamentoApp[],
+  mes: number,
+  ano: number
+): LancamentoApp[] {
+  return lancamentos
+    .filter((l) => l.date.getMonth() + 1 === mes && l.date.getFullYear() === ano)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+interface ModalRelatorioMensalProps {
+  mes: number;
+  ano: number;
+  lancamentos: LancamentoApp[];
+  aberto: boolean;
+  onFechar: () => void;
+}
+
+function ModalRelatorioMensal({
+  mes,
+  ano,
+  lancamentos,
+  aberto,
+  onFechar,
+}: ModalRelatorioMensalProps) {
+  const lancamentosMes = filtrarLancamentosPorMes(lancamentos, mes, ano);
+  const entradas = lancamentosMes.filter((l) => l.type === "income");
+  const saidas = lancamentosMes.filter((l) => l.type === "expense");
+  const totalEntradas = entradas.reduce((acc, l) => acc + l.amount, 0);
+  const totalSaidas = saidas.reduce((acc, l) => acc + l.amount, 0);
+  const saldo = totalEntradas - totalSaidas;
+  const nomeMes = MESES_COMPLETOS[mes - 1];
+
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  const handleImprimir = () => {
+    const janela = window.open("", "_blank");
+    if (!janela) {
+      toast.error("Permita pop-ups para imprimir o relatório.");
+      return;
+    }
+    const linhasEntradas =
+      entradas.length === 0
+        ? "<tr><td colspan='4' class='p-2 text-gray-500'>Nenhuma entrada</td></tr>"
+        : entradas
+            .map(
+              (l) =>
+                `<tr class="border-t border-gray-200"><td class="p-2">${l.date.toLocaleDateString("pt-BR")}</td><td class="p-2">${esc(l.description)}</td><td class="p-2">${esc(categoryLabels[l.category] || l.category)}</td><td class="p-2 text-right text-green-700 font-medium">R$ ${l.amount.toLocaleString("pt-BR")}</td></tr>`
+            )
+            .join("");
+    const linhasSaidas =
+      saidas.length === 0
+        ? "<tr><td colspan='4' class='p-2 text-gray-500'>Nenhuma despesa</td></tr>"
+        : saidas
+            .map(
+              (l) =>
+                `<tr class="border-t border-gray-200"><td class="p-2">${l.date.toLocaleDateString("pt-BR")}</td><td class="p-2">${esc(l.description)}</td><td class="p-2">${esc(categoryLabels[l.category] || l.category)}</td><td class="p-2 text-right text-red-700 font-medium">R$ ${l.amount.toLocaleString("pt-BR")}</td></tr>`
+            )
+            .join("");
+    janela.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Relatório Financeiro - ${nomeMes}/${ano}</title>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+          <style>
+            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+            .logo-print { max-height: 72px; }
+            .secao-titulo { background: #2d5a27; color: white; padding: 10px 14px; font-weight: 600; font-size: 0.95rem; }
+            .saldo-final { background: #1e3a1a; color: white; padding: 14px 16px; font-weight: 700; font-size: 1rem; }
+          </style>
+        </head>
+        <body class="p-6 text-gray-800 font-sans text-sm">
+          <div class="max-w-2xl mx-auto">
+            <div class="text-center mb-6 pb-4 border-b-2 border-green-800">
+              <img src="${window.location.origin}/logo-semear.png" alt="Logo" class="logo-print mx-auto mb-3" />
+              <h1 class="text-xl font-bold text-gray-900">${DADOS_IGREJA.nome}</h1>
+              <p class="text-sm text-gray-600">CNPJ: ${DADOS_IGREJA.cnpj}</p>
+              <p class="text-sm text-gray-600">${DADOS_IGREJA.endereco}</p>
+            </div>
+            <h2 class="text-lg font-semibold text-center mb-4 text-gray-800">Relatório Financeiro - ${nomeMes}/${ano}</h2>
+            <div class="secao-titulo rounded-t-lg mt-4">Entradas (Ofertas)</div>
+            <table class="w-full border border-gray-300">
+              <thead class="bg-gray-100">
+                <tr><th class="text-left p-2 font-semibold">Data</th><th class="text-left p-2 font-semibold">Descrição</th><th class="text-left p-2 font-semibold">Categoria</th><th class="text-right p-2 font-semibold">Valor</th></tr>
+              </thead>
+              <tbody>${linhasEntradas}</tbody>
+              <tfoot class="bg-green-50 font-semibold"><tr><td colspan="3" class="p-2">Total de entradas</td><td class="p-2 text-right text-green-700">R$ ${totalEntradas.toLocaleString("pt-BR")}</td></tr></tfoot>
+            </table>
+            <div class="secao-titulo rounded-t-lg mt-4">Despesas</div>
+            <table class="w-full border border-gray-300">
+              <thead class="bg-gray-100">
+                <tr><th class="text-left p-2 font-semibold">Data</th><th class="text-left p-2 font-semibold">Descrição</th><th class="text-left p-2 font-semibold">Categoria</th><th class="text-right p-2 font-semibold">Valor</th></tr>
+              </thead>
+              <tbody>${linhasSaidas}</tbody>
+              <tfoot class="bg-red-50 font-semibold"><tr><td colspan="3" class="p-2">Total de despesas</td><td class="p-2 text-right text-red-700">R$ ${totalSaidas.toLocaleString("pt-BR")}</td></tr></tfoot>
+            </table>
+            <div class="saldo-final rounded-b-lg flex justify-between items-center">
+              <span>SALDO FINAL EM CAIXA</span>
+              <span>R$ ${saldo.toLocaleString("pt-BR")}</span>
+            </div>
+            <p class="text-right text-sm text-gray-500 mt-4">${DADOS_IGREJA.endereco} - ${ano}</p>
+          </div>
+        </body>
+      </html>
+    `);
+    janela.document.close();
+    janela.focus();
+    setTimeout(() => {
+      janela.print();
+      janela.close();
+    }, 250);
+  };
+
+  if (!aberto) return null;
+
+  return (
+    <Dialog open={aberto} onOpenChange={(o) => !o && onFechar()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle>Relatório - {nomeMes} {ano}</DialogTitle>
+          <DialogDescription>
+            Detalhamento de entradas e despesas do mês
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto space-y-4 py-4">
+          <div>
+            <h3 className="text-sm font-semibold text-olive mb-2 flex items-center gap-2">
+              <ArrowUpCircle className="h-4 w-4" />
+              Entradas ({entradas.length})
+            </h3>
+            {entradas.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Nenhuma entrada neste mês.</p>
+            ) : (
+              <div className="space-y-2">
+                {entradas.map((l) => (
+                  <div key={l.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-olive/5 border border-olive/20">
+                    <div>
+                      <p className="font-medium text-sm">{l.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {l.date.toLocaleDateString("pt-BR")} · {categoryLabels[l.category] || l.category}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-olive">+ R$ {l.amount.toLocaleString("pt-BR")}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-sm font-semibold mt-2 text-olive">Total: R$ {totalEntradas.toLocaleString("pt-BR")}</p>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-destructive mb-2 flex items-center gap-2">
+              <ArrowDownCircle className="h-4 w-4" />
+              Despesas ({saidas.length})
+            </h3>
+            {saidas.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Nenhuma despesa neste mês.</p>
+            ) : (
+              <div className="space-y-2">
+                {saidas.map((l) => (
+                  <div key={l.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                    <div>
+                      <p className="font-medium text-sm">{l.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {l.date.toLocaleDateString("pt-BR")} · {categoryLabels[l.category] || l.category}
+                      </p>
+                    </div>
+                    <p className="font-semibold text-destructive">- R$ {l.amount.toLocaleString("pt-BR")}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-sm font-semibold mt-2 text-destructive">Total: R$ {totalSaidas.toLocaleString("pt-BR")}</p>
+          </div>
+          <div className="p-4 rounded-lg bg-deep-blue/10 border border-deep-blue/20">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">Saldo do mês</span>
+              <span className={cn("font-bold text-lg", saldo >= 0 ? "text-deep-blue" : "text-destructive")}>
+                R$ {saldo.toLocaleString("pt-BR")}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={onFechar}>Fechar</Button>
+          <Button className="gap-2 bg-olive hover:bg-olive-dark" onClick={handleImprimir}>
+            <Printer className="h-4 w-4" />
+            Imprimir relatório
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 interface CartaoLancamentoProps {
@@ -213,6 +421,7 @@ export default function Financeiro() {
     descricao: "",
     metodoPagamento: "",
   });
+  const [mesSelecionado, setMesSelecionado] = useState<number | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -564,17 +773,40 @@ export default function Financeiro() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                <ChartContainer config={chartConfig} className="h-[200px] w-full [&_.recharts-rectangle]:cursor-pointer">
                   <BarChart data={chartData}>
                     <XAxis dataKey="month" tickLine={false} axisLine={false} />
                     <YAxis hide />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="entradas" fill="var(--color-entradas)" radius={4} />
-                    <Bar dataKey="saidas" fill="var(--color-saidas)" radius={4} />
+                    <Bar
+                      dataKey="entradas"
+                      fill="var(--color-entradas)"
+                      radius={4}
+                      onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
+                    />
+                    <Bar
+                      dataKey="saidas"
+                      fill="var(--color-saidas)"
+                      radius={4}
+                      onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
+                    />
                   </BarChart>
                 </ChartContainer>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Clique em um mês para ver o detalhamento
+                </p>
               </CardContent>
             </Card>
+
+            {mesSelecionado && (
+              <ModalRelatorioMensal
+                mes={mesSelecionado}
+                ano={anoAtual}
+                lancamentos={lancamentos}
+                aberto={!!mesSelecionado}
+                onFechar={() => setMesSelecionado(null)}
+              />
+            )}
 
             <Tabs defaultValue="all" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
