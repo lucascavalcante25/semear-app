@@ -29,6 +29,7 @@ export type LouvorApp = {
   tempo?: string;
   type: "jubilo" | "adoracao" | "ceia";
   youtubeUrl?: string;
+  cifraUrl?: string;
   cifraFileName?: string;
   hasCifra: boolean;
   isActive: boolean;
@@ -58,8 +59,9 @@ export const mapearLouvor = (dto: LouvorDTO): LouvorApp => ({
   tempo: dto.tempo ?? undefined,
   type: mapTipo(dto.tipo),
   youtubeUrl: dto.youtubeUrl ?? undefined,
+  cifraUrl: dto.cifraUrl ?? undefined,
   cifraFileName: dto.cifraFileName ?? undefined,
-  hasCifra: Boolean(dto.cifraFileName),
+  hasCifra: Boolean(dto.cifraFileName || dto.cifraUrl),
   isActive: dto.ativo ?? true,
   notes: dto.observacoes ?? undefined,
   createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(),
@@ -88,6 +90,7 @@ export const criarLouvor = async (
     tempo: louvor.tempo || null,
     tipo: mapTipoToApi(louvor.type),
     youtubeUrl: louvor.youtubeUrl?.trim() || null,
+    cifraUrl: louvor.cifraUrl?.trim() || null,
     observacoes: louvor.notes?.trim() || null,
     ativo: louvor.isActive ?? true,
   };
@@ -124,6 +127,7 @@ export const atualizarLouvor = async (
     tempo: louvor.tempo || null,
     tipo: mapTipoToApi(louvor.type),
     youtubeUrl: louvor.youtubeUrl?.trim() || null,
+    cifraUrl: louvor.cifraUrl?.trim() || null,
     observacoes: louvor.notes?.trim() || null,
     ativo: louvor.isActive ?? true,
   };

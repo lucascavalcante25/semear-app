@@ -46,6 +46,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { CifraClubIcon } from "@/components/icons/CifraClubIcon";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,7 +141,12 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
   const [baixandoCifra, setBaixandoCifra] = useState(false);
 
   const handleBaixarCifra = async () => {
-    if (!louvor.hasCifra || !louvor.idNum) return;
+    if (!louvor.idNum) return;
+    if (louvor.cifraUrl) {
+      window.open(louvor.cifraUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (!louvor.hasCifra) return;
     setBaixandoCifra(true);
     try {
       const ext = louvor.cifraFileName?.match(/\.(pdf|docx?)$/i)?.[1] ?? "pdf";
@@ -188,7 +194,24 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
           </div>
 
           <div className="flex items-center gap-1 shrink-0 flex-shrink-0">
-            {louvor.hasCifra && (
+            {louvor.cifraUrl && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={handleBaixarCifra}
+                  >
+                    <CifraClubIcon size={16} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Abrir no Cifra Club</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {louvor.hasCifra && louvor.cifraFileName && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -304,6 +327,7 @@ export default function PaginaLouvores() {
   const [tempo, setTempo] = useState("");
   const [tipo, setTipo] = useState<LouvorApp["type"]>("adoracao");
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [cifraUrl, setCifraUrl] = useState("");
   const [cifraFile, setCifraFile] = useState<File | null>(null);
   const [salvando, setSalvando] = useState(false);
 
@@ -348,6 +372,7 @@ export default function PaginaLouvores() {
     setTempo("");
     setTipo("adoracao");
     setYoutubeUrl("");
+    setCifraUrl("");
     setCifraFile(null);
     setEditando(null);
   };
@@ -366,6 +391,7 @@ export default function PaginaLouvores() {
     setTempo(louvor.tempo ?? "");
     setTipo(louvor.type);
     setYoutubeUrl(louvor.youtubeUrl ?? "");
+    setCifraUrl(louvor.cifraUrl ?? "");
     setCifraFile(null);
     setDialogAberto(true);
   };
@@ -385,6 +411,7 @@ export default function PaginaLouvores() {
           tempo: tempo || undefined,
           type: tipo,
           youtubeUrl: youtubeUrl.trim() || undefined,
+          cifraUrl: cifraUrl.trim() || undefined,
           isActive: true,
         });
         if (cifraFile) {
@@ -400,6 +427,7 @@ export default function PaginaLouvores() {
             tempo: tempo || undefined,
             type: tipo,
             youtubeUrl: youtubeUrl.trim() || undefined,
+            cifraUrl: cifraUrl.trim() || undefined,
             isActive: true,
           },
           cifraFile ?? undefined
@@ -609,6 +637,18 @@ export default function PaginaLouvores() {
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cifraUrl">Link do Cifra Club</Label>
+                    <Input
+                      id="cifraUrl"
+                      placeholder="https://www.cifraclub.com.br/..."
+                      value={cifraUrl}
+                      onChange={(e) => setCifraUrl(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Use quando não tiver o arquivo da cifra. O link abrirá diretamente no Cifra Club.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cifra" className="flex items-center gap-2">

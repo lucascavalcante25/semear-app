@@ -37,7 +37,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canWrite } from "@/auth/permissions";
-import { DatePicker } from "@/components/ui/date-picker";
+import { aplicarMascaraData, dataMascaraParaApi } from "@/lib/mascara-telefone";
 import {
   ChartConfig,
   ChartContainer,
@@ -55,6 +55,14 @@ import { formatarMoeda, valorMoedaParaNumero } from "@/lib/masks";
 import { toast } from "sonner";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+function dataHojeFormatada(): string {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
 
 const chartConfig = {
   entradas: {
@@ -199,7 +207,7 @@ export default function Financeiro() {
   const [salvando, setSalvando] = useState(false);
   const [tipoLancamento, setTipoLancamento] = useState<"income" | "expense">("income");
   const [formData, setFormData] = useState({
-    data: new Date().toISOString().slice(0, 10),
+    data: dataHojeFormatada(),
     valor: "",
     categoria: "",
     descricao: "",
@@ -253,12 +261,18 @@ export default function Financeiro() {
 
     setSalvando(true);
     try {
+      const dataApi = dataMascaraParaApi(formData.data);
+      if (!dataApi) {
+        toast.error("Informe uma data válida (dd/mm/aaaa).");
+        setSalvando(false);
+        return;
+      }
       await criarLancamento({
         type: tipoLancamento,
         category: formData.categoria,
         description: formData.descricao.trim(),
         amount: valorNum,
-        date: new Date(formData.data),
+        date: new Date(`${dataApi}T00:00:00`),
         paymentMethod: formData.metodoPagamento
           ? (formData.metodoPagamento as "cash" | "pix" | "card" | "transfer")
           : undefined,
@@ -266,7 +280,7 @@ export default function Financeiro() {
       toast.success("Lançamento registrado.");
       setDialogAberto(false);
       setFormData({
-        data: new Date().toISOString().slice(0, 10),
+        data: dataHojeFormatada(),
         valor: "",
         categoria: "",
         descricao: "",
@@ -293,7 +307,7 @@ export default function Financeiro() {
 
   const resetForm = () => {
     setFormData({
-      data: new Date().toISOString().slice(0, 10),
+      data: dataHojeFormatada(),
       valor: "",
       categoria: "",
       descricao: "",
@@ -426,13 +440,19 @@ export default function Financeiro() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date">Data</Label>
-                    <DatePicker
+                    <Input
                       id="date"
+                      placeholder="dd/mm/aaaa"
                       value={formData.data}
-                      onChange={(v) =>
-                        setFormData((f) => ({ ...f, data: v }))
+                      onChange={(e) =>
+                        setFormData((f) => ({
+                          ...f,
+                          data: aplicarMascaraData(e.target.value),
+                        }))
                       }
-                      placeholder="Selecione a data"
+                      maxLength={10}
+                      inputMode="numeric"
+                      className="flex-1 min-w-[120px]"
                     />
                   </div>
                   <div className="space-y-2">
