@@ -2,7 +2,6 @@ package br.com.semear.service.mapper;
 
 import br.com.semear.domain.GrupoLouvor;
 import br.com.semear.domain.GrupoLouvorItem;
-import br.com.semear.domain.Louvor;
 import br.com.semear.service.dto.GrupoLouvorDTO;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,12 +9,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class GrupoLouvorMapper {
-
-    private final LouvorMapper louvorMapper;
-
-    public GrupoLouvorMapper(LouvorMapper louvorMapper) {
-        this.louvorMapper = louvorMapper;
-    }
 
     public GrupoLouvorDTO toDto(GrupoLouvor grupo) {
         if (grupo == null) return null;

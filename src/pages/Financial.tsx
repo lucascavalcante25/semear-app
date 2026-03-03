@@ -45,7 +45,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, LabelList } from "recharts";
 import {
   listarLancamentos,
   criarLancamento,
@@ -54,6 +54,7 @@ import {
 } from "@/modules/financeiro/api";
 import { formatarMoeda, valorMoedaParaNumero } from "@/lib/masks";
 import { toast } from "sonner";
+import { jsPDF } from "jspdf";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -141,12 +142,21 @@ function agregarPorMes(lancamentos: LancamentoApp[], ano: number) {
       porMes[m].saidas += l.amount;
     }
   }
-  return MESES.map((nome, i) => ({
-    month: nome,
-    monthIndex: i + 1,
-    entradas: porMes[i + 1].entradas,
-    saidas: porMes[i + 1].saidas,
-  }));
+  let saldoAcumulado = 0;
+  return MESES.map((nome, i) => {
+    const entradas = porMes[i + 1].entradas;
+    const saidas = porMes[i + 1].saidas;
+    const saldoMes = entradas - saidas;
+    saldoAcumulado += saldoMes;
+    return {
+      month: nome,
+      monthIndex: i + 1,
+      entradas,
+      saidas,
+      saldoMes,
+      saldoAcumulado,
+    };
+  });
 }
 
 function filtrarLancamentosPorMes(
@@ -159,10 +169,15 @@ function filtrarLancamentosPorMes(
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 }
 
+function ehMobile(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 interface ModalRelatorioMensalProps {
   mes: number;
   ano: number;
   lancamentos: LancamentoApp[];
+  saldoTotal: number;
   aberto: boolean;
   onFechar: () => void;
 }
@@ -171,6 +186,7 @@ function ModalRelatorioMensal({
   mes,
   ano,
   lancamentos,
+  saldoTotal,
   aberto,
   onFechar,
 }: ModalRelatorioMensalProps) {
@@ -184,12 +200,7 @@ function ModalRelatorioMensal({
 
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-  const handleImprimir = () => {
-    const janela = window.open("", "_blank");
-    if (!janela) {
-      toast.error("Permita pop-ups para imprimir o relatório.");
-      return;
-    }
+  const handleImprimir = async () => {
     const linhasEntradas =
       entradas.length === 0
         ? "<tr><td colspan='4' class='p-2 text-gray-500'>Nenhuma entrada</td></tr>"
@@ -208,53 +219,129 @@ function ModalRelatorioMensal({
                 `<tr class="border-t border-gray-200"><td class="p-2">${l.date.toLocaleDateString("pt-BR")}</td><td class="p-2">${esc(l.description)}</td><td class="p-2">${esc(categoryLabels[l.category] || l.category)}</td><td class="p-2 text-right text-red-700 font-medium">R$ ${l.amount.toLocaleString("pt-BR")}</td></tr>`
             )
             .join("");
-    janela.document.write(`
+
+    const htmlConteudo = `
       <!DOCTYPE html>
       <html>
         <head>
           <title>Relatório Financeiro - ${nomeMes}/${ano}</title>
-          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
           <style>
             @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-            .logo-print { max-height: 72px; }
-            .secao-titulo { background: #2d5a27; color: white; padding: 10px 14px; font-weight: 600; font-size: 0.95rem; }
-            .saldo-final { background: #1e3a1a; color: white; padding: 14px 16px; font-weight: 700; font-size: 1rem; }
+            body { font-family: Arial, sans-serif; font-size: 12px; padding: 16px; color: #333; }
+            .logo-print { max-height: 56px; }
+            .secao-titulo { background: #2d5a27; color: white; padding: 8px 12px; font-weight: 600; }
+            .saldo-box { background: #e8f0e8; border: 1px solid #2d5a27; padding: 10px 14px; margin: 8px 0; }
+            .saldo-total-box { background: #1e3a1a; color: white; padding: 12px 16px; font-weight: 700; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+            th { background: #f5f5f5; font-weight: 600; }
+            .text-right { text-align: right; }
+            .text-green { color: #166534; }
+            .text-red { color: #b91c1c; }
           </style>
         </head>
-        <body class="p-6 text-gray-800 font-sans text-sm">
-          <div class="max-w-2xl mx-auto">
-            <div class="text-center mb-6 pb-4 border-b-2 border-green-800">
-              <img src="${window.location.origin}/logo-semear.png" alt="Logo" class="logo-print mx-auto mb-3" />
-              <h1 class="text-xl font-bold text-gray-900">${DADOS_IGREJA.nome}</h1>
-              <p class="text-sm text-gray-600">CNPJ: ${DADOS_IGREJA.cnpj}</p>
-              <p class="text-sm text-gray-600">${DADOS_IGREJA.endereco}</p>
-            </div>
-            <h2 class="text-lg font-semibold text-center mb-4 text-gray-800">Relatório Financeiro - ${nomeMes}/${ano}</h2>
-            <div class="secao-titulo rounded-t-lg mt-4">Entradas (Ofertas)</div>
-            <table class="w-full border border-gray-300">
-              <thead class="bg-gray-100">
-                <tr><th class="text-left p-2 font-semibold">Data</th><th class="text-left p-2 font-semibold">Descrição</th><th class="text-left p-2 font-semibold">Categoria</th><th class="text-right p-2 font-semibold">Valor</th></tr>
-              </thead>
-              <tbody>${linhasEntradas}</tbody>
-              <tfoot class="bg-green-50 font-semibold"><tr><td colspan="3" class="p-2">Total de entradas</td><td class="p-2 text-right text-green-700">R$ ${totalEntradas.toLocaleString("pt-BR")}</td></tr></tfoot>
-            </table>
-            <div class="secao-titulo rounded-t-lg mt-4">Despesas</div>
-            <table class="w-full border border-gray-300">
-              <thead class="bg-gray-100">
-                <tr><th class="text-left p-2 font-semibold">Data</th><th class="text-left p-2 font-semibold">Descrição</th><th class="text-left p-2 font-semibold">Categoria</th><th class="text-right p-2 font-semibold">Valor</th></tr>
-              </thead>
-              <tbody>${linhasSaidas}</tbody>
-              <tfoot class="bg-red-50 font-semibold"><tr><td colspan="3" class="p-2">Total de despesas</td><td class="p-2 text-right text-red-700">R$ ${totalSaidas.toLocaleString("pt-BR")}</td></tr></tfoot>
-            </table>
-            <div class="saldo-final rounded-b-lg flex justify-between items-center">
-              <span>SALDO FINAL EM CAIXA</span>
-              <span>R$ ${saldo.toLocaleString("pt-BR")}</span>
-            </div>
-            <p class="text-right text-sm text-gray-500 mt-4">${DADOS_IGREJA.endereco} - ${ano}</p>
+        <body>
+          <div style="text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #2d5a27;">
+            <img src="${window.location.origin}/logo-semear.png" alt="Logo" class="logo-print" style="margin-bottom: 8px;" />
+            <h1 style="font-size: 18px; margin: 4px 0;">${DADOS_IGREJA.nome}</h1>
+            <p style="font-size: 11px; color: #666;">CNPJ: ${DADOS_IGREJA.cnpj} · ${DADOS_IGREJA.endereco}</p>
           </div>
+          <h2 style="text-align: center; font-size: 16px; margin-bottom: 12px;">Relatório Financeiro - ${nomeMes}/${ano}</h2>
+          <div class="secao-titulo">Entradas (Ofertas)</div>
+          <table>
+            <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="text-right">Valor</th></tr></thead>
+            <tbody>${linhasEntradas}</tbody>
+            <tfoot style="background: #dcfce7;"><tr><td colspan="3" style="font-weight: 600;">Total de entradas</td><td class="text-right text-green" style="font-weight: 600;">R$ ${totalEntradas.toLocaleString("pt-BR")}</td></tr></tfoot>
+          </table>
+          <div class="secao-titulo">Despesas</div>
+          <table>
+            <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th class="text-right">Valor</th></tr></thead>
+            <tbody>${linhasSaidas}</tbody>
+            <tfoot style="background: #fee2e2;"><tr><td colspan="3" style="font-weight: 600;">Total de despesas</td><td class="text-right text-red" style="font-weight: 600;">R$ ${totalSaidas.toLocaleString("pt-BR")}</td></tr></tfoot>
+          </table>
+          <div class="saldo-box">
+            <strong>Saldo do mês (em caixa):</strong> R$ ${saldo.toLocaleString("pt-BR")} ${saldo >= 0 ? "(positivo)" : "(negativo)"}
+          </div>
+          <div class="saldo-total-box" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>SALDO TOTAL EM CAIXA</span>
+            <span>R$ ${saldoTotal.toLocaleString("pt-BR")}</span>
+          </div>
+          <p style="text-align: right; font-size: 11px; color: #666; margin-top: 12px;">${DADOS_IGREJA.endereco} - ${ano}</p>
         </body>
       </html>
-    `);
+    `;
+
+    if (ehMobile()) {
+      try {
+        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let y = 15;
+
+        doc.setFontSize(14);
+        doc.text(DADOS_IGREJA.nome, pageWidth / 2, y, { align: "center" });
+        y += 8;
+        doc.setFontSize(10);
+        doc.text(`CNPJ: ${DADOS_IGREJA.cnpj}`, pageWidth / 2, y, { align: "center" });
+        y += 6;
+        doc.text(`Relatório - ${nomeMes}/${ano}`, pageWidth / 2, y, { align: "center" });
+        y += 12;
+
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("Entradas", 14, y);
+        y += 6;
+        doc.setFont("helvetica", "normal");
+        entradas.forEach((l) => {
+          doc.text(`${l.date.toLocaleDateString("pt-BR")} - ${l.description} - R$ ${l.amount.toLocaleString("pt-BR")}`, 14, y);
+          y += 5;
+        });
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total entradas: R$ ${totalEntradas.toLocaleString("pt-BR")}`, 14, y);
+        y += 10;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Despesas", 14, y);
+        y += 6;
+        doc.setFont("helvetica", "normal");
+        saidas.forEach((l) => {
+          doc.text(`${l.date.toLocaleDateString("pt-BR")} - ${l.description} - R$ ${l.amount.toLocaleString("pt-BR")}`, 14, y);
+          y += 5;
+        });
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total despesas: R$ ${totalSaidas.toLocaleString("pt-BR")}`, 14, y);
+        y += 12;
+
+        doc.setFillColor(232, 240, 232);
+        doc.rect(14, y, pageWidth - 28, 12, "F");
+        doc.setFont("helvetica", "bold");
+        doc.text(`Saldo do mês: R$ ${saldo.toLocaleString("pt-BR")} ${saldo >= 0 ? "(positivo)" : "(negativo)"}`, 18, y + 8);
+        y += 18;
+
+        doc.setFillColor(30, 58, 26);
+        doc.rect(14, y, pageWidth - 28, 14, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.text("SALDO TOTAL EM CAIXA", 18, y + 8);
+        doc.text(`R$ ${saldoTotal.toLocaleString("pt-BR")}`, pageWidth - 18, y + 8, { align: "right" });
+        doc.setTextColor(0, 0, 0);
+
+        doc.setFontSize(9);
+        doc.text(`${DADOS_IGREJA.endereco} - ${ano}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+
+        doc.save(`relatorio-${nomeMes.toLowerCase()}-${ano}.pdf`);
+        toast.success("Relatório baixado com sucesso.");
+      } catch (e) {
+        toast.error("Erro ao gerar PDF. Tente novamente.");
+      }
+      return;
+    }
+
+    const janela = window.open("", "_blank");
+    if (!janela) {
+      toast.error("Permita pop-ups para imprimir o relatório.");
+      return;
+    }
+    janela.document.write(htmlConteudo);
     janela.document.close();
     janela.focus();
     setTimeout(() => {
@@ -323,12 +410,22 @@ function ModalRelatorioMensal({
             )}
             <p className="text-sm font-semibold mt-2 text-destructive">Total: R$ {totalSaidas.toLocaleString("pt-BR")}</p>
           </div>
-          <div className="p-4 rounded-lg bg-deep-blue/10 border border-deep-blue/20">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold">Saldo do mês</span>
-              <span className={cn("font-bold text-lg", saldo >= 0 ? "text-deep-blue" : "text-destructive")}>
-                R$ {saldo.toLocaleString("pt-BR")}
-              </span>
+          <div className="space-y-2">
+            <div className="p-4 rounded-lg bg-deep-blue/10 border border-deep-blue/20">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Saldo do mês (em caixa)</span>
+                <span className={cn("font-bold text-lg", saldo >= 0 ? "text-deep-blue" : "text-destructive")}>
+                  R$ {saldo.toLocaleString("pt-BR")} {saldo >= 0 ? "(positivo)" : "(negativo)"}
+                </span>
+              </div>
+            </div>
+            <div className="p-4 rounded-lg bg-olive/10 border border-olive/20">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">Saldo total em caixa</span>
+                <span className={cn("font-bold text-lg", saldoTotal >= 0 ? "text-olive" : "text-destructive")}>
+                  R$ {saldoTotal.toLocaleString("pt-BR")}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -773,17 +870,38 @@ export default function Financeiro() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig} className="h-[200px] w-full [&_.recharts-rectangle]:cursor-pointer">
+                <ChartContainer config={chartConfig} className="h-[220px] w-full [&_.recharts-rectangle]:cursor-pointer">
                   <BarChart data={chartData}>
                     <XAxis dataKey="month" tickLine={false} axisLine={false} />
                     <YAxis hide />
-                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`}
+                          labelFormatter={(_, payload) => {
+                            const d = payload?.[0]?.payload;
+                            if (!d) return "";
+                            const saldoMes = d.saldoMes ?? 0;
+                            const saldoAcum = d.saldoAcumulado ?? 0;
+                            const sMes = saldoMes >= 0 ? `+R$ ${saldoMes.toLocaleString("pt-BR")}` : `-R$ ${Math.abs(saldoMes).toLocaleString("pt-BR")}`;
+                            return `${d.month} · Saldo mês: ${sMes} ${saldoMes >= 0 ? "(positivo)" : "(negativo)"} · Em caixa: R$ ${saldoAcum.toLocaleString("pt-BR")}`;
+                          }}
+                        />
+                      }
+                    />
                     <Bar
                       dataKey="entradas"
                       fill="var(--color-entradas)"
                       radius={4}
                       onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
-                    />
+                    >
+                      <LabelList
+                        dataKey="saldoAcumulado"
+                        position="bottom"
+                        formatter={(v: number) => `R$ ${Number(v).toLocaleString("pt-BR")}`}
+                        className="fill-muted-foreground text-[10px]"
+                      />
+                    </Bar>
                     <Bar
                       dataKey="saidas"
                       fill="var(--color-saidas)"
@@ -803,6 +921,7 @@ export default function Financeiro() {
                 mes={mesSelecionado}
                 ano={anoAtual}
                 lancamentos={lancamentos}
+                saldoTotal={saldo}
                 aberto={!!mesSelecionado}
                 onFechar={() => setMesSelecionado(null)}
               />

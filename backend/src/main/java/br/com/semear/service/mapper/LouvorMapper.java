@@ -4,7 +4,7 @@ import br.com.semear.domain.Louvor;
 import br.com.semear.service.dto.LouvorDTO;
 import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "default")
 public interface LouvorMapper {
 
     LouvorDTO toDto(Louvor louvor);

@@ -53,5 +53,8 @@
   },
   "cacheDirectories": [
     "node_modules"
-  ]
+  ],
+  "dependencies": {
+    "@iconify/react": "^6.0.2"
+  }
 }

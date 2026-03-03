@@ -4,7 +4,6 @@ import br.com.semear.domain.Louvor;
 import br.com.semear.repository.LouvorRepository;
 import br.com.semear.service.LouvorService;
 import br.com.semear.service.dto.LouvorDTO;
-import br.com.semear.service.mapper.LouvorMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,22 +30,62 @@ public class LouvorServiceImpl implements LouvorService {
     };
 
     private final LouvorRepository louvorRepository;
-    private final LouvorMapper louvorMapper;
 
     @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
     private String uploadDir;
 
-    public LouvorServiceImpl(LouvorRepository louvorRepository, LouvorMapper louvorMapper) {
+    public LouvorServiceImpl(LouvorRepository louvorRepository) {
         this.louvorRepository = louvorRepository;
-        this.louvorMapper = louvorMapper;
+    }
+
+    private static LouvorDTO toDto(Louvor louvor) {
+        if (louvor == null) return null;
+        LouvorDTO dto = new LouvorDTO();
+        dto.setId(louvor.getId());
+        dto.setTitulo(louvor.getTitulo());
+        dto.setArtista(louvor.getArtista());
+        dto.setTonalidade(louvor.getTonalidade());
+        dto.setTempo(louvor.getTempo());
+        dto.setTipo(louvor.getTipo());
+        dto.setYoutubeUrl(louvor.getYoutubeUrl());
+        dto.setCifraUrl(louvor.getCifraUrl());
+        dto.setCifraConteudo(louvor.getCifraConteudo());
+        dto.setCifraFileName(louvor.getCifraFileName());
+        dto.setCifraContentType(louvor.getCifraContentType());
+        dto.setObservacoes(louvor.getObservacoes());
+        dto.setAtivo(louvor.getAtivo());
+        dto.setCreatedAt(louvor.getCreatedAt());
+        dto.setUpdatedAt(louvor.getUpdatedAt());
+        return dto;
+    }
+
+    private static Louvor toEntity(LouvorDTO dto) {
+        if (dto == null) return null;
+        Louvor louvor = new Louvor();
+        louvor.setId(dto.getId());
+        louvor.setTitulo(dto.getTitulo());
+        louvor.setArtista(dto.getArtista());
+        louvor.setTonalidade(dto.getTonalidade());
+        louvor.setTempo(dto.getTempo());
+        louvor.setTipo(dto.getTipo());
+        louvor.setYoutubeUrl(dto.getYoutubeUrl());
+        louvor.setCifraUrl(dto.getCifraUrl());
+        louvor.setCifraConteudo(dto.getCifraConteudo());
+        louvor.setCifraFileName(dto.getCifraFileName());
+        louvor.setCifraContentType(dto.getCifraContentType());
+        louvor.setObservacoes(dto.getObservacoes());
+        louvor.setAtivo(dto.getAtivo() != null ? dto.getAtivo() : true);
+        louvor.setCreatedAt(dto.getCreatedAt());
+        louvor.setUpdatedAt(dto.getUpdatedAt());
+        return louvor;
     }
 
     @Override
     public LouvorDTO save(LouvorDTO dto) {
         log.debug("Request to save Louvor : {}", dto);
-        Louvor louvor = louvorMapper.toEntity(dto);
+        Louvor louvor = toEntity(dto);
         louvor = louvorRepository.save(louvor);
-        return louvorMapper.toDto(louvor);
+        return toDto(louvor);
     }
 
     @Override
@@ -64,7 +103,7 @@ public class LouvorServiceImpl implements LouvorService {
             .orElseThrow(() -> new IllegalArgumentException("Louvor não encontrado: " + id));
 
         if (cifraFile == null || cifraFile.isEmpty()) {
-            return louvorMapper.toDto(louvor);
+            return toDto(louvor);
         }
 
         String contentType = cifraFile.getContentType();
@@ -84,7 +123,6 @@ public class LouvorServiceImpl implements LouvorService {
             Files.createDirectories(basePath);
             Path targetPath = basePath.resolve(storedName);
 
-            // Remove arquivo antigo se existir
             if (louvor.getCifraFileName() != null) {
                 Path oldPath = basePath.resolve(louvor.getCifraFileName());
                 if (Files.exists(oldPath)) {
@@ -102,14 +140,14 @@ public class LouvorServiceImpl implements LouvorService {
             throw new RuntimeException("Erro ao salvar arquivo da cifra: " + e.getMessage());
         }
 
-        return louvorMapper.toDto(louvor);
+        return toDto(louvor);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<LouvorDTO> findAll() {
         return louvorRepository.findAllByOrderByTituloAsc().stream()
-            .map(louvorMapper::toDto)
+            .map(LouvorServiceImpl::toDto)
             .toList();
     }
 
@@ -120,14 +158,14 @@ public class LouvorServiceImpl implements LouvorService {
             return findAll();
         }
         return louvorRepository.searchByTituloOrArtista(query.trim()).stream()
-            .map(louvorMapper::toDto)
+            .map(LouvorServiceImpl::toDto)
             .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<LouvorDTO> findOne(Long id) {
-        return louvorRepository.findById(id).map(louvorMapper::toDto);
+        return louvorRepository.findById(id).map(LouvorServiceImpl::toDto);
     }
 
     @Override

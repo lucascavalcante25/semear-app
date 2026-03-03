@@ -5,7 +5,7 @@ import br.com.semear.service.dto.DevocionalDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "default")
 public interface DevocionalMapper {
 
     DevocionalDTO toDto(Devocional devocional);
