@@ -38,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canWrite } from "@/auth/permissions";
+import { usarEhMobile } from "@/hooks/use-mobile";
 import { aplicarMascaraData, dataMascaraParaApi } from "@/lib/mascara-telefone";
 import {
   ChartConfig,
@@ -452,7 +453,7 @@ function CartaoLancamento({ lancamento, onExcluir, podeExcluir }: CartaoLancamen
   const idNum = lancamento.idNum ?? Number(lancamento.id);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-card border hover:shadow-sm transition-shadow">
+    <div className="flex items-center gap-2 sm:gap-3 p-3 rounded-lg bg-card border hover:shadow-sm transition-shadow min-w-0">
       <div
         className={cn(
           "flex h-10 w-10 items-center justify-center rounded-lg shrink-0",
@@ -466,10 +467,10 @@ function CartaoLancamento({ lancamento, onExcluir, podeExcluir }: CartaoLancamen
         )}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex items-center gap-2 flex-wrap">
           <p className="font-medium truncate">{lancamento.description}</p>
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="text-xs shrink-0">
             {categoryLabels[lancamento.category] || lancamento.category}
           </Badge>
         </div>
@@ -479,10 +480,10 @@ function CartaoLancamento({ lancamento, onExcluir, podeExcluir }: CartaoLancamen
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         <p
           className={cn(
-            "font-bold",
+            "font-bold text-sm sm:text-base whitespace-nowrap",
             isIncome ? "text-olive" : "text-destructive"
           )}
         >
@@ -506,6 +507,7 @@ function CartaoLancamento({ lancamento, onExcluir, podeExcluir }: CartaoLancamen
 export default function Financeiro() {
   const { user } = usarAutenticacao();
   const podeEscreverFinanceiro = canWrite(user, "/financeiro");
+  const isMobile = usarEhMobile();
   const [lancamentos, setLancamentos] = useState<LancamentoApp[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -623,15 +625,15 @@ export default function Financeiro() {
 
   return (
     <LayoutApp>
-      <div className="space-y-4 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-olive text-olive-foreground">
-              <Wallet className="h-6 w-6" />
+      <div className="space-y-3 sm:space-y-4 animate-fade-in pb-4">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-olive text-olive-foreground">
+              <Wallet className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold">Financeiro</h1>
-              <p className="text-sm text-muted-foreground">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold truncate">Financeiro</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Gestão de entradas e saídas
               </p>
             </div>
@@ -645,7 +647,7 @@ export default function Financeiro() {
             }}
           >
             <DialogTrigger asChild>
-              <Button className="gap-2" disabled={!podeEscreverFinanceiro}>
+              <Button className="gap-1.5 sm:gap-2 shrink-0" disabled={!podeEscreverFinanceiro}>
                 <Plus className="h-4 w-4" />
                 Novo
               </Button>
@@ -808,26 +810,26 @@ export default function Financeiro() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <Card className="bg-olive/5 border-olive/20">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="h-4 w-4 text-olive" />
                     <span className="text-xs text-muted-foreground">Entradas</span>
                   </div>
-                  <p className="text-lg font-bold text-olive">
+                  <p className="text-base sm:text-lg font-bold text-olive truncate" title={`R$ ${totalReceitas.toLocaleString("pt-BR")}`}>
                     R$ {totalReceitas.toLocaleString("pt-BR")}
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-destructive/5 border-destructive/20">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingDown className="h-4 w-4 text-destructive" />
                     <span className="text-xs text-muted-foreground">Saídas</span>
                   </div>
-                  <p className="text-lg font-bold text-destructive">
+                  <p className="text-base sm:text-lg font-bold text-destructive truncate" title={`R$ ${totalDespesas.toLocaleString("pt-BR")}`}>
                     R$ {totalDespesas.toLocaleString("pt-BR")}
                   </p>
                 </CardContent>
@@ -841,7 +843,7 @@ export default function Financeiro() {
                     : "bg-destructive/5 border-destructive/20"
                 )}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <Wallet
                       className={cn(
@@ -853,9 +855,10 @@ export default function Financeiro() {
                   </div>
                   <p
                     className={cn(
-                      "text-lg font-bold",
+                      "text-base sm:text-lg font-bold truncate",
                       saldo >= 0 ? "text-deep-blue" : "text-destructive"
                     )}
+                    title={`R$ ${saldo.toLocaleString("pt-BR")}`}
                   >
                     R$ {saldo.toLocaleString("pt-BR")}
                   </p>
@@ -869,49 +872,63 @@ export default function Financeiro() {
                   Movimentação Mensal {anoAtual}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="h-[220px] w-full [&_.recharts-rectangle]:cursor-pointer">
-                  <BarChart data={chartData}>
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                    <YAxis hide />
-                    <ChartTooltip
-                      content={
-                        <ChartTooltipContent
-                          formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`}
-                          labelFormatter={(_, payload) => {
-                            const d = payload?.[0]?.payload;
-                            if (!d) return "";
-                            const saldoMes = d.saldoMes ?? 0;
-                            const saldoAcum = d.saldoAcumulado ?? 0;
-                            const sMes = saldoMes >= 0 ? `+R$ ${saldoMes.toLocaleString("pt-BR")}` : `-R$ ${Math.abs(saldoMes).toLocaleString("pt-BR")}`;
-                            return `${d.month} · Saldo mês: ${sMes} ${saldoMes >= 0 ? "(positivo)" : "(negativo)"} · Em caixa: R$ ${saldoAcum.toLocaleString("pt-BR")}`;
-                          }}
-                        />
-                      }
-                    />
-                    <Bar
-                      dataKey="entradas"
-                      fill="var(--color-entradas)"
-                      radius={4}
-                      onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
-                    >
-                      <LabelList
-                        dataKey="saldoAcumulado"
-                        position="bottom"
-                        formatter={(v: number) => `R$ ${Number(v).toLocaleString("pt-BR")}`}
-                        className="fill-muted-foreground text-[10px]"
+              <CardContent className="overflow-x-auto -mx-1 px-1">
+                <div className={cn("min-w-0", isMobile && "min-w-[320px]")}>
+                  <ChartContainer config={chartConfig} className={cn("w-full [&_.recharts-rectangle]:cursor-pointer", isMobile ? "h-[200px]" : "h-[220px]")}>
+                    <BarChart data={chartData} margin={isMobile ? { top: 8, right: 8, left: 8, bottom: 4 } : undefined}>
+                      <XAxis
+                        dataKey="month"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                        interval={0}
                       />
-                    </Bar>
-                    <Bar
-                      dataKey="saidas"
-                      fill="var(--color-saidas)"
-                      radius={4}
-                      onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
-                    />
-                  </BarChart>
-                </ChartContainer>
+                      <YAxis hide />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR")}`}
+                            labelFormatter={(_, payload) => {
+                              const d = payload?.[0]?.payload;
+                              if (!d) return "";
+                              const saldoMes = d.saldoMes ?? 0;
+                              const saldoAcum = d.saldoAcumulado ?? 0;
+                              const sMes = saldoMes >= 0 ? `+R$ ${saldoMes.toLocaleString("pt-BR")}` : `-R$ ${Math.abs(saldoMes).toLocaleString("pt-BR")}`;
+                              return `${d.month} · Saldo mês: ${sMes} ${saldoMes >= 0 ? "(positivo)" : "(negativo)"} · Em caixa: R$ ${saldoAcum.toLocaleString("pt-BR")}`;
+                            }}
+                          />
+                        }
+                      />
+                      <Bar
+                        dataKey="entradas"
+                        fill="var(--color-entradas)"
+                        radius={4}
+                        onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
+                      >
+                        {!isMobile && (
+                          <LabelList
+                            dataKey="saldoAcumulado"
+                            position="bottom"
+                            formatter={(v: number) => {
+                              const n = Number(v);
+                              if (Number.isNaN(n)) return "";
+                              return `R$ ${n.toLocaleString("pt-BR")}`;
+                            }}
+                            style={{ fontSize: 10 }}
+                          />
+                        )}
+                      </Bar>
+                      <Bar
+                        dataKey="saidas"
+                        fill="var(--color-saidas)"
+                        radius={4}
+                        onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Clique em um mês para ver o detalhamento
+                  {isMobile ? "Toque em um mês para ver o detalhamento" : "Clique em um mês para ver o detalhamento"}
                 </p>
               </CardContent>
             </Card>
