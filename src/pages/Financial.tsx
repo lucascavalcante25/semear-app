@@ -442,18 +442,144 @@ function ModalRelatorioMensal({
   );
 }
 
-interface CartaoLancamentoProps {
-  lancamento: LancamentoApp;
+const METODO_LABELS: Record<string, string> = {
+  cash: "Dinheiro",
+  pix: "PIX",
+  card: "Cartão",
+  transfer: "Transferência",
+};
+
+interface ModalDetalheLancamentoProps {
+  lancamento: LancamentoApp | null;
+  aberto: boolean;
+  onFechar: () => void;
   onExcluir?: (id: number) => void;
   podeExcluir?: boolean;
 }
 
-function CartaoLancamento({ lancamento, onExcluir, podeExcluir }: CartaoLancamentoProps) {
+function ModalDetalheLancamento({
+  lancamento,
+  aberto,
+  onFechar,
+  onExcluir,
+  podeExcluir,
+}: ModalDetalheLancamentoProps) {
+  if (!lancamento || !aberto) return null;
   const isIncome = lancamento.type === "income";
   const idNum = lancamento.idNum ?? Number(lancamento.id);
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3 p-3 rounded-lg bg-card border hover:shadow-sm transition-shadow min-w-0">
+    <Dialog open={aberto} onOpenChange={(o) => !o && onFechar()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <div
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-lg shrink-0",
+                isIncome ? "bg-olive/10 text-olive" : "bg-destructive/10 text-destructive"
+              )}
+            >
+              {isIncome ? (
+                <ArrowUpCircle className="h-5 w-5" />
+              ) : (
+                <ArrowDownCircle className="h-5 w-5" />
+              )}
+            </div>
+            {isIncome ? "Entrada" : "Despesa"}
+          </DialogTitle>
+          <DialogDescription>
+            Detalhes do lançamento cadastrado
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <Label className="text-muted-foreground text-xs">Descrição</Label>
+            <p className="font-medium">{lancamento.description}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-muted-foreground text-xs">Data</Label>
+              <p className="font-medium">{lancamento.date.toLocaleDateString("pt-BR")}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Categoria</Label>
+              <p className="font-medium">{categoryLabels[lancamento.category] || lancamento.category}</p>
+            </div>
+          </div>
+          <div>
+            <Label className="text-muted-foreground text-xs">Valor</Label>
+            <p
+              className={cn(
+                "font-bold text-xl",
+                isIncome ? "text-olive" : "text-destructive"
+              )}
+            >
+              {isIncome ? "+" : "-"} R$ {lancamento.amount.toLocaleString("pt-BR")}
+            </p>
+          </div>
+          {lancamento.paymentMethod && (
+            <div>
+              <Label className="text-muted-foreground text-xs">Método de pagamento</Label>
+              <p className="font-medium">{METODO_LABELS[lancamento.paymentMethod] || lancamento.paymentMethod}</p>
+            </div>
+          )}
+          {lancamento.notes && (
+            <div>
+              <Label className="text-muted-foreground text-xs">Observações</Label>
+              <p className="font-medium text-sm">{lancamento.notes}</p>
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground pt-2 border-t">
+            Cadastrado por {lancamento.createdBy} em {lancamento.createdAt.toLocaleDateString("pt-BR")} às{" "}
+            {lancamento.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        </div>
+        <div className="flex justify-between gap-2 pt-4 border-t">
+          <div>
+            {podeExcluir && onExcluir && idNum && (
+              <Button
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => {
+                  if (confirm("Excluir este lançamento?")) {
+                    onExcluir(idNum);
+                    onFechar();
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </Button>
+            )}
+          </div>
+          <Button variant="outline" onClick={onFechar}>
+            Fechar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface CartaoLancamentoProps {
+  lancamento: LancamentoApp;
+  onClick?: () => void;
+  onExcluir?: (id: number) => void;
+  podeExcluir?: boolean;
+}
+
+function CartaoLancamento({ lancamento, onClick, onExcluir, podeExcluir }: CartaoLancamentoProps) {
+  const isIncome = lancamento.type === "income";
+  const idNum = lancamento.idNum ?? Number(lancamento.id);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick?.()}
+      className="flex items-center gap-2 sm:gap-3 p-3 rounded-lg bg-card border hover:shadow-sm transition-shadow min-w-0 cursor-pointer"
+    >
       <div
         className={cn(
           "flex h-10 w-10 items-center justify-center rounded-lg shrink-0",
@@ -493,8 +619,11 @@ function CartaoLancamento({ lancamento, onExcluir, podeExcluir }: CartaoLancamen
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-            onClick={() => onExcluir(idNum)}
+            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm("Excluir este lançamento?")) onExcluir(idNum);
+            }}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -521,6 +650,7 @@ export default function Financeiro() {
     metodoPagamento: "",
   });
   const [mesSelecionado, setMesSelecionado] = useState<number | null>(null);
+  const [lancamentoDetalhe, setLancamentoDetalhe] = useState<LancamentoApp | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -944,6 +1074,14 @@ export default function Financeiro() {
               />
             )}
 
+            <ModalDetalheLancamento
+              lancamento={lancamentoDetalhe}
+              aberto={!!lancamentoDetalhe}
+              onFechar={() => setLancamentoDetalhe(null)}
+              onExcluir={handleExcluir}
+              podeExcluir={podeEscreverFinanceiro}
+            />
+
             <Tabs defaultValue="all" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="all">Todos</TabsTrigger>
@@ -961,6 +1099,7 @@ export default function Financeiro() {
                     <CartaoLancamento
                       key={entry.id}
                       lancamento={entry}
+                      onClick={() => setLancamentoDetalhe(entry)}
                       onExcluir={handleExcluir}
                       podeExcluir={podeEscreverFinanceiro}
                     />
@@ -975,6 +1114,7 @@ export default function Financeiro() {
                     <CartaoLancamento
                       key={entry.id}
                       lancamento={entry}
+                      onClick={() => setLancamentoDetalhe(entry)}
                       onExcluir={handleExcluir}
                       podeExcluir={podeEscreverFinanceiro}
                     />
@@ -993,6 +1133,7 @@ export default function Financeiro() {
                     <CartaoLancamento
                       key={entry.id}
                       lancamento={entry}
+                      onClick={() => setLancamentoDetalhe(entry)}
                       onExcluir={handleExcluir}
                       podeExcluir={podeEscreverFinanceiro}
                     />

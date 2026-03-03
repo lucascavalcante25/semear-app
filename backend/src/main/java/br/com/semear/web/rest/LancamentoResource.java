@@ -114,7 +114,7 @@ public class LancamentoResource {
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_SECRETARIA", "ROLE_LIDER" })
     public ResponseEntity<Void> deleteLancamento(@PathVariable("id") final Long id) {
         LOG.debug("REST request to delete Lancamento : {}", id);
         lancamentoRepository.deleteById(id);
