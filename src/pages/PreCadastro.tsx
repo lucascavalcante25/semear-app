@@ -286,21 +286,20 @@ export default function PreCadastro() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="sexo">Sexo</Label>
-                    <Select
+                    <select
+                      id="sexo"
                       value={formulario.sexo}
-                      onValueChange={(value) => atualizarCampo("sexo", value)}
+                      onChange={(e) => atualizarCampo("sexo", e.target.value as SexoCadastro)}
+                      className={cn(
+                        "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      )}
                     >
-                      <SelectTrigger id="sexo">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {opcoesSexo.map((opcao) => (
-                          <SelectItem key={opcao.value} value={opcao.value}>
-                            {opcao.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {opcoesSexo.map((opcao) => (
+                        <option key={opcao.value} value={opcao.value}>
+                          {opcao.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label>Perfil</Label>

@@ -575,10 +575,26 @@ export default function Biblia() {
     }
   };
 
-  const handleSelecionarVersiculo = (verso: number) => {
-    setVersiculoAtivo((anterior) => (anterior === verso ? null : verso));
-    setVersoInicio(verso);
-    setVersoFim(verso);
+  const handleSelecionarVersiculo = (verso: number, event?: React.MouseEvent) => {
+    const shiftKey = event?.shiftKey ?? false;
+    setVersiculoAtivo((anterior) => {
+      if (anterior == null) {
+        setVersoInicio(verso);
+        setVersoFim(verso);
+        return verso;
+      }
+      if (shiftKey) {
+        return anterior;
+      }
+      if (verso >= versoInicio && verso <= versoFim) {
+        return null;
+      }
+      const novoInicio = Math.min(anterior, verso);
+      const novoFim = Math.max(anterior, verso);
+      setVersoInicio(novoInicio);
+      setVersoFim(novoFim);
+      return novoInicio;
+    });
   };
 
   const handleAlternarLeituraCapitulo = () => {
@@ -591,11 +607,11 @@ export default function Biblia() {
   };
 
   const selectionReference = useMemo(() => {
-    if (!selectedBook || !selectedChapter) {
+    if (!selectedBook || !selectedChapter || versiculoAtivo == null) {
       return null;
     }
     return obterReferenciaSelecao(selectedBook, selectedChapter, versoInicio, versoFim);
-  }, [selectedBook, selectedChapter, versoInicio, versoFim]);
+  }, [selectedBook, selectedChapter, versoInicio, versoFim, versiculoAtivo]);
 
   const isSelectionFavorite = useMemo(() => {
     if (!selectionReference) {
@@ -681,6 +697,21 @@ export default function Biblia() {
 
   const handleExcluirNota = (noteId: string) => {
     setNotes(removerNota(userId, noteId));
+  };
+
+  const handleCopiarSelecao = async () => {
+    if (!selectionReference || !chapterData) {
+      return;
+    }
+    const verseTexts = chapterData.verses
+      .filter(
+        (verse) =>
+          verse.verse >= selectionReference.verseRange.start &&
+          verse.verse <= selectionReference.verseRange.end,
+      )
+      .map((verse) => `${verse.verse}. ${verse.text}`)
+      .join(" ");
+    await navigator.clipboard.writeText(verseTexts);
   };
 
   const handleCompartilharSelecao = async () => {
@@ -1012,6 +1043,10 @@ export default function Biblia() {
                                 versiculoNoIntervalo(verse.verse, note.reference.verseRange),
                             )
                           : [];
+                      const noIntervalo =
+                        versiculoAtivo != null &&
+                        verse.verse >= versoInicio &&
+                        verse.verse <= versoFim;
                       const ativo = versiculoAtivo === verse.verse;
                       return (
                     <div
@@ -1019,11 +1054,11 @@ export default function Biblia() {
                       data-verse={verse.verse}
                       className={cn(
                         "rounded-md p-2 transition-colors",
-                        ativo && "bg-muted/40",
+                        noIntervalo && "bg-muted/40",
                       )}
                     >
                       <p
-                        onClick={() => handleSelecionarVersiculo(verse.verse)}
+                        onClick={(e) => handleSelecionarVersiculo(verse.verse, e)}
                         className={cn(
                           "cursor-pointer",
                           index === 0 && "verse-highlight",
@@ -1044,6 +1079,11 @@ export default function Biblia() {
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {ativo && (
                           <>
+                            {versoInicio !== versoFim && (
+                              <span className="text-xs text-muted-foreground w-full">
+                                Versículos {versoInicio}-{versoFim} selecionados
+                              </span>
+                            )}
                             <Button variant="outline" size="sm" onClick={handleAlternarFavorito}>
                               <Star className="h-4 w-4 mr-2" />
                               Favoritar
@@ -1099,9 +1139,7 @@ export default function Biblia() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={async () => {
-                                await navigator.clipboard.writeText(verse.text);
-                              }}
+                              onClick={handleCopiarSelecao}
                             >
                               <Copy className="h-4 w-4 mr-2" />
                               Copiar
