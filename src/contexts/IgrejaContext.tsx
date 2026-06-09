@@ -17,6 +17,7 @@ import {
   type IgrejaPix,
   type IgrejaPublica,
 } from "@/modules/igreja/api";
+import { hexParaTokensHsl } from "@/lib/cores-igreja";
 
 const FALLBACK_PUBLICA: IgrejaPublica = {
   nome: "Semear",
@@ -46,16 +47,25 @@ const IgrejaContext = createContext<ValorContextoIgreja | undefined>(undefined);
 function aplicarCoresIgreja(corPrimaria?: string, corSecundaria?: string) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+
   if (corPrimaria) {
     root.style.setProperty("--igreja-primary", corPrimaria);
-    root.style.setProperty("--primary", corPrimaria);
-    root.style.setProperty("--olive", corPrimaria);
-    root.style.setProperty("--ring", corPrimaria);
+    const primariaHsl = hexParaTokensHsl(corPrimaria);
+    if (primariaHsl) {
+      root.style.setProperty("--primary", primariaHsl);
+      root.style.setProperty("--olive", primariaHsl);
+      root.style.setProperty("--ring", primariaHsl);
+      root.style.setProperty("--sidebar-primary", primariaHsl);
+    }
   }
+
   if (corSecundaria) {
     root.style.setProperty("--igreja-secondary", corSecundaria);
-    root.style.setProperty("--secondary", corSecundaria);
-    root.style.setProperty("--deep-blue", corSecundaria);
+    const secundariaHsl = hexParaTokensHsl(corSecundaria);
+    if (secundariaHsl) {
+      root.style.setProperty("--secondary", secundariaHsl);
+      root.style.setProperty("--deep-blue", secundariaHsl);
+    }
   }
 }
 

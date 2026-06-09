@@ -67,6 +67,10 @@ const normalizarUsuario = (user: Partial<Usuario> | null): Usuario | null => {
     name: String(user.name ?? "Usuario"),
     email: String(user.email ?? ""),
     role,
+    isSuperAdmin: Boolean((user as Usuario).isSuperAdmin),
+    authorities: Array.isArray((user as Usuario).authorities)
+      ? (user as Usuario).authorities
+      : undefined,
     modules: modules.length > 0 ? modules : undefined,
     permissions: (user as any).permissions,
   };
@@ -123,8 +127,10 @@ type RespostaConta = {
   modules?: string[];
 };
 
-const mapearAutoridadesParaPerfil = (authorities: string[] = []): Role => {
-  if (authorities.includes("ROLE_SUPER_ADMIN")) return "super_admin";
+const mapearAutoridadesParaPerfil = (
+  authorities: string[] = [],
+): { role: Role; isSuperAdmin: boolean } => {
+  const isSuperAdmin = authorities.includes("ROLE_SUPER_ADMIN");
   const roleMap: Record<string, Role> = {
     ROLE_ADMIN: "admin",
     ROLE_ADMIN_IGREJA: "admin",
@@ -148,18 +154,29 @@ const mapearAutoridadesParaPerfil = (authorities: string[] = []): Role => {
     "ROLE_VISITANTE",
   ];
   const match = prioridade.find((authority) => authorities.includes(authority));
-  return match ? roleMap[match] : "membro";
+  const roleIgreja = match ? roleMap[match] : isSuperAdmin ? "super_admin" : "membro";
+
+  // Dono da plataforma que também administra uma igreja: perfil de igreja + flag super admin
+  if (isSuperAdmin && match) {
+    return { role: roleIgreja, isSuperAdmin: true };
+  }
+  if (isSuperAdmin) {
+    return { role: "super_admin", isSuperAdmin: true };
+  }
+  return { role: roleIgreja, isSuperAdmin: false };
 };
 
 const mapearContaParaUsuario = (account: RespostaConta): Usuario => {
   const name = [account.firstName, account.lastName].filter(Boolean).join(" ").trim();
-  const role = mapearAutoridadesParaPerfil(account.authorities);
+  const { role, isSuperAdmin } = mapearAutoridadesParaPerfil(account.authorities);
   const modulesFromApi = Array.isArray(account.modules) ? (account.modules as string[]) : [];
   return {
     id: String(account.id ?? account.login ?? account.email ?? "0"),
     name: name || account.login || account.email || "Usuario",
     email: account.email || account.login || "",
     role,
+    isSuperAdmin,
+    authorities: account.authorities,
     modules: modulesFromApi.length > 0 ? modulesFromApi : undefined,
     permissions: (account as any).permissions,
   };

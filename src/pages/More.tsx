@@ -16,11 +16,12 @@ import {
   Moon,
   Sun,
   Church,
+  LayoutDashboard,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccess } from "@/auth/permissions";
+import { canAccess, usuarioEhSuperAdmin } from "@/auth/permissions";
 import { usarTema } from "@/contexts/ThemeContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 
@@ -183,6 +184,14 @@ export default function Mais() {
                   label="Configurações da Igreja"
                   description="Dados, PIX e identidade visual"
                   path="/configuracoes-igreja"
+                />
+              )}
+              {usuarioEhSuperAdmin(user) && (
+                <MenuItem
+                  icon={LayoutDashboard}
+                  label="Painel da Plataforma"
+                  description="Gerenciar igrejas e solicitações SaaS"
+                  path="/super-admin/dashboard"
                 />
               )}
             </CardContent>

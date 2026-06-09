@@ -1,8 +1,9 @@
-const urlBaseBruta = import.meta.env.VITE_API_URL as string | undefined;
+const urlBaseBruta =
+  (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8080";
 
 function normalizarUrlBaseApi(raw?: string): string | undefined {
   if (!raw) return undefined;
-  const trimmed = raw.replace(/\/$/, "");
+  const trimmed = raw.replace(/\/$/, "").replace(":8082", ":8080");
 
   // Quando o app é acessado via IP na rede (ex.: celular), "localhost" aponta pro dispositivo,
   // não para a máquina do backend. Então, se a base estiver em localhost/127.0.0.1, trocamos

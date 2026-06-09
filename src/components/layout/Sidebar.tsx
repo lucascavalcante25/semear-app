@@ -11,10 +11,11 @@ import {
   Settings,
   Heart,
   UserCheck,
+  LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccess } from "@/auth/permissions";
+import { canAccess, usuarioEhSuperAdmin } from "@/auth/permissions";
 import { PixOfertaBloco } from "@/components/pix/PixOferta";
 
 const menuGroups = [
@@ -93,6 +94,30 @@ export function BarraLateral() {
             </div>
             );
           })}
+
+          {usuarioEhSuperAdmin(user) && (
+            <div>
+              <h4 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Plataforma
+              </h4>
+              <ul className="space-y-1">
+                <li>
+                  <Link
+                    to="/super-admin/dashboard"
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                      location.pathname.startsWith("/super-admin")
+                        ? "bg-olive text-olive-foreground shadow-sm"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    )}
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Painel SaaS
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

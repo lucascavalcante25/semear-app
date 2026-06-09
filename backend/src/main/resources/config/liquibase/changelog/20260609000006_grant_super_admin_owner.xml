@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Dono da plataforma: admin da igreja Semear (id=1) também é SUPER_ADMIN -->
+    <changeSet id="20260609000006-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM jhi_user_authority
+                WHERE user_id = 1 AND authority_name = 'ROLE_SUPER_ADMIN'
+            </sqlCheck>
+        </preConditions>
+        <insert tableName="jhi_user_authority">
+            <column name="user_id" valueNumeric="1"/>
+            <column name="authority_name" value="ROLE_SUPER_ADMIN"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

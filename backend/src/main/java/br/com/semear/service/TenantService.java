@@ -27,12 +27,12 @@ public class TenantService {
     }
 
     public Igreja getIgrejaAtual() {
-        if (isSuperAdmin()) {
-            return igrejaRepository.findById(1L).orElseThrow(() -> new BadRequestAlertException("Igreja padrão não encontrada", "igreja", "naoencontrada"));
-        }
         User user = getUsuarioAtual();
         if (user.getIgreja() != null) {
             return user.getIgreja();
+        }
+        if (isSuperAdmin()) {
+            return igrejaRepository.findById(1L).orElseThrow(() -> new BadRequestAlertException("Igreja padrão não encontrada", "igreja", "naoencontrada"));
         }
         return igrejaRepository.findById(1L).orElseThrow(() -> new BadRequestAlertException("Usuário sem igreja", "igreja", "semigreja"));
     }

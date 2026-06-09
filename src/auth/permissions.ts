@@ -111,8 +111,18 @@ export type ModulePermission = {
 
 export type UserAccess = {
   role: Role;
+  /** Indica acesso ao painel da plataforma (pode coexistir com role de igreja). */
+  isSuperAdmin?: boolean;
+  authorities?: string[];
   modules?: (string | string[])[];
   permissions?: ModulePermission[];
+};
+
+export const usuarioEhSuperAdmin = (user: UserAccess | null | undefined): boolean => {
+  if (!user) return false;
+  if (user.isSuperAdmin) return true;
+  if (user.role === "super_admin") return true;
+  return user.authorities?.includes("ROLE_SUPER_ADMIN") ?? false;
 };
 
 /**

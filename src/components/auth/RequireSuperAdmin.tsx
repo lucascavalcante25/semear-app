@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { usuarioEhSuperAdmin } from "@/auth/permissions";
 
 export function RequerSuperAdmin({ children }: { children: React.ReactNode }) {
   const { user } = usarAutenticacao();
@@ -9,7 +10,7 @@ export function RequerSuperAdmin({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user.role !== "super_admin") {
+  if (!usuarioEhSuperAdmin(user)) {
     return <Navigate to="/acesso-negado" replace />;
   }
 

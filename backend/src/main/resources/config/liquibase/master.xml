@@ -70,4 +70,5 @@
     <include file="config/liquibase/changelog/20260609000003_user_igreja_id.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260609000004_operational_igreja_id.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260609000005_recuperacao_senha.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000006_grant_super_admin_owner.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

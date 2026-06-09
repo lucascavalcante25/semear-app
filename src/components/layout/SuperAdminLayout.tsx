@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -61,7 +62,13 @@ function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
           );
         })}
       </nav>
-      <div className="border-t border-sidebar-border p-3">
+      <div className="space-y-1 border-t border-sidebar-border p-3">
+        <Button variant="ghost" className="w-full justify-start gap-2" asChild>
+          <Link to="/" onClick={onNavigate}>
+            <ArrowLeft className="h-4 w-4" />
+            Voltar ao app da igreja
+          </Link>
+        </Button>
         <Button
           variant="ghost"
           className="w-full justify-start gap-2"
