@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { aplicarMascaraCpf } from "@/lib/mascara-telefone";
 import { Eye, EyeOff } from "lucide-react";
 import styles from "./Login.module.css";
@@ -33,6 +34,7 @@ type LocationState = {
 
 export default function Entrar() {
   const { login, user, defaultRoute } = usarAutenticacao();
+  const { publica, logoUrl, nomeExibicao } = useIgrejaConfiguracao();
   const navigate = useNavigate();
   const location = useLocation();
   const [identificador, setIdentificador] = useState("");
@@ -123,8 +125,8 @@ export default function Entrar() {
           aria-hidden="true"
         >
           <img
-            src="/logo-semear.png"
-            alt="Semear - Comunidade Evangélica"
+            src={logoUrl}
+            alt={nomeExibicao}
             className={styles.splashLogo}
           />
         </div>
@@ -137,7 +139,7 @@ export default function Entrar() {
               <div className="flex justify-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25">
                   <img
-                    src="/logo-semear.png"
+                    src={logoUrl}
                     alt=""
                     aria-hidden="true"
                     className="h-8 w-8 object-contain"
@@ -175,12 +177,20 @@ export default function Entrar() {
               </div>
 
               <div className="space-y-2">
-                <Label
-                  htmlFor="password"
-                  className="text-white/90 text-sm font-medium"
-                >
-                  Senha
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="password"
+                    className="text-white/90 text-sm font-medium"
+                  >
+                    Senha
+                  </Label>
+                  <Link
+                    to="/esqueci-senha"
+                    className="text-xs text-white/70 hover:text-white underline-offset-2 hover:underline"
+                  >
+                    Esqueceu sua senha?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"
@@ -240,6 +250,14 @@ export default function Entrar() {
               >
                 <Link to="/pre-cadastro">Primeiro acesso / Pre-cadastro</Link>
               </Button>
+
+              <Button
+                asChild
+                variant="ghost"
+                className="w-full !text-white/90 hover:!bg-white/10 hover:!text-white"
+              >
+                <Link to="/solicitar-acesso">Quero cadastrar minha igreja</Link>
+              </Button>
             </form>
           </div>
 
@@ -250,10 +268,10 @@ export default function Entrar() {
             </p>
           </div>
 
-          <p className={styles.churchName}>Comunidade Evangélica Semear</p>
-          <p className={styles.churchSlogan}>
-            Semeando a palavra, formando discípulos e colhendo vidas.
-          </p>
+          <p className={styles.churchName}>{publica.nome || nomeExibicao}</p>
+          {publica.descricaoIgreja && (
+            <p className={styles.churchSlogan}>{publica.descricaoIgreja}</p>
+          )}
         </div>
       )}
     </div>

@@ -34,7 +34,7 @@ public class GrupoLouvorResource {
     }
 
     @PostMapping("")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> createGrupo(@Valid @RequestBody GrupoLouvorDTO dto) throws URISyntaxException {
         log.debug("REST request to create GrupoLouvor : {}", dto);
         GrupoLouvorDTO result = grupoLouvorService.save(dto);
@@ -44,7 +44,7 @@ public class GrupoLouvorResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> updateGrupo(
         @PathVariable Long id,
         @Valid @RequestBody GrupoLouvorDTO dto
@@ -73,7 +73,7 @@ public class GrupoLouvorResource {
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Void> deleteGrupo(@PathVariable Long id) {
         log.debug("REST request to delete GrupoLouvor : {}", id);
         grupoLouvorService.delete(id);
@@ -83,7 +83,7 @@ public class GrupoLouvorResource {
     }
 
     @PostMapping("/{id}/louvores/{louvorId}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> addLouvor(@PathVariable Long id, @PathVariable Long louvorId) {
         log.debug("REST request to add louvor {} to grupo {}", louvorId, id);
         GrupoLouvorDTO result = grupoLouvorService.addLouvor(id, louvorId);
@@ -91,7 +91,7 @@ public class GrupoLouvorResource {
     }
 
     @DeleteMapping("/{id}/louvores/{louvorId}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> removeLouvor(@PathVariable Long id, @PathVariable Long louvorId) {
         log.debug("REST request to remove louvor {} from grupo {}", louvorId, id);
         grupoLouvorService.removeLouvor(id, louvorId);
@@ -99,7 +99,7 @@ public class GrupoLouvorResource {
     }
 
     @PutMapping("/{id}/ordem")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> reorderLouvores(
         @PathVariable Long id,
         @RequestBody List<Long> louvorIdsInOrder

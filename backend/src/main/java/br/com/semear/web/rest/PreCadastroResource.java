@@ -1,10 +1,13 @@
 package br.com.semear.web.rest;
 
+import br.com.semear.domain.Igreja;
 import br.com.semear.domain.PreCadastro;
 import br.com.semear.domain.enumeration.PerfilAcesso;
 import br.com.semear.domain.enumeration.StatusCadastro;
+import br.com.semear.domain.enumeration.StatusIgreja;
 import br.com.semear.domain.Endereco;
 import br.com.semear.repository.EnderecoRepository;
+import br.com.semear.repository.IgrejaRepository;
 import br.com.semear.repository.PreCadastroRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.security.AuthoritiesConstants;
@@ -54,17 +57,20 @@ public class PreCadastroResource {
     private final PreCadastroService preCadastroService;
     private final UserRepository userRepository;
     private final EnderecoRepository enderecoRepository;
+    private final IgrejaRepository igrejaRepository;
 
     public PreCadastroResource(
         PreCadastroRepository preCadastroRepository,
         PreCadastroService preCadastroService,
         UserRepository userRepository,
-        EnderecoRepository enderecoRepository
+        EnderecoRepository enderecoRepository,
+        IgrejaRepository igrejaRepository
     ) {
         this.preCadastroRepository = preCadastroRepository;
         this.preCadastroService = preCadastroService;
         this.userRepository = userRepository;
         this.enderecoRepository = enderecoRepository;
+        this.igrejaRepository = igrejaRepository;
     }
 
     /**
@@ -163,6 +169,12 @@ public class PreCadastroResource {
         preCadastro.setPerfilSolicitado(PerfilAcesso.MEMBRO);
         preCadastro.setPerfilAprovado(null);
         preCadastro.setStatus(StatusCadastro.PRIMEIROACESSO);
+        if (preCadastro.getIgreja() == null) {
+            Igreja igrejaPadrao = igrejaRepository
+                .findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA)
+                .orElseThrow(() -> new BadRequestAlertException("Igreja padrão não encontrada", ENTITY_NAME, "semigreja"));
+            preCadastro.setIgreja(igrejaPadrao);
+        }
         if (preCadastro.getCriadoEm() == null) {
             preCadastro.setCriadoEm(Instant.now());
         }
@@ -176,7 +188,7 @@ public class PreCadastroResource {
      * {@code POST  /pre-cadastros/:id/aprovar} : Aprova um pré-cadastro e cria o usuário.
      */
     @PostMapping("/{id}/aprovar")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ADMIN_IGREJA', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
     public ResponseEntity<PreCadastro> aprovarPreCadastro(
         @PathVariable Long id,
         @Valid @RequestBody AprovarPreCadastroVM body
@@ -317,7 +329,7 @@ public class PreCadastroResource {
      * {@code GET  /pre-cadastros/pendentes} : get preCadastros pending approval (PRIMEIROACESSO, PENDENTE).
      */
     @GetMapping("/pendentes")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ADMIN_IGREJA', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
     public ResponseEntity<List<PreCadastro>> getPreCadastrosPendentes() {
         LOG.debug("REST request to get pending PreCadastros");
         List<PreCadastro> list = preCadastroRepository.findByStatusIn(
@@ -360,7 +372,7 @@ public class PreCadastroResource {
      * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ADMIN_IGREJA', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
     public ResponseEntity<Void> deletePreCadastro(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete PreCadastro : {}", id);
         preCadastroRepository.deleteById(id);

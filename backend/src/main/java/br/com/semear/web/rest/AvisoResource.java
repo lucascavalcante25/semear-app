@@ -4,6 +4,7 @@ import br.com.semear.domain.Aviso;
 import br.com.semear.domain.User;
 import br.com.semear.repository.AvisoRepository;
 import br.com.semear.repository.UserRepository;
+import br.com.semear.service.TenantService;
 import br.com.semear.service.UserService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
@@ -42,11 +43,18 @@ public class AvisoResource {
     private final AvisoRepository avisoRepository;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final TenantService tenantService;
 
-    public AvisoResource(AvisoRepository avisoRepository, UserService userService, UserRepository userRepository) {
+    public AvisoResource(
+        AvisoRepository avisoRepository,
+        UserService userService,
+        UserRepository userRepository,
+        TenantService tenantService
+    ) {
         this.avisoRepository = avisoRepository;
         this.userService = userService;
         this.userRepository = userRepository;
+        this.tenantService = tenantService;
     }
 
     private static String obterNomeCompleto(User user) {
@@ -78,7 +86,7 @@ public class AvisoResource {
     }
 
     @PostMapping("")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<AvisoResponseDTO> createAviso(@RequestBody Aviso aviso) throws URISyntaxException {
         LOG.debug("REST request to save Aviso : {}", aviso);
         if (aviso.getId() != null) {
@@ -102,6 +110,7 @@ public class AvisoResource {
                 .orElse("Sistema");
             aviso.setCriadoPor(nomeCriador);
         }
+        aviso.setIgreja(tenantService.resolverIgrejaParaCriacao());
         Aviso result = avisoRepository.save(aviso);
         return ResponseEntity.created(new URI("/api/avisos/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
@@ -109,7 +118,7 @@ public class AvisoResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<AvisoResponseDTO> updateAviso(@PathVariable("id") final Long id, @RequestBody Aviso aviso)
         throws URISyntaxException {
         LOG.debug("REST request to update Aviso : {}, {}", id, aviso);
@@ -135,6 +144,7 @@ public class AvisoResource {
         }
 
         Aviso existente = existenteOpt.get();
+        tenantService.validarMesmaIgreja(existente.getIgreja());
         existente.setTitulo(aviso.getTitulo());
         existente.setConteudo(aviso.getConteudo());
         existente.setTipo(aviso.getTipo());
@@ -158,7 +168,10 @@ public class AvisoResource {
         @org.springdoc.core.annotations.ParameterObject Pageable pageable
     ) {
         LOG.debug("REST request to get a page of Avisos");
-        Page<Aviso> page = ativos ? avisoRepository.findAllByAtivoIsTrue(pageable) : avisoRepository.findAll(pageable);
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        Page<Aviso> page = ativos
+            ? avisoRepository.findAllByIgrejaIdAndAtivoIsTrue(pageable, igrejaId)
+            : avisoRepository.findAllByIgrejaId(pageable, igrejaId);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         List<AvisoResponseDTO> body = page.getContent().stream().map(this::toResponseDTO).collect(Collectors.toList());
         return ResponseEntity.ok().headers(headers).body(body);
@@ -168,14 +181,18 @@ public class AvisoResource {
     public ResponseEntity<AvisoResponseDTO> getAviso(@PathVariable("id") final Long id) {
         LOG.debug("REST request to get Aviso : {}", id);
         Optional<Aviso> aviso = avisoRepository.findById(id);
+        aviso.ifPresent(a -> tenantService.validarMesmaIgreja(a.getIgreja()));
         return ResponseUtil.wrapOrNotFound(aviso.map(this::toResponseDTO));
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Void> deleteAviso(@PathVariable("id") final Long id) {
         LOG.debug("REST request to delete Aviso : {}", id);
-        avisoRepository.deleteById(id);
+        avisoRepository.findById(id).ifPresent(a -> {
+            tenantService.validarMesmaIgreja(a.getIgreja());
+            avisoRepository.delete(a);
+        });
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .build();

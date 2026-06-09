@@ -16,6 +16,8 @@ public interface DevocionalRepository extends JpaRepository<Devocional, Long> {
 
     Page<Devocional> findAllByOrderByDataPublicacaoDesc(Pageable pageable);
 
+    Page<Devocional> findAllByIgrejaIdOrderByDataPublicacaoDesc(Long igrejaId, Pageable pageable);
+
     Optional<Devocional> findFirstByDataPublicacaoOrderByIdDesc(LocalDate data);
 
     Page<Devocional> findByDataPublicacaoBeforeOrderByDataPublicacaoDesc(LocalDate data, Pageable pageable);

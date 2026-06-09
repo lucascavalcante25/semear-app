@@ -9,5 +9,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AvisoRepository extends JpaRepository<Aviso, Long> {
     Page<Aviso> findAllByAtivoIsTrue(Pageable pageable);
+
+    Page<Aviso> findAllByIgrejaId(Pageable pageable, Long igrejaId);
+
+    Page<Aviso> findAllByIgrejaIdAndAtivoIsTrue(Pageable pageable, Long igrejaId);
 }
 

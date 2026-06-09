@@ -48,7 +48,14 @@ public class SecurityConfiguration {
                     .requestMatchers(mvc.pattern("/api/account/reset-password/init")).permitAll()
                     .requestMatchers(mvc.pattern("/api/account/reset-password/finish")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/pre-cadastros")).permitAll()
-                    .requestMatchers(mvc.pattern("/api/admin/**")).hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/solicitacoes-acesso")).permitAll()
+                    .requestMatchers(mvc.pattern("/api/recuperacao-senha/**")).permitAll()
+                    .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/igreja-configuracao/publica")).permitAll()
+                    .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/igrejas/*/logo")).permitAll()
+                    .requestMatchers(mvc.pattern("/api/admin/**")).hasAnyAuthority(
+                        AuthoritiesConstants.SUPER_ADMIN,
+                        AuthoritiesConstants.ADMIN
+                    )
                     .requestMatchers(mvc.pattern("/api/**")).authenticated()
                     .requestMatchers(mvc.pattern("/v3/api-docs/**")).hasAuthority(AuthoritiesConstants.ADMIN)
                     .requestMatchers(mvc.pattern("/management/health")).permitAll()

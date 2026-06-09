@@ -54,7 +54,7 @@ public class DevocionalResource {
     }
 
     @PostMapping("")
-    @RolesAllowed("ROLE_ADMIN")
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA" })
     public ResponseEntity<DevocionalDTO> createDevocional(@Valid @RequestBody DevocionalDTO devocionalDTO) throws URISyntaxException {
         log.debug("REST request to save Devocional : {}", devocionalDTO);
         if (devocionalDTO.getId() != null) {
@@ -67,7 +67,7 @@ public class DevocionalResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed("ROLE_ADMIN")
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA" })
     public ResponseEntity<DevocionalDTO> updateDevocional(
         @PathVariable(value = "id", required = false) final Long id,
         @Valid @RequestBody DevocionalDTO devocionalDTO
@@ -121,7 +121,7 @@ public class DevocionalResource {
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed("ROLE_ADMIN")
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA" })
     public ResponseEntity<Void> deleteDevocional(@PathVariable("id") Long id) {
         log.debug("REST request to delete Devocional : {}", id);
         devocionalService.delete(id);

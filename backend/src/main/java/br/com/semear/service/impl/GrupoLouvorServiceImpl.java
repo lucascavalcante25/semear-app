@@ -7,6 +7,7 @@ import br.com.semear.repository.GrupoLouvorItemRepository;
 import br.com.semear.repository.GrupoLouvorRepository;
 import br.com.semear.repository.LouvorRepository;
 import br.com.semear.service.GrupoLouvorService;
+import br.com.semear.service.TenantService;
 import br.com.semear.service.dto.GrupoLouvorDTO;
 import br.com.semear.service.mapper.GrupoLouvorMapper;
 import jakarta.persistence.EntityManager;
@@ -32,17 +33,20 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
     private final GrupoLouvorItemRepository itemRepository;
     private final LouvorRepository louvorRepository;
     private final GrupoLouvorMapper mapper;
+    private final TenantService tenantService;
 
     public GrupoLouvorServiceImpl(
         GrupoLouvorRepository grupoRepository,
         GrupoLouvorItemRepository itemRepository,
         LouvorRepository louvorRepository,
-        GrupoLouvorMapper mapper
+        GrupoLouvorMapper mapper,
+        TenantService tenantService
     ) {
         this.grupoRepository = grupoRepository;
         this.itemRepository = itemRepository;
         this.louvorRepository = louvorRepository;
         this.mapper = mapper;
+        this.tenantService = tenantService;
     }
 
     @Override
@@ -52,6 +56,9 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
         if (grupo.getOrdem() == null) {
             long count = grupoRepository.count();
             grupo.setOrdem((int) count);
+        }
+        if (grupo.getIgreja() == null) {
+            grupo.setIgreja(tenantService.resolverIgrejaParaCriacao());
         }
         grupo = grupoRepository.save(grupo);
         return mapper.toDto(grupo);
@@ -71,7 +78,7 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
     @Override
     @Transactional(readOnly = true)
     public List<GrupoLouvorDTO> findAll() {
-        return grupoRepository.findAllWithItensOrderByOrdemAsc().stream()
+        return grupoRepository.findAllByIgrejaIdWithItensOrderByOrdemAsc(tenantService.getIgrejaIdAtual()).stream()
             .map(mapper::toDto)
             .toList();
     }

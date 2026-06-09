@@ -33,6 +33,10 @@ public class GrupoLouvor implements Serializable {
     @Column(name = "ordem", nullable = false)
     private Integer ordem = 0;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "igreja_id")
+    private Igreja igreja;
+
     @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("ordem ASC")
     private List<GrupoLouvorItem> itens = new ArrayList<>();
@@ -67,6 +71,14 @@ public class GrupoLouvor implements Serializable {
 
     public void setItens(List<GrupoLouvorItem> itens) {
         this.itens = itens;
+    }
+
+    public Igreja getIgreja() {
+        return igreja;
+    }
+
+    public void setIgreja(Igreja igreja) {
+        this.igreja = igreja;
     }
 
     @Override

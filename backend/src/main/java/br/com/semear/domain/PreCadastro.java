@@ -100,6 +100,10 @@ public class PreCadastro implements Serializable {
     @JoinColumn(unique = true)
     private Endereco endereco;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "igreja_id")
+    private Igreja igreja;
+
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public Long getId() {
@@ -347,6 +351,14 @@ public class PreCadastro implements Serializable {
     public PreCadastro endereco(Endereco endereco) {
         this.setEndereco(endereco);
         return this;
+    }
+
+    public Igreja getIgreja() {
+        return igreja;
+    }
+
+    public void setIgreja(Igreja igreja) {
+        this.igreja = igreja;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

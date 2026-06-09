@@ -117,4 +117,39 @@ public class MailService {
         LOG.debug("Sending password reset email to '{}'", user.getEmail());
         sendEmailFromTemplateSync(user, "mail/passwordResetEmail", "email.reset.title");
     }
+
+    @Async
+    public void sendCodigoRecuperacaoEmail(String to, String codigo) {
+        String subject = "Código de recuperação de senha — Semear";
+        String content =
+            "<p>Olá,</p>" +
+            "<p>Recebemos uma solicitação para redefinir sua senha na plataforma Semear.</p>" +
+            "<p>Seu código de verificação é:</p>" +
+            "<p style=\"font-size:24px;font-weight:bold;letter-spacing:4px\">" +
+            codigo +
+            "</p>" +
+            "<p>Este código é válido por <strong>15 minutos</strong>.</p>" +
+            "<p>Se você não solicitou esta alteração, ignore este e-mail.</p>" +
+            "<p>— Equipe Semear</p>";
+        sendEmailSync(to, subject, content, false, true);
+    }
+
+    @Async
+    public void sendAcessoPlataformaEmail(String to, String nomeIgreja, String senhaTemp) {
+        String subject = "Acesso à plataforma Semear — " + nomeIgreja;
+        String content =
+            "<p>Olá,</p>" +
+            "<p>Sua solicitação foi <strong>aprovada</strong>. A igreja <strong>" +
+            nomeIgreja +
+            "</strong> foi cadastrada na plataforma Semear.</p>" +
+            "<p><strong>Login:</strong> " +
+            to +
+            "</p>" +
+            "<p><strong>Senha temporária:</strong> " +
+            senhaTemp +
+            "</p>" +
+            "<p>Altere sua senha no primeiro acesso.</p>" +
+            "<p>— Equipe Semear</p>";
+        sendEmailSync(to, subject, content, false, true);
+    }
 }

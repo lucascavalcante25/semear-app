@@ -7,6 +7,17 @@ import { ProvedorAutenticacao } from "@/contexts/AuthContext";
 import { ProvedorNotificacoes } from "@/contexts/NotificationsContext";
 import { RequerAutenticacao } from "@/components/auth/RequireAuth";
 import { ProvedorTema } from "@/contexts/ThemeContext";
+import { ProvedorIgreja } from "@/contexts/IgrejaContext";
+import { RequerSuperAdmin } from "@/components/auth/RequireSuperAdmin";
+import DashboardSuperAdmin from "./pages/super-admin/Dashboard";
+import IgrejasSuperAdmin from "./pages/super-admin/Igrejas";
+import SolicitacoesSuperAdmin from "./pages/super-admin/Solicitacoes";
+import UsuariosSuperAdmin from "./pages/super-admin/Usuarios";
+import PlanosSuperAdmin from "./pages/super-admin/Planos";
+import FinanceiroSuperAdmin from "./pages/super-admin/Financeiro";
+import ConfiguracoesSuperAdmin from "./pages/super-admin/Configuracoes";
+import SolicitarAcesso from "./pages/SolicitarAcesso";
+import ConfiguracoesIgreja from "./pages/ConfiguracoesIgreja";
 
 // Pages
 import Inicio from "./pages/Index";
@@ -20,6 +31,7 @@ import Devocionais from "./pages/Devotionals";
 import Mais from "./pages/More";
 import Configuracoes from "./pages/Settings";
 import Entrar from "./pages/Login";
+import EsqueciSenha from "./pages/EsqueciSenha";
 import PreCadastro from "./pages/PreCadastro";
 import AprovarPreCadastros from "./pages/AprovarPreCadastros";
 import AcessoNegado from "./pages/AccessDenied";
@@ -34,11 +46,78 @@ const App = () => (
         <Notificador />
         <Sonner />
         <ProvedorAutenticacao>
+          <ProvedorIgreja>
           <ProvedorNotificacoes>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
               <Route path="/login" element={<Entrar />} />
+              <Route path="/esqueci-senha" element={<EsqueciSenha />} />
               <Route path="/pre-cadastro" element={<PreCadastro />} />
+              <Route path="/solicitar-acesso" element={<SolicitarAcesso />} />
+              <Route
+                path="/super-admin/dashboard"
+                element={
+                  <RequerSuperAdmin>
+                    <DashboardSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/igrejas"
+                element={
+                  <RequerSuperAdmin>
+                    <IgrejasSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/solicitacoes"
+                element={
+                  <RequerSuperAdmin>
+                    <SolicitacoesSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/usuarios"
+                element={
+                  <RequerSuperAdmin>
+                    <UsuariosSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/planos"
+                element={
+                  <RequerSuperAdmin>
+                    <PlanosSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/financeiro"
+                element={
+                  <RequerSuperAdmin>
+                    <FinanceiroSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/configuracoes"
+                element={
+                  <RequerSuperAdmin>
+                    <ConfiguracoesSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/configuracoes-igreja"
+                element={
+                  <RequerAutenticacao>
+                    <ConfiguracoesIgreja />
+                  </RequerAutenticacao>
+                }
+              />
               <Route
                 path="/acesso-negado"
                 element={
@@ -140,6 +219,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
           </ProvedorNotificacoes>
+          </ProvedorIgreja>
         </ProvedorAutenticacao>
       </TooltipProvider>
     </ProvedorTema>

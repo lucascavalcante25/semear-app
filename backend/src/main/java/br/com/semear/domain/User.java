@@ -167,6 +167,10 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @JoinColumn(name = "mae_id")
     private User mae;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "igreja_id")
+    private Igreja igreja;
+
     @JsonIgnore
     @ManyToMany
     @JoinTable(
@@ -418,6 +422,14 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     public void setMae(User mae) {
         this.mae = mae;
+    }
+
+    public Igreja getIgreja() {
+        return igreja;
+    }
+
+    public void setIgreja(Igreja igreja) {
+        this.igreja = igreja;
     }
 
     public String getLangKey() {

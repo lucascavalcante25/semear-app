@@ -2,6 +2,13 @@ import { TrendingUp, Flame, BookOpen, Calendar, Check, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { livrosBiblia } from "@/data/bible-books";
@@ -18,6 +25,8 @@ import {
   alternarProgressoLeitura,
 } from "@/modules/bible/service";
 import type { DiaPlanoLeitura, ProgressoLeituraUsuario, TrechoLeitura } from "@/modules/bible/types";
+
+const LIMITE_DIAS_ATRASO_RESUMO = 3;
 
 interface AnelProgressoProps {
   progress: number;
@@ -95,6 +104,7 @@ export function ProgressoEspiritual() {
   const [leiturasHoje, setLeiturasHoje] = useState<TrechoLeitura[]>([]);
   const [diaAtual, setDiaAtual] = useState<DiaPlanoLeitura | null>(null);
   const [diasPlano, setDiasPlano] = useState<DiaPlanoLeitura[]>([]);
+  const [modalAtrasadosAberto, setModalAtrasadosAberto] = useState(false);
 
   useEffect(() => {
     setProgressoLeitura(obterProgressoLeitura(userId));
@@ -150,7 +160,8 @@ export function ProgressoEspiritual() {
       .filter((dia) => dia.dayNumber < hojeNumero)
       .filter((dia) =>
         dia.readings.some((leitura) => !leiturasConcluidas.has(leitura.id)),
-      );
+      )
+      .sort((a, b) => a.dayNumber - b.dayNumber);
   }, [diaAtual, diasPlano, leiturasConcluidas]);
 
   const marcarLeitura = (readingId: string, completed: boolean) => {
@@ -204,8 +215,12 @@ export function ProgressoEspiritual() {
       verseEnd: String(referencia.verseEnd),
       version: "almeida",
     });
+    setModalAtrasadosAberto(false);
     navigate(`/biblia?${params.toString()}`);
   };
+
+  const leiturasPendentesNoDia = (dia: DiaPlanoLeitura) =>
+    dia.readings.filter((leitura) => !leiturasConcluidas.has(leitura.id));
 
   return (
     <Card className="shadow-spiritual overflow-hidden min-w-0">
@@ -331,26 +346,85 @@ export function ProgressoEspiritual() {
                   Você está em dia com o plano.
                 </p>
               ) : (
-                diasEmAtraso.slice(-3).map((dia) => (
-                  <div
-                    key={dia.id}
-                    className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg border border-dashed"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        Dia {dia.dayNumber}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground truncate">
-                        {dia.readings.map((reading) => reading.reference).join(" · ")}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                <>
+                  {diasEmAtraso.slice(0, LIMITE_DIAS_ATRASO_RESUMO).map((dia) => {
+                    const pendentes = leiturasPendentesNoDia(dia);
+                    return (
+                      <div
+                        key={dia.id}
+                        className="space-y-1 px-2 py-1.5 rounded-lg border border-dashed border-muted-foreground/40"
+                      >
+                        <p className="text-sm font-medium">Dia {dia.dayNumber}</p>
+                        <div className="flex flex-col gap-0.5">
+                          {pendentes.map((reading) => (
+                            <button
+                              key={reading.id}
+                              type="button"
+                              onClick={() => abrirLeitura(reading)}
+                              className="text-left text-[11px] text-muted-foreground hover:text-olive hover:underline underline-offset-2 transition-colors truncate"
+                            >
+                              {reading.reference}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {diasEmAtraso.length > LIMITE_DIAS_ATRASO_RESUMO && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs h-8 border-dashed"
+                      onClick={() => setModalAtrasadosAberto(true)}
+                    >
+                      Ver mais atrasados ({diasEmAtraso.length - LIMITE_DIAS_ATRASO_RESUMO})
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
       </CardContent>
+
+      <Dialog open={modalAtrasadosAberto} onOpenChange={setModalAtrasadosAberto}>
+        <DialogContent className="max-h-[85vh] flex flex-col gap-0 p-0 sm:max-w-md">
+          <DialogHeader className="p-6 pb-2 shrink-0">
+            <DialogTitle>Dias em atraso</DialogTitle>
+            <DialogDescription>
+              Toque em uma leitura para abrir o capítulo na Bíblia. São{" "}
+              <span className="font-medium text-foreground">{diasEmAtraso.length}</span>{" "}
+              {diasEmAtraso.length === 1 ? "dia" : "dias"} com leituras pendentes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto px-6 pb-6 max-h-[55vh] space-y-3">
+            {diasEmAtraso.map((dia) => {
+              const pendentes = leiturasPendentesNoDia(dia);
+              return (
+                <div
+                  key={dia.id}
+                  className="space-y-1.5 px-3 py-2 rounded-lg border border-dashed border-muted-foreground/40 bg-muted/20"
+                >
+                  <p className="text-sm font-semibold">Dia {dia.dayNumber}</p>
+                  <div className="flex flex-col gap-1">
+                    {pendentes.map((reading) => (
+                      <button
+                        key={reading.id}
+                        type="button"
+                        onClick={() => abrirLeitura(reading)}
+                        className="text-left text-sm text-foreground/90 hover:text-olive hover:underline underline-offset-2 transition-colors"
+                      >
+                        {reading.reference}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

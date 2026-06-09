@@ -25,3 +25,15 @@ services:
         sync: false
       - key: SEMEAR_CORS_ORIGINS
         sync: false  # URL do frontend (ex: https://semear-app.vercel.app)
+      - key: SPRING_MAIL_HOST
+        value: smtp-relay.brevo.com
+      - key: SPRING_MAIL_PORT
+        value: "587"
+      - key: SPRING_MAIL_USERNAME
+        sync: false
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+      - key: SEMEAR_MAIL_FROM
+        sync: false  # E-mail remetente verificado no Brevo
+      - key: SEMEAR_MAIL_BASE_URL
+        sync: false  # URL do frontend em produção

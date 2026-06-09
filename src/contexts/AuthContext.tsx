@@ -124,8 +124,10 @@ type RespostaConta = {
 };
 
 const mapearAutoridadesParaPerfil = (authorities: string[] = []): Role => {
+  if (authorities.includes("ROLE_SUPER_ADMIN")) return "super_admin";
   const roleMap: Record<string, Role> = {
     ROLE_ADMIN: "admin",
+    ROLE_ADMIN_IGREJA: "admin",
     ROLE_PASTOR: "pastor",
     ROLE_COPASTOR: "copastor",
     ROLE_SECRETARIA: "secretaria",
@@ -134,7 +136,18 @@ const mapearAutoridadesParaPerfil = (authorities: string[] = []): Role => {
     ROLE_MEMBRO: "membro",
     ROLE_VISITANTE: "visitante",
   };
-  const match = authorities.find((authority) => roleMap[authority]);
+  const prioridade = [
+    "ROLE_ADMIN",
+    "ROLE_ADMIN_IGREJA",
+    "ROLE_PASTOR",
+    "ROLE_COPASTOR",
+    "ROLE_SECRETARIA",
+    "ROLE_TESOURARIA",
+    "ROLE_LIDER",
+    "ROLE_MEMBRO",
+    "ROLE_VISITANTE",
+  ];
+  const match = prioridade.find((authority) => authorities.includes(authority));
   return match ? roleMap[match] : "membro";
 };
 

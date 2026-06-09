@@ -35,6 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { requisicaoApi, URL_BASE_API } from "@/modules/api/client";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { buildBibliaUrl } from "@/lib/versiculo-ref";
 import { livrosBiblia, type LivroBiblia } from "@/data/bible-books";
 
@@ -99,6 +100,7 @@ function ConteudoDevocional({
   conteudo,
 }: ConteudoDevocionalProps) {
   const navigate = useNavigate();
+  const { nomeExibicao } = useIgrejaConfiguracao();
   const [salvo, setSalvo] = useState(false);
   const [lido, setLido] = useState(false);
   const [amenCount, setAmenCount] = useState(0);
@@ -107,7 +109,7 @@ function ConteudoDevocional({
   const urlVersiculo = buildBibliaUrl(versiculoReferencia);
 
   const compartilhar = () => {
-    const text = `📖 ${titulo}\n\n"${versiculoTexto}" — ${versiculoReferencia}\n\n${conteudo}\n\n— Devocional Semear`;
+    const text = `📖 ${titulo}\n\n"${versiculoTexto}" — ${versiculoReferencia}\n\n${conteudo}\n\n— Devocional ${nomeExibicao}`;
     if (navigator.share) {
       navigator.share({ title: titulo, text });
     } else {

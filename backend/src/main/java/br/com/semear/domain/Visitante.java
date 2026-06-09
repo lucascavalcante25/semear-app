@@ -42,6 +42,10 @@ public class Visitante implements Serializable {
     @Column(name = "observacoes", columnDefinition = "text")
     private String observacoes;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "igreja_id")
+    private Igreja igreja;
+
     @NotNull
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
@@ -101,6 +105,14 @@ public class Visitante implements Serializable {
 
     public void setObservacoes(String observacoes) {
         this.observacoes = observacoes;
+    }
+
+    public Igreja getIgreja() {
+        return igreja;
+    }
+
+    public void setIgreja(Igreja igreja) {
+        this.igreja = igreja;
     }
 
     public Instant getCriadoEm() {

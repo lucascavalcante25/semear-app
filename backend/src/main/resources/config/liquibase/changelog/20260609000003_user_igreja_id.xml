@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260609000003-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="jhi_user" columnName="igreja_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="jhi_user">
+            <column name="igreja_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260609000003-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM information_schema.table_constraints
+                WHERE constraint_name = 'fk_user_igreja' AND table_name = 'jhi_user'
+            </sqlCheck>
+        </preConditions>
+        <addForeignKeyConstraint
+            baseTableName="jhi_user"
+            baseColumnNames="igreja_id"
+            constraintName="fk_user_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260609000003-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="jhi_user" columnName="igreja_id"/>
+        </preConditions>
+        <sql>UPDATE jhi_user SET igreja_id = 1 WHERE igreja_id IS NULL AND is_dependente = false</sql>
+    </changeSet>
+
+</databaseChangeLog>

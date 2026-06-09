@@ -44,7 +44,7 @@ public class LouvorResource {
     }
 
     @PostMapping("")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<LouvorDTO> createLouvor(@Valid @RequestBody LouvorDTO louvorDTO) throws URISyntaxException {
         log.debug("REST request to create Louvor : {}", louvorDTO);
         if (louvorDTO.getId() != null) {
@@ -60,7 +60,7 @@ public class LouvorResource {
      * Cria louvor com cifra em anexo (multipart/form-data).
      */
     @PostMapping(value = "/com-cifra", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<LouvorDTO> createLouvorWithCifra(
         @RequestPart("louvor") @Valid LouvorDTO louvorDTO,
         @RequestPart(value = "cifra", required = false) MultipartFile cifraFile
@@ -76,7 +76,7 @@ public class LouvorResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<LouvorDTO> updateLouvor(
         @PathVariable(value = "id", required = false) final Long id,
         @Valid @RequestBody LouvorDTO louvorDTO
@@ -102,7 +102,7 @@ public class LouvorResource {
      * Atualiza apenas a cifra do louvor.
      */
     @PutMapping(value = "/{id}/cifra", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<LouvorDTO> updateCifra(
         @PathVariable Long id,
         @RequestPart("cifra") MultipartFile cifraFile
@@ -165,7 +165,7 @@ public class LouvorResource {
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({"ROLE_ADMIN", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Void> deleteLouvor(@PathVariable Long id) {
         log.debug("REST request to delete Louvor : {}", id);
         louvorService.delete(id);

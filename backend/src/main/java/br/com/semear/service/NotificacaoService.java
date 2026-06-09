@@ -27,15 +27,18 @@ public class NotificacaoService {
     private final AvisoRepository avisoRepository;
     private final UserRepository userRepository;
     private final UsuarioNotificacaoVistaRepository vistaRepository;
+    private final TenantService tenantService;
 
     public NotificacaoService(
         AvisoRepository avisoRepository,
         UserRepository userRepository,
-        UsuarioNotificacaoVistaRepository vistaRepository
+        UsuarioNotificacaoVistaRepository vistaRepository,
+        TenantService tenantService
     ) {
         this.avisoRepository = avisoRepository;
         this.userRepository = userRepository;
         this.vistaRepository = vistaRepository;
+        this.tenantService = tenantService;
     }
 
     public record NotificacaoItem(String tipo, Long referenciaId, String titulo, String descricao, String link) {}
@@ -53,7 +56,10 @@ public class NotificacaoService {
 
         List<NotificacaoItem> itens = new ArrayList<>();
 
-        List<Aviso> avisos = avisoRepository.findAllByAtivoIsTrue(PageRequest.of(0, 20)).getContent();
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        List<Aviso> avisos = avisoRepository
+            .findAllByIgrejaIdAndAtivoIsTrue(PageRequest.of(0, 20), igrejaId)
+            .getContent();
         for (Aviso a : avisos) {
             if (!avisosVistos.contains(a.getId())) {
                 String desc = a.getConteudo() != null && a.getConteudo().length() > 80
@@ -70,7 +76,7 @@ public class NotificacaoService {
         }
 
         LocalDate hoje = LocalDate.now();
-        List<User> aniversariantes = userRepository.findAllByBirthDateIsNotNullAndActivatedIsTrue().stream()
+        List<User> aniversariantes = userRepository.findAllByIgrejaIdAndBirthDateIsNotNullAndActivatedIsTrue(igrejaId).stream()
             .filter(u -> {
                 LocalDate bd = u.getBirthDate();
                 if (bd == null) return false;

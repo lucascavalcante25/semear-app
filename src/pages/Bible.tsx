@@ -37,6 +37,7 @@ import {
 } from "@/data/bible-books";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import {
   adicionarFavorito,
   adicionarNota,
@@ -286,6 +287,7 @@ function CartaoLivro({
 export default function Biblia() {
   const [searchParams] = useSearchParams();
   const { user } = usarAutenticacao();
+  const { nomeExibicao } = useIgrejaConfiguracao();
   const userId = obterIdUsuario(user?.id);
   const [buscaLivro, setBuscaLivro] = useState("");
   const [selectedBook, setSelectedBook] = useState<LivroBiblia | null>(null);
@@ -733,11 +735,11 @@ export default function Biblia() {
       parts.push(obterRotuloVersao(selectedVersion, versionsForSelect));
     }
     if (shareIncludeChurch) {
-      parts.push("Comunidade evangelica Semear");
+      parts.push(nomeExibicao);
     }
     const text = `📖 ${parts.join(" — ")}`;
     if (navigator.share) {
-      await navigator.share({ title: "Biblia Semear", text });
+      await navigator.share({ title: `Bíblia ${nomeExibicao}`, text });
     } else {
       await navigator.clipboard.writeText(text);
     }

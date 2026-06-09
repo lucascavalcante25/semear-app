@@ -4,6 +4,7 @@ import br.com.semear.domain.Lancamento;
 import br.com.semear.domain.enumerations.TipoLancamento;
 import br.com.semear.repository.LancamentoRepository;
 import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.TenantService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
 import java.net.URI;
@@ -33,19 +34,22 @@ public class LancamentoResource {
     private String applicationName;
 
     private final LancamentoRepository lancamentoRepository;
+    private final TenantService tenantService;
 
-    public LancamentoResource(LancamentoRepository lancamentoRepository) {
+    public LancamentoResource(LancamentoRepository lancamentoRepository, TenantService tenantService) {
         this.lancamentoRepository = lancamentoRepository;
+        this.tenantService = tenantService;
     }
 
     @PostMapping("")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> createLancamento(@RequestBody Lancamento lancamento) throws URISyntaxException {
         LOG.debug("REST request to save Lancamento : {}", lancamento);
         if (lancamento.getId() != null) {
             throw new BadRequestAlertException("A new lancamento cannot already have an ID", ENTITY_NAME, "idexists");
         }
         validarLancamento(lancamento);
+        lancamento.setIgreja(tenantService.resolverIgrejaParaCriacao());
         if (lancamento.getCriadoEm() == null) {
             lancamento.setCriadoEm(Instant.now());
         }
@@ -59,7 +63,7 @@ public class LancamentoResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> updateLancamento(@PathVariable("id") final Long id, @RequestBody Lancamento lancamento)
         throws URISyntaxException {
         LOG.debug("REST request to update Lancamento : {}, {}", id, lancamento);
@@ -73,9 +77,9 @@ public class LancamentoResource {
         if (existenteOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        validarLancamento(lancamento);
-
         Lancamento existente = existenteOpt.get();
+        tenantService.validarMesmaIgreja(existente.getIgreja());
+        validarLancamento(lancamento);
         existente.setTipo(lancamento.getTipo());
         existente.setCategoria(lancamento.getCategoria());
         existente.setDescricao(lancamento.getDescricao());
@@ -94,30 +98,35 @@ public class LancamentoResource {
     }
 
     @GetMapping("")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<List<Lancamento>> getAllLancamentos(
         @RequestParam(name = "tipo", required = false) TipoLancamento tipo
     ) {
         LOG.debug("REST request to get Lancamentos");
+        Long igrejaId = tenantService.getIgrejaIdAtual();
         List<Lancamento> lista = tipo != null
-            ? lancamentoRepository.findByTipoOrderByDataLancamentoDescCriadoEmDesc(tipo)
-            : lancamentoRepository.findAllByOrderByDataLancamentoDescCriadoEmDesc();
+            ? lancamentoRepository.findByIgrejaIdAndTipoOrderByDataLancamentoDescCriadoEmDesc(igrejaId, tipo)
+            : lancamentoRepository.findByIgrejaIdOrderByDataLancamentoDescCriadoEmDesc(igrejaId);
         return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> getLancamento(@PathVariable("id") final Long id) {
         LOG.debug("REST request to get Lancamento : {}", id);
         Optional<Lancamento> lancamento = lancamentoRepository.findById(id);
+        lancamento.ifPresent(l -> tenantService.validarMesmaIgreja(l.getIgreja()));
         return ResponseUtil.wrapOrNotFound(lancamento);
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_SECRETARIA", "ROLE_LIDER" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_SECRETARIA", "ROLE_LIDER" })
     public ResponseEntity<Void> deleteLancamento(@PathVariable("id") final Long id) {
         LOG.debug("REST request to delete Lancamento : {}", id);
-        lancamentoRepository.deleteById(id);
+        lancamentoRepository.findById(id).ifPresent(l -> {
+            tenantService.validarMesmaIgreja(l.getIgreja());
+            lancamentoRepository.delete(l);
+        });
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .build();

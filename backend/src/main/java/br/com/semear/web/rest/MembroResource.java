@@ -61,7 +61,7 @@ public class MembroResource {
      * Acessível por ADMIN, PASTOR, COPASTOR, SECRETARIA e LIDER.
      */
     @GetMapping("")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_PASTOR','ROLE_COPASTOR','ROLE_SECRETARIA','ROLE_LIDER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_ADMIN_IGREJA','ROLE_PASTOR','ROLE_COPASTOR','ROLE_SECRETARIA','ROLE_LIDER')")
     public ResponseEntity<List<AdminUserDTO>> listarMembros(
         @org.springdoc.core.annotations.ParameterObject Pageable pageable
     ) {
@@ -127,7 +127,7 @@ public class MembroResource {
      * Apenas ADMIN, PASTOR, COPASTOR ou LIDER podem cadastrar.
      */
     @PostMapping("/dependentes")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_PASTOR','ROLE_COPASTOR','ROLE_LIDER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_ADMIN_IGREJA','ROLE_PASTOR','ROLE_COPASTOR','ROLE_LIDER')")
     public ResponseEntity<AdminUserDTO> criarDependente(@Valid @RequestBody DependenteCreateDTO dto) throws URISyntaxException {
         LOG.debug("REST request to create dependente: {}", dto.getNome());
         User created = userService.createDependente(dto);

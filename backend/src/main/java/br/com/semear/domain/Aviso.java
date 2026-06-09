@@ -50,6 +50,10 @@ public class Aviso implements Serializable {
     @Column(name = "ativo", nullable = false)
     private Boolean ativo = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "igreja_id")
+    private Igreja igreja;
+
     @NotNull
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
@@ -150,6 +154,14 @@ public class Aviso implements Serializable {
 
     public void setAtualizadoPor(String atualizadoPor) {
         this.atualizadoPor = atualizadoPor;
+    }
+
+    public Igreja getIgreja() {
+        return igreja;
+    }
+
+    public void setIgreja(Igreja igreja) {
+        this.igreja = igreja;
     }
 }
 

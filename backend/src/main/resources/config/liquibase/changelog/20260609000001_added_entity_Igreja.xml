@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260609000001-1" author="semear">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="igreja"/>
+            </not>
+        </preConditions>
+        <createTable tableName="igreja">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="nome" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome_fantasia" type="varchar(255)"/>
+            <column name="cnpj" type="varchar(20)"/>
+            <column name="email" type="varchar(255)"/>
+            <column name="telefone" type="varchar(50)"/>
+            <column name="cep" type="varchar(20)"/>
+            <column name="endereco" type="varchar(255)"/>
+            <column name="numero" type="varchar(50)"/>
+            <column name="bairro" type="varchar(100)"/>
+            <column name="cidade" type="varchar(100)"/>
+            <column name="estado" type="varchar(2)"/>
+            <column name="complemento" type="varchar(255)"/>
+            <column name="nome_pastor_responsavel" type="varchar(255)"/>
+            <column name="cpf_pastor_responsavel" type="varchar(20)"/>
+            <column name="telefone_responsavel" type="varchar(50)"/>
+            <column name="email_responsavel" type="varchar(255)"/>
+            <column name="chave_pix" type="varchar(255)"/>
+            <column name="tipo_chave_pix" type="varchar(30)"/>
+            <column name="nome_titular_pix" type="varchar(255)"/>
+            <column name="banco_pix" type="varchar(255)"/>
+            <column name="documento_titular_pix" type="varchar(30)"/>
+            <column name="logo_url" type="varchar(500)"/>
+            <column name="cor_primaria" type="varchar(20)"/>
+            <column name="cor_secundaria" type="varchar(20)"/>
+            <column name="tema_preferido" type="varchar(20)"/>
+            <column name="texto_boas_vindas" type="${clobType}"/>
+            <column name="descricao_igreja" type="${clobType}"/>
+            <column name="texto_agradecimento_oferta" type="${clobType}"/>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_cadastro" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_atualizacao" type="${datetimeType}"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

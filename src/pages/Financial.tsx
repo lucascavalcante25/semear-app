@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { canWrite } from "@/auth/permissions";
 import { usarEhMobile } from "@/hooks/use-mobile";
 import { aplicarMascaraData, dataMascaraParaApi } from "@/lib/mascara-telefone";
@@ -122,10 +123,11 @@ const MESES_COMPLETOS = [
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 
-const DADOS_IGREJA = {
-  nome: "Comunidade Evangélica Semear",
-  cnpj: "10.884.335/0001-73",
-  endereco: "Eusébio - CE",
+type DadosIgrejaRelatorio = {
+  nome: string;
+  cnpj: string;
+  endereco: string;
+  logoUrl: string;
 };
 
 function agregarPorMes(lancamentos: LancamentoApp[], ano: number) {
@@ -181,6 +183,7 @@ interface ModalRelatorioMensalProps {
   saldoTotal: number;
   aberto: boolean;
   onFechar: () => void;
+  dadosIgreja: DadosIgrejaRelatorio;
 }
 
 function ModalRelatorioMensal({
@@ -190,6 +193,7 @@ function ModalRelatorioMensal({
   saldoTotal,
   aberto,
   onFechar,
+  dadosIgreja,
 }: ModalRelatorioMensalProps) {
   const lancamentosMes = filtrarLancamentosPorMes(lancamentos, mes, ano);
   const entradas = lancamentosMes.filter((l) => l.type === "income");
@@ -243,9 +247,9 @@ function ModalRelatorioMensal({
         </head>
         <body>
           <div style="text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #2d5a27;">
-            <img src="${window.location.origin}/logo-semear.png" alt="Logo" class="logo-print" style="margin-bottom: 8px;" />
-            <h1 style="font-size: 18px; margin: 4px 0;">${DADOS_IGREJA.nome}</h1>
-            <p style="font-size: 11px; color: #666;">CNPJ: ${DADOS_IGREJA.cnpj} · ${DADOS_IGREJA.endereco}</p>
+            <img src="${window.location.origin}${dadosIgreja.logoUrl}" alt="Logo" class="logo-print" style="margin-bottom: 8px;" />
+            <h1 style="font-size: 18px; margin: 4px 0;">${dadosIgreja.nome}</h1>
+            <p style="font-size: 11px; color: #666;">CNPJ: ${dadosIgreja.cnpj} · ${dadosIgreja.endereco}</p>
           </div>
           <h2 style="text-align: center; font-size: 16px; margin-bottom: 12px;">Relatório Financeiro - ${nomeMes}/${ano}</h2>
           <div class="secao-titulo">Entradas (Ofertas)</div>
@@ -267,7 +271,7 @@ function ModalRelatorioMensal({
             <span>SALDO TOTAL EM CAIXA</span>
             <span>R$ ${saldoTotal.toLocaleString("pt-BR")}</span>
           </div>
-          <p style="text-align: right; font-size: 11px; color: #666; margin-top: 12px;">${DADOS_IGREJA.endereco} - ${ano}</p>
+          <p style="text-align: right; font-size: 11px; color: #666; margin-top: 12px;">${dadosIgreja.endereco} - ${ano}</p>
         </body>
       </html>
     `;
@@ -279,10 +283,10 @@ function ModalRelatorioMensal({
         let y = 15;
 
         doc.setFontSize(14);
-        doc.text(DADOS_IGREJA.nome, pageWidth / 2, y, { align: "center" });
+        doc.text(dadosIgreja.nome, pageWidth / 2, y, { align: "center" });
         y += 8;
         doc.setFontSize(10);
-        doc.text(`CNPJ: ${DADOS_IGREJA.cnpj}`, pageWidth / 2, y, { align: "center" });
+        doc.text(`CNPJ: ${dadosIgreja.cnpj}`, pageWidth / 2, y, { align: "center" });
         y += 6;
         doc.text(`Relatório - ${nomeMes}/${ano}`, pageWidth / 2, y, { align: "center" });
         y += 12;
@@ -327,7 +331,7 @@ function ModalRelatorioMensal({
         doc.setTextColor(0, 0, 0);
 
         doc.setFontSize(9);
-        doc.text(`${DADOS_IGREJA.endereco} - ${ano}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+        doc.text(`${dadosIgreja.endereco} - ${ano}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 10, { align: "right" });
 
         doc.save(`relatorio-${nomeMes.toLowerCase()}-${ano}.pdf`);
         toast.success("Relatório baixado com sucesso.");
@@ -635,6 +639,13 @@ function CartaoLancamento({ lancamento, onClick, onExcluir, podeExcluir }: Carta
 
 export default function Financeiro() {
   const { user } = usarAutenticacao();
+  const { configuracao, logoUrl } = useIgrejaConfiguracao();
+  const dadosIgrejaRelatorio: DadosIgrejaRelatorio = {
+    nome: configuracao?.nome || "Igreja",
+    cnpj: configuracao?.cnpj || "",
+    endereco: [configuracao?.cidade, configuracao?.estado].filter(Boolean).join(" - ") || "",
+    logoUrl: logoUrl || "/logo-semear.png",
+  };
   const podeEscreverFinanceiro = canWrite(user, "/financeiro");
   const isMobile = usarEhMobile();
   const [lancamentos, setLancamentos] = useState<LancamentoApp[]>([]);
@@ -1071,6 +1082,7 @@ export default function Financeiro() {
                 saldoTotal={saldo}
                 aberto={!!mesSelecionado}
                 onFechar={() => setMesSelecionado(null)}
+                dadosIgreja={dadosIgrejaRelatorio}
               />
             )}
 

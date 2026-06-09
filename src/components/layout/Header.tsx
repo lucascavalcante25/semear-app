@@ -21,6 +21,7 @@ import { useAvatarUrlCurrentUser } from "@/hooks/use-avatar-url";
 import { ROLE_LABELS, canAccess } from "@/auth/permissions";
 import { Link, useNavigate } from "react-router-dom";
 import { usarTema } from "@/contexts/ThemeContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 
 
 export function Cabecalho() {
@@ -32,6 +33,7 @@ export function Cabecalho() {
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
+  const { nomeExibicao, logoUrl, configuracao } = useIgrejaConfiguracao();
   const userInitials = user?.name
     ?.split(" ")
     .map((part) => part.charAt(0))
@@ -60,18 +62,18 @@ export function Cabecalho() {
           <Link to="/" className="flex items-center gap-2 min-w-0">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive-light/60 ring-1 ring-olive/20">
               <img
-                src="/logo-semear.png"
-                alt="Semear"
+                src={logoUrl}
+                alt={nomeExibicao}
                 className="h-6 w-6 object-contain"
               />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-lg font-bold tracking-tight text-foreground truncate">
-                Semear
+                {nomeExibicao}
               </span>
-              {!isMobile && (
+              {!isMobile && configuracao?.nome && (
                 <span className="text-[10px] text-muted-foreground -mt-1 truncate">
-                  Comunidade evangelica Semear
+                  {configuracao.nome}
                 </span>
               )}
             </div>

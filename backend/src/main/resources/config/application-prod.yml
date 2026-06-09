@@ -43,10 +43,17 @@ spring:
   liquibase:
     contexts: prod
   mail:
-    host: localhost
-    port: 25
-    username:
-    password:
+    host: ${SPRING_MAIL_HOST:smtp-relay.brevo.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
   thymeleaf:
     cache: true
 
@@ -112,7 +119,8 @@ jhipster:
         token-validity-in-seconds: 86400
         token-validity-in-seconds-for-remember-me: 2592000
   mail: # specific JHipster mail property, for standard properties see MailProperties
-    base-url: http://my-server-url-to-change # Modify according to your server's URL
+    from: ${SEMEAR_MAIL_FROM:semear@localhost}
+    base-url: ${SEMEAR_MAIL_BASE_URL:https://semear-app.vercel.app}
   logging:
     use-json-format: false # By default, logs are not in Json format
     logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
@@ -128,5 +136,12 @@ jhipster:
 # More documentation is available at:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
+
+semear:
+  sms:
+    enabled: ${SEMEAR_SMS_ENABLED:false}
+    sender: ${SEMEAR_SMS_SENDER:Semear}
+  brevo:
+    api-key: ${SEMEAR_BREVO_API_KEY:}
 
 # application:

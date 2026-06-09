@@ -10,7 +10,9 @@
 export type AccessLevel = "READ" | "WRITE";
 
 export type Role =
+  | "super_admin"
   | "admin"
+  | "admin_igreja"
   | "pastor"
   | "copastor"
   | "secretaria"
@@ -36,7 +38,9 @@ export const MODULES = [
 export type ModuleKey = (typeof MODULES)[number];
 
 export const ROLE_LABELS: Record<Role, string> = {
+  super_admin: "Dono da Plataforma",
   admin: "Administração",
+  admin_igreja: "Administração da Igreja",
   pastor: "Pastor",
   copastor: "Co-pastor",
   secretaria: "Secretaria",
@@ -59,6 +63,7 @@ export const ROUTE_TO_MODULE: Record<string, ModuleKey> = {
   "/financeiro": "financeiro",
   "/aprovar-pre-cadastros": "aprovar-pre-cadastros",
   "/configuracoes": "configuracoes",
+  "/configuracoes-igreja": "configuracoes",
   "/oracao": "oracao",
 };
 
@@ -77,7 +82,15 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
 };
 
 /** Perfis com acesso total (READ + WRITE em todos módulos) */
-const ROLES_FULL_ACCESS: Role[] = ["admin", "pastor", "copastor", "secretaria", "tesouraria", "lider"];
+const ROLES_FULL_ACCESS: Role[] = [
+  "admin",
+  "admin_igreja",
+  "pastor",
+  "copastor",
+  "secretaria",
+  "tesouraria",
+  "lider",
+];
 
 /** Módulos que MEMBRO pode acessar (READ only). Configurações limitado ao próprio perfil. */
 const MEMBRO_READ_MODULES_FINAL: ModuleKey[] = [
@@ -242,6 +255,7 @@ export const getModuleForRoute = (path: string): ModuleKey | null => {
 };
 
 export const getDefaultRouteForRole = (role: Role) => {
+  if (role === "super_admin") return "/super-admin/dashboard";
   const perms = getDefaultPermissionsForRole(role);
   const first = perms[0];
   const moduleToRoute: Partial<Record<ModuleKey, string>> = Object.fromEntries(
@@ -254,7 +268,9 @@ export const getDefaultRouteForRole = (role: Role) => {
 
 /** Módulos padrão por role (para UI de edição de membros e aprovação) */
 export const ROLE_DEFAULT_MODULES: Record<Role, ModuleKey[]> = {
+  super_admin: [],
   admin: [...MODULES],
+  admin_igreja: [...MODULES],
   pastor: [...MODULES],
   copastor: [...MODULES],
   secretaria: [...MODULES],
@@ -266,7 +282,9 @@ export const ROLE_DEFAULT_MODULES: Record<Role, ModuleKey[]> = {
 
 /** Módulos permitidos por role (para UI de aprovação - limite superior) */
 export const ROLE_ALLOWED_MODULES: Record<Role, ModuleKey[]> = {
+  super_admin: [],
   admin: [...MODULES],
+  admin_igreja: [...MODULES],
   pastor: [...MODULES],
   copastor: [...MODULES],
   secretaria: [...MODULES],

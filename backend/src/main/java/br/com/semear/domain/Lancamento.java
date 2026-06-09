@@ -59,6 +59,10 @@ public class Lancamento implements Serializable {
     @Column(name = "observacoes", columnDefinition = "text")
     private String observacoes;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "igreja_id")
+    private Igreja igreja;
+
     @NotNull
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
@@ -175,5 +179,13 @@ public class Lancamento implements Serializable {
 
     public void setAtualizadoPor(String atualizadoPor) {
         this.atualizadoPor = atualizadoPor;
+    }
+
+    public Igreja getIgreja() {
+        return igreja;
+    }
+
+    public void setIgreja(Igreja igreja) {
+        this.igreja = igreja;
     }
 }

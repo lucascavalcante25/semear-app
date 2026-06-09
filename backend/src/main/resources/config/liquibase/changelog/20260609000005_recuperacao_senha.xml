@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260609000005-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="recuperacao_senha"/></not>
+        </preConditions>
+        <createTable tableName="recuperacao_senha">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="codigo" type="varchar(10)"><constraints nullable="false"/></column>
+            <column name="canal" type="varchar(10)"><constraints nullable="false"/></column>
+            <column name="usado" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="tentativas" type="int" defaultValueNumeric="0"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="expira_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="recuperacao_senha" baseColumnNames="user_id"
+            constraintName="fk_recuperacao_senha_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <createIndex tableName="recuperacao_senha" indexName="idx_recuperacao_senha_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

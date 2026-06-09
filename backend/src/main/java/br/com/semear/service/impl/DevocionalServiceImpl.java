@@ -3,6 +3,7 @@ package br.com.semear.service.impl;
 import br.com.semear.domain.Devocional;
 import br.com.semear.repository.DevocionalRepository;
 import br.com.semear.service.DevocionalService;
+import br.com.semear.service.TenantService;
 import br.com.semear.service.dto.DevocionalDTO;
 import java.time.LocalDate;
 import java.util.Optional;
@@ -20,9 +21,11 @@ public class DevocionalServiceImpl implements DevocionalService {
     private final Logger log = LoggerFactory.getLogger(DevocionalServiceImpl.class);
 
     private final DevocionalRepository devocionalRepository;
+    private final TenantService tenantService;
 
-    public DevocionalServiceImpl(DevocionalRepository devocionalRepository) {
+    public DevocionalServiceImpl(DevocionalRepository devocionalRepository, TenantService tenantService) {
         this.devocionalRepository = devocionalRepository;
+        this.tenantService = tenantService;
     }
 
     private static DevocionalDTO toDto(Devocional devocional) {
@@ -61,6 +64,9 @@ public class DevocionalServiceImpl implements DevocionalService {
     public DevocionalDTO save(DevocionalDTO devocionalDTO) {
         log.debug("Request to save Devocional : {}", devocionalDTO);
         Devocional dev = toEntity(devocionalDTO);
+        if (dev.getIgreja() == null) {
+            dev.setIgreja(tenantService.resolverIgrejaParaCriacao());
+        }
         dev = devocionalRepository.save(dev);
         return toDto(dev);
     }
@@ -69,7 +75,9 @@ public class DevocionalServiceImpl implements DevocionalService {
     @Transactional(readOnly = true)
     public Page<DevocionalDTO> findAll(Pageable pageable) {
         log.debug("Request to get all Devocionais");
-        return devocionalRepository.findAllByOrderByDataPublicacaoDesc(pageable).map(DevocionalServiceImpl::toDto);
+        return devocionalRepository
+            .findAllByIgrejaIdOrderByDataPublicacaoDesc(tenantService.getIgrejaIdAtual(), pageable)
+            .map(DevocionalServiceImpl::toDto);
     }
 
     @Override

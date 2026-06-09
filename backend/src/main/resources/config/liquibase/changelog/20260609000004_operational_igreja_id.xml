@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260609000004-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="visitante" columnName="igreja_id"/></not>
+        </preConditions>
+        <addColumn tableName="visitante"><column name="igreja_id" type="bigint"/></addColumn>
+        <addColumn tableName="aviso"><column name="igreja_id" type="bigint"/></addColumn>
+        <addColumn tableName="devocional"><column name="igreja_id" type="bigint"/></addColumn>
+        <addColumn tableName="louvor"><column name="igreja_id" type="bigint"/></addColumn>
+        <addColumn tableName="grupo_louvor"><column name="igreja_id" type="bigint"/></addColumn>
+        <addColumn tableName="lancamento"><column name="igreja_id" type="bigint"/></addColumn>
+        <addColumn tableName="pre_cadastro"><column name="igreja_id" type="bigint"/></addColumn>
+    </changeSet>
+
+    <changeSet id="20260609000004-2" author="semear">
+        <sql>UPDATE visitante SET igreja_id = 1 WHERE igreja_id IS NULL</sql>
+        <sql>UPDATE aviso SET igreja_id = 1 WHERE igreja_id IS NULL</sql>
+        <sql>UPDATE devocional SET igreja_id = 1 WHERE igreja_id IS NULL</sql>
+        <sql>UPDATE louvor SET igreja_id = 1 WHERE igreja_id IS NULL</sql>
+        <sql>UPDATE grupo_louvor SET igreja_id = 1 WHERE igreja_id IS NULL</sql>
+        <sql>UPDATE lancamento SET igreja_id = 1 WHERE igreja_id IS NULL</sql>
+        <sql>UPDATE pre_cadastro SET igreja_id = 1 WHERE igreja_id IS NULL</sql>
+    </changeSet>
+
+    <changeSet id="20260609000004-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="solicitacao_acesso"/></not>
+        </preConditions>
+        <createTable tableName="solicitacao_acesso">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="nome_solicitante" type="varchar(255)"><constraints nullable="false"/></column>
+            <column name="email" type="varchar(255)"><constraints nullable="false"/></column>
+            <column name="telefone" type="varchar(50)"/>
+            <column name="nome_igreja" type="varchar(255)"><constraints nullable="false"/></column>
+            <column name="cnpj_igreja" type="varchar(20)"/>
+            <column name="cidade" type="varchar(100)"/>
+            <column name="estado" type="varchar(2)"/>
+            <column name="mensagem" type="${clobType}"/>
+            <column name="status" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="data_solicitacao" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="data_analise" type="${datetimeType}"/>
+            <column name="observacao_admin" type="${clobType}"/>
+            <column name="igreja_criada_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="solicitacao_acesso" baseColumnNames="igreja_criada_id"
+            constraintName="fk_solicitacao_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260609000004-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="plano"/></not>
+        </preConditions>
+        <createTable tableName="plano">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="nome" type="varchar(100)"><constraints nullable="false"/></column>
+            <column name="descricao" type="${clobType}"/>
+            <column name="valor_mensal" type="decimal(19,2)"><constraints nullable="false"/></column>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="data_cadastro" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <insert tableName="plano">
+            <column name="id" valueNumeric="1"/>
+            <column name="nome" value="Básico"/>
+            <column name="descricao" value="Plano inicial para igrejas"/>
+            <column name="valor_mensal" valueNumeric="99.90"/>
+            <column name="ativo" valueBoolean="true"/>
+            <column name="data_cadastro" valueDate="2026-06-09T00:00:00"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="20260609000004-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="assinatura_igreja"/></not>
+        </preConditions>
+        <createTable tableName="assinatura_igreja">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="plano_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="valor_mensal" type="decimal(19,2)"><constraints nullable="false"/></column>
+            <column name="data_vencimento" type="date"/>
+            <column name="status_pagamento" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="data_pagamento" type="date"/>
+            <column name="observacao" type="${clobType}"/>
+            <column name="data_cadastro" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="data_atualizacao" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="assinatura_igreja" baseColumnNames="igreja_id"
+            constraintName="fk_assinatura_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="assinatura_igreja" baseColumnNames="plano_id"
+            constraintName="fk_assinatura_plano" referencedTableName="plano" referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

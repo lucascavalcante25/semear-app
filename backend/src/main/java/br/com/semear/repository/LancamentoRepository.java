@@ -14,7 +14,11 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long> {
 
     List<Lancamento> findAllByOrderByDataLancamentoDescCriadoEmDesc();
 
+    List<Lancamento> findByIgrejaIdOrderByDataLancamentoDescCriadoEmDesc(Long igrejaId);
+
     List<Lancamento> findByTipoOrderByDataLancamentoDescCriadoEmDesc(TipoLancamento tipo);
+
+    List<Lancamento> findByIgrejaIdAndTipoOrderByDataLancamentoDescCriadoEmDesc(Long igrejaId, TipoLancamento tipo);
 
     @Query("SELECT l FROM Lancamento l WHERE l.dataLancamento >= :inicio AND l.dataLancamento <= :fim ORDER BY l.dataLancamento DESC, l.criadoEm DESC")
     List<Lancamento> findByPeriodo(@Param("inicio") LocalDate inicio, @Param("fim") LocalDate fim);

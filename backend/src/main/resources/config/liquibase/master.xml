@@ -65,4 +65,9 @@
     <include file="config/liquibase/changelog/20260225000000_user_avatar_in_db.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260226000000_user_sexo.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
+    <include file="config/liquibase/changelog/20260609000001_added_entity_Igreja.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000002_seed_igreja_semear_and_roles.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000003_user_igreja_id.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000004_operational_igreja_id.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000005_recuperacao_senha.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

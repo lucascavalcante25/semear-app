@@ -14,6 +14,10 @@ export function RequerAutenticacao({ children }: RequerAutenticacaoProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  if (user.role === "super_admin") {
+    return <Navigate to="/super-admin/dashboard" replace />;
+  }
+
   if (!canAccess(user, location.pathname)) {
     return <Navigate to="/acesso-negado" replace />;
   }

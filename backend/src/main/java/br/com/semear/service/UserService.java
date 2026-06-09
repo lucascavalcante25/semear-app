@@ -49,6 +49,8 @@ public class UserService {
 
     private final AuthorityRepository authorityRepository;
 
+    private final TenantService tenantService;
+
     private final CacheManager cacheManager;
 
     @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
@@ -62,12 +64,14 @@ public class UserService {
         UserRepository userRepository,
         PasswordEncoder passwordEncoder,
         AuthorityRepository authorityRepository,
-        CacheManager cacheManager
+        CacheManager cacheManager,
+        TenantService tenantService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
         this.cacheManager = cacheManager;
+        this.tenantService = tenantService;
     }
 
     public Optional<User> activateRegistration(String key) {
@@ -571,6 +575,17 @@ public class UserService {
     }
 
     @Transactional
+    public void definirSenhaPorLogin(String login, String novaSenha) {
+        userRepository
+            .findOneByLogin(login)
+            .ifPresent(user -> {
+                user.setPassword(passwordEncoder.encode(novaSenha));
+                userRepository.save(user);
+                this.clearUserCaches(user);
+                LOG.debug("Password reset for User: {}", user.getLogin());
+            });
+    }
+
     public void changePassword(String currentClearTextPassword, String newPassword) {
         SecurityUtils.getCurrentUserLogin()
             .flatMap(userRepository::findOneByLogin)
@@ -588,7 +603,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<AdminUserDTO> getAllManagedUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(AdminUserDTO::new);
+        return userRepository.findAllByIgrejaId(tenantService.getIgrejaIdAtual(), pageable).map(AdminUserDTO::new);
     }
 
     @Transactional(readOnly = true)

@@ -3,6 +3,7 @@ package br.com.semear.service.impl;
 import br.com.semear.domain.Louvor;
 import br.com.semear.repository.LouvorRepository;
 import br.com.semear.service.LouvorService;
+import br.com.semear.service.TenantService;
 import br.com.semear.service.dto.LouvorDTO;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,12 +31,14 @@ public class LouvorServiceImpl implements LouvorService {
     };
 
     private final LouvorRepository louvorRepository;
+    private final TenantService tenantService;
 
     @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
     private String uploadDir;
 
-    public LouvorServiceImpl(LouvorRepository louvorRepository) {
+    public LouvorServiceImpl(LouvorRepository louvorRepository, TenantService tenantService) {
         this.louvorRepository = louvorRepository;
+        this.tenantService = tenantService;
     }
 
     private static LouvorDTO toDto(Louvor louvor) {
@@ -84,6 +87,9 @@ public class LouvorServiceImpl implements LouvorService {
     public LouvorDTO save(LouvorDTO dto) {
         log.debug("Request to save Louvor : {}", dto);
         Louvor louvor = toEntity(dto);
+        if (louvor.getIgreja() == null) {
+            louvor.setIgreja(tenantService.resolverIgrejaParaCriacao());
+        }
         louvor = louvorRepository.save(louvor);
         return toDto(louvor);
     }
@@ -146,7 +152,7 @@ public class LouvorServiceImpl implements LouvorService {
     @Override
     @Transactional(readOnly = true)
     public List<LouvorDTO> findAll() {
-        return louvorRepository.findAllByOrderByTituloAsc().stream()
+        return louvorRepository.findAllByIgrejaIdOrderByTituloAsc(tenantService.getIgrejaIdAtual()).stream()
             .map(LouvorServiceImpl::toDto)
             .toList();
     }
@@ -157,7 +163,7 @@ public class LouvorServiceImpl implements LouvorService {
         if (query == null || query.isBlank()) {
             return findAll();
         }
-        return louvorRepository.searchByTituloOrArtista(query.trim()).stream()
+        return louvorRepository.searchByIgrejaAndTituloOrArtista(tenantService.getIgrejaIdAtual(), query.trim()).stream()
             .map(LouvorServiceImpl::toDto)
             .toList();
     }
@@ -165,7 +171,10 @@ public class LouvorServiceImpl implements LouvorService {
     @Override
     @Transactional(readOnly = true)
     public Optional<LouvorDTO> findOne(Long id) {
-        return louvorRepository.findById(id).map(LouvorServiceImpl::toDto);
+        return louvorRepository.findById(id).map(l -> {
+            tenantService.validarMesmaIgreja(l.getIgreja());
+            return toDto(l);
+        });
     }
 
     @Override

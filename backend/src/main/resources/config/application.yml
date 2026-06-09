@@ -200,7 +200,7 @@ jhipster:
   #   allow-credentials: true
   #   max-age: 1800
   mail:
-    from: semear@localhost
+    from: ${SEMEAR_MAIL_FROM:semear@localhost}
   api-docs:
     default-include-pattern: /api/**
     management-include-pattern: /management/**

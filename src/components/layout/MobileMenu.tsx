@@ -17,6 +17,7 @@ import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
 import { PixOfertaBloco } from "@/components/pix/PixOferta";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 
 interface MenuMobileProps {
   onClose: () => void;
@@ -38,6 +39,7 @@ const menuItems = [
 export function MenuMobile({ onClose }: MenuMobileProps) {
   const location = useLocation();
   const { user } = usarAutenticacao();
+  const { nomeExibicao, logoUrl, configuracao } = useIgrejaConfiguracao();
   const filteredItems = menuItems.filter((item) => canAccess(user, item.path));
 
   return (
@@ -47,16 +49,16 @@ export function MenuMobile({ onClose }: MenuMobileProps) {
         <Link to="/" onClick={onClose} className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-olive-light/60 ring-1 ring-olive/20">
             <img
-              src="/logo-semear.png"
-              alt="Semear"
+              src={logoUrl}
+              alt={nomeExibicao}
               className="h-7 w-7 object-contain"
             />
           </div>
           <div className="flex flex-col">
-            <SheetTitle className="text-left text-lg font-bold">Semear</SheetTitle>
-            <span className="text-xs text-muted-foreground">
-              Comunidade evangelica Semear
-            </span>
+            <SheetTitle className="text-left text-lg font-bold">{nomeExibicao}</SheetTitle>
+            {configuracao?.nome && (
+              <span className="text-xs text-muted-foreground">{configuracao.nome}</span>
+            )}
           </div>
         </Link>
       </SheetHeader>

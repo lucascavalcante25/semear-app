@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { livrosBiblia } from "@/data/bible-books";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import {
   adicionarFavorito,
   obterFavoritos,
@@ -18,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 export function VersiculoDoDia() {
   const fallbackVerse = obterVersiculoDoDia();
   const { user } = usarAutenticacao();
+  const { nomeExibicao } = useIgrejaConfiguracao();
   const userId = obterIdUsuario(user?.id);
   const navigate = useNavigate();
   const [verse, setVerse] = useState<Versiculo>(fallbackVerse);
@@ -71,11 +73,11 @@ export function VersiculoDoDia() {
   };
 
   const handleShare = () => {
-    const text = `📖 ${verse.reference}\n\n"${verse.text}"\n\n— Enviado pelo app Semear`;
+    const text = `📖 ${verse.reference}\n\n"${verse.text}"\n\n— Enviado pelo app ${nomeExibicao}`;
     
     if (navigator.share) {
       navigator.share({
-        title: "Versiculo do Dia - Semear",
+        title: `Versículo do Dia - ${nomeExibicao}`,
         text,
       });
     } else {

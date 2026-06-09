@@ -26,16 +26,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findOneByLogin(String login);
     List<User> findAllByBirthDateIsNotNullAndActivatedIsTrue();
 
+    List<User> findAllByIgrejaIdAndBirthDateIsNotNullAndActivatedIsTrue(Long igrejaId);
+
     @Query("SELECT u FROM User u WHERE u.birthDate IS NOT NULL AND (u.activated = true OR u.isDependente = true)")
     List<User> findAllComBirthDateParaAniversariantes();
 
-    @EntityGraph(attributePaths = "authorities")
+    @EntityGraph(attributePaths = { "authorities", "igreja" })
     @Cacheable(cacheNames = USERS_BY_LOGIN_CACHE, unless = "#result == null")
     Optional<User> findOneWithAuthoritiesByLogin(String login);
 
-    @EntityGraph(attributePaths = "authorities")
+    @EntityGraph(attributePaths = { "authorities", "igreja" })
     @Cacheable(cacheNames = USERS_BY_EMAIL_CACHE, unless = "#result == null")
     Optional<User> findOneWithAuthoritiesByEmailIgnoreCase(String email);
 
     Page<User> findAllByIdNotNullAndActivatedIsTrue(Pageable pageable);
+
+    Page<User> findAllByIgrejaId(Long igrejaId, Pageable pageable);
+
+    long countByIgrejaId(Long igrejaId);
 }

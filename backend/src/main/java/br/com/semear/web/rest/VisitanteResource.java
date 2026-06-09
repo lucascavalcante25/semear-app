@@ -3,6 +3,7 @@ package br.com.semear.web.rest;
 import br.com.semear.domain.Visitante;
 import br.com.semear.repository.VisitanteRepository;
 import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.TenantService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
 import java.net.URI;
@@ -37,13 +38,15 @@ public class VisitanteResource {
     private String applicationName;
 
     private final VisitanteRepository visitanteRepository;
+    private final TenantService tenantService;
 
-    public VisitanteResource(VisitanteRepository visitanteRepository) {
+    public VisitanteResource(VisitanteRepository visitanteRepository, TenantService tenantService) {
         this.visitanteRepository = visitanteRepository;
+        this.tenantService = tenantService;
     }
 
     @PostMapping("")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
     public ResponseEntity<Visitante> createVisitante(@RequestBody Visitante visitante) throws URISyntaxException {
         LOG.debug("REST request to save Visitante : {}", visitante);
         if (visitante.getId() != null) {
@@ -61,6 +64,7 @@ public class VisitanteResource {
         if (visitante.getDataVisita() == null) {
             visitante.setDataVisita(LocalDate.now());
         }
+        visitante.setIgreja(tenantService.resolverIgrejaParaCriacao());
         Visitante result = visitanteRepository.save(visitante);
         return ResponseEntity.created(new URI("/api/visitantes/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
@@ -68,7 +72,7 @@ public class VisitanteResource {
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
     public ResponseEntity<Visitante> updateVisitante(
         @PathVariable("id") final Long id,
         @RequestBody Visitante visitante
@@ -86,6 +90,7 @@ public class VisitanteResource {
         }
 
         Visitante existente = existenteOpt.get();
+        tenantService.validarMesmaIgreja(existente.getIgreja());
         if (visitante.getNome() == null || visitante.getNome().isBlank()) {
             throw new BadRequestAlertException("Nome é obrigatório.", ENTITY_NAME, "nomeobrigatorio");
         }
@@ -107,7 +112,7 @@ public class VisitanteResource {
     @GetMapping("")
     public ResponseEntity<java.util.List<Visitante>> getAllVisitantes(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
         LOG.debug("REST request to get a page of Visitantes");
-        Page<Visitante> page = visitanteRepository.findAll(pageable);
+        Page<Visitante> page = visitanteRepository.findAllByIgrejaId(tenantService.getIgrejaIdAtual(), pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
@@ -116,11 +121,12 @@ public class VisitanteResource {
     public ResponseEntity<Visitante> getVisitante(@PathVariable("id") final Long id) {
         LOG.debug("REST request to get Visitante : {}", id);
         Optional<Visitante> visitante = visitanteRepository.findById(id);
+        visitante.ifPresent(v -> tenantService.validarMesmaIgreja(v.getIgreja()));
         return ResponseUtil.wrapOrNotFound(visitante);
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({ "ROLE_ADMIN", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
     public ResponseEntity<Void> deleteVisitante(@PathVariable("id") final Long id) {
         LOG.debug("REST request to delete Visitante : {}", id);
         visitanteRepository.deleteById(id);

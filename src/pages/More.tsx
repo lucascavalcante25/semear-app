@@ -14,13 +14,15 @@ import {
   LogOut,
   ChevronRight,
   Moon,
-  Sun
+  Sun,
+  Church,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
 import { usarTema } from "@/contexts/ThemeContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 
 interface MenuItemProps {
   icon: React.ElementType;
@@ -80,6 +82,7 @@ export default function Mais() {
   const { logout, user } = usarAutenticacao();
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
+  const { nomeExibicao, configuracao } = useIgrejaConfiguracao();
   const isDarkMode = theme === "dark";
 
   const handleDarkModeToggle = () => {
@@ -174,6 +177,14 @@ export default function Mais() {
                   path="/configuracoes"
                 />
               )}
+              {user?.role === "admin" && (
+                <MenuItem
+                  icon={Church}
+                  label="Configurações da Igreja"
+                  description="Dados, PIX e identidade visual"
+                  path="/configuracoes-igreja"
+                />
+              )}
             </CardContent>
           </Card>
         </section>
@@ -198,8 +209,8 @@ export default function Mais() {
                 onClick={() => {
                   if (navigator.share) {
                     navigator.share({
-                      title: "Comunidade evangelica Semear",
-                      text: "Conheca o app da Comunidade evangelica Semear!",
+                      title: nomeExibicao,
+                      text: `Conheça o app da ${configuracao?.nome || nomeExibicao}!`,
                       url: window.location.origin,
                     });
                   }
@@ -213,7 +224,7 @@ export default function Mais() {
               />
               <MenuItem
                 icon={Info}
-                label="Sobre a Semear"
+                label={`Sobre ${nomeExibicao}`}
                 description="Versão 1.0.0"
                 path="/sobre"
               />
@@ -242,7 +253,7 @@ export default function Mais() {
             🌱 Semeando a palavra, formando discipulos e colhendo vidas.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Comunidade evangelica Semear © 2026
+            {configuracao?.nome || nomeExibicao} © {new Date().getFullYear()}
           </p>
         </div>
       </div>

@@ -12,6 +12,8 @@ public interface LouvorRepository extends JpaRepository<Louvor, Long> {
 
     List<Louvor> findAllByOrderByTituloAsc();
 
-    @Query("SELECT l FROM Louvor l WHERE LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(l.artista) LIKE LOWER(CONCAT('%', :q, '%')) ORDER BY l.titulo")
-    List<Louvor> searchByTituloOrArtista(@Param("q") String query);
+    List<Louvor> findAllByIgrejaIdOrderByTituloAsc(Long igrejaId);
+
+    @Query("SELECT l FROM Louvor l WHERE l.igreja.id = :igrejaId AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(l.artista) LIKE LOWER(CONCAT('%', :q, '%'))) ORDER BY l.titulo")
+    List<Louvor> searchByIgrejaAndTituloOrArtista(@Param("igrejaId") Long igrejaId, @Param("q") String query);
 }
