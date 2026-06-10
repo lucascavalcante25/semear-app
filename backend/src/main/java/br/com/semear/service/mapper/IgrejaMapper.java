@@ -42,10 +42,13 @@ public class IgrejaMapper {
         dto.setTemaPreferido(igreja.getTemaPreferido());
         dto.setTextoBoasVindas(igreja.getTextoBoasVindas());
         dto.setDescricaoIgreja(igreja.getDescricaoIgreja());
+        dto.setSubtituloIgreja(igreja.getSubtituloIgreja());
         dto.setTextoAgradecimentoOferta(igreja.getTextoAgradecimentoOferta());
         dto.setStatus(igreja.getStatus());
         dto.setDataCadastro(igreja.getDataCadastro());
         dto.setDataAtualizacao(igreja.getDataAtualizacao());
+        dto.setDataInicioPlanoLeitura(igreja.getDataInicioPlanoLeitura());
+        dto.setCicloPlanoLeitura(igreja.getCicloPlanoLeitura());
         return dto;
     }
 
@@ -82,10 +85,13 @@ public class IgrejaMapper {
         igreja.setTemaPreferido(dto.getTemaPreferido());
         igreja.setTextoBoasVindas(dto.getTextoBoasVindas());
         igreja.setDescricaoIgreja(dto.getDescricaoIgreja());
+        igreja.setSubtituloIgreja(dto.getSubtituloIgreja());
         igreja.setTextoAgradecimentoOferta(dto.getTextoAgradecimentoOferta());
         igreja.setStatus(dto.getStatus());
         igreja.setDataCadastro(dto.getDataCadastro());
         igreja.setDataAtualizacao(dto.getDataAtualizacao());
+        igreja.setDataInicioPlanoLeitura(dto.getDataInicioPlanoLeitura());
+        igreja.setCicloPlanoLeitura(dto.getCicloPlanoLeitura());
         return igreja;
     }
 
@@ -103,8 +109,12 @@ public class IgrejaMapper {
         dto.setTemaPreferido(igreja.getTemaPreferido());
         dto.setTextoBoasVindas(igreja.getTextoBoasVindas());
         dto.setDescricaoIgreja(igreja.getDescricaoIgreja());
+        dto.setSubtituloIgreja(igreja.getSubtituloIgreja());
         dto.setCidade(igreja.getCidade());
         dto.setEstado(igreja.getEstado());
+        dto.setEndereco(igreja.getEndereco());
+        dto.setBairro(igreja.getBairro());
+        dto.setCep(igreja.getCep());
         return dto;
     }
 

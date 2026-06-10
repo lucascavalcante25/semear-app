@@ -51,6 +51,30 @@ export const limparToken = () => {
 
 type OpcoesApi = RequestInit & { auth?: boolean };
 
+export class ErroRequisicaoApi extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ErroRequisicaoApi";
+    this.status = status;
+  }
+}
+
+function prepararBody(body: BodyInit | null | undefined): BodyInit | undefined {
+  if (body == null) return undefined;
+  if (
+    typeof body === "string" ||
+    body instanceof FormData ||
+    body instanceof Blob ||
+    body instanceof ArrayBuffer ||
+    body instanceof URLSearchParams
+  ) {
+    return body;
+  }
+  return JSON.stringify(body);
+}
+
 export const requisicaoApi = async <T>(path: string, options: OpcoesApi = {}): Promise<T> => {
   if (!URL_BASE_API) {
     throw new Error("API nao configurada.");
@@ -75,6 +99,7 @@ export const requisicaoApi = async <T>(path: string, options: OpcoesApi = {}): P
   const response = await fetch(`${URL_BASE_API}${path}`, {
     ...options,
     headers,
+    body: prepararBody(options.body),
   });
 
   if (!response.ok) {
@@ -91,6 +116,8 @@ export const requisicaoApi = async <T>(path: string, options: OpcoesApi = {}): P
         message = fieldErrs.map((e) => `${e.field}: ${e.message}`).join("; ");
       } else if (typeof errorBody?.title === "string" && errorBody.title.trim()) {
         message = errorBody.title;
+      } else if (typeof errorBody?.detail === "string" && errorBody.detail.trim()) {
+        message = errorBody.detail;
       } else if (typeof errorBody?.message === "string") {
         message = errorBody.message;
         if (message.startsWith("error.")) {
@@ -109,7 +136,7 @@ export const requisicaoApi = async <T>(path: string, options: OpcoesApi = {}): P
     } catch {
       // ignore
     }
-    throw new Error(message);
+    throw new ErroRequisicaoApi(message, response.status);
   }
 
   if (response.status === 204) {

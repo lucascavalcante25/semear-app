@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260610000001-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="solicitacao_suporte"/>
+            </not>
+        </preConditions>
+        <createTable tableName="solicitacao_suporte">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usuario_solicitante_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome_solicitante" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email_solicitante" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="telefone_solicitante" type="varchar(20)"/>
+            <column name="tipo" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prioridade" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="titulo" type="varchar(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="${clobType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="resposta_admin" type="${clobType}"/>
+            <column name="respondido_por_id" type="bigint"/>
+            <column name="observacao_interna_admin" type="${clobType}"/>
+            <column name="lida_pelo_cliente" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_resposta" type="${datetimeType}"/>
+            <column name="data_finalizacao" type="${datetimeType}"/>
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="solicitacao_suporte"
+            baseColumnNames="igreja_id"
+            constraintName="fk_solicitacao_suporte_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="solicitacao_suporte"
+            baseColumnNames="usuario_solicitante_id"
+            constraintName="fk_solicitacao_suporte_usuario"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="solicitacao_suporte"
+            baseColumnNames="respondido_por_id"
+            constraintName="fk_solicitacao_suporte_respondido_por"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <createIndex tableName="solicitacao_suporte" indexName="idx_solicitacao_suporte_igreja">
+            <column name="igreja_id"/>
+        </createIndex>
+        <createIndex tableName="solicitacao_suporte" indexName="idx_solicitacao_suporte_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260610000001-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="solicitacao_suporte_anexo"/>
+            </not>
+        </preConditions>
+        <createTable tableName="solicitacao_suporte_anexo">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="solicitacao_suporte_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome_arquivo" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_arquivo" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tamanho_arquivo" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="caminho_armazenamento" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_upload" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enviado_por_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="solicitacao_suporte_anexo"
+            baseColumnNames="solicitacao_suporte_id"
+            constraintName="fk_suporte_anexo_solicitacao"
+            referencedTableName="solicitacao_suporte"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="solicitacao_suporte_anexo"
+            baseColumnNames="enviado_por_id"
+            constraintName="fk_suporte_anexo_enviado_por"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

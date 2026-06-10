@@ -17,12 +17,14 @@ import {
   type IgrejaPix,
   type IgrejaPublica,
 } from "@/modules/igreja/api";
-import { hexParaTokensHsl } from "@/lib/cores-igreja";
+import { aplicarCoresIgreja, limparCoresIgreja } from "@/lib/cores-igreja";
+import { definirInicioPlanoIgreja } from "@/modules/bible/service";
+import { isRotaIgreja, isRotaPublica, isRotaSuperAdmin } from "@/lib/rotas-app";
 
 const FALLBACK_PUBLICA: IgrejaPublica = {
-  nome: "Semear",
-  nomeFantasia: "Semear",
-  logoUrl: "/logo-semear.png",
+  nome: "Sua igreja",
+  nomeFantasia: "Sua igreja",
+  logoUrl: "/logo-willsas.svg",
   corPrimaria: "#5a7a3a",
   corSecundaria: "#1f4d7a",
   temaPreferido: "SISTEMA",
@@ -39,35 +41,11 @@ type ValorContextoIgreja = {
   carregando: boolean;
   recarregar: () => Promise<void>;
   nomeExibicao: string;
+  subtituloExibicao: string;
   logoUrl: string;
 };
 
 const IgrejaContext = createContext<ValorContextoIgreja | undefined>(undefined);
-
-function aplicarCoresIgreja(corPrimaria?: string, corSecundaria?: string) {
-  if (typeof document === "undefined") return;
-  const root = document.documentElement;
-
-  if (corPrimaria) {
-    root.style.setProperty("--igreja-primary", corPrimaria);
-    const primariaHsl = hexParaTokensHsl(corPrimaria);
-    if (primariaHsl) {
-      root.style.setProperty("--primary", primariaHsl);
-      root.style.setProperty("--olive", primariaHsl);
-      root.style.setProperty("--ring", primariaHsl);
-      root.style.setProperty("--sidebar-primary", primariaHsl);
-    }
-  }
-
-  if (corSecundaria) {
-    root.style.setProperty("--igreja-secondary", corSecundaria);
-    const secundariaHsl = hexParaTokensHsl(corSecundaria);
-    if (secundariaHsl) {
-      root.style.setProperty("--secondary", secundariaHsl);
-      root.style.setProperty("--deep-blue", secundariaHsl);
-    }
-  }
-}
 
 export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
   const { user } = usarAutenticacao();
@@ -77,6 +55,14 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
   const [carregando, setCarregando] = useState(false);
 
   const recarregar = useCallback(async () => {
+    const path = typeof window !== "undefined" ? window.location.pathname : "/";
+    const aplicarBrandingIgreja = isRotaIgreja(path) && !isRotaPublica(path) && !isRotaSuperAdmin(path);
+
+    if (!aplicarBrandingIgreja) {
+      limparCoresIgreja();
+      definirInicioPlanoIgreja(null);
+    }
+
     if (!API_ATIVA) {
       setPublica(FALLBACK_PUBLICA);
       setConfiguracao({
@@ -97,19 +83,23 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
         nomeTitularPix: "COMUNIDADE EVANGELICA SEM",
         cidade: "Eusébio",
       });
-      aplicarCoresIgreja(FALLBACK_PUBLICA.corPrimaria, FALLBACK_PUBLICA.corSecundaria);
+      if (aplicarBrandingIgreja) {
+        aplicarCoresIgreja(FALLBACK_PUBLICA.corPrimaria, FALLBACK_PUBLICA.corSecundaria);
+      }
       return;
     }
 
     setCarregando(true);
     try {
-      const pub = await obterConfiguracaoPublica();
-      if (pub) {
-        setPublica(pub);
-        aplicarCoresIgreja(pub.corPrimaria, pub.corSecundaria);
+      if (aplicarBrandingIgreja) {
+        const pub = await obterConfiguracaoPublica();
+        if (pub) {
+          setPublica(pub);
+          aplicarCoresIgreja(pub.corPrimaria, pub.corSecundaria);
+        }
       }
 
-      if (user) {
+      if (user && aplicarBrandingIgreja) {
         const [cfg, pixData] = await Promise.all([obterIgrejaAtual(), obterPixIgreja()]);
         if (cfg) {
           setConfiguracao(cfg);
@@ -121,6 +111,7 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
             corSecundaria: cfg.corSecundaria || prev.corSecundaria,
           }));
           aplicarCoresIgreja(cfg.corPrimaria, cfg.corSecundaria);
+          definirInicioPlanoIgreja(cfg.dataInicioPlanoLeitura ?? null);
         }
         if (pixData) setPix(pixData);
       }
@@ -133,6 +124,10 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
     void recarregar();
   }, [recarregar]);
 
+  useEffect(() => {
+    definirInicioPlanoIgreja(configuracao?.dataInicioPlanoLeitura ?? null);
+  }, [configuracao?.dataInicioPlanoLeitura]);
+
   const nomeExibicao = useMemo(
     () =>
       configuracao?.nomeFantasia ||
@@ -143,9 +138,21 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
     [configuracao, publica],
   );
 
+  const subtituloExibicao = useMemo(
+    () =>
+      configuracao?.subtituloIgreja?.trim() ||
+      publica.subtituloIgreja?.trim() ||
+      "",
+    [configuracao?.subtituloIgreja, publica.subtituloIgreja],
+  );
+
   const logoUrl = useMemo(
-    () => resolverUrlLogo(configuracao?.logoUrl || publica.logoUrl),
-    [configuracao, publica],
+    () =>
+      resolverUrlLogo(
+        configuracao?.logoUrl || publica.logoUrl,
+        configuracao?.dataAtualizacao,
+      ),
+    [configuracao?.logoUrl, configuracao?.dataAtualizacao, publica.logoUrl],
   );
 
   const valor = useMemo(
@@ -156,9 +163,10 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
       carregando,
       recarregar,
       nomeExibicao,
+      subtituloExibicao,
       logoUrl,
     }),
-    [configuracao, publica, pix, carregando, recarregar, nomeExibicao, logoUrl],
+    [configuracao, publica, pix, carregando, recarregar, nomeExibicao, subtituloExibicao, logoUrl],
   );
 
   return <IgrejaContext.Provider value={valor}>{children}</IgrejaContext.Provider>;

@@ -19,8 +19,12 @@ public class IgrejaPublicaDTO implements Serializable {
     private Tema temaPreferido;
     private String textoBoasVindas;
     private String descricaoIgreja;
+    private String subtituloIgreja;
     private String cidade;
     private String estado;
+    private String endereco;
+    private String bairro;
+    private String cep;
 
     public Long getId() {
         return id;
@@ -94,6 +98,14 @@ public class IgrejaPublicaDTO implements Serializable {
         this.descricaoIgreja = descricaoIgreja;
     }
 
+    public String getSubtituloIgreja() {
+        return subtituloIgreja;
+    }
+
+    public void setSubtituloIgreja(String subtituloIgreja) {
+        this.subtituloIgreja = subtituloIgreja;
+    }
+
     public String getCidade() {
         return cidade;
     }
@@ -108,5 +120,29 @@ public class IgrejaPublicaDTO implements Serializable {
 
     public void setEstado(String estado) {
         this.estado = estado;
+    }
+
+    public String getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(String endereco) {
+        this.endereco = endereco;
+    }
+
+    public String getBairro() {
+        return bairro;
+    }
+
+    public void setBairro(String bairro) {
+        this.bairro = bairro;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
     }
 }

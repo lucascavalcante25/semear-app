@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
 import org.springframework.security.web.SecurityFilterChain;
@@ -23,9 +24,11 @@ import tech.jhipster.config.JHipsterProperties;
 public class SecurityConfiguration {
 
     private final JHipsterProperties jHipsterProperties;
+    private final AssinaturaAccessFilter assinaturaAccessFilter;
 
-    public SecurityConfiguration(JHipsterProperties jHipsterProperties) {
+    public SecurityConfiguration(JHipsterProperties jHipsterProperties, AssinaturaAccessFilter assinaturaAccessFilter) {
         this.jHipsterProperties = jHipsterProperties;
+        this.assinaturaAccessFilter = assinaturaAccessFilter;
     }
 
     @Bean
@@ -51,7 +54,9 @@ public class SecurityConfiguration {
                     .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/solicitacoes-acesso")).permitAll()
                     .requestMatchers(mvc.pattern("/api/recuperacao-senha/**")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/igreja-configuracao/publica")).permitAll()
+                    .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/igrejas/publicas")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/igrejas/*/logo")).permitAll()
+                    .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/public/**")).permitAll()
                     .requestMatchers(mvc.pattern("/api/admin/**")).hasAnyAuthority(
                         AuthoritiesConstants.SUPER_ADMIN,
                         AuthoritiesConstants.ADMIN
@@ -70,7 +75,8 @@ public class SecurityConfiguration {
                     .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
                     .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()));
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))
+            .addFilterAfter(assinaturaAccessFilter, BearerTokenAuthenticationFilter.class);
         return http.build();
     }
 

@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MenuMobile } from "./MobileMenu";
 import { usarEhMobile } from "@/hooks/use-mobile";
 import { marcarNotificacaoComoVista } from "@/modules/notifications/api";
+import { marcarSolicitacaoLida } from "@/modules/suporte/api";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import {
   DropdownMenu,
@@ -33,7 +34,7 @@ export function Cabecalho() {
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
-  const { nomeExibicao, logoUrl, configuracao } = useIgrejaConfiguracao();
+  const { nomeExibicao, subtituloExibicao, logoUrl } = useIgrejaConfiguracao();
   const userInitials = user?.name
     ?.split(" ")
     .map((part) => part.charAt(0))
@@ -60,20 +61,21 @@ export function Cabecalho() {
           )}
 
           <Link to="/" className="flex items-center gap-2 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-olive-light/60 ring-1 ring-olive/20">
+            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-primary/25">
               <img
+                key={logoUrl}
                 src={logoUrl}
                 alt={nomeExibicao}
-                className="h-6 w-6 object-contain"
+                className="h-full w-full object-cover"
               />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-lg font-bold tracking-tight text-foreground truncate">
                 {nomeExibicao}
               </span>
-              {!isMobile && configuracao?.nome && (
-                <span className="text-[10px] text-muted-foreground -mt-1 truncate">
-                  {configuracao.nome}
+              {!isMobile && subtituloExibicao && (
+                <span className="text-[10px] text-muted-foreground -mt-0.5 truncate">
+                  {subtituloExibicao}
                 </span>
               )}
             </div>
@@ -118,6 +120,9 @@ export function Cabecalho() {
                   onClick={async () => {
                     try {
                       await marcarNotificacaoComoVista(n.tipo, n.referenciaId);
+                      if (n.tipo === "SUPORTE") {
+                        await marcarSolicitacaoLida(n.referenciaId).catch(() => undefined);
+                      }
                       removerNotificacaoLocal(n.tipo, n.referenciaId);
                       navigate(n.link);
                     } catch {

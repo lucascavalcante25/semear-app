@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260611000002-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="assinatura_igreja" columnName="status_assinatura"/></not>
+        </preConditions>
+        <addColumn tableName="assinatura_igreja">
+            <column name="status_assinatura" type="varchar(30)" defaultValue="EM_TESTE"/>
+            <column name="data_inicio_teste" type="date"/>
+            <column name="data_fim_teste" type="date"/>
+            <column name="data_ativacao" type="date"/>
+            <column name="data_suspensao" type="date"/>
+            <column name="motivo_suspensao" type="${clobType}"/>
+            <column name="valor_implantacao_contratado" type="decimal(19,2)"/>
+            <column name="valor_mensal_contratado" type="decimal(19,2)"/>
+            <column name="valor_anual_contratado" type="decimal(19,2)"/>
+            <column name="status_implantacao" type="varchar(20)" defaultValue="PENDENTE"/>
+            <column name="status_mensalidade" type="varchar(20)" defaultValue="PENDENTE"/>
+            <column name="forma_pagamento" type="varchar(20)"/>
+            <column name="proximo_vencimento" type="date"/>
+            <column name="responsavel_nome" type="varchar(200)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260611000002-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="pagamento_plataforma"/></not>
+        </preConditions>
+        <createTable tableName="pagamento_plataforma">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="assinatura_id" type="bigint"/>
+            <column name="tipo_pagamento" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valor" type="decimal(19,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="forma_pagamento" type="varchar(20)"/>
+            <column name="data_vencimento" type="date"/>
+            <column name="data_pagamento" type="date"/>
+            <column name="referencia_mes" type="varchar(7)"/>
+            <column name="observacao" type="${clobType}"/>
+            <column name="registrado_por" type="varchar(100)"/>
+            <column name="data_cadastro" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_atualizacao" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="pagamento_plataforma" baseColumnNames="igreja_id"
+            constraintName="fk_pagamento_plataforma_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="pagamento_plataforma" baseColumnNames="assinatura_id"
+            constraintName="fk_pagamento_plataforma_assinatura" referencedTableName="assinatura_igreja" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260611000002-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="plano" columnName="promocao_implantacao_anual"/></not>
+        </preConditions>
+        <addColumn tableName="plano">
+            <column name="promocao_implantacao_anual" type="decimal(19,2)" defaultValueNumeric="500.00"/>
+            <column name="desconto_anual_percentual" type="integer" defaultValueNumeric="10"/>
+            <column name="mensagem_abordagem" type="${clobType}"/>
+            <column name="mensagem_preco" type="${clobType}"/>
+            <column name="mensagem_demo" type="${clobType}"/>
+            <column name="mensagem_fim_teste" type="${clobType}"/>
+            <column name="whatsapp_contato" type="varchar(30)"/>
+            <column name="email_contato" type="varchar(100)"/>
+            <column name="link_pagamento_mensal" type="varchar(500)"/>
+            <column name="link_pagamento_implantacao" type="varchar(500)"/>
+            <column name="link_pagamento_anual" type="varchar(500)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260611000002-4" author="semear">
+        <update tableName="plano">
+            <column name="descricao" value="Plataforma web completa para igrejas organizarem membros, visitantes, avisos, louvores, devocionais, financeiro, pré-cadastros, ofertas via PIX, identidade visual e suporte em um sistema responsivo para computador e celular."/>
+            <column name="promocao_implantacao_anual" valueNumeric="500.00"/>
+            <column name="desconto_anual_percentual" valueNumeric="10"/>
+            <column name="mensagem_abordagem" value="Olá, pastor. Tudo bem?&#10;&#10;Eu desenvolvi uma plataforma web para ajudar igrejas a organizar membros, visitantes, avisos, louvores, financeiro, devocionais e ofertas via PIX.&#10;&#10;Ela funciona no computador e no celular, sem precisar instalar aplicativo.&#10;&#10;Estou liberando 7 dias grátis para algumas igrejas testarem.&#10;&#10;Posso te enviar uma demonstração?"/>
+            <column name="mensagem_preco" value="Pastor, o plano de lançamento do Semear App ficou assim:&#10;&#10;✅ Teste grátis por 7 dias&#10;✅ Implantação: R$ 700,00&#10;✅ Mensalidade: R$ 139,90/mês&#10;&#10;Também temos a opção anual no PIX:&#10;R$ 1.510,92 com 10% de desconto.&#10;&#10;Promoção:&#10;Fechando no anual, a implantação fica por R$ 500,00.&#10;&#10;A plataforma funciona pelo navegador no computador e no celular, sem precisar instalar aplicativo."/>
+            <column name="mensagem_demo" value="Pastor, posso te mostrar uma demonstração rápida da plataforma?&#10;&#10;Em poucos minutos eu consigo te mostrar como a igreja pode organizar membros, visitantes, financeiro, avisos, louvores, devocionais e ofertas via PIX em um único lugar."/>
+            <column name="mensagem_fim_teste" value="Olá, pastor. Tudo bem?&#10;&#10;O teste grátis da sua igreja no Semear App está chegando ao fim.&#10;&#10;Para continuar usando a plataforma, podemos ativar sua assinatura no plano Semear Completo por R$ 139,90/mês.&#10;&#10;Também temos a opção anual no PIX com desconto."/>
+            <where>id = 1</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

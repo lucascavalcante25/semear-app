@@ -156,6 +156,8 @@ public class PreCadastroResource {
                     }
                 }
 
+                atual.setIgreja(resolverIgreja(preCadastro));
+
                 PreCadastro salvo = preCadastroRepository.saveAndFlush(atual);
                 return ResponseEntity.ok().body(salvo);
             }
@@ -169,12 +171,7 @@ public class PreCadastroResource {
         preCadastro.setPerfilSolicitado(PerfilAcesso.MEMBRO);
         preCadastro.setPerfilAprovado(null);
         preCadastro.setStatus(StatusCadastro.PRIMEIROACESSO);
-        if (preCadastro.getIgreja() == null) {
-            Igreja igrejaPadrao = igrejaRepository
-                .findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA)
-                .orElseThrow(() -> new BadRequestAlertException("Igreja padrão não encontrada", ENTITY_NAME, "semigreja"));
-            preCadastro.setIgreja(igrejaPadrao);
-        }
+        preCadastro.setIgreja(resolverIgreja(preCadastro));
         if (preCadastro.getCriadoEm() == null) {
             preCadastro.setCriadoEm(Instant.now());
         }
@@ -379,5 +376,24 @@ public class PreCadastroResource {
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .build();
+    }
+
+    private Igreja resolverIgreja(PreCadastro preCadastro) {
+        if (preCadastro.getIgreja() != null && preCadastro.getIgreja().getId() != null) {
+            Igreja igreja = igrejaRepository
+                .findById(preCadastro.getIgreja().getId())
+                .orElseThrow(() -> new BadRequestAlertException("Igreja não encontrada", ENTITY_NAME, "igrejainvalida"));
+            if (igreja.getStatus() == StatusIgreja.INATIVA) {
+                throw new BadRequestAlertException(
+                    "Esta igreja não está aceitando novos cadastros.",
+                    ENTITY_NAME,
+                    "igrejaInativa"
+                );
+            }
+            return igreja;
+        }
+        return igrejaRepository
+            .findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA)
+            .orElseThrow(() -> new BadRequestAlertException("Igreja padrão não encontrada", ENTITY_NAME, "semigreja"));
     }
 }

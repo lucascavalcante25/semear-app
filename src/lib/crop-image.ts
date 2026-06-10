@@ -1,9 +1,12 @@
+export type FormatoRecorte = "round" | "rect";
+
 /**
- * Cria uma imagem recortada em círculo a partir da área de crop.
+ * Cria uma imagem recortada (circular ou quadrada) a partir da área de crop.
  */
 export async function getCroppedImg(
   imageSrc: string,
-  pixelCrop: { x: number; y: number; width: number; height: number }
+  pixelCrop: { x: number; y: number; width: number; height: number },
+  formato: FormatoRecorte = "round",
 ): Promise<Blob> {
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");
@@ -17,11 +20,13 @@ export async function getCroppedImg(
   canvas.width = size;
   canvas.height = size;
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-  ctx.closePath();
-  ctx.clip();
+  if (formato === "round") {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+  }
 
   ctx.drawImage(
     image,
@@ -35,7 +40,9 @@ export async function getCroppedImg(
     size
   );
 
-  ctx.restore();
+  if (formato === "round") {
+    ctx.restore();
+  }
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

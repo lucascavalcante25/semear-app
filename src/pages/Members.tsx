@@ -73,7 +73,8 @@ import {
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess, canWrite } from "@/auth/permissions";
 import { toast } from "sonner";
-import { aplicarMascaraData, dataMascaraParaApi, validarData } from "@/lib/mascara-telefone";
+import { apiParaMascaraData, validarData } from "@/lib/mascara-telefone";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const PERFIS_PODE_CADASTRAR_DEPENDENTE: Role[] = ["admin", "pastor", "copastor", "lider"];
 
@@ -233,8 +234,7 @@ function FormMembro({
       setFirstName(membroEdicao.firstName);
       setLastName(membroEdicao.lastName);
       setEmail(membroEdicao.email);
-      const bd = membroEdicao.birthDate;
-      setBirthDate(bd ? (() => { const [y, m, d] = bd.split("-"); return `${d}/${m}/${y}`; })() : "");
+      setBirthDate(membroEdicao.birthDate ?? "");
       setSexo((membroEdicao.sexo as "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO") ?? "NAO_INFORMADO");
       setActivated(membroEdicao.activated);
       setPerfil(membroEdicao.role);
@@ -294,14 +294,13 @@ function FormMembro({
         const modulesParaApi = permissionsToModules(
           modulesSelecionados.map((m) => ({ module: m, access })),
         );
-        const birthDateApi = birthDate.trim() ? (dataMascaraParaApi(birthDate.trim()) || undefined) : undefined;
         const payload: AtualizarMembroPayload = {
           id: membroEdicao.idNum,
           login: loginTrim,
           firstName: firstNameTrim,
           lastName: lastNameTrim,
           email: emailTrim || undefined,
-          birthDate: birthDateApi,
+          birthDate: birthDate.trim() || undefined,
           sexo: sexo !== "NAO_INFORMADO" ? sexo : undefined,
           activated,
           authorities: [roleParaAuthority(perfil)],
@@ -374,13 +373,11 @@ function FormMembro({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="birthDate">Data de nascimento</Label>
-              <Input
+              <DatePicker
                 id="birthDate"
-                autoComplete="bday"
-                placeholder="dd/mm/aaaa"
-                value={birthDate}
-                onChange={(e) => setBirthDate(aplicarMascaraData(e.target.value))}
-                maxLength={10}
+                value={birthDate || undefined}
+                onChange={setBirthDate}
+                rejeitarFuturo
               />
             </div>
             <div className="space-y-2">
@@ -498,17 +495,11 @@ function FormDependente({
       toast.error("Nome é obrigatório.");
       return;
     }
-    if (!dataNascimento || dataNascimento.replace(/\D/g, "").length !== 8) {
-      toast.error("Data de nascimento é obrigatória (dd/mm/aaaa).");
+    if (!dataNascimento) {
+      toast.error("Data de nascimento é obrigatória.");
       return;
     }
-    if (!validarData(dataNascimento)) {
-      toast.error("Data de nascimento inválida.");
-      return;
-    }
-
-    const birthDateApi = dataMascaraParaApi(dataNascimento);
-    if (!birthDateApi) {
+    if (!validarData(apiParaMascaraData(dataNascimento))) {
       toast.error("Data de nascimento inválida.");
       return;
     }
@@ -517,7 +508,7 @@ function FormDependente({
     try {
       await cadastrarDependente({
         nome: nomeTrim,
-        birthDate: birthDateApi,
+        birthDate: dataNascimento,
         paiId: paiId && paiId !== "__nenhum__" ? Number(paiId) : undefined,
         maeId: maeId && maeId !== "__nenhum__" ? Number(maeId) : undefined,
       });
@@ -556,12 +547,11 @@ function FormDependente({
           </div>
           <div className="space-y-2">
             <Label htmlFor="dataNascimento-dep">Data de nascimento *</Label>
-            <Input
+            <DatePicker
               id="dataNascimento-dep"
-              placeholder="dd/mm/aaaa"
-              value={dataNascimento}
-              onChange={(e) => setDataNascimento(aplicarMascaraData(e.target.value))}
-              maxLength={10}
+              value={dataNascimento || undefined}
+              onChange={setDataNascimento}
+              rejeitarFuturo
             />
           </div>
           <div className="space-y-2">
@@ -639,13 +629,7 @@ function FormDependenteEdicao({
   useEffect(() => {
     if (aberto && dependente) {
       setNome(dependente.name);
-      const bd = dependente.birthDate;
-      if (bd) {
-        const [y, m, d] = bd.split("-");
-        setDataNascimento(`${d}/${m}/${y}`);
-      } else {
-        setDataNascimento("");
-      }
+      setDataNascimento(dependente.birthDate ?? "");
       setPaiId(dependente.paiId ? String(dependente.paiId) : "");
       setMaeId(dependente.maeId ? String(dependente.maeId) : "");
     }
@@ -658,16 +642,11 @@ function FormDependenteEdicao({
       toast.error("Nome é obrigatório.");
       return;
     }
-    if (!dataNascimento || dataNascimento.replace(/\D/g, "").length !== 8) {
-      toast.error("Data de nascimento é obrigatória (dd/mm/aaaa).");
+    if (!dataNascimento) {
+      toast.error("Data de nascimento é obrigatória.");
       return;
     }
-    if (!validarData(dataNascimento)) {
-      toast.error("Data de nascimento inválida.");
-      return;
-    }
-    const birthDateApi = dataMascaraParaApi(dataNascimento);
-    if (!birthDateApi) {
+    if (!validarData(apiParaMascaraData(dataNascimento))) {
       toast.error("Data de nascimento inválida.");
       return;
     }
@@ -681,7 +660,7 @@ function FormDependenteEdicao({
         login: dependente.login,
         firstName,
         lastName,
-        birthDate: birthDateApi,
+        birthDate: dataNascimento,
         paiId: paiId && paiId !== "__nenhum__" ? Number(paiId) : undefined,
         maeId: maeId && maeId !== "__nenhum__" ? Number(maeId) : undefined,
         authorities: [],
@@ -720,12 +699,11 @@ function FormDependenteEdicao({
           </div>
           <div className="space-y-2">
             <Label htmlFor="dataNascimento-edit-dep">Data de nascimento *</Label>
-            <Input
+            <DatePicker
               id="dataNascimento-edit-dep"
-              placeholder="dd/mm/aaaa"
-              value={dataNascimento}
-              onChange={(e) => setDataNascimento(aplicarMascaraData(e.target.value))}
-              maxLength={10}
+              value={dataNascimento || undefined}
+              onChange={setDataNascimento}
+              rejeitarFuturo
             />
           </div>
           <div className="space-y-2">

@@ -1,10 +1,12 @@
 package br.com.semear.domain;
 
+import br.com.semear.domain.enumeration.Sexo;
 import br.com.semear.domain.enumeration.StatusSolicitacaoAcesso;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "solicitacao_acesso")
@@ -28,12 +30,73 @@ public class SolicitacaoAcesso implements Serializable {
     @Column(name = "telefone", length = 50)
     private String telefone;
 
+    @Column(name = "cpf", length = 14)
+    private String cpf;
+
+    @Column(name = "telefone_secundario", length = 50)
+    private String telefoneSecundario;
+
+    @Column(name = "telefone_emergencia", length = 50)
+    private String telefoneEmergencia;
+
+    @Column(name = "nome_contato_emergencia", length = 255)
+    private String nomeContatoEmergencia;
+
+    @Column(name = "data_nascimento")
+    private LocalDate dataNascimento;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sexo", length = 20)
+    private Sexo sexo;
+
+    @Column(name = "senha", length = 255)
+    private String senha;
+
+    @Column(name = "cep_pessoal", length = 10)
+    private String cepPessoal;
+
+    @Column(name = "endereco_pessoal", length = 255)
+    private String enderecoPessoal;
+
+    @Column(name = "numero_pessoal", length = 20)
+    private String numeroPessoal;
+
+    @Column(name = "complemento_pessoal", length = 100)
+    private String complementoPessoal;
+
+    @Column(name = "bairro_pessoal", length = 100)
+    private String bairroPessoal;
+
+    @Column(name = "cidade_pessoal", length = 100)
+    private String cidadePessoal;
+
+    @Column(name = "estado_pessoal", length = 2)
+    private String estadoPessoal;
+
     @NotNull
     @Column(name = "nome_igreja", nullable = false)
     private String nomeIgreja;
 
     @Column(name = "cnpj_igreja", length = 20)
     private String cnpjIgreja;
+
+    @Column(name = "cep", length = 10)
+    private String cep;
+
+    @Column(name = "endereco", length = 255)
+    private String endereco;
+
+    @Column(name = "numero", length = 20)
+    private String numero;
+
+    @Column(name = "complemento", length = 100)
+    private String complemento;
+
+    @Column(name = "bairro", length = 100)
+    private String bairro;
+
+    @Column(name = "quantidade_membros")
+    private Integer quantidadeMembros;
 
     @Column(name = "cidade", length = 100)
     private String cidade;
@@ -95,6 +158,118 @@ public class SolicitacaoAcesso implements Serializable {
         this.telefone = telefone;
     }
 
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
+    }
+
+    public String getTelefoneSecundario() {
+        return telefoneSecundario;
+    }
+
+    public void setTelefoneSecundario(String telefoneSecundario) {
+        this.telefoneSecundario = telefoneSecundario;
+    }
+
+    public String getTelefoneEmergencia() {
+        return telefoneEmergencia;
+    }
+
+    public void setTelefoneEmergencia(String telefoneEmergencia) {
+        this.telefoneEmergencia = telefoneEmergencia;
+    }
+
+    public String getNomeContatoEmergencia() {
+        return nomeContatoEmergencia;
+    }
+
+    public void setNomeContatoEmergencia(String nomeContatoEmergencia) {
+        this.nomeContatoEmergencia = nomeContatoEmergencia;
+    }
+
+    public LocalDate getDataNascimento() {
+        return dataNascimento;
+    }
+
+    public void setDataNascimento(LocalDate dataNascimento) {
+        this.dataNascimento = dataNascimento;
+    }
+
+    public Sexo getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(Sexo sexo) {
+        this.sexo = sexo;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+    public String getCepPessoal() {
+        return cepPessoal;
+    }
+
+    public void setCepPessoal(String cepPessoal) {
+        this.cepPessoal = cepPessoal;
+    }
+
+    public String getEnderecoPessoal() {
+        return enderecoPessoal;
+    }
+
+    public void setEnderecoPessoal(String enderecoPessoal) {
+        this.enderecoPessoal = enderecoPessoal;
+    }
+
+    public String getNumeroPessoal() {
+        return numeroPessoal;
+    }
+
+    public void setNumeroPessoal(String numeroPessoal) {
+        this.numeroPessoal = numeroPessoal;
+    }
+
+    public String getComplementoPessoal() {
+        return complementoPessoal;
+    }
+
+    public void setComplementoPessoal(String complementoPessoal) {
+        this.complementoPessoal = complementoPessoal;
+    }
+
+    public String getBairroPessoal() {
+        return bairroPessoal;
+    }
+
+    public void setBairroPessoal(String bairroPessoal) {
+        this.bairroPessoal = bairroPessoal;
+    }
+
+    public String getCidadePessoal() {
+        return cidadePessoal;
+    }
+
+    public void setCidadePessoal(String cidadePessoal) {
+        this.cidadePessoal = cidadePessoal;
+    }
+
+    public String getEstadoPessoal() {
+        return estadoPessoal;
+    }
+
+    public void setEstadoPessoal(String estadoPessoal) {
+        this.estadoPessoal = estadoPessoal;
+    }
+
     public String getNomeIgreja() {
         return nomeIgreja;
     }
@@ -109,6 +284,54 @@ public class SolicitacaoAcesso implements Serializable {
 
     public void setCnpjIgreja(String cnpjIgreja) {
         this.cnpjIgreja = cnpjIgreja;
+    }
+
+    public String getCep() {
+        return cep;
+    }
+
+    public void setCep(String cep) {
+        this.cep = cep;
+    }
+
+    public String getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(String endereco) {
+        this.endereco = endereco;
+    }
+
+    public String getNumero() {
+        return numero;
+    }
+
+    public void setNumero(String numero) {
+        this.numero = numero;
+    }
+
+    public String getComplemento() {
+        return complemento;
+    }
+
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
+    }
+
+    public String getBairro() {
+        return bairro;
+    }
+
+    public void setBairro(String bairro) {
+        this.bairro = bairro;
+    }
+
+    public Integer getQuantidadeMembros() {
+        return quantidadeMembros;
+    }
+
+    public void setQuantidadeMembros(Integer quantidadeMembros) {
+        this.quantidadeMembros = quantidadeMembros;
     }
 
     public String getCidade() {

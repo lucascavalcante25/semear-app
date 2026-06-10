@@ -8,6 +8,9 @@ import { ProvedorNotificacoes } from "@/contexts/NotificationsContext";
 import { RequerAutenticacao } from "@/components/auth/RequireAuth";
 import { ProvedorTema } from "@/contexts/ThemeContext";
 import { ProvedorIgreja } from "@/contexts/IgrejaContext";
+import { SincronizarTema } from "@/components/theme/SincronizarTema";
+import { SincronizarCoresIgreja } from "@/components/theme/SincronizarCoresIgreja";
+import { LimparBloqueioNavegacao } from "@/components/navigation/LimparBloqueioNavegacao";
 import { RequerSuperAdmin } from "@/components/auth/RequireSuperAdmin";
 import DashboardSuperAdmin from "./pages/super-admin/Dashboard";
 import IgrejasSuperAdmin from "./pages/super-admin/Igrejas";
@@ -16,7 +19,11 @@ import UsuariosSuperAdmin from "./pages/super-admin/Usuarios";
 import PlanosSuperAdmin from "./pages/super-admin/Planos";
 import FinanceiroSuperAdmin from "./pages/super-admin/Financeiro";
 import ConfiguracoesSuperAdmin from "./pages/super-admin/Configuracoes";
+import SuporteClientesSuperAdmin from "./pages/super-admin/SuporteClientes";
+import Suporte from "./pages/Suporte";
 import SolicitarAcesso from "./pages/SolicitarAcesso";
+import Landing from "./pages/Landing";
+import AssinaturaBloqueada from "./pages/AssinaturaBloqueada";
 import ConfiguracoesIgreja from "./pages/ConfiguracoesIgreja";
 
 // Pages
@@ -49,11 +56,24 @@ const App = () => (
           <ProvedorIgreja>
           <ProvedorNotificacoes>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <SincronizarTema />
+            <SincronizarCoresIgreja />
+            <LimparBloqueioNavegacao />
             <Routes>
               <Route path="/login" element={<Entrar />} />
               <Route path="/esqueci-senha" element={<EsqueciSenha />} />
               <Route path="/pre-cadastro" element={<PreCadastro />} />
               <Route path="/solicitar-acesso" element={<SolicitarAcesso />} />
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/precos" element={<Landing />} />
+              <Route
+                path="/assinatura-bloqueada"
+                element={
+                  <RequerAutenticacao>
+                    <AssinaturaBloqueada />
+                  </RequerAutenticacao>
+                }
+              />
               <Route
                 path="/super-admin/dashboard"
                 element={
@@ -107,6 +127,14 @@ const App = () => (
                 element={
                   <RequerSuperAdmin>
                     <ConfiguracoesSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/suporte"
+                element={
+                  <RequerSuperAdmin>
+                    <SuporteClientesSuperAdmin />
                   </RequerSuperAdmin>
                 }
               />
@@ -211,6 +239,22 @@ const App = () => (
                 element={
                   <RequerAutenticacao>
                     <AprovarPreCadastros />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/suporte"
+                element={
+                  <RequerAutenticacao>
+                    <Suporte />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/suporte/:id"
+                element={
+                  <RequerAutenticacao>
+                    <Suporte />
                   </RequerAutenticacao>
                 }
               />

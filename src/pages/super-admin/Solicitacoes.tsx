@@ -11,6 +11,7 @@ import {
   type SolicitacaoAcesso,
 } from "@/modules/igreja/solicitacao";
 import { toast } from "sonner";
+import { ShieldCheck } from "lucide-react";
 
 export default function SolicitacoesSuperAdmin() {
   const [lista, setLista] = useState<SolicitacaoAcesso[]>([]);
@@ -68,13 +69,34 @@ export default function SolicitacoesSuperAdmin() {
                 <CardHeader className="flex flex-row items-start justify-between">
                   <div>
                     <CardTitle className="text-base">{s.nomeIgreja}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{s.nomeSolicitante} · {s.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Admin: {s.nomeSolicitante}
+                      {s.cpf && ` · CPF ${s.cpf}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{s.email}</p>
                   </div>
                   <Badge variant="secondary">Pendente</Badge>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
+                  <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-blue-900">
+                    <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
+                    <p>
+                      Ao aprovar, <strong>{s.nomeSolicitante}</strong> será criado como{" "}
+                      <strong>administrador da igreja</strong> com permissão para aprovar pré-cadastros,
+                      configurar PIX, identidade visual e plano de leitura.
+                    </p>
+                  </div>
+                  {s.dataNascimento && <p>Nascimento: {s.dataNascimento}</p>}
                   {s.telefone && <p>Telefone: {s.telefone}</p>}
+                  {s.nomeContatoEmergencia && <p>Emergência: {s.nomeContatoEmergencia}</p>}
+                  {s.quantidadeMembros != null && <p>Membros (aprox.): {s.quantidadeMembros}</p>}
                   {(s.cidade || s.estado) && <p>Local: {[s.cidade, s.estado].filter(Boolean).join(" - ")}</p>}
+                  {s.cep && <p>CEP: {s.cep}</p>}
+                  {(s.endereco || s.numero || s.bairro) && (
+                    <p>
+                      Endereço: {[s.endereco, s.numero, s.bairro].filter(Boolean).join(", ")}
+                    </p>
+                  )}
                   {s.cnpjIgreja && <p>CNPJ: {s.cnpjIgreja}</p>}
                   {s.mensagem && <p className="italic text-muted-foreground">{s.mensagem}</p>}
                   <Textarea

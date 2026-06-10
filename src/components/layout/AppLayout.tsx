@@ -1,4 +1,7 @@
 import { ReactNode } from "react";
+import { BannerTesteGratis } from "@/components/comercial/BannerTesteGratis";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
+import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { Cabecalho } from "./Header";
 import { NavegacaoInferior } from "./BottomNav";
 import { BarraLateral } from "./Sidebar";
@@ -10,6 +13,8 @@ interface LayoutAppProps {
 
 export function LayoutApp({ children }: LayoutAppProps) {
   const isMobile = usarEhMobile();
+  const { nomeExibicao } = useIgrejaConfiguracao();
+  useTituloDocumento({ igreja: nomeExibicao, area: "produto" });
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -22,6 +27,7 @@ export function LayoutApp({ children }: LayoutAppProps) {
         {/* Main Content */}
         <main className="flex-1 min-w-0 pb-20 md:pb-6 md:ml-64">
           <div className="w-full max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6">
+            <BannerTesteGratis />
             {children}
           </div>
         </main>

@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 
@@ -111,6 +112,9 @@ public class Igreja implements Serializable {
     @Column(name = "descricao_igreja", columnDefinition = "text")
     private String descricaoIgreja;
 
+    @Column(name = "subtitulo_igreja", length = 255)
+    private String subtituloIgreja;
+
     @Column(name = "texto_agradecimento_oferta", columnDefinition = "text")
     private String textoAgradecimentoOferta;
 
@@ -125,6 +129,12 @@ public class Igreja implements Serializable {
 
     @Column(name = "data_atualizacao")
     private Instant dataAtualizacao;
+
+    @Column(name = "data_inicio_plano_leitura")
+    private LocalDate dataInicioPlanoLeitura;
+
+    @Column(name = "ciclo_plano_leitura", nullable = false)
+    private Integer cicloPlanoLeitura = 1;
 
     public Long getId() {
         return id;
@@ -350,6 +360,14 @@ public class Igreja implements Serializable {
         this.descricaoIgreja = descricaoIgreja;
     }
 
+    public String getSubtituloIgreja() {
+        return subtituloIgreja;
+    }
+
+    public void setSubtituloIgreja(String subtituloIgreja) {
+        this.subtituloIgreja = subtituloIgreja;
+    }
+
     public String getTextoAgradecimentoOferta() {
         return textoAgradecimentoOferta;
     }
@@ -380,5 +398,21 @@ public class Igreja implements Serializable {
 
     public void setDataAtualizacao(Instant dataAtualizacao) {
         this.dataAtualizacao = dataAtualizacao;
+    }
+
+    public LocalDate getDataInicioPlanoLeitura() {
+        return dataInicioPlanoLeitura;
+    }
+
+    public void setDataInicioPlanoLeitura(LocalDate dataInicioPlanoLeitura) {
+        this.dataInicioPlanoLeitura = dataInicioPlanoLeitura;
+    }
+
+    public Integer getCicloPlanoLeitura() {
+        return cicloPlanoLeitura;
+    }
+
+    public void setCicloPlanoLeitura(Integer cicloPlanoLeitura) {
+        this.cicloPlanoLeitura = cicloPlanoLeitura;
     }
 }

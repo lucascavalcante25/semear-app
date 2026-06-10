@@ -5,6 +5,7 @@ import br.com.semear.domain.enumeration.Tema;
 import br.com.semear.domain.enumeration.TipoChavePix;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 
 public class IgrejaDTO implements Serializable {
 
@@ -38,10 +39,13 @@ public class IgrejaDTO implements Serializable {
     private Tema temaPreferido;
     private String textoBoasVindas;
     private String descricaoIgreja;
+    private String subtituloIgreja;
     private String textoAgradecimentoOferta;
     private StatusIgreja status;
     private Instant dataCadastro;
     private Instant dataAtualizacao;
+    private LocalDate dataInicioPlanoLeitura;
+    private Integer cicloPlanoLeitura;
 
     public Long getId() {
         return id;
@@ -267,6 +271,14 @@ public class IgrejaDTO implements Serializable {
         this.descricaoIgreja = descricaoIgreja;
     }
 
+    public String getSubtituloIgreja() {
+        return subtituloIgreja;
+    }
+
+    public void setSubtituloIgreja(String subtituloIgreja) {
+        this.subtituloIgreja = subtituloIgreja;
+    }
+
     public String getTextoAgradecimentoOferta() {
         return textoAgradecimentoOferta;
     }
@@ -297,5 +309,21 @@ public class IgrejaDTO implements Serializable {
 
     public void setDataAtualizacao(Instant dataAtualizacao) {
         this.dataAtualizacao = dataAtualizacao;
+    }
+
+    public LocalDate getDataInicioPlanoLeitura() {
+        return dataInicioPlanoLeitura;
+    }
+
+    public void setDataInicioPlanoLeitura(LocalDate dataInicioPlanoLeitura) {
+        this.dataInicioPlanoLeitura = dataInicioPlanoLeitura;
+    }
+
+    public Integer getCicloPlanoLeitura() {
+        return cicloPlanoLeitura;
+    }
+
+    public void setCicloPlanoLeitura(Integer cicloPlanoLeitura) {
+        this.cicloPlanoLeitura = cicloPlanoLeitura;
     }
 }

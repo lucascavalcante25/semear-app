@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260609000009-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="igreja" columnName="data_inicio_plano_leitura"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="igreja">
+            <column name="data_inicio_plano_leitura" type="date"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

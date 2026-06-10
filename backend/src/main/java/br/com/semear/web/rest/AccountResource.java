@@ -3,8 +3,12 @@ package br.com.semear.web.rest;
 import br.com.semear.domain.User;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.AssinaturaIgrejaService;
 import br.com.semear.service.MailService;
+import br.com.semear.service.TenantService;
 import br.com.semear.service.UserService;
+import br.com.semear.service.dto.AssinaturaAcessoDTO;
+import br.com.semear.service.dto.AccountUpdateDTO;
 import br.com.semear.service.dto.AdminUserDTO;
 import br.com.semear.service.dto.PasswordChangeDTO;
 import br.com.semear.web.rest.errors.*;
@@ -43,11 +47,21 @@ public class AccountResource {
     private final UserService userService;
 
     private final MailService mailService;
+    private final TenantService tenantService;
+    private final AssinaturaIgrejaService assinaturaIgrejaService;
 
-    public AccountResource(UserRepository userRepository, UserService userService, MailService mailService) {
+    public AccountResource(
+        UserRepository userRepository,
+        UserService userService,
+        MailService mailService,
+        TenantService tenantService,
+        AssinaturaIgrejaService assinaturaIgrejaService
+    ) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.mailService = mailService;
+        this.tenantService = tenantService;
+        this.assinaturaIgrejaService = assinaturaIgrejaService;
     }
 
     /**
@@ -96,6 +110,12 @@ public class AccountResource {
             .orElseThrow(() -> new AccountResourceException("User could not be found"));
     }
 
+    @GetMapping("/account/assinatura-acesso")
+    public AssinaturaAcessoDTO getAssinaturaAcesso() {
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        return assinaturaIgrejaService.verificarAcesso(igrejaId);
+    }
+
     /**
      * {@code POST  /account} : update the current user information.
      *
@@ -134,12 +154,14 @@ public class AccountResource {
     }
 
     @PostMapping("/account")
-    public void saveAccount(@Valid @RequestBody AdminUserDTO userDTO) {
+    public void saveAccount(@Valid @RequestBody AccountUpdateDTO userDTO) {
         String userLogin = SecurityUtils.getCurrentUserLogin()
             .orElseThrow(() -> new AccountResourceException("Current user login not found"));
-        Optional<User> existingUser = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
-        if (existingUser.isPresent() && (!existingUser.orElseThrow().getLogin().equalsIgnoreCase(userLogin))) {
-            throw new EmailAlreadyUsedException();
+        if (userDTO.getEmail() != null) {
+            Optional<User> existingUser = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
+            if (existingUser.isPresent() && (!existingUser.orElseThrow().getLogin().equalsIgnoreCase(userLogin))) {
+                throw new EmailAlreadyUsedException();
+            }
         }
         Optional<User> user = userRepository.findOneByLogin(userLogin);
         if (!user.isPresent()) {

@@ -118,6 +118,12 @@ export type UserAccess = {
   permissions?: ModulePermission[];
 };
 
+/** Central de Suporte — apenas ADMIN_IGREJA (não pastor, líder, etc.) */
+export const podeAcessarSuporte = (user: UserAccess | null | undefined): boolean => {
+  if (!user) return false;
+  return user.authorities?.includes("ROLE_ADMIN_IGREJA") ?? user.role === "admin";
+};
+
 export const usuarioEhSuperAdmin = (user: UserAccess | null | undefined): boolean => {
   if (!user) return false;
   if (user.isSuperAdmin) return true;
@@ -272,6 +278,13 @@ export const getDefaultRouteForRole = (role: Role) => {
     Object.entries(ROUTE_TO_MODULE).map(([route, mod]) => [mod, route]),
   );
   return (first ? moduleToRoute[first.module] : undefined) ?? "/";
+};
+
+/** Rota inicial após login — super admin vai direto ao painel WillSas. */
+export const getDefaultRouteForUser = (user: UserAccess | null | undefined): string => {
+  if (!user) return "/login";
+  if (usuarioEhSuperAdmin(user)) return "/super-admin/dashboard";
+  return getDefaultRouteForRole(user.role);
 };
 
 // --- Compatibilidade com aprovação ---

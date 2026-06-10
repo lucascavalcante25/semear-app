@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260611000004-1" author="semear">
+        <update tableName="plano">
+            <column name="mensagem_preco" value="Pastor, o plano de lançamento do WillIgreja ficou assim:&#10;&#10;✅ Teste grátis por 7 dias&#10;✅ Opção mensal: R$ 700,00 implantação + R$ 139,90/mês&#10;✅ Opção anual no PIX: R$ 1.510,92/ano (10% de desconto)&#10;&#10;Promoção no pagamento anual no PIX:&#10;A implantação sai por R$ 500,00 (em vez de R$ 700,00) + R$ 1.510,92/ano no PIX.&#10;&#10;A plataforma funciona pelo navegador no computador e no celular, sem precisar instalar aplicativo."/>
+            <where>id = 1</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

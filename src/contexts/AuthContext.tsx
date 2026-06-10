@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
-  getDefaultRouteForRole,
+  getDefaultRouteForUser,
   MEMBRO_DEFAULT_PERMISSIONS,
   permissionsToModules,
   type Role,
@@ -19,6 +19,7 @@ type Usuario = UserAccess & {
 type ResultadoLogin = {
   success: boolean;
   message?: string;
+  redirectTo?: string;
 };
 
 type ValorContextoAutenticacao = {
@@ -62,15 +63,21 @@ const normalizarUsuario = (user: Partial<Usuario> | null): Usuario | null => {
     : typeof rawModules === "string"
       ? rawModules.split(",").map((s) => s.trim()).filter(Boolean)
       : [];
+  const authorities = Array.isArray((user as Usuario).authorities)
+    ? (user as Usuario).authorities
+    : undefined;
+  const isSuperAdmin =
+    Boolean((user as Usuario).isSuperAdmin) ||
+    role === "super_admin" ||
+    authorities?.includes("ROLE_SUPER_ADMIN") === true;
+
   return {
     id: String(user.id ?? "0"),
     name: String(user.name ?? "Usuario"),
     email: String(user.email ?? ""),
     role,
-    isSuperAdmin: Boolean((user as Usuario).isSuperAdmin),
-    authorities: Array.isArray((user as Usuario).authorities)
-      ? (user as Usuario).authorities
-      : undefined,
+    isSuperAdmin,
+    authorities,
     modules: modules.length > 0 ? modules : undefined,
     permissions: (user as any).permissions,
   };
@@ -280,7 +287,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
         const mapped = mapearContaParaUsuario(account);
         setUser(mapped);
         salvarUsuario(mapped);
-        return { success: true };
+        return { success: true, redirectTo: getDefaultRouteForUser(mapped) };
       } catch (error) {
         limparToken();
         const msg = error instanceof Error ? error.message : "";
@@ -315,7 +322,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
     setUser(safeUser);
     salvarUsuario(safeUser);
 
-    return { success: true };
+    return { success: true, redirectTo: getDefaultRouteForUser(safeUser) };
   };
 
   const logout = () => {
@@ -324,9 +331,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
     limparToken();
   };
 
-  const defaultRoute = useMemo(() => {
-    return user ? getDefaultRouteForRole(user.role) : "/";
-  }, [user]);
+  const defaultRoute = useMemo(() => getDefaultRouteForUser(user), [user]);
 
   const value = useMemo(
     () => ({

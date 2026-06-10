@@ -20,9 +20,9 @@ const buttonVariants = cva(
         olive: "bg-olive text-olive-foreground hover:bg-olive-dark shadow-sm",
         gold: "bg-gold text-gold-foreground hover:bg-gold-dark shadow-gold",
         "deep-blue": "bg-deep-blue text-deep-blue-foreground hover:bg-deep-blue/80 shadow-sm",
-        reading: "border-2 border-dashed border-muted-foreground/30 bg-transparent hover:bg-muted/50 hover:border-primary",
-        "reading-complete": "bg-reading-complete border border-green-500/30 text-green-700 hover:bg-green-100",
-        "reading-pending": "bg-reading-pending border border-amber-500/30 text-amber-700 hover:bg-amber-100",
+        reading: "border border-dashed border-muted-foreground/30 bg-transparent text-muted-foreground hover:bg-primary/5 hover:border-primary/40 hover:text-primary",
+        "reading-complete": "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
+        "reading-pending": "border-border bg-muted/50 text-muted-foreground opacity-60",
       },
       size: {
         default: "h-10 px-4 py-2",

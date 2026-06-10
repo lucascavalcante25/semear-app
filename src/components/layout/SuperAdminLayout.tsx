@@ -10,11 +10,17 @@ import {
   LogOut,
   Menu,
   ArrowLeft,
+  Moon,
+  Sun,
+  Headphones,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { usarTema } from "@/contexts/ThemeContext";
 import { usarEhMobile } from "@/hooks/use-mobile";
+import { PLATAFORMA } from "@/lib/plataforma";
+import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -22,6 +28,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/super-admin/dashboard" },
   { icon: Church, label: "Igrejas", path: "/super-admin/igrejas" },
   { icon: ClipboardList, label: "Solicitações", path: "/super-admin/solicitacoes" },
+  { icon: Headphones, label: "Suporte dos Clientes", path: "/super-admin/suporte" },
   { icon: Users, label: "Usuários", path: "/super-admin/usuarios" },
   { icon: CreditCard, label: "Planos", path: "/super-admin/planos" },
   { icon: Wallet, label: "Meu Financeiro", path: "/super-admin/financeiro" },
@@ -31,19 +38,25 @@ const menuItems = [
 function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
   const location = useLocation();
   const { logout } = usarAutenticacao();
+  const { theme, setTheme } = usarTema();
   const navigate = useNavigate();
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="border-b border-sidebar-border p-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Plataforma</p>
-        <h1 className="text-lg font-bold">Semear SaaS</h1>
-        <p className="text-xs text-muted-foreground">Painel do dono</p>
+        <div className="flex items-center gap-2">
+          <img src={PLATAFORMA.logoUrl} alt="" className="h-8 w-8 rounded-lg" aria-hidden />
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Plataforma</p>
+            <h1 className="text-lg font-bold leading-tight">{PLATAFORMA.nome}</h1>
+          </div>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">Painel do dono</p>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const ativo = location.pathname === item.path;
+          const ativo = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
           return (
             <Link
               key={item.path}
@@ -63,6 +76,14 @@ function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </nav>
       <div className="space-y-1 border-t border-sidebar-border p-3">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark", "platform")}
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {theme === "dark" ? "Tema claro" : "Tema escuro"}
+        </Button>
         <Button variant="ghost" className="w-full justify-start gap-2" asChild>
           <Link to="/" onClick={onNavigate}>
             <ArrowLeft className="h-4 w-4" />
@@ -88,6 +109,7 @@ function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
 export function LayoutSuperAdmin({ children }: { children: React.ReactNode }) {
   const isMobile = usarEhMobile();
   const [menuAberto, setMenuAberto] = useState(false);
+  useTituloDocumento({ area: "plataforma" });
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,7 +132,7 @@ export function LayoutSuperAdmin({ children }: { children: React.ReactNode }) {
                   <MenuLateral onNavigate={() => setMenuAberto(false)} />
                 </SheetContent>
               </Sheet>
-              <span className="font-semibold">Painel da Plataforma</span>
+              <span className="font-semibold">{PLATAFORMA.nome}</span>
             </header>
           )}
           <main className="flex-1 p-4 md:p-6">{children}</main>

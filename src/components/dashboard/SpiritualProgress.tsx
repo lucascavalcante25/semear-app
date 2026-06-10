@@ -13,6 +13,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { livrosBiblia } from "@/data/bible-books";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
+import { canWrite } from "@/auth/permissions";
 import {
   getLeituraDoDia,
   obterDiasPlanoLeitura,
@@ -20,11 +22,13 @@ import {
   obterIdUsuario,
   obterDiasPassadosPlano,
   obterEstatisticasLeitura,
-  obterPlanoInicio,
-  obterPercentualPlano,
+  formatarPercentualPlano,
+  obterPercentualPlanoPreciso,
   alternarProgressoLeitura,
+  definirInicioPlanoIgreja,
 } from "@/modules/bible/service";
 import type { DiaPlanoLeitura, ProgressoLeituraUsuario, TrechoLeitura } from "@/modules/bible/types";
+import { cn } from "@/lib/utils";
 
 const LIMITE_DIAS_ATRASO_RESUMO = 3;
 
@@ -43,7 +47,7 @@ function AnelProgresso({ progress, size = 80, strokeWidth = 6 }: AnelProgressoPr
     <div className="relative" style={{ width: size, height: size }}>
       <svg className="transform -rotate-90" width={size} height={size}>
         <circle
-          className="text-muted"
+          className="text-border"
           strokeWidth={strokeWidth}
           stroke="currentColor"
           fill="transparent"
@@ -52,7 +56,7 @@ function AnelProgresso({ progress, size = 80, strokeWidth = 6 }: AnelProgressoPr
           cy={size / 2}
         />
         <circle
-          className="text-olive transition-all duration-500"
+          className="text-primary transition-all duration-500"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
@@ -65,28 +69,57 @@ function AnelProgresso({ progress, size = 80, strokeWidth = 6 }: AnelProgressoPr
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-bold text-foreground">{progress}%</span>
+        <span className="text-lg font-bold text-foreground">
+          {progress < 1 && progress > 0
+            ? progress.toLocaleString("pt-BR", { maximumFractionDigits: 1 })
+            : Math.round(progress)}
+          %
+        </span>
       </div>
     </div>
   );
 }
+
+type VarianteEstatistica = "sequencia" | "leituras" | "ausencia" | "plano";
+
+const ESTILO_ESTATISTICA: Record<VarianteEstatistica, string> = {
+  sequencia:
+    "bg-primary/15 text-primary border border-primary/25 shadow-sm",
+  leituras:
+    "bg-emerald-600/12 text-emerald-800 dark:text-emerald-300 border border-emerald-600/25 shadow-sm",
+  ausencia:
+    "bg-amber-600/12 text-amber-900 dark:text-amber-300 border border-amber-600/25 shadow-sm",
+  plano:
+    "bg-sky-700/10 text-sky-900 dark:text-sky-300 border border-sky-700/20 shadow-sm",
+};
 
 interface CartaoEstatisticaProps {
   icon: React.ElementType;
   label: string;
   value: string | number;
   subtext?: string;
-  color: string;
+  variante?: VarianteEstatistica;
 }
 
-function CartaoEstatistica({ icon: Icon, label, value, subtext, color }: CartaoEstatisticaProps) {
+function CartaoEstatistica({
+  icon: Icon,
+  label,
+  value,
+  subtext,
+  variante = "sequencia",
+}: CartaoEstatisticaProps) {
   return (
-    <div className="flex items-center gap-3">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
-        <Icon className="h-5 w-5" />
+    <div className="flex items-center gap-3 min-w-0">
+      <div
+        className={cn(
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+          ESTILO_ESTATISTICA[variante],
+        )}
+      >
+        <Icon className="h-4 w-4" strokeWidth={2.25} />
       </div>
-      <div>
-        <p className="text-lg font-bold">{value}</p>
+      <div className="min-w-0">
+        <p className="text-lg font-bold text-foreground leading-tight">{value}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
         {subtext && <p className="text-[10px] text-muted-foreground">{subtext}</p>}
       </div>
@@ -94,8 +127,17 @@ function CartaoEstatistica({ icon: Icon, label, value, subtext, color }: CartaoE
   );
 }
 
+const normalizarDataPlano = (valor?: string | null) => {
+  if (!valor) return null;
+  const data = new Date(`${valor.split("T")[0]}T00:00:00`);
+  data.setHours(0, 0, 0, 0);
+  return data;
+};
+
 export function ProgressoEspiritual() {
   const { user } = usarAutenticacao();
+  const { configuracao } = useIgrejaConfiguracao();
+  const dataInicioPlano = configuracao?.dataInicioPlanoLeitura;
   const userId = obterIdUsuario(user?.id);
   const navigate = useNavigate();
   const [progressoLeitura, setProgressoLeitura] = useState<ProgressoLeituraUsuario[]>([]);
@@ -107,6 +149,10 @@ export function ProgressoEspiritual() {
   const [modalAtrasadosAberto, setModalAtrasadosAberto] = useState(false);
 
   useEffect(() => {
+    definirInicioPlanoIgreja(dataInicioPlano ?? null);
+  }, [dataInicioPlano]);
+
+  useEffect(() => {
     setProgressoLeitura(obterProgressoLeitura(userId));
     const leitura = getLeituraDoDia(userId);
     if (leitura) {
@@ -116,16 +162,25 @@ export function ProgressoEspiritual() {
       setLeiturasHoje(leitura.dia.readings);
       setDiaAtual(leitura.dia);
       setDiasPlano(dias);
+    } else {
+      setLeiturasHoje([]);
+      setDiaAtual(null);
+      setDiasPlano([]);
     }
-  }, [userId]);
+  }, [userId, dataInicioPlano]);
 
   const estatisticas = useMemo(
     () => obterEstatisticasLeitura(progressoLeitura, totalDiasPlano),
     [progressoLeitura, totalDiasPlano],
   );
 
-  const percentualPlano = useMemo(
-    () => obterPercentualPlano(totalDiasPlano),
+  const percentualPlanoPreciso = useMemo(
+    () => obterPercentualPlanoPreciso(totalDiasPlano),
+    [totalDiasPlano],
+  );
+
+  const percentualPlanoTexto = useMemo(
+    () => formatarPercentualPlano(totalDiasPlano),
     [totalDiasPlano],
   );
 
@@ -134,7 +189,15 @@ export function ProgressoEspiritual() {
     [totalDiasPlano],
   );
 
-  const planoInicio = useMemo(() => obterPlanoInicio(), []);
+  const planoInicio = useMemo(() => normalizarDataPlano(dataInicioPlano), [dataInicioPlano]);
+
+  const planoConfigurado = Boolean(dataInicioPlano);
+  const planoJaIniciou = useMemo(() => {
+    if (!planoInicio) return false;
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    return hoje.getTime() >= planoInicio.getTime();
+  }, [planoInicio]);
 
   const leiturasConcluidas = useMemo(() => {
     const concluido = new Set<string>();
@@ -222,29 +285,74 @@ export function ProgressoEspiritual() {
   const leiturasPendentesNoDia = (dia: DiaPlanoLeitura) =>
     dia.readings.filter((leitura) => !leiturasConcluidas.has(leitura.id));
 
+  if (!planoConfigurado) {
+    return (
+      <Card className="overflow-hidden border border-border shadow-spiritual bg-card min-w-0">
+        <CardContent className="p-6 text-center space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary border border-primary/25">
+            <BookOpen className="h-6 w-6" />
+          </div>
+          <p className="font-medium">Plano de leitura ainda não configurado</p>
+          <p className="text-sm text-muted-foreground">
+            O administrador da igreja deve definir a data de início em Configurações da Igreja.
+          </p>
+          {canWrite(user, "/configuracoes-igreja") && (
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => navigate("/configuracoes-igreja?aba=plano")}
+            >
+              Configurar plano
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!planoJaIniciou) {
+    return (
+      <Card className="overflow-hidden border border-border shadow-spiritual bg-card min-w-0">
+        <CardContent className="p-6 text-center space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-600/12 text-amber-900 dark:text-amber-300 border border-amber-600/25">
+            <Calendar className="h-6 w-6" />
+          </div>
+          <p className="font-medium">Plano de leitura agendado</p>
+          <p className="text-sm text-muted-foreground">
+            O plano anual começa em{" "}
+            <strong>{planoInicio?.toLocaleDateString("pt-BR") ?? "—"}</strong>.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="shadow-spiritual overflow-hidden min-w-0">
-      <div className="gradient-spiritual p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <TrendingUp className="h-5 w-5 text-white/90" />
-          <h3 className="text-sm font-semibold text-white">Seu Progresso Espiritual</h3>
+    <Card className="overflow-hidden border border-border shadow-spiritual bg-card min-w-0">
+      <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-primary/12 via-primary/8 to-transparent border-b border-primary/15">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <TrendingUp className="h-4 w-4" />
         </div>
-        <p className="text-xs text-white/70">
-          Continue firme na Palavra! Você está crescendo.
-        </p>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-foreground">Seu Progresso Espiritual</h3>
+          <p className="text-xs text-muted-foreground">
+            Continue firme na Palavra! Você está crescendo.
+          </p>
+        </div>
       </div>
 
-      <CardContent className="p-3">
-        <div className="mt-6 grid gap-2 lg:grid-cols-[0.9fr_1.1fr] items-start">
+      <CardContent className="p-4">
+        <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr] items-start">
           <div className="flex items-center gap-4">
             {/* Anel de progresso */}
             <div className="flex flex-col items-center">
-              <AnelProgresso progress={percentualPlano} size={72} strokeWidth={5} />
+              <AnelProgresso progress={percentualPlanoPreciso} size={72} strokeWidth={5} />
               <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                Plano Anual · {percentualPlano}%
+                Plano Anual · {percentualPlanoTexto}%
               </p>
               <p className="text-[10px] text-muted-foreground text-center">
-                {diasPassadosPlano}/{totalDiasPlano} dias · Início {planoInicio.toLocaleDateString("pt-BR")}
+                {diasPassadosPlano}/{totalDiasPlano} dias · Início{" "}
+                {planoInicio?.toLocaleDateString("pt-BR") ?? "—"}
               </p>
               <div className="w-full mt-2">
                 <p className="text-[10px] text-muted-foreground text-center mb-1">
@@ -260,26 +368,26 @@ export function ProgressoEspiritual() {
                 icon={Flame}
                 label="Dias seguidos"
                 value={estatisticas.sequenciaAtual}
-                color="bg-gold/10 text-gold-dark"
+                variante="sequencia"
               />
               <CartaoEstatistica
                 icon={BookOpen}
                 label="Leituras feitas"
                 value={estatisticas.totalConcluido}
-                color="bg-olive/10 text-olive"
+                variante="leituras"
               />
               <CartaoEstatistica
                 icon={Calendar}
                 label="Dias sem ler"
                 value={estatisticas.diasSemLer}
-                color="bg-deep-blue/10 text-deep-blue"
+                variante="ausencia"
               />
-            <CartaoEstatistica
-              icon={BookOpen}
-              label="Progresso do plano"
-              value={`${percentualPlano}%`}
-              color="bg-gold/10 text-gold-dark"
-            />
+              <CartaoEstatistica
+                icon={TrendingUp}
+                label="Progresso do plano"
+                value={`${percentualPlanoTexto}%`}
+                variante="plano"
+              />
             </div>
           </div>
 
@@ -297,16 +405,21 @@ export function ProgressoEspiritual() {
                   Nenhuma leitura disponível para hoje.
                 </p>
               ) : (
-                leiturasHoje.map((reading) => (
+                leiturasHoje.map((reading) => {
+                  const concluida = leiturasConcluidas.has(reading.id);
+                  return (
                   <div
                     key={reading.id}
-                    className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg border"
+                    className={cn(
+                      "flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-border bg-background/70 transition-colors",
+                      concluida && "border-primary/25 bg-primary/5",
+                    )}
                   >
                     <div className="min-w-0">
                       <button
                         type="button"
                         onClick={() => abrirLeitura(reading)}
-                        className="text-left"
+                        className="text-left hover:text-primary transition-colors"
                       >
                         <p className="text-sm font-medium truncate">{reading.reference}</p>
                         <p className="text-[10px] text-muted-foreground">{reading.book}</p>
@@ -314,25 +427,34 @@ export function ProgressoEspiritual() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Button
-                        variant={leiturasConcluidas.has(reading.id) ? "reading-complete" : "reading"}
-                        size="icon"
+                        variant="outline"
+                        size="icon-sm"
                         onClick={() => marcarLeitura(reading.id, true)}
-                        className={leiturasConcluidas.has(reading.id) ? "pointer-events-none" : undefined}
+                        className={cn(
+                          concluida
+                            ? "border-primary bg-primary text-primary-foreground pointer-events-none"
+                            : "border-border text-muted-foreground hover:border-primary hover:bg-primary/10 hover:text-primary",
+                        )}
                       >
                         <Check className="h-4 w-4" />
                       </Button>
                       <Button
-                        variant={!leiturasConcluidas.has(reading.id) ? "reading-pending" : "reading"}
-                        size="icon"
+                        variant="outline"
+                        size="icon-sm"
                         onClick={() => marcarLeitura(reading.id, false)}
-                        className={!leiturasConcluidas.has(reading.id) ? "opacity-50" : undefined}
-                        disabled={!leiturasConcluidas.has(reading.id)}
+                        className={cn(
+                          concluida
+                            ? "border-border text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                            : "border-transparent opacity-40 pointer-events-none",
+                        )}
+                        disabled={!concluida}
                       >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -352,7 +474,7 @@ export function ProgressoEspiritual() {
                     return (
                       <div
                         key={dia.id}
-                        className="space-y-1 px-2 py-1.5 rounded-lg border border-dashed border-muted-foreground/40"
+                        className="space-y-1 px-2 py-1.5 rounded-lg border border-dashed border-amber-600/25 bg-amber-600/5"
                       >
                         <p className="text-sm font-medium">Dia {dia.dayNumber}</p>
                         <div className="flex flex-col gap-0.5">
@@ -361,7 +483,7 @@ export function ProgressoEspiritual() {
                               key={reading.id}
                               type="button"
                               onClick={() => abrirLeitura(reading)}
-                              className="text-left text-[11px] text-muted-foreground hover:text-olive hover:underline underline-offset-2 transition-colors truncate"
+                              className="text-left text-[11px] text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors truncate"
                             >
                               {reading.reference}
                             </button>
@@ -375,7 +497,7 @@ export function ProgressoEspiritual() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs h-8 border-dashed"
+                      className="w-full text-xs h-8 border-dashed border-primary/30 text-primary hover:bg-primary/5"
                       onClick={() => setModalAtrasadosAberto(true)}
                     >
                       Ver mais atrasados ({diasEmAtraso.length - LIMITE_DIAS_ATRASO_RESUMO})
@@ -404,7 +526,7 @@ export function ProgressoEspiritual() {
               return (
                 <div
                   key={dia.id}
-                  className="space-y-1.5 px-3 py-2 rounded-lg border border-dashed border-muted-foreground/40 bg-muted/20"
+                  className="space-y-1.5 px-3 py-2 rounded-lg border border-dashed border-amber-600/25 bg-amber-600/5"
                 >
                   <p className="text-sm font-semibold">Dia {dia.dayNumber}</p>
                   <div className="flex flex-col gap-1">
@@ -413,7 +535,7 @@ export function ProgressoEspiritual() {
                         key={reading.id}
                         type="button"
                         onClick={() => abrirLeitura(reading)}
-                        className="text-left text-sm text-foreground/90 hover:text-olive hover:underline underline-offset-2 transition-colors"
+                        className="text-left text-sm text-foreground/90 hover:text-primary hover:underline underline-offset-2 transition-colors"
                       >
                         {reading.reference}
                       </button>

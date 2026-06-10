@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,18 +28,22 @@ import {
   Plus,
   ArrowUpCircle,
   ArrowDownCircle,
-  Calendar,
   DollarSign,
   Loader2,
   Trash2,
   Printer,
+  ChevronDown,
+  ChevronRight,
+  Search,
+  Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { canWrite } from "@/auth/permissions";
 import { usarEhMobile } from "@/hooks/use-mobile";
-import { aplicarMascaraData, dataMascaraParaApi } from "@/lib/mascara-telefone";
+import { apiParaMascaraData, dataMascaraParaApi } from "@/lib/mascara-telefone";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   ChartConfig,
   ChartContainer,
@@ -51,6 +54,7 @@ import { BarChart, Bar, XAxis, YAxis, LabelList } from "recharts";
 import {
   listarLancamentos,
   criarLancamento,
+  atualizarLancamento,
   excluirLancamento,
   type LancamentoApp,
 } from "@/modules/financeiro/api";
@@ -66,6 +70,17 @@ function dataHojeFormatada(): string {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
+}
+
+function dataParaFormulario(data: Date): string {
+  const dd = String(data.getDate()).padStart(2, "0");
+  const mm = String(data.getMonth() + 1).padStart(2, "0");
+  const yyyy = data.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function valorParaFormulario(valor: number): string {
+  return formatarMoeda(String(Math.round(valor * 100)));
 }
 
 const chartConfig = {
@@ -170,6 +185,90 @@ function filtrarLancamentosPorMes(
   return lancamentos
     .filter((l) => l.date.getMonth() + 1 === mes && l.date.getFullYear() === ano)
     .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+type FiltroTipoLancamento = "all" | "income" | "expense";
+
+type GrupoMesLancamentos = {
+  chave: string;
+  mes: number;
+  ano: number;
+  label: string;
+  lancamentos: LancamentoApp[];
+  entradas: number;
+  saidas: number;
+  saldo: number;
+  count: number;
+};
+
+function chaveMesAno(data: Date): string {
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  return `${data.getFullYear()}-${mes}`;
+}
+
+function agruparLancamentosPorMes(
+  lancamentos: LancamentoApp[],
+  filtroTipo: FiltroTipoLancamento,
+  anoFiltro: number | "todos",
+  busca: string,
+): GrupoMesLancamentos[] {
+  let lista = [...lancamentos];
+
+  if (filtroTipo !== "all") {
+    lista = lista.filter((l) => l.type === filtroTipo);
+  }
+  if (anoFiltro !== "todos") {
+    lista = lista.filter((l) => l.date.getFullYear() === anoFiltro);
+  }
+  const termo = busca.trim().toLowerCase();
+  if (termo) {
+    lista = lista.filter(
+      (l) =>
+        l.description.toLowerCase().includes(termo) ||
+        (categoryLabels[l.category] || l.category).toLowerCase().includes(termo),
+    );
+  }
+
+  const mapa = new Map<string, LancamentoApp[]>();
+  for (const l of lista) {
+    const chave = chaveMesAno(l.date);
+    const grupo = mapa.get(chave) ?? [];
+    grupo.push(l);
+    mapa.set(chave, grupo);
+  }
+
+  return Array.from(mapa.entries())
+    .map(([chave, items]) => {
+      const [anoStr, mesStr] = chave.split("-");
+      const ano = Number(anoStr);
+      const mes = Number(mesStr);
+      const ordenados = items.sort((a, b) => b.date.getTime() - a.date.getTime());
+      const entradas = ordenados
+        .filter((l) => l.type === "income")
+        .reduce((acc, l) => acc + l.amount, 0);
+      const saidas = ordenados
+        .filter((l) => l.type === "expense")
+        .reduce((acc, l) => acc + l.amount, 0);
+      return {
+        chave,
+        mes,
+        ano,
+        label: `${MESES_COMPLETOS[mes - 1]} ${ano}`,
+        lancamentos: ordenados,
+        entradas,
+        saidas,
+        saldo: entradas - saidas,
+        count: ordenados.length,
+      };
+    })
+    .sort((a, b) => b.chave.localeCompare(a.chave));
+}
+
+function anosComLancamentos(lancamentos: LancamentoApp[]): number[] {
+  const anos = new Set(lancamentos.map((l) => l.date.getFullYear()));
+  const atual = new Date().getFullYear();
+  anos.add(atual);
+  return Array.from(anos).sort((a, b) => b - a);
 }
 
 function ehMobile(): boolean {
@@ -368,7 +467,7 @@ function ModalRelatorioMensal({
         </DialogHeader>
         <div className="flex-1 overflow-y-auto space-y-4 py-4">
           <div>
-            <h3 className="text-sm font-semibold text-olive mb-2 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-primary mb-2 flex items-center gap-2">
               <ArrowUpCircle className="h-4 w-4" />
               Entradas ({entradas.length})
             </h3>
@@ -377,19 +476,19 @@ function ModalRelatorioMensal({
             ) : (
               <div className="space-y-2">
                 {entradas.map((l) => (
-                  <div key={l.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-olive/5 border border-olive/20">
+                  <div key={l.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-primary/5 border border-primary/20">
                     <div>
                       <p className="font-medium text-sm">{l.description}</p>
                       <p className="text-xs text-muted-foreground">
                         {l.date.toLocaleDateString("pt-BR")} · {categoryLabels[l.category] || l.category}
                       </p>
                     </div>
-                    <p className="font-semibold text-olive">+ R$ {l.amount.toLocaleString("pt-BR")}</p>
+                    <p className="font-semibold text-primary">+ R$ {l.amount.toLocaleString("pt-BR")}</p>
                   </div>
                 ))}
               </div>
             )}
-            <p className="text-sm font-semibold mt-2 text-olive">Total: R$ {totalEntradas.toLocaleString("pt-BR")}</p>
+            <p className="text-sm font-semibold mt-2 text-primary">Total: R$ {totalEntradas.toLocaleString("pt-BR")}</p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-destructive mb-2 flex items-center gap-2">
@@ -416,18 +515,18 @@ function ModalRelatorioMensal({
             <p className="text-sm font-semibold mt-2 text-destructive">Total: R$ {totalSaidas.toLocaleString("pt-BR")}</p>
           </div>
           <div className="space-y-2">
-            <div className="p-4 rounded-lg bg-deep-blue/10 border border-deep-blue/20">
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
               <div className="flex justify-between items-center">
                 <span className="font-semibold">Saldo do mês (em caixa)</span>
-                <span className={cn("font-bold text-lg", saldo >= 0 ? "text-deep-blue" : "text-destructive")}>
+                <span className={cn("font-bold text-lg", saldo >= 0 ? "text-foreground" : "text-destructive")}>
                   R$ {saldo.toLocaleString("pt-BR")} {saldo >= 0 ? "(positivo)" : "(negativo)"}
                 </span>
               </div>
             </div>
-            <div className="p-4 rounded-lg bg-olive/10 border border-olive/20">
+            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
               <div className="flex justify-between items-center">
                 <span className="font-semibold">Saldo total em caixa</span>
-                <span className={cn("font-bold text-lg", saldoTotal >= 0 ? "text-olive" : "text-destructive")}>
+                <span className={cn("font-bold text-lg", saldoTotal >= 0 ? "text-foreground" : "text-destructive")}>
                   R$ {saldoTotal.toLocaleString("pt-BR")}
                 </span>
               </div>
@@ -436,7 +535,7 @@ function ModalRelatorioMensal({
         </div>
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={onFechar}>Fechar</Button>
-          <Button className="gap-2 bg-olive hover:bg-olive-dark" onClick={handleImprimir}>
+          <Button className="gap-2" onClick={handleImprimir}>
             <Printer className="h-4 w-4" />
             Imprimir relatório
           </Button>
@@ -457,7 +556,9 @@ interface ModalDetalheLancamentoProps {
   lancamento: LancamentoApp | null;
   aberto: boolean;
   onFechar: () => void;
+  onEditar?: (lancamento: LancamentoApp) => void;
   onExcluir?: (id: number) => void;
+  podeEditar?: boolean;
   podeExcluir?: boolean;
 }
 
@@ -465,7 +566,9 @@ function ModalDetalheLancamento({
   lancamento,
   aberto,
   onFechar,
+  onEditar,
   onExcluir,
+  podeEditar,
   podeExcluir,
 }: ModalDetalheLancamentoProps) {
   if (!lancamento || !aberto) return null;
@@ -480,7 +583,7 @@ function ModalDetalheLancamento({
             <div
               className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-lg shrink-0",
-                isIncome ? "bg-olive/10 text-olive" : "bg-destructive/10 text-destructive"
+                isIncome ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
               )}
             >
               {isIncome ? (
@@ -515,7 +618,7 @@ function ModalDetalheLancamento({
             <p
               className={cn(
                 "font-bold text-xl",
-                isIncome ? "text-olive" : "text-destructive"
+                isIncome ? "text-primary" : "text-destructive"
               )}
             >
               {isIncome ? "+" : "-"} R$ {lancamento.amount.toLocaleString("pt-BR")}
@@ -538,8 +641,20 @@ function ModalDetalheLancamento({
             {lancamento.createdAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
           </div>
         </div>
-        <div className="flex justify-between gap-2 pt-4 border-t">
-          <div>
+        <div className="flex flex-wrap justify-between gap-2 pt-4 border-t">
+          <div className="flex flex-wrap gap-2">
+            {podeEditar && onEditar && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  onEditar(lancamento);
+                  onFechar();
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+            )}
             {podeExcluir && onExcluir && idNum && (
               <Button
                 variant="outline"
@@ -565,14 +680,23 @@ function ModalDetalheLancamento({
   );
 }
 
-interface CartaoLancamentoProps {
+interface LinhaLancamentoProps {
   lancamento: LancamentoApp;
   onClick?: () => void;
+  onEditar?: (lancamento: LancamentoApp) => void;
   onExcluir?: (id: number) => void;
+  podeEditar?: boolean;
   podeExcluir?: boolean;
 }
 
-function CartaoLancamento({ lancamento, onClick, onExcluir, podeExcluir }: CartaoLancamentoProps) {
+function LinhaLancamento({
+  lancamento,
+  onClick,
+  onEditar,
+  onExcluir,
+  podeEditar,
+  podeExcluir,
+}: LinhaLancamentoProps) {
   const isIncome = lancamento.type === "income";
   const idNum = lancamento.idNum ?? Number(lancamento.id);
 
@@ -582,57 +706,180 @@ function CartaoLancamento({ lancamento, onClick, onExcluir, podeExcluir }: Carta
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick?.()}
-      className="flex items-center gap-2 sm:gap-3 p-3 rounded-lg bg-card border hover:shadow-sm transition-shadow min-w-0 cursor-pointer"
+      className="flex items-center gap-2 sm:gap-3 py-2 px-2 sm:px-3 border-b border-border/40 last:border-0 hover:bg-muted/40 transition-colors min-w-0 cursor-pointer text-sm"
     >
+      <span className="text-[11px] sm:text-xs text-muted-foreground w-11 sm:w-14 shrink-0 tabular-nums">
+        {lancamento.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+      </span>
       <div
         className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-lg shrink-0",
-          isIncome ? "bg-olive/10 text-olive" : "bg-destructive/10 text-destructive"
+          "flex h-7 w-7 items-center justify-center rounded-md shrink-0",
+          isIncome ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive",
         )}
       >
-        {isIncome ? (
-          <ArrowUpCircle className="h-5 w-5" />
-        ) : (
-          <ArrowDownCircle className="h-5 w-5" />
+        {isIncome ? <ArrowUpCircle className="h-3.5 w-3.5" /> : <ArrowDownCircle className="h-3.5 w-3.5" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate leading-tight">{lancamento.description}</p>
+        <p className="text-[10px] text-muted-foreground truncate sm:hidden">
+          {categoryLabels[lancamento.category] || lancamento.category}
+        </p>
+      </div>
+      <Badge variant="outline" className="text-[10px] px-1.5 py-0 hidden sm:inline-flex shrink-0 font-normal">
+        {categoryLabels[lancamento.category] || lancamento.category}
+      </Badge>
+      <p
+        className={cn(
+          "font-semibold text-xs sm:text-sm whitespace-nowrap shrink-0 tabular-nums",
+          isIncome ? "text-primary" : "text-destructive",
         )}
-      </div>
-
-      <div className="flex-1 min-w-0 overflow-hidden">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-medium truncate">{lancamento.description}</p>
-          <Badge variant="secondary" className="text-xs shrink-0">
-            {categoryLabels[lancamento.category] || lancamento.category}
-          </Badge>
-        </div>
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Calendar className="h-3 w-3" />
-          {lancamento.date.toLocaleDateString("pt-BR")}
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2 shrink-0">
-        <p
-          className={cn(
-            "font-bold text-sm sm:text-base whitespace-nowrap",
-            isIncome ? "text-olive" : "text-destructive"
-          )}
-        >
-          {isIncome ? "+" : "-"} R$ {lancamento.amount.toLocaleString("pt-BR")}
-        </p>
-        {podeExcluir && onExcluir && idNum && (
+      >
+        {isIncome ? "+" : "-"} R$ {lancamento.amount.toLocaleString("pt-BR")}
+      </p>
+      <div className="flex items-center shrink-0">
+        {podeEditar && onEditar && (
           <Button
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+            size="icon-sm"
+            className="h-7 w-7 text-muted-foreground hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditar(lancamento);
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {podeExcluir && onExcluir && idNum ? (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               if (confirm("Excluir este lançamento?")) onExcluir(idNum);
             }}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
-        )}
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+interface ListaLancamentosAgrupadosProps {
+  grupos: GrupoMesLancamentos[];
+  mesesAbertos: Set<string>;
+  onToggleMes: (chave: string) => void;
+  onExpandirTodos: () => void;
+  onRecolherTodos: () => void;
+  onClickLancamento: (l: LancamentoApp) => void;
+  onEditar?: (l: LancamentoApp) => void;
+  onExcluir?: (id: number) => void;
+  podeEditar?: boolean;
+  podeExcluir?: boolean;
+}
+
+function ListaLancamentosAgrupados({
+  grupos,
+  mesesAbertos,
+  onToggleMes,
+  onExpandirTodos,
+  onRecolherTodos,
+  onClickLancamento,
+  onEditar,
+  onExcluir,
+  podeEditar,
+  podeExcluir,
+}: ListaLancamentosAgrupadosProps) {
+  if (grupos.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-8 text-center">
+        Nenhum lançamento encontrado com os filtros atuais.
+      </p>
+    );
+  }
+
+  const totalLancamentos = grupos.reduce((acc, g) => acc + g.count, 0);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground px-1">
+        <span>
+          {totalLancamentos} lançamento{totalLancamentos !== 1 ? "s" : ""} em {grupos.length} mês
+          {grupos.length !== 1 ? "es" : ""}
+        </span>
+        <div className="flex gap-1">
+          <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={onExpandirTodos}>
+            Expandir todos
+          </Button>
+          <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={onRecolherTodos}>
+            Recolher
+          </Button>
+        </div>
+      </div>
+
+      {grupos.map((grupo) => {
+        const aberto = mesesAbertos.has(grupo.chave);
+        return (
+          <div key={grupo.chave} className="rounded-lg border border-border overflow-hidden bg-card">
+            <button
+              type="button"
+              onClick={() => onToggleMes(grupo.chave)}
+              className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 text-left hover:bg-muted/30 transition-colors"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {aberto ? (
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                )}
+                <span className="font-semibold text-sm">{grupo.label}</span>
+                <Badge variant="outline" className="text-[10px] shrink-0 font-normal">
+                  {grupo.count} lanç.
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs pl-6 sm:pl-0">
+                {grupo.entradas > 0 && (
+                  <span className="text-primary font-medium tabular-nums">
+                    + R$ {grupo.entradas.toLocaleString("pt-BR")}
+                  </span>
+                )}
+                {grupo.saidas > 0 && (
+                  <span className="text-destructive font-medium tabular-nums">
+                    - R$ {grupo.saidas.toLocaleString("pt-BR")}
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "font-semibold tabular-nums text-foreground",
+                    grupo.saldo < 0 && "text-destructive",
+                  )}
+                >
+                  Saldo: {grupo.saldo >= 0 ? "+" : "-"} R${" "}
+                  {Math.abs(grupo.saldo).toLocaleString("pt-BR")}
+                </span>
+              </div>
+            </button>
+            {aberto && (
+              <div className="border-t border-border/60 bg-muted/10">
+                {grupo.lancamentos.map((lancamento) => (
+                  <LinhaLancamento
+                    key={lancamento.id}
+                    lancamento={lancamento}
+                    onClick={() => onClickLancamento(lancamento)}
+                    onEditar={onEditar}
+                    onExcluir={onExcluir}
+                    podeEditar={podeEditar}
+                    podeExcluir={podeExcluir}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -651,6 +898,7 @@ export default function Financeiro() {
   const [lancamentos, setLancamentos] = useState<LancamentoApp[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [dialogAberto, setDialogAberto] = useState(false);
+  const [lancamentoEditando, setLancamentoEditando] = useState<LancamentoApp | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [tipoLancamento, setTipoLancamento] = useState<"income" | "expense">("income");
   const [formData, setFormData] = useState({
@@ -662,6 +910,13 @@ export default function Financeiro() {
   });
   const [mesSelecionado, setMesSelecionado] = useState<number | null>(null);
   const [lancamentoDetalhe, setLancamentoDetalhe] = useState<LancamentoApp | null>(null);
+  const [abaTipo, setAbaTipo] = useState<FiltroTipoLancamento>("all");
+  const [anoFiltro, setAnoFiltro] = useState<number | "todos">(new Date().getFullYear());
+  const [busca, setBusca] = useState("");
+  const [mesesAbertos, setMesesAbertos] = useState<Set<string>>(() => {
+    const hoje = new Date();
+    return new Set([chaveMesAno(hoje)]);
+  });
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -691,7 +946,29 @@ export default function Financeiro() {
   const saldo = totalReceitas - totalDespesas;
 
   const anoAtual = new Date().getFullYear();
-  const chartData = agregarPorMes(lancamentos, anoAtual);
+  const anoGrafico = anoFiltro === "todos" ? anoAtual : anoFiltro;
+  const chartData = agregarPorMes(lancamentos, anoGrafico);
+  const anosDisponiveis = useMemo(() => anosComLancamentos(lancamentos), [lancamentos]);
+
+  const gruposFiltrados = useMemo(
+    () => agruparLancamentosPorMes(lancamentos, abaTipo, anoFiltro, busca),
+    [lancamentos, abaTipo, anoFiltro, busca],
+  );
+
+  const toggleMes = (chave: string) => {
+    setMesesAbertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(chave)) next.delete(chave);
+      else next.add(chave);
+      return next;
+    });
+  };
+
+  const expandirTodosMeses = () => {
+    setMesesAbertos(new Set(gruposFiltrados.map((g) => g.chave)));
+  };
+
+  const recolherTodosMeses = () => setMesesAbertos(new Set());
 
   const handleSalvar = async () => {
     const valorNum = valorMoedaParaNumero(formData.valor);
@@ -716,7 +993,7 @@ export default function Financeiro() {
         setSalvando(false);
         return;
       }
-      await criarLancamento({
+      const payload = {
         type: tipoLancamento,
         category: formData.categoria,
         description: formData.descricao.trim(),
@@ -725,16 +1002,19 @@ export default function Financeiro() {
         paymentMethod: formData.metodoPagamento
           ? (formData.metodoPagamento as "cash" | "pix" | "card" | "transfer")
           : undefined,
-      });
-      toast.success("Lançamento registrado.");
+      };
+
+      if (lancamentoEditando) {
+        await atualizarLancamento({ ...lancamentoEditando, ...payload });
+        toast.success("Lançamento atualizado.");
+      } else {
+        await criarLancamento(payload);
+        toast.success("Lançamento registrado.");
+      }
+
       setDialogAberto(false);
-      setFormData({
-        data: dataHojeFormatada(),
-        valor: "",
-        categoria: "",
-        descricao: "",
-        metodoPagamento: "",
-      });
+      setLancamentoEditando(null);
+      resetForm();
       carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
@@ -755,6 +1035,7 @@ export default function Financeiro() {
   };
 
   const resetForm = () => {
+    setTipoLancamento("income");
     setFormData({
       data: dataHojeFormatada(),
       valor: "",
@@ -764,12 +1045,32 @@ export default function Financeiro() {
     });
   };
 
+  const abrirFormularioNovo = () => {
+    setLancamentoEditando(null);
+    resetForm();
+    setDialogAberto(true);
+  };
+
+  const abrirFormularioEdicao = (lancamento: LancamentoApp) => {
+    setLancamentoEditando(lancamento);
+    setTipoLancamento(lancamento.type);
+    setFormData({
+      data: dataParaFormulario(lancamento.date),
+      valor: valorParaFormulario(lancamento.amount),
+      categoria: lancamento.category,
+      descricao: lancamento.description,
+      metodoPagamento: lancamento.paymentMethod ?? "",
+    });
+    setLancamentoDetalhe(null);
+    setDialogAberto(true);
+  };
+
   return (
     <LayoutApp>
       <div className="space-y-3 sm:space-y-4 animate-fade-in pb-4">
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-olive text-olive-foreground">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Wallet className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div className="min-w-0">
@@ -780,24 +1081,34 @@ export default function Financeiro() {
             </div>
           </div>
 
+          <Button
+            className="gap-1.5 sm:gap-2 shrink-0"
+            disabled={!podeEscreverFinanceiro}
+            onClick={abrirFormularioNovo}
+          >
+            <Plus className="h-4 w-4" />
+            Novo
+          </Button>
+
           <Dialog
             open={dialogAberto}
             onOpenChange={(open) => {
               setDialogAberto(open);
-              if (open) resetForm();
+              if (!open) {
+                setLancamentoEditando(null);
+                resetForm();
+              }
             }}
           >
-            <DialogTrigger asChild>
-              <Button className="gap-1.5 sm:gap-2 shrink-0" disabled={!podeEscreverFinanceiro}>
-                <Plus className="h-4 w-4" />
-                Novo
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Novo Lançamento</DialogTitle>
+                <DialogTitle>
+                  {lancamentoEditando ? "Editar Lançamento" : "Novo Lançamento"}
+                </DialogTitle>
                 <DialogDescription>
-                  Registre uma nova entrada ou saída.
+                  {lancamentoEditando
+                    ? "Corrija os dados do lançamento e salve as alterações."
+                    : "Registre uma nova entrada ou saída."}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -806,7 +1117,7 @@ export default function Financeiro() {
                     variant={tipoLancamento === "income" ? "default" : "outline"}
                     className={cn(
                       "gap-2",
-                      tipoLancamento === "income" && "bg-olive hover:bg-olive-dark"
+                      tipoLancamento === "income" && "bg-primary hover:bg-primary/90"
                     )}
                     onClick={() => setTipoLancamento("income")}
                   >
@@ -889,19 +1200,15 @@ export default function Financeiro() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="date">Data</Label>
-                    <Input
+                    <DatePicker
                       id="date"
-                      placeholder="dd/mm/aaaa"
-                      value={formData.data}
-                      onChange={(e) =>
+                      value={dataMascaraParaApi(formData.data) || undefined}
+                      onChange={(v) =>
                         setFormData((f) => ({
                           ...f,
-                          data: aplicarMascaraData(e.target.value),
+                          data: v ? apiParaMascaraData(v) : "",
                         }))
                       }
-                      maxLength={10}
-                      inputMode="numeric"
-                      className="flex-1 min-w-[120px]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -937,7 +1244,7 @@ export default function Financeiro() {
                     {salvando ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     ) : null}
-                    Salvar
+                    {lancamentoEditando ? "Salvar alterações" : "Salvar"}
                   </Button>
                 </div>
               </div>
@@ -952,13 +1259,13 @@ export default function Financeiro() {
         ) : (
           <>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <Card className="bg-olive/5 border-olive/20">
+              <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="h-4 w-4 text-olive" />
+                    <TrendingUp className="h-4 w-4 text-primary" />
                     <span className="text-xs text-muted-foreground">Entradas</span>
                   </div>
-                  <p className="text-base sm:text-lg font-bold text-olive truncate" title={`R$ ${totalReceitas.toLocaleString("pt-BR")}`}>
+                  <p className="text-base sm:text-lg font-bold text-primary truncate" title={`R$ ${totalReceitas.toLocaleString("pt-BR")}`}>
                     R$ {totalReceitas.toLocaleString("pt-BR")}
                   </p>
                 </CardContent>
@@ -980,7 +1287,7 @@ export default function Financeiro() {
                 className={cn(
                   "border",
                   saldo >= 0
-                    ? "bg-deep-blue/5 border-deep-blue/20"
+                    ? "bg-muted/40 border-border"
                     : "bg-destructive/5 border-destructive/20"
                 )}
               >
@@ -989,7 +1296,7 @@ export default function Financeiro() {
                     <Wallet
                       className={cn(
                         "h-4 w-4",
-                        saldo >= 0 ? "text-deep-blue" : "text-destructive"
+                        saldo >= 0 ? "text-foreground" : "text-destructive"
                       )}
                     />
                     <span className="text-xs text-muted-foreground">Saldo</span>
@@ -997,7 +1304,7 @@ export default function Financeiro() {
                   <p
                     className={cn(
                       "text-base sm:text-lg font-bold truncate",
-                      saldo >= 0 ? "text-deep-blue" : "text-destructive"
+                      saldo >= 0 ? "text-foreground" : "text-destructive"
                     )}
                     title={`R$ ${saldo.toLocaleString("pt-BR")}`}
                   >
@@ -1007,10 +1314,10 @@ export default function Financeiro() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">
-                  Movimentação Mensal {anoAtual}
+            <Card className="border-border shadow-spiritual">
+              <CardHeader className="pb-2 bg-primary/5 border-b border-primary/10">
+                <CardTitle className="text-base text-foreground">
+                  Movimentação Mensal {anoGrafico}
                 </CardTitle>
               </CardHeader>
               <CardContent className="overflow-x-auto -mx-1 px-1">
@@ -1077,7 +1384,7 @@ export default function Financeiro() {
             {mesSelecionado && (
               <ModalRelatorioMensal
                 mes={mesSelecionado}
-                ano={anoAtual}
+                ano={anoGrafico}
                 lancamentos={lancamentos}
                 saldoTotal={saldo}
                 aberto={!!mesSelecionado}
@@ -1090,73 +1397,119 @@ export default function Financeiro() {
               lancamento={lancamentoDetalhe}
               aberto={!!lancamentoDetalhe}
               onFechar={() => setLancamentoDetalhe(null)}
+              onEditar={abrirFormularioEdicao}
               onExcluir={handleExcluir}
+              podeEditar={podeEscreverFinanceiro}
               podeExcluir={podeEscreverFinanceiro}
             />
 
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="all">Todos</TabsTrigger>
-                <TabsTrigger value="income">Entradas</TabsTrigger>
-                <TabsTrigger value="expense">Saídas</TabsTrigger>
-              </TabsList>
+            <Card className="border-border shadow-spiritual">
+              <CardHeader className="pb-3 space-y-3 bg-primary/5 border-b border-primary/10">
+                <CardTitle className="text-base text-foreground">Lançamentos</CardTitle>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por descrição ou categoria..."
+                      value={busca}
+                      onChange={(e) => setBusca(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select
+                    value={anoFiltro === "todos" ? "todos" : String(anoFiltro)}
+                    onValueChange={(v) => {
+                      const novoAno = v === "todos" ? "todos" : Number(v);
+                      setAnoFiltro(novoAno);
+                      if (novoAno !== "todos") {
+                        const hoje = new Date();
+                        const chave =
+                          hoje.getFullYear() === novoAno
+                            ? chaveMesAno(hoje)
+                            : `${novoAno}-12`;
+                        setMesesAbertos(new Set([chave]));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[140px]">
+                      <SelectValue placeholder="Ano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos os anos</SelectItem>
+                      {anosDisponiveis.map((ano) => (
+                        <SelectItem key={ano} value={String(ano)}>
+                          {ano}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Tabs
+                  value={abaTipo}
+                  onValueChange={(v) => setAbaTipo(v as FiltroTipoLancamento)}
+                  className="w-full"
+                >
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="all">Todos</TabsTrigger>
+                    <TabsTrigger value="income">Entradas</TabsTrigger>
+                    <TabsTrigger value="expense">Saídas</TabsTrigger>
+                  </TabsList>
 
-              <TabsContent value="all" className="mt-4 space-y-2">
-                {lancamentos.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-6 text-center">
-                    Nenhum lançamento registrado. Clique em Novo para adicionar.
-                  </p>
-                ) : (
-                  lancamentos.map((entry) => (
-                    <CartaoLancamento
-                      key={entry.id}
-                      lancamento={entry}
-                      onClick={() => setLancamentoDetalhe(entry)}
+                  <TabsContent value="all" className="mt-4">
+                    {lancamentos.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-6 text-center">
+                        Nenhum lançamento registrado. Clique em Novo para adicionar.
+                      </p>
+                    ) : (
+                      <ListaLancamentosAgrupados
+                        grupos={gruposFiltrados}
+                        mesesAbertos={mesesAbertos}
+                        onToggleMes={toggleMes}
+                        onExpandirTodos={expandirTodosMeses}
+                        onRecolherTodos={recolherTodosMeses}
+                        onClickLancamento={setLancamentoDetalhe}
+                        onEditar={abrirFormularioEdicao}
+                        onExcluir={handleExcluir}
+                        podeEditar={podeEscreverFinanceiro}
+                        podeExcluir={podeEscreverFinanceiro}
+                      />
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="income" className="mt-4">
+                    <ListaLancamentosAgrupados
+                      grupos={gruposFiltrados}
+                      mesesAbertos={mesesAbertos}
+                      onToggleMes={toggleMes}
+                      onExpandirTodos={expandirTodosMeses}
+                      onRecolherTodos={recolherTodosMeses}
+                      onClickLancamento={setLancamentoDetalhe}
+                      onEditar={abrirFormularioEdicao}
                       onExcluir={handleExcluir}
+                      podeEditar={podeEscreverFinanceiro}
                       podeExcluir={podeEscreverFinanceiro}
                     />
-                  ))
-                )}
-              </TabsContent>
+                  </TabsContent>
 
-              <TabsContent value="income" className="mt-4 space-y-2">
-                {lancamentos
-                  .filter((e) => e.type === "income")
-                  .map((entry) => (
-                    <CartaoLancamento
-                      key={entry.id}
-                      lancamento={entry}
-                      onClick={() => setLancamentoDetalhe(entry)}
+                  <TabsContent value="expense" className="mt-4">
+                    <ListaLancamentosAgrupados
+                      grupos={gruposFiltrados}
+                      mesesAbertos={mesesAbertos}
+                      onToggleMes={toggleMes}
+                      onExpandirTodos={expandirTodosMeses}
+                      onRecolherTodos={recolherTodosMeses}
+                      onClickLancamento={setLancamentoDetalhe}
+                      onEditar={abrirFormularioEdicao}
                       onExcluir={handleExcluir}
+                      podeEditar={podeEscreverFinanceiro}
                       podeExcluir={podeEscreverFinanceiro}
                     />
-                  ))}
-                {lancamentos.filter((e) => e.type === "income").length === 0 && (
-                  <p className="text-sm text-muted-foreground py-6 text-center">
-                    Nenhuma entrada registrada.
-                  </p>
-                )}
-              </TabsContent>
-
-              <TabsContent value="expense" className="mt-4 space-y-2">
-                {lancamentos
-                  .filter((e) => e.type === "expense")
-                  .map((entry) => (
-                    <CartaoLancamento
-                      key={entry.id}
-                      lancamento={entry}
-                      onClick={() => setLancamentoDetalhe(entry)}
-                      onExcluir={handleExcluir}
-                      podeExcluir={podeEscreverFinanceiro}
-                    />
-                  ))}
-                {lancamentos.filter((e) => e.type === "expense").length === 0 && (
-                  <p className="text-sm text-muted-foreground py-6 text-center">
-                    Nenhuma saída registrada.
-                  </p>
-                )}
-              </TabsContent>
-            </Tabs>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </>
         )}
       </div>

@@ -86,15 +86,15 @@ export function VersiculoDoDia() {
   };
 
   return (
-    <Card className="overflow-hidden border-0 shadow-spiritual bg-gradient-to-br from-olive-light via-card to-gold-light">
+    <Card className="overflow-hidden border border-border shadow-spiritual verse-card-gradient">
       <CardContent className="p-0">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-olive/10">
+        <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border-b border-primary/15">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-olive text-olive-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <BookOpen className="h-4 w-4" />
             </div>
-            <span className="text-sm font-semibold text-olive-dark">
+            <span className="text-sm font-semibold text-foreground">
               Versículo do Dia
             </span>
           </div>
@@ -122,12 +122,12 @@ export function VersiculoDoDia() {
                 setIsFavorite(true);
               }
             }}
-              className="text-gold-dark hover:text-gold hover:bg-gold/10"
+              className="text-secondary hover:text-secondary hover:bg-secondary/15"
             >
               <Star
                 className={cn(
                   "h-4 w-4 transition-all",
-                  isFavorite && "fill-gold text-gold"
+                  isFavorite && "fill-secondary text-secondary"
                 )}
               />
             </Button>
@@ -135,7 +135,7 @@ export function VersiculoDoDia() {
               variant="ghost"
               size="icon-sm"
               onClick={handleShare}
-              className="text-olive-dark hover:text-olive hover:bg-olive/10"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted"
             >
               <Share2 className="h-4 w-4" />
             </Button>
@@ -144,7 +144,7 @@ export function VersiculoDoDia() {
 
         {/* Content */}
         <div className="px-4 py-5 relative">
-          <Quote className="absolute top-3 left-3 h-8 w-8 text-gold/20" />
+          <Quote className="absolute top-3 left-3 h-8 w-8 text-primary/15" />
           <p className="text-base md:text-lg leading-relaxed text-foreground pl-4 italic">
             "{verse.text}"
           </p>
@@ -152,7 +152,7 @@ export function VersiculoDoDia() {
             <button
               type="button"
               onClick={handleAbrirVersiculo}
-              className="text-sm font-semibold text-olive-dark bg-olive/10 px-3 py-1 rounded-full hover:bg-olive/20 transition-colors"
+              className="text-sm font-semibold text-primary-foreground bg-primary px-3 py-1 rounded-full hover:bg-primary/90 transition-colors"
             >
               {verse.reference}
             </button>

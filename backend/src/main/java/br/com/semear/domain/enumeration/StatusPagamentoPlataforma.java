@@ -7,5 +7,6 @@ public enum StatusPagamentoPlataforma {
     PENDENTE,
     PAGO,
     ATRASADO,
+    ISENTO,
     CANCELADO,
 }

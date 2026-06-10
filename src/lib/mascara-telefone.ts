@@ -86,6 +86,14 @@ export function dataMascaraParaApi(value: string): string {
   return `${aaaa}-${mm}-${dd}`;
 }
 
+/** Converte yyyy-mm-dd para dd/mm/aaaa */
+export function apiParaMascaraData(value: string): string {
+  if (!value) return "";
+  const [aaaa, mm, dd] = value.split("-");
+  if (!aaaa || !mm || !dd) return "";
+  return `${dd}/${mm}/${aaaa}`;
+}
+
 /**
  * Valida data dd/mm/aaaa.
  * - Verifica se dia/mês/ano formam uma data real (ex: 31/02 inválido, 29/02/2024 válido em ano bissexto).

@@ -12,10 +12,12 @@ import {
   Heart,
   UserCheck,
   LayoutDashboard,
+  Church,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccess, usuarioEhSuperAdmin } from "@/auth/permissions";
+import { canAccess, podeAcessarSuporte, usuarioEhSuperAdmin } from "@/auth/permissions";
 import { PixOfertaBloco } from "@/components/pix/PixOferta";
 
 const menuGroups = [
@@ -41,6 +43,8 @@ const menuGroups = [
     items: [
       { icon: UserCheck, label: "Aprovar pré-cadastros", path: "/aprovar-pre-cadastros" },
       { icon: Wallet, label: "Financeiro", path: "/financeiro" },
+      { icon: Church, label: "Config. da Igreja", path: "/configuracoes-igreja" },
+      { icon: LifeBuoy, label: "Suporte", path: "/suporte", suporteOnly: true },
       { icon: Settings, label: "Configurações", path: "/configuracoes" },
     ],
   },
@@ -51,14 +55,17 @@ export function BarraLateral() {
   const { user } = usarAutenticacao();
 
   return (
-    <aside className="fixed left-0 top-14 md:top-16 bottom-0 w-64 border-r border-border bg-sidebar overflow-y-auto">
+    <aside className="fixed left-0 top-14 md:top-16 bottom-0 z-30 w-64 border-r border-border bg-sidebar overflow-y-auto">
       <div className="flex flex-col h-full py-4">
         {/* Menu Groups */}
         <div className="flex-1 space-y-6 px-3">
           {menuGroups.map((group) => {
-            const items = group.items.filter((item) =>
-              canAccess(user, item.path),
-            );
+            const items = group.items.filter((item) => {
+              if ("suporteOnly" in item && item.suporteOnly) {
+                return podeAcessarSuporte(user);
+              }
+              return canAccess(user, item.path);
+            });
             if (items.length === 0) {
               return null;
             }
@@ -80,7 +87,7 @@ export function BarraLateral() {
                         className={cn(
                           "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                           isActive
-                            ? "bg-olive text-olive-foreground shadow-sm"
+                            ? "bg-primary text-primary-foreground shadow-sm"
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         )}
                       >
@@ -107,7 +114,7 @@ export function BarraLateral() {
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                       location.pathname.startsWith("/super-admin")
-                        ? "bg-olive text-olive-foreground shadow-sm"
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
                   >
@@ -123,8 +130,8 @@ export function BarraLateral() {
         {/* Footer */}
         <div className="border-t border-sidebar-border px-4 py-4 mt-4 space-y-3">
           <PixOfertaBloco compact />
-          <div className="flex items-center gap-3 rounded-lg bg-olive-light/50 px-3 py-2">
-            <Heart className="h-4 w-4 text-olive" />
+          <div className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2">
+            <Heart className="h-4 w-4 text-primary" />
             <div className="flex flex-col">
               <span className="text-xs font-medium text-foreground">
                 Plantando sementes

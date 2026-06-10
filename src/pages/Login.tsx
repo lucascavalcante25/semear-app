@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { aplicarMascaraCpf } from "@/lib/mascara-telefone";
+import { PLATAFORMA } from "@/lib/plataforma";
 import { Eye, EyeOff } from "lucide-react";
 import styles from "./Login.module.css";
 
@@ -34,7 +34,6 @@ type LocationState = {
 
 export default function Entrar() {
   const { login, user, defaultRoute } = usarAutenticacao();
-  const { publica, logoUrl, nomeExibicao } = useIgrejaConfiguracao();
   const navigate = useNavigate();
   const location = useLocation();
   const [identificador, setIdentificador] = useState("");
@@ -110,25 +109,23 @@ export default function Entrar() {
     }
 
     const state = location.state as LocationState | null;
-    const target = state?.from?.pathname || defaultRoute;
+    const target = state?.from?.pathname || result.redirectTo || defaultRoute;
     navigate(target, { replace: true });
   };
 
   return (
     <div className={styles.root} role="main" aria-label="Página de login">
-      <div className={styles.background} aria-hidden="true" />
-      <div className={styles.overlay} aria-hidden="true" />
-
       {showSplash && (
         <div
           className={`${styles.splash} ${splashHiding ? styles.hiding : ""}`}
           aria-hidden="true"
         >
           <img
-            src={logoUrl}
-            alt={nomeExibicao}
+            src={PLATAFORMA.logoUrl}
+            alt={PLATAFORMA.nome}
             className={styles.splashLogo}
           />
+          <span className={styles.splashNome}>{PLATAFORMA.nome}</span>
         </div>
       )}
 
@@ -137,56 +134,45 @@ export default function Entrar() {
           <div className={styles.card}>
             <div className="space-y-2 text-center mb-6">
               <div className="flex justify-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100">
                   <img
-                    src={logoUrl}
+                    src={PLATAFORMA.logoUrl}
                     alt=""
                     aria-hidden="true"
                     className="h-8 w-8 object-contain"
                   />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-white">Bem-vindo(a)</h1>
-              <p className="text-sm text-white/80">
-                Entre para acessar as áreas da igreja
-              </p>
+              <h1 className="text-2xl font-bold text-slate-900">Bem-vindo(a)</h1>
+              <p className="text-sm text-slate-500">{PLATAFORMA.slogan}</p>
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label
-                  htmlFor="identificador"
-                  className="text-white/90 text-sm font-medium"
-                >
+                <Label htmlFor="identificador" className="text-slate-700 text-sm font-medium">
                   CPF
                 </Label>
                 <Input
                   id="identificador"
                   type="text"
                   value={identificador}
-                  onChange={(e) =>
-                    setIdentificador(aplicarMascaraCpf(e.target.value))
-                  }
+                  onChange={(e) => setIdentificador(aplicarMascaraCpf(e.target.value))}
                   placeholder="000.000.000-00"
                   autoComplete="username"
                   maxLength={14}
                   required
                   aria-label="CPF"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/40 focus-visible:border-white/30"
                 />
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="password"
-                    className="text-white/90 text-sm font-medium"
-                  >
+                  <Label htmlFor="password" className="text-slate-700 text-sm font-medium">
                     Senha
                   </Label>
                   <Link
                     to="/esqueci-senha"
-                    className="text-xs text-white/70 hover:text-white underline-offset-2 hover:underline"
+                    className="text-xs text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline"
                   >
                     Esqueceu sua senha?
                   </Link>
@@ -201,15 +187,13 @@ export default function Entrar() {
                     autoComplete="current-password"
                     required
                     aria-label="Senha"
-                    className="pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus-visible:ring-white/40 focus-visible:border-white/30"
+                    className="pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setMostrarSenha((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded bg-black/20 text-white hover:bg-black/30 transition-colors"
-                    aria-label={
-                      mostrarSenha ? "Ocultar senha" : "Mostrar senha"
-                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-slate-500 hover:bg-slate-100 transition-colors"
+                    aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                     title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
                   >
                     {mostrarSenha ? (
@@ -222,41 +206,23 @@ export default function Entrar() {
               </div>
 
               {error && (
-                <p
-                  className="text-sm text-red-300"
-                  role="alert"
-                  aria-live="polite"
-                >
+                <p className="text-sm text-red-600" role="alert" aria-live="polite">
                   {error}
                 </p>
               )}
 
-              <Button
-                className="w-full bg-[hsl(80,40%,35%)] text-white hover:bg-[hsl(80,45%,28%)] shadow-md border-0"
-                type="submit"
-                disabled={isSubmitting}
-              >
+              <Button className="w-full" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Entrando..." : "Entrar"}
               </Button>
 
-              <p className={styles.securityNote}>
-                🔒 Seus dados estão protegidos
-              </p>
+              <p className={styles.securityNote}>🔒 Seus dados estão protegidos</p>
 
-              <Button
-                asChild
-                variant="outline"
-                className="w-full !bg-transparent border-2 border-white/50 !text-white hover:!bg-white/15 hover:!text-white hover:border-white/70"
-              >
-                <Link to="/pre-cadastro">Primeiro acesso / Pre-cadastro</Link>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/pre-cadastro">Primeiro acesso / Pré-cadastro</Link>
               </Button>
 
-              <Button
-                asChild
-                variant="ghost"
-                className="w-full !text-white/90 hover:!bg-white/10 hover:!text-white"
-              >
-                <Link to="/solicitar-acesso">Quero cadastrar minha igreja</Link>
+              <Button asChild variant="ghost" className="w-full text-slate-600">
+                <Link to="/solicitar-acesso">Teste grátis por 7 dias</Link>
               </Button>
             </form>
           </div>
@@ -268,10 +234,9 @@ export default function Entrar() {
             </p>
           </div>
 
-          <p className={styles.churchName}>{publica.nome || nomeExibicao}</p>
-          {publica.descricaoIgreja && (
-            <p className={styles.churchSlogan}>{publica.descricaoIgreja}</p>
-          )}
+          <p className={styles.platformFooter}>
+            {PLATAFORMA.nome} · {PLATAFORMA.empresa}
+          </p>
         </div>
       )}
     </div>

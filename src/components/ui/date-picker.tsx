@@ -3,6 +3,7 @@ import { setMonth, setYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { useNavigation } from "react-day-picker";
+import { useLocation } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  aplicarMascaraData,
+  apiParaMascaraData,
+  dataMascaraParaApi,
+  validarData,
+} from "@/lib/mascara-telefone";
 
 const MESES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -72,35 +79,14 @@ export interface DatePickerProps {
   disabled?: boolean;
   className?: string;
   id?: string;
+  /** Rejeita datas futuras ao digitar (útil para nascimento). */
+  rejeitarFuturo?: boolean;
 }
 
-function toDisplay(value: string | undefined): string {
-  if (!value) return "";
-  try {
-    const [y, m, d] = value.split("-");
-    return `${d}/${m}/${y}`;
-  } catch {
-    return value;
-  }
-}
-
-function parseDisplay(s: string): string | null {
-  const cleaned = s.replace(/\D/g, "");
-  if (cleaned.length === 8) {
-    const dd = cleaned.slice(0, 2);
-    const mm = cleaned.slice(2, 4);
-    const yyyy = cleaned.slice(4, 8);
-    const d = parseInt(dd, 10);
-    const m = parseInt(mm, 10);
-    const y = parseInt(yyyy, 10);
-    if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
-      const date = new Date(y, m - 1, d);
-      if (date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d) {
-        return `${y}-${mm}-${dd}`;
-      }
-    }
-  }
-  return null;
+function parseDisplay(s: string, rejeitarFuturo: boolean): string | null {
+  if (!validarData(s, { rejeitarFuturo })) return null;
+  const api = dataMascaraParaApi(s);
+  return api || null;
 }
 
 export function DatePicker({
@@ -110,22 +96,46 @@ export function DatePicker({
   disabled,
   className,
   id,
+  rejeitarFuturo = false,
 }: DatePickerProps) {
+  const { pathname } = useLocation();
+  const pathnameAnterior = React.useRef(pathname);
   const [open, setOpen] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState(toDisplay(value));
+  const [inputValue, setInputValue] = React.useState(() => apiParaMascaraData(value ?? ""));
   const [month, setMonth] = React.useState<Date>(() =>
     value ? new Date(`${value}T00:00:00`) : new Date()
   );
 
-  const date = value ? new Date(`${value}T00:00:00`) : undefined;
+  const date = React.useMemo(
+    () => (value ? new Date(`${value}T00:00:00`) : undefined),
+    [value],
+  );
 
   React.useEffect(() => {
-    setInputValue(toDisplay(value));
+    if (pathnameAnterior.current !== pathname) {
+      pathnameAnterior.current = pathname;
+      setOpen(false);
+    }
+  }, [pathname]);
+
+  React.useEffect(() => {
+    setInputValue(apiParaMascaraData(value ?? ""));
   }, [value]);
 
   React.useEffect(() => {
     if (date) setMonth(date);
-  }, [open, date]);
+  }, [date]);
+
+  const commitarTexto = (texto: string) => {
+    const mascarado = aplicarMascaraData(texto);
+    setInputValue(mascarado);
+    if (!mascarado.trim()) {
+      onChange("");
+      return;
+    }
+    const parsed = parseDisplay(mascarado, rejeitarFuturo);
+    if (parsed) onChange(parsed);
+  };
 
   const handleSelect = (d: Date | undefined) => {
     if (!d) return;
@@ -138,19 +148,29 @@ export function DatePicker({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "").slice(0, 8);
-    let v = "";
-    if (raw.length >= 2) v = raw.slice(0, 2) + "/";
-    if (raw.length >= 4) v += raw.slice(2, 4) + "/";
-    if (raw.length > 4) v += raw.slice(4, 8);
-    setInputValue(v);
-    const parsed = parseDisplay(v);
+    const mascarado = aplicarMascaraData(e.target.value);
+    setInputValue(mascarado);
+    if (!mascarado.trim()) {
+      onChange("");
+      return;
+    }
+    const parsed = parseDisplay(mascarado, rejeitarFuturo);
     if (parsed) onChange(parsed);
   };
 
   const handleInputBlur = () => {
-    if (!value) setInputValue("");
-    else setInputValue(toDisplay(value));
+    if (!inputValue.trim()) {
+      onChange("");
+      setInputValue("");
+      return;
+    }
+    const parsed = parseDisplay(inputValue, rejeitarFuturo);
+    if (parsed) {
+      onChange(parsed);
+      setInputValue(apiParaMascaraData(parsed));
+    } else if (value) {
+      setInputValue(apiParaMascaraData(value));
+    }
   };
 
   const hoje = new Date();
@@ -170,25 +190,28 @@ export function DatePicker({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <div className={cn("flex w-full gap-1", className)}>
-        <Input
-          id={id}
-          type="text"
-          placeholder={placeholder}
-          disabled={disabled}
-          value={inputValue}
-          onChange={handleInputChange}
-          onBlur={handleInputBlur}
-          className={cn(
-            "flex-1 min-w-[120px]",
-            !inputValue && "text-muted-foreground"
-          )}
-          inputMode="numeric"
-          maxLength={10}
-          autoComplete="off"
-          data-date-input
-        />
+    <div className={cn("flex w-full gap-1", className)}>
+      <Input
+        id={id}
+        type="text"
+        placeholder={placeholder}
+        disabled={disabled}
+        value={inputValue}
+        onChange={handleInputChange}
+        onBlur={handleInputBlur}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commitarTexto(inputValue);
+          }
+        }}
+        className="flex-1 min-w-[120px]"
+        inputMode="numeric"
+        maxLength={10}
+        autoComplete="off"
+        data-date-input
+      />
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -196,69 +219,70 @@ export function DatePicker({
             size="icon"
             className="h-10 w-10 shrink-0"
             disabled={disabled}
+            aria-label="Abrir calendário"
           >
             <CalendarIcon className="h-4 w-4" />
           </Button>
         </PopoverTrigger>
-      </div>
-      <PopoverContent
-        className="w-auto p-0"
-        align="start"
-        sideOffset={8}
-        onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (target.closest("[data-date-input]")) e.preventDefault();
-        }}
-      >
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={handleSelect}
-          month={month}
-          onMonthChange={setMonth}
-          locale={ptBR}
-          captionLayout="buttons"
-          showOutsideDays={false}
-          className="rounded-lg border-0 bg-transparent"
-          components={{ Caption: DatePickerCaption }}
-          classNames={{
-            months: "flex flex-col sm:flex-row gap-4",
-            month: "space-y-4 p-4",
-            caption: "!p-0 !pb-0",
-            table: "w-full border-collapse",
-            head_row: "flex",
-            head_cell: "text-muted-foreground rounded-lg w-10 font-medium text-[0.8rem]",
-            row: "flex w-full mt-1",
-            cell: "h-10 w-10 text-center text-sm p-0 relative rounded-lg",
-            day: "h-10 w-10 p-0 font-normal rounded-lg hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground rounded-lg",
-            day_today: "bg-accent/80 text-accent-foreground font-medium rounded-lg",
-            day_outside: "text-muted-foreground opacity-40",
-            day_disabled: "text-muted-foreground opacity-40",
-            day_hidden: "invisible",
+        <PopoverContent
+          className="w-auto p-0"
+          align="end"
+          sideOffset={8}
+          onInteractOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest("[data-date-input]")) e.preventDefault();
           }}
-        />
-        <div className="flex items-center justify-between gap-2 border-t p-3">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 text-muted-foreground hover:text-foreground"
-            onClick={limpar}
-          >
-            Limpar
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8"
-            onClick={setHoje}
-          >
-            Hoje
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+        >
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={handleSelect}
+            month={month}
+            onMonthChange={setMonth}
+            locale={ptBR}
+            captionLayout="buttons"
+            showOutsideDays={false}
+            className="rounded-lg border-0 bg-transparent"
+            components={{ Caption: DatePickerCaption }}
+            classNames={{
+              months: "flex flex-col sm:flex-row gap-4",
+              month: "space-y-4 p-4",
+              caption: "!p-0 !pb-0",
+              table: "w-full border-collapse",
+              head_row: "flex",
+              head_cell: "text-muted-foreground rounded-lg w-10 font-medium text-[0.8rem]",
+              row: "flex w-full mt-1",
+              cell: "h-10 w-10 text-center text-sm p-0 relative rounded-lg",
+              day: "h-10 w-10 p-0 font-normal rounded-lg hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground rounded-lg",
+              day_today: "bg-accent/80 text-accent-foreground font-medium rounded-lg",
+              day_outside: "text-muted-foreground opacity-40",
+              day_disabled: "text-muted-foreground opacity-40",
+              day_hidden: "invisible",
+            }}
+          />
+          <div className="flex items-center justify-between gap-2 border-t p-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 text-muted-foreground hover:text-foreground"
+              onClick={limpar}
+            >
+              Limpar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8"
+              onClick={setHoje}
+            >
+              Hoje
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }

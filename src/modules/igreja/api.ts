@@ -1,11 +1,16 @@
 import { requisicaoApi, URL_BASE_API } from "@/modules/api/client";
 
-export function resolverUrlLogo(logoUrl?: string): string {
+export function resolverUrlLogo(logoUrl?: string, versaoCache?: string | number): string {
   if (!logoUrl) return "/logo-semear.png";
+  let url = logoUrl;
   if (logoUrl.startsWith("/api/") && URL_BASE_API) {
-    return `${URL_BASE_API}${logoUrl}`;
+    url = `${URL_BASE_API}${logoUrl}`;
   }
-  return logoUrl;
+  if (versaoCache != null && versaoCache !== "") {
+    const separador = url.includes("?") ? "&" : "?";
+    url = `${url}${separador}v=${encodeURIComponent(String(versaoCache))}`;
+  }
+  return url;
 }
 
 export type TipoChavePix = "CPF" | "CNPJ" | "EMAIL" | "TELEFONE" | "CHAVE_ALEATORIA";
@@ -41,8 +46,12 @@ export type IgrejaConfiguracao = {
   temaPreferido?: TemaPreferido;
   textoBoasVindas?: string;
   descricaoIgreja?: string;
+  subtituloIgreja?: string;
   textoAgradecimentoOferta?: string;
   status?: StatusIgreja;
+  dataInicioPlanoLeitura?: string;
+  cicloPlanoLeitura?: number;
+  dataAtualizacao?: string;
 };
 
 export type IgrejaPublica = Pick<
@@ -56,8 +65,12 @@ export type IgrejaPublica = Pick<
   | "temaPreferido"
   | "textoBoasVindas"
   | "descricaoIgreja"
+  | "subtituloIgreja"
   | "cidade"
   | "estado"
+  | "endereco"
+  | "bairro"
+  | "cep"
 >;
 
 export type IgrejaPix = Pick<
@@ -80,6 +93,15 @@ export async function obterConfiguracaoPublica(): Promise<IgrejaPublica | null> 
     return await requisicaoApi<IgrejaPublica>("/api/igreja-configuracao/publica");
   } catch {
     return null;
+  }
+}
+
+export async function listarIgrejasPublicas(): Promise<IgrejaPublica[]> {
+  try {
+    const lista = await requisicaoApi<IgrejaPublica[]>("/api/igrejas/publicas");
+    return Array.isArray(lista) ? lista : [];
+  } catch {
+    return [];
   }
 }
 
@@ -120,6 +142,22 @@ export async function atualizarIdentidadeVisual(dados: Partial<IgrejaConfiguraca
     auth: true,
     method: "PUT",
     body: dados,
+  });
+}
+
+export async function atualizarPlanoLeitura(dataInicioPlanoLeitura: string): Promise<IgrejaConfiguracao> {
+  return requisicaoApi<IgrejaConfiguracao>("/api/igreja/plano-leitura", {
+    auth: true,
+    method: "PUT",
+    body: { dataInicioPlanoLeitura },
+  });
+}
+
+export async function reiniciarPlanoLeitura(dataInicioPlanoLeitura?: string): Promise<IgrejaConfiguracao> {
+  return requisicaoApi<IgrejaConfiguracao>("/api/igreja/plano-leitura/reiniciar", {
+    auth: true,
+    method: "POST",
+    body: dataInicioPlanoLeitura ? { dataInicioPlanoLeitura } : {},
   });
 }
 

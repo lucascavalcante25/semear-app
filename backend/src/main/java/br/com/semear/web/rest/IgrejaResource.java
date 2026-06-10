@@ -7,6 +7,7 @@ import br.com.semear.service.dto.IgrejaPixDTO;
 import br.com.semear.service.dto.IgrejaPublicaDTO;
 import jakarta.annotation.security.RolesAllowed;
 import java.util.Optional;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +34,12 @@ public class IgrejaResource {
         LOG.debug("REST request to get public Igreja configuration");
         Optional<IgrejaPublicaDTO> dto = igrejaService.obterConfiguracaoPublica();
         return ResponseUtil.wrapOrNotFound(dto);
+    }
+
+    @GetMapping("/igrejas/publicas")
+    public ResponseEntity<List<IgrejaPublicaDTO>> listarIgrejasPublicas() {
+        LOG.debug("REST request to list public Igrejas for pre-registration");
+        return ResponseEntity.ok(igrejaService.listarIgrejasParaPreCadastro());
     }
 
     @GetMapping("/igreja/atual")
@@ -129,6 +136,22 @@ public class IgrejaResource {
     public ResponseEntity<IgrejaDTO> atualizarIdentidadeVisual(@RequestBody IgrejaDTO dto) {
         LOG.debug("REST request to update Igreja visual identity : {}", dto);
         return ResponseEntity.ok(igrejaService.atualizarIdentidadeVisual(dto));
+    }
+
+    @PutMapping("/igreja/plano-leitura")
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    public ResponseEntity<IgrejaDTO> atualizarPlanoLeitura(@RequestBody IgrejaDTO dto) {
+        LOG.debug("REST request to update Igreja reading plan : {}", dto);
+        return ResponseEntity.ok(igrejaService.atualizarPlanoLeitura(dto.getDataInicioPlanoLeitura()));
+    }
+
+    @PostMapping("/igreja/plano-leitura/reiniciar")
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    public ResponseEntity<IgrejaDTO> reiniciarPlanoLeitura(@RequestBody(required = false) IgrejaDTO dto) {
+        LOG.debug("REST request to restart Igreja reading plan");
+        return ResponseEntity.ok(
+            igrejaService.reiniciarPlanoLeitura(dto != null ? dto.getDataInicioPlanoLeitura() : null)
+        );
     }
 
     @PostMapping("/igreja/logo")

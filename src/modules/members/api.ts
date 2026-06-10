@@ -2,7 +2,7 @@ import { requisicaoApi } from "@/modules/api/client";
 import type { Role } from "@/auth/permissions";
 import type { ModuleKey } from "@/auth/permissions";
 
-/** DTO retornado pela API /api/admin/users */
+/** DTO retornado pela API de membros */
 export type AdminUserDTO = {
   id?: number;
   login: string;
@@ -46,10 +46,21 @@ const extrairModules = (raw: AdminUserDTO["modules"]): string[] => {
   return (raw as string).split(",").map((s) => s.trim()).filter(Boolean);
 };
 
-const authorityParaRole = (auth: string): Role => {
-  const nome = auth.replace(/^ROLE_/, "").toLowerCase();
-  const roles: Role[] = ["admin", "pastor", "copastor", "secretaria", "tesouraria", "lider", "membro", "visitante"];
-  return roles.includes(nome as Role) ? (nome as Role) : "membro";
+const PRIORIDADE_AUTHORITIES: Array<{ authority: string; role: Role }> = [
+  { authority: "ROLE_ADMIN", role: "admin" },
+  { authority: "ROLE_ADMIN_IGREJA", role: "admin" },
+  { authority: "ROLE_PASTOR", role: "pastor" },
+  { authority: "ROLE_COPASTOR", role: "copastor" },
+  { authority: "ROLE_SECRETARIA", role: "secretaria" },
+  { authority: "ROLE_TESOURARIA", role: "tesouraria" },
+  { authority: "ROLE_LIDER", role: "lider" },
+  { authority: "ROLE_MEMBRO", role: "membro" },
+  { authority: "ROLE_VISITANTE", role: "visitante" },
+];
+
+const mapearRoleDeAuthorities = (authorities: string[]): Role => {
+  const match = PRIORIDADE_AUTHORITIES.find((item) => authorities.includes(item.authority));
+  return match?.role ?? "membro";
 };
 
 const roleParaAuthority = (role: Role): string =>
@@ -60,7 +71,7 @@ export const mapearParaMembro = (dto: AdminUserDTO) => {
   const name = [dto.firstName, dto.lastName].filter(Boolean).join(" ") || dto.login;
   const authorities = extrairAuthorities(dto.authorities);
   const modules = extrairModules(dto.modules);
-  const role = authorities.length > 0 ? authorityParaRole(authorities[0]) : "membro";
+  const role = authorities.length > 0 ? mapearRoleDeAuthorities(authorities) : "membro";
   return {
     id: String(dto.id ?? dto.login),
     idNum: dto.id,
@@ -115,7 +126,7 @@ export const listarMembros = async (): Promise<MembroApi[]> => {
 
 export const obterMembroPorLogin = async (login: string): Promise<MembroApi | null> => {
   const dto = await requisicaoApi<AdminUserDTO>(
-    `/api/admin/users/${encodeURIComponent(login)}`,
+    `/api/membros/${encodeURIComponent(login)}`,
     { auth: true }
   );
   return dto ? mapearParaMembro(dto) : null;
@@ -138,7 +149,7 @@ export const atualizarMembro = async (
     paiId: payload.paiId ?? undefined,
     maeId: payload.maeId ?? undefined,
   };
-  const updated = await requisicaoApi<AdminUserDTO>("/api/admin/users", {
+  const updated = await requisicaoApi<AdminUserDTO>("/api/membros", {
     method: "PUT",
     body: JSON.stringify(body),
     auth: true,
@@ -148,7 +159,7 @@ export const atualizarMembro = async (
 
 export const excluirMembro = async (login: string): Promise<void> => {
   await requisicaoApi(
-    `/api/admin/users/${encodeURIComponent(login)}`,
+    `/api/membros/${encodeURIComponent(login)}`,
     { method: "DELETE", auth: true }
   );
 };

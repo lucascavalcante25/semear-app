@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Plano comercial: nome neutro (Semear é igreja cliente, não marca do produto). -->
+    <changeSet id="20260611000003-1" author="semear">
+        <update tableName="plano">
+            <column name="nome" value="Plano Completo"/>
+            <column name="descricao" value="Plano único de lançamento do WillIgreja: todos os recursos, membros ilimitados, 7 dias para testar sem compromisso."/>
+            <where>id = 1</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="20260611000003-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="config_comercial"/>
+        </preConditions>
+        <sql>
+            UPDATE config_comercial SET mensagem_preco = REPLACE(mensagem_preco, 'Semear App', 'WillIgreja')
+            WHERE mensagem_preco LIKE '%Semear App%';
+            UPDATE config_comercial SET mensagem_preco = REPLACE(mensagem_preco, 'plano Semear Completo', 'Plano Completo')
+            WHERE mensagem_preco LIKE '%Semear Completo%';
+            UPDATE config_comercial SET mensagem_fim_teste = REPLACE(mensagem_fim_teste, 'Semear App', 'WillIgreja')
+            WHERE mensagem_fim_teste LIKE '%Semear App%';
+            UPDATE config_comercial SET mensagem_fim_teste = REPLACE(mensagem_fim_teste, 'plano Semear Completo', 'Plano Completo')
+            WHERE mensagem_fim_teste LIKE '%Semear Completo%';
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

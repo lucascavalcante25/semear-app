@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- PostgreSQL: colunas ${clobType} podem virar oid/bytea e quebrar LOWER() em buscas JPQL. -->
+
+    <changeSet id="20260610000004-1" author="semear">
+        <sql dbms="postgresql" splitStatements="false">
+            DO $$
+            DECLARE col_type text;
+            BEGIN
+                SELECT t.typname INTO col_type
+                FROM pg_attribute a
+                JOIN pg_type t ON t.oid = a.atttypid
+                WHERE a.attrelid = 'solicitacao_suporte'::regclass AND a.attname = 'descricao' AND a.attnum > 0 AND NOT a.attisdropped;
+                IF col_type = 'oid' THEN
+                    ALTER TABLE solicitacao_suporte ADD COLUMN IF NOT EXISTS descricao_new TEXT;
+                    UPDATE solicitacao_suporte SET descricao_new = COALESCE(convert_from(lo_get(descricao::bigint), 'UTF8'), '') WHERE descricao IS NOT NULL AND descricao::bigint != 0;
+                    UPDATE solicitacao_suporte SET descricao_new = '' WHERE descricao_new IS NULL;
+                    ALTER TABLE solicitacao_suporte DROP COLUMN descricao;
+                    ALTER TABLE solicitacao_suporte RENAME COLUMN descricao_new TO descricao;
+                    ALTER TABLE solicitacao_suporte ALTER COLUMN descricao SET NOT NULL;
+                ELSIF col_type = 'bytea' THEN
+                    ALTER TABLE solicitacao_suporte ALTER COLUMN descricao TYPE TEXT USING convert_from(descricao, 'UTF8');
+                ELSIF col_type IS NOT NULL AND col_type != 'text' THEN
+                    ALTER TABLE solicitacao_suporte ALTER COLUMN descricao TYPE TEXT USING descricao::text;
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260610000004-2" author="semear">
+        <sql dbms="postgresql" splitStatements="false">
+            DO $$
+            DECLARE col_type text;
+            BEGIN
+                SELECT t.typname INTO col_type
+                FROM pg_attribute a
+                JOIN pg_type t ON t.oid = a.atttypid
+                WHERE a.attrelid = 'solicitacao_suporte'::regclass AND a.attname = 'resposta_admin' AND a.attnum > 0 AND NOT a.attisdropped;
+                IF col_type = 'oid' THEN
+                    ALTER TABLE solicitacao_suporte ADD COLUMN IF NOT EXISTS resposta_admin_new TEXT;
+                    UPDATE solicitacao_suporte SET resposta_admin_new = COALESCE(convert_from(lo_get(resposta_admin::bigint), 'UTF8'), '') WHERE resposta_admin IS NOT NULL AND resposta_admin::bigint != 0;
+                    ALTER TABLE solicitacao_suporte DROP COLUMN resposta_admin;
+                    ALTER TABLE solicitacao_suporte RENAME COLUMN resposta_admin_new TO resposta_admin;
+                ELSIF col_type = 'bytea' THEN
+                    ALTER TABLE solicitacao_suporte ALTER COLUMN resposta_admin TYPE TEXT USING convert_from(resposta_admin, 'UTF8');
+                ELSIF col_type IS NOT NULL AND col_type != 'text' THEN
+                    ALTER TABLE solicitacao_suporte ALTER COLUMN resposta_admin TYPE TEXT USING resposta_admin::text;
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260610000004-3" author="semear">
+        <sql dbms="postgresql" splitStatements="false">
+            DO $$
+            DECLARE col_type text;
+            BEGIN
+                SELECT t.typname INTO col_type
+                FROM pg_attribute a
+                JOIN pg_type t ON t.oid = a.atttypid
+                WHERE a.attrelid = 'solicitacao_suporte'::regclass AND a.attname = 'observacao_interna_admin' AND a.attnum > 0 AND NOT a.attisdropped;
+                IF col_type = 'oid' THEN
+                    ALTER TABLE solicitacao_suporte ADD COLUMN IF NOT EXISTS observacao_interna_admin_new TEXT;
+                    UPDATE solicitacao_suporte SET observacao_interna_admin_new = COALESCE(convert_from(lo_get(observacao_interna_admin::bigint), 'UTF8'), '') WHERE observacao_interna_admin IS NOT NULL AND observacao_interna_admin::bigint != 0;
+                    ALTER TABLE solicitacao_suporte DROP COLUMN observacao_interna_admin;
+                    ALTER TABLE solicitacao_suporte RENAME COLUMN observacao_interna_admin_new TO observacao_interna_admin;
+                ELSIF col_type = 'bytea' THEN
+                    ALTER TABLE solicitacao_suporte ALTER COLUMN observacao_interna_admin TYPE TEXT USING convert_from(observacao_interna_admin, 'UTF8');
+                ELSIF col_type IS NOT NULL AND col_type != 'text' THEN
+                    ALTER TABLE solicitacao_suporte ALTER COLUMN observacao_interna_admin TYPE TEXT USING observacao_interna_admin::text;
+                END IF;
+            END $$;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

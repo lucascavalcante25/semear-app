@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { buscarCep } from "@/modules/viacep/api";
 import { toast } from "sonner";
 
 export default function Settings() {
+  const { pathname } = useLocation();
   const { user } = usarAutenticacao();
   const avatarUrl = useAvatarUrlCurrentUser();
   const [conta, setConta] = useState<ContaDTO | null>(null);
@@ -49,6 +51,15 @@ export default function Settings() {
     estado: "",
     cep: "",
   });
+
+  const pathnameAnterior = useRef(pathname);
+  useEffect(() => {
+    if (pathnameAnterior.current !== pathname) {
+      pathnameAnterior.current = pathname;
+      setCropperOpen(false);
+      setImageToCrop(null);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const carregar = async () => {
@@ -304,6 +315,7 @@ export default function Settings() {
                     id="birthDate"
                     value={form.birthDate || undefined}
                     onChange={(v) => setForm((f) => ({ ...f, birthDate: v }))}
+                    rejeitarFuturo
                     placeholder="dd/mm/aaaa"
                   />
                 </div>

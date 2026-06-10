@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260609000008-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="solicitacao_acesso"/>
+            <not><columnExists tableName="solicitacao_acesso" columnName="cpf"/></not>
+        </preConditions>
+        <addColumn tableName="solicitacao_acesso">
+            <column name="cpf" type="varchar(14)"/>
+            <column name="telefone_secundario" type="varchar(50)"/>
+            <column name="telefone_emergencia" type="varchar(50)"/>
+            <column name="nome_contato_emergencia" type="varchar(255)"/>
+            <column name="data_nascimento" type="date"/>
+            <column name="sexo" type="varchar(20)"/>
+            <column name="senha" type="varchar(255)"/>
+            <column name="complemento" type="varchar(100)"/>
+            <column name="cep_pessoal" type="varchar(10)"/>
+            <column name="endereco_pessoal" type="varchar(255)"/>
+            <column name="numero_pessoal" type="varchar(20)"/>
+            <column name="complemento_pessoal" type="varchar(100)"/>
+            <column name="bairro_pessoal" type="varchar(100)"/>
+            <column name="cidade_pessoal" type="varchar(100)"/>
+            <column name="estado_pessoal" type="varchar(2)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -68,19 +68,20 @@ export function ProvedorNotificacoes({ children }: { children: React.ReactNode }
     void carregar();
   }, [carregar]);
 
-  // Polling para novas notificações (ex: aviso criado por outro usuário)
+  // Polling e atualização ao retornar à aba
   useEffect(() => {
     if (!user) return;
 
-    intervalRef.current = setInterval(() => {
-      void carregar();
-    }, INTERVALO_POLLING_MS);
+    const atualizar = () => void carregar();
+    intervalRef.current = setInterval(atualizar, INTERVALO_POLLING_MS);
+    window.addEventListener("focus", atualizar);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      window.removeEventListener("focus", atualizar);
     };
   }, [user, carregar]);
 

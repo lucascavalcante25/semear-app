@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
+import { GuardAssinatura } from "@/components/auth/AssinaturaGuard";
 
 type RequerAutenticacaoProps = {
   children: React.ReactNode;
@@ -22,5 +23,9 @@ export function RequerAutenticacao({ children }: RequerAutenticacaoProps) {
     return <Navigate to="/acesso-negado" replace />;
   }
 
-  return <>{children}</>;
+  if (location.pathname === "/assinatura-bloqueada") {
+    return <>{children}</>;
+  }
+
+  return <GuardAssinatura>{children}</GuardAssinatura>;
 }

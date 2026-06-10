@@ -17,11 +17,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,14 +39,21 @@ public class IgrejaService {
     private final IgrejaRepository igrejaRepository;
     private final UserRepository userRepository;
     private final IgrejaMapper igrejaMapper;
+    private final AssinaturaIgrejaService assinaturaIgrejaService;
 
     @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
     private String uploadDir;
 
-    public IgrejaService(IgrejaRepository igrejaRepository, UserRepository userRepository, IgrejaMapper igrejaMapper) {
+    public IgrejaService(
+        IgrejaRepository igrejaRepository,
+        UserRepository userRepository,
+        IgrejaMapper igrejaMapper,
+        AssinaturaIgrejaService assinaturaIgrejaService
+    ) {
         this.igrejaRepository = igrejaRepository;
         this.userRepository = userRepository;
         this.igrejaMapper = igrejaMapper;
+        this.assinaturaIgrejaService = assinaturaIgrejaService;
     }
 
     public record LogoArquivo(byte[] bytes, String contentType) {}
@@ -55,7 +65,35 @@ public class IgrejaService {
 
     @Transactional(readOnly = true)
     public List<IgrejaDTO> buscarComFiltros(String nome, String cnpj, String cidade, StatusIgreja status) {
-        return igrejaRepository.buscarComFiltros(nome, cnpj, cidade, status).stream().map(igrejaMapper::toDto).toList();
+        Specification<Igreja> spec = Specification.allOf();
+
+        if (nome != null && !nome.isBlank()) {
+            String termo = "%" + nome.trim().toLowerCase() + "%";
+            spec = spec.and(
+                (root, query, cb) ->
+                    cb.or(
+                        cb.like(cb.lower(root.get("nome")), termo),
+                        cb.like(cb.lower(cb.coalesce(root.get("nomeFantasia"), "")), termo)
+                    )
+            );
+        }
+        if (cnpj != null && !cnpj.isBlank()) {
+            String termo = "%" + cnpj.trim() + "%";
+            spec = spec.and((root, query, cb) -> cb.like(root.get("cnpj"), termo));
+        }
+        if (cidade != null && !cidade.isBlank()) {
+            String termo = "%" + cidade.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("cidade")), termo));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+
+        return igrejaRepository
+            .findAll(spec, Sort.by(Sort.Direction.ASC, "nome"))
+            .stream()
+            .map(igrejaMapper::toDto)
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +101,18 @@ public class IgrejaService {
         return igrejaRepository
             .findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA)
             .map(igrejaMapper::toPublicaDto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<IgrejaPublicaDTO> listarIgrejasParaPreCadastro() {
+        return igrejaRepository
+            .findByStatusIn(
+                List.of(StatusIgreja.ATIVA, StatusIgreja.EM_TESTE),
+                Sort.by(Sort.Direction.ASC, "nome")
+            )
+            .stream()
+            .map(igrejaMapper::toPublicaDto)
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -93,7 +143,11 @@ public class IgrejaService {
             igreja.setDataCadastro(Instant.now());
         }
         igreja.setDataAtualizacao(Instant.now());
-        return igrejaMapper.toDto(igrejaRepository.save(igreja));
+        igreja = igrejaRepository.save(igreja);
+        if (dto.getId() == null && igreja.getStatus() == StatusIgreja.EM_TESTE) {
+            assinaturaIgrejaService.iniciarTesteGratis(igreja, dto.getNomeFantasia() != null ? dto.getNomeFantasia() : igreja.getNome());
+        }
+        return igrejaMapper.toDto(igreja);
     }
 
     public IgrejaDTO atualizarIgrejaAtual(IgrejaDTO dto) {
@@ -173,6 +227,33 @@ public class IgrejaService {
         }
     }
 
+    public IgrejaDTO atualizarPlanoLeitura(LocalDate dataInicio) {
+        if (dataInicio == null) {
+            throw new BadRequestAlertException("Data de início obrigatória", ENTITY_NAME, "dataobrigatoria");
+        }
+        Igreja igreja = resolverIgrejaDoUsuarioLogado()
+            .orElseThrow(() -> new BadRequestAlertException("Usuário sem igreja vinculada", ENTITY_NAME, "semigreja"));
+        validarAcessoIgreja(igreja);
+        igreja.setDataInicioPlanoLeitura(dataInicio);
+        if (igreja.getCicloPlanoLeitura() == null) {
+            igreja.setCicloPlanoLeitura(1);
+        }
+        igreja.setDataAtualizacao(Instant.now());
+        return igrejaMapper.toDto(igrejaRepository.save(igreja));
+    }
+
+    public IgrejaDTO reiniciarPlanoLeitura(LocalDate novaData) {
+        Igreja igreja = resolverIgrejaDoUsuarioLogado()
+            .orElseThrow(() -> new BadRequestAlertException("Usuário sem igreja vinculada", ENTITY_NAME, "semigreja"));
+        validarAcessoIgreja(igreja);
+        LocalDate data = novaData != null ? novaData : LocalDate.now();
+        int ciclo = igreja.getCicloPlanoLeitura() != null ? igreja.getCicloPlanoLeitura() : 1;
+        igreja.setCicloPlanoLeitura(ciclo + 1);
+        igreja.setDataInicioPlanoLeitura(data);
+        igreja.setDataAtualizacao(Instant.now());
+        return igrejaMapper.toDto(igrejaRepository.save(igreja));
+    }
+
     public IgrejaDTO atualizarIdentidadeVisual(IgrejaDTO dto) {
         Igreja igreja = resolverIgrejaDoUsuarioLogado()
             .orElseThrow(() -> new BadRequestAlertException("Usuário sem igreja vinculada", ENTITY_NAME, "semigreja"));
@@ -180,9 +261,9 @@ public class IgrejaService {
         igreja.setLogoUrl(dto.getLogoUrl());
         igreja.setCorPrimaria(dto.getCorPrimaria());
         igreja.setCorSecundaria(dto.getCorSecundaria());
-        igreja.setTemaPreferido(dto.getTemaPreferido());
         igreja.setTextoBoasVindas(dto.getTextoBoasVindas());
         igreja.setDescricaoIgreja(dto.getDescricaoIgreja());
+        igreja.setSubtituloIgreja(dto.getSubtituloIgreja());
         igreja.setDataAtualizacao(Instant.now());
         return igrejaMapper.toDto(igrejaRepository.save(igreja));
     }
@@ -275,6 +356,7 @@ public class IgrejaService {
         if (dto.getTextoBoasVindas() != null) igreja.setTextoBoasVindas(dto.getTextoBoasVindas());
         if (dto.getDescricaoIgreja() != null) igreja.setDescricaoIgreja(dto.getDescricaoIgreja());
         if (dto.getTextoAgradecimentoOferta() != null) igreja.setTextoAgradecimentoOferta(dto.getTextoAgradecimentoOferta());
+        if (dto.getDataInicioPlanoLeitura() != null) igreja.setDataInicioPlanoLeitura(dto.getDataInicioPlanoLeitura());
         if (dto.getStatus() != null && SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.SUPER_ADMIN)) {
             igreja.setStatus(dto.getStatus());
         }

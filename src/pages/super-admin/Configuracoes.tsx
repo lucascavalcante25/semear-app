@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { LayoutSuperAdmin } from "@/components/layout/SuperAdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PLATAFORMA } from "@/lib/plataforma";
 import { obterConfigPlataformaAdmin, type PlataformaConfig } from "@/modules/admin/api";
 
 export default function ConfiguracoesSuperAdmin() {
@@ -26,7 +27,7 @@ export default function ConfiguracoesSuperAdmin() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Configurações da Plataforma</h1>
-          <p className="text-muted-foreground">Informações gerais do SaaS Semear.</p>
+          <p className="text-muted-foreground">Informações gerais do SaaS {PLATAFORMA.nome} ({PLATAFORMA.empresa}).</p>
         </div>
 
         {carregando ? (

@@ -9,7 +9,9 @@ import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.AdminUserDTO;
 import br.com.semear.service.dto.DependenteCreateDTO;
+import br.com.semear.web.rest.errors.BadRequestAlertException;
 import br.com.semear.web.rest.errors.EmailAlreadyUsedException;
+import br.com.semear.web.rest.errors.LoginAlreadyUsedException;
 import br.com.semear.service.dto.UserDTO;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -327,6 +329,46 @@ public class UserService {
      * @param userDTO user to update.
      * @return updated user.
      */
+    public Optional<AdminUserDTO> getManagedUser(String login) {
+        return userRepository
+            .findOneWithAuthoritiesByLogin(login)
+            .map(user -> {
+                tenantService.validarMesmaIgreja(user.getIgreja());
+                return new AdminUserDTO(user);
+            });
+    }
+
+    public Optional<AdminUserDTO> updateManagedUser(AdminUserDTO userDTO) {
+        User existing = userRepository
+            .findById(userDTO.getId())
+            .orElseThrow(() -> new BadRequestAlertException("Usuário não encontrado", "userManagement", "idnotfound"));
+        tenantService.validarMesmaIgreja(existing.getIgreja());
+
+        if (userDTO.getEmail() != null) {
+            Optional<User> byEmail = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
+            if (byEmail.isPresent() && !byEmail.orElseThrow().getId().equals(userDTO.getId())) {
+                throw new EmailAlreadyUsedException();
+            }
+        }
+        Optional<User> byLogin = userRepository.findOneByLogin(userDTO.getLogin().toLowerCase());
+        if (byLogin.isPresent() && !byLogin.orElseThrow().getId().equals(userDTO.getId())) {
+            throw new LoginAlreadyUsedException();
+        }
+
+        return updateUser(userDTO);
+    }
+
+    public void deleteManagedUser(String login) {
+        userRepository
+            .findOneByLogin(login)
+            .ifPresent(user -> {
+                tenantService.validarMesmaIgreja(user.getIgreja());
+                userRepository.delete(user);
+                this.clearUserCaches(user);
+                LOG.debug("Deleted managed User: {}", user);
+            });
+    }
+
     public Optional<AdminUserDTO> updateUser(AdminUserDTO userDTO) {
         return Optional.of(userRepository.findById(userDTO.getId()))
             .filter(Optional::isPresent)

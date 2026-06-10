@@ -71,4 +71,18 @@
     <include file="config/liquibase/changelog/20260609000004_operational_igreja_id.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260609000005_recuperacao_senha.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260609000006_grant_super_admin_owner.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000007_solicitacao_acesso_endereco.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000008_solicitacao_admin_completo.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000009_igreja_plano_leitura_inicio.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000010_igreja_ciclo_plano_leitura.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260609000011_igreja_subtitulo.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260610000001_solicitacao_suporte.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260610000002_solicitacao_suporte_historico.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260610000003_solicitacao_suporte_mensagem.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260610000004_fix_solicitacao_suporte_text_columns.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260610000005_fix_solicitacao_suporte_descricao_bytea.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260611000001_plano_lancamento_unico.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260611000002_comercial_assinatura_pagamentos.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260611000003_renomear_marca_produto.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260611000004_atualizar_mensagem_preco.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

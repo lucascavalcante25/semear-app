@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260609000007-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="solicitacao_acesso"/>
+            <not><columnExists tableName="solicitacao_acesso" columnName="cep"/></not>
+        </preConditions>
+        <addColumn tableName="solicitacao_acesso">
+            <column name="cep" type="varchar(10)"/>
+            <column name="endereco" type="varchar(255)"/>
+            <column name="numero" type="varchar(20)"/>
+            <column name="bairro" type="varchar(100)"/>
+            <column name="quantidade_membros" type="integer"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

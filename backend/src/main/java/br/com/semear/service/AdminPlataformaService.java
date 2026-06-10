@@ -25,6 +25,7 @@ public class AdminPlataformaService {
 
     private final PlanoRepository planoRepository;
     private final AssinaturaIgrejaRepository assinaturaIgrejaRepository;
+    private final AssinaturaIgrejaService assinaturaIgrejaService;
     private final UserRepository userRepository;
     private final JHipsterProperties jHipsterProperties;
 
@@ -34,21 +35,23 @@ public class AdminPlataformaService {
     public AdminPlataformaService(
         PlanoRepository planoRepository,
         AssinaturaIgrejaRepository assinaturaIgrejaRepository,
+        AssinaturaIgrejaService assinaturaIgrejaService,
         UserRepository userRepository,
         JHipsterProperties jHipsterProperties
     ) {
         this.planoRepository = planoRepository;
         this.assinaturaIgrejaRepository = assinaturaIgrejaRepository;
+        this.assinaturaIgrejaService = assinaturaIgrejaService;
         this.userRepository = userRepository;
         this.jHipsterProperties = jHipsterProperties;
     }
 
     public List<PlanoDTO> listarPlanos() {
-        return planoRepository.findAllByOrderByValorMensalAsc().stream().map(this::toPlanoDto).toList();
+        return planoRepository.findAllByOrderByOrdemExibicaoAscValorMensalAsc().stream().map(this::toPlanoDto).toList();
     }
 
     public List<AssinaturaIgrejaDTO> listarAssinaturas() {
-        return assinaturaIgrejaRepository.findAllByOrderByDataCadastroDesc().stream().map(this::toAssinaturaDto).toList();
+        return assinaturaIgrejaService.listarTodas();
     }
 
     public FinanceiroPlataformaResumoDTO obterResumoFinanceiro() {
@@ -87,7 +90,7 @@ public class AdminPlataformaService {
 
     public PlataformaConfigDTO obterConfiguracao() {
         PlataformaConfigDTO dto = new PlataformaConfigDTO();
-        dto.setNomePlataforma("Semear SaaS");
+        dto.setNomePlataforma("WillSas");
         dto.setVersao(appName);
         dto.setEmailSuporte(jHipsterProperties.getMail().getFrom());
         dto.setUrlBase(jHipsterProperties.getMail().getBaseUrl());
@@ -100,8 +103,16 @@ public class AdminPlataformaService {
         dto.setNome(p.getNome());
         dto.setDescricao(p.getDescricao());
         dto.setValorMensal(p.getValorMensal());
+        dto.setValorAnual(p.getValorAnual());
+        dto.setValorImplantacao(p.getValorImplantacao());
+        dto.setDiasTrial(p.getDiasTrial());
+        dto.setLimiteMembros(p.getLimiteMembros());
+        dto.setDestaque(p.getDestaque());
+        dto.setTextoBotao(p.getTextoBotao());
+        dto.setOrdemExibicao(p.getOrdemExibicao());
         dto.setAtivo(p.getAtivo());
         dto.setDataCadastro(p.getDataCadastro());
+        dto.setDataAtualizacao(p.getDataAtualizacao());
         return dto;
     }
 

@@ -8,9 +8,14 @@ import {
   ProgressoEspiritual,
 } from "@/components/dashboard";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
+import { CardAjudaSuporte } from "@/components/suporte/CardAjudaSuporte";
 
 const Inicio = () => {
   const { user } = usarAutenticacao();
+  const { configuracao, publica } = useIgrejaConfiguracao();
+  const textoBoasVindas =
+    configuracao?.textoBoasVindas?.trim() || publica.textoBoasVindas?.trim() || "";
 
   // Get greeting based on time of day
   const getGreeting = () => {
@@ -50,7 +55,14 @@ const Inicio = () => {
           <p className="text-sm text-muted-foreground">
             Paz do Senhor Jesus Cristo. Que Deus abençoe seu dia.
           </p>
+          {textoBoasVindas && textoBoasVindas !== "Bem-vindo" && (
+            <p className="text-sm text-primary/90 bg-primary/10 rounded-lg px-3 py-2 mt-2">
+              {textoBoasVindas}
+            </p>
+          )}
         </div>
+
+        <CardAjudaSuporte />
 
         {/* Versiculo do dia */}
         <VersiculoDoDia />

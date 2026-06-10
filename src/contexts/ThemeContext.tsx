@@ -1,14 +1,17 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { CHAVE_TEMA_PLATAFORMA } from "@/lib/plataforma";
 
 type Theme = "light" | "dark";
+type ThemeScope = "app" | "platform" | "none";
 
 type ThemeContextValue = {
   theme: Theme;
+  scope: ThemeScope;
   toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: Theme, scope?: ThemeScope) => void;
 };
 
-const STORAGE_KEY = "semear.tema";
+const STORAGE_KEY_APP = "semear.tema";
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
@@ -16,18 +19,12 @@ const getInitialTheme = (): Theme => {
   if (typeof window === "undefined") {
     return "light";
   }
-
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark") {
-    return stored;
-  }
-
-  const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "dark" : "light";
+  return "light";
 };
 
 export function ProvedorTema({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => getInitialTheme());
+  const scopeRef = useRef<ThemeScope>("none");
 
   useEffect(() => {
     const root = document.documentElement;
@@ -36,24 +33,38 @@ export function ProvedorTema({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove("dark");
     }
-    window.localStorage.setItem(STORAGE_KEY, theme);
+    if (scopeRef.current === "app") {
+      window.localStorage.setItem(STORAGE_KEY_APP, theme);
+    } else if (scopeRef.current === "platform") {
+      window.localStorage.setItem(CHAVE_TEMA_PLATAFORMA, theme);
+    }
   }, [theme]);
 
-  const setTheme = (nextTheme: Theme) => {
+  const setTheme = useCallback((nextTheme: Theme, scope: ThemeScope = "app") => {
+    scopeRef.current = scope;
     setThemeState(nextTheme);
-  };
+  }, []);
 
-  const toggleTheme = () => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      if (scopeRef.current === "app") {
+        window.localStorage.setItem(STORAGE_KEY_APP, next);
+      } else if (scopeRef.current === "platform") {
+        window.localStorage.setItem(CHAVE_TEMA_PLATAFORMA, next);
+      }
+      return next;
+    });
+  }, []);
 
   const value = useMemo(
     () => ({
       theme,
+      scope: scopeRef.current,
       toggleTheme,
       setTheme,
     }),
-    [theme],
+    [theme, setTheme, toggleTheme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

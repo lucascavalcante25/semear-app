@@ -11,11 +11,12 @@ import {
   Settings,
   Heart,
   UserCheck,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccess } from "@/auth/permissions";
+import { canAccess, podeAcessarSuporte } from "@/auth/permissions";
 import { PixOfertaBloco } from "@/components/pix/PixOferta";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 
@@ -33,31 +34,38 @@ const menuItems = [
   { icon: Megaphone, label: "Avisos", path: "/avisos" },
   { icon: UserCheck, label: "Aprovar pré-cadastros", path: "/aprovar-pre-cadastros" },
   { icon: Wallet, label: "Financeiro", path: "/financeiro" },
+  { icon: LifeBuoy, label: "Suporte", path: "/suporte", suporteOnly: true },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
 export function MenuMobile({ onClose }: MenuMobileProps) {
   const location = useLocation();
   const { user } = usarAutenticacao();
-  const { nomeExibicao, logoUrl, configuracao } = useIgrejaConfiguracao();
-  const filteredItems = menuItems.filter((item) => canAccess(user, item.path));
+  const { nomeExibicao, subtituloExibicao, logoUrl } = useIgrejaConfiguracao();
+  const filteredItems = menuItems.filter((item) => {
+    if ("suporteOnly" in item && item.suporteOnly) {
+      return podeAcessarSuporte(user);
+    }
+    return canAccess(user, item.path);
+  });
 
   return (
     <div className="flex flex-col h-full bg-sidebar">
       {/* Header */}
       <SheetHeader className="p-4 border-b border-sidebar-border">
         <Link to="/" onClick={onClose} className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-olive-light/60 ring-1 ring-olive/20">
+          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg ring-1 ring-primary/25">
             <img
+              key={logoUrl}
               src={logoUrl}
               alt={nomeExibicao}
-              className="h-7 w-7 object-contain"
+              className="h-full w-full object-cover"
             />
           </div>
-          <div className="flex flex-col">
-            <SheetTitle className="text-left text-lg font-bold">{nomeExibicao}</SheetTitle>
-            {configuracao?.nome && (
-              <span className="text-xs text-muted-foreground">{configuracao.nome}</span>
+          <div className="flex flex-col min-w-0">
+            <SheetTitle className="text-left text-lg font-bold truncate">{nomeExibicao}</SheetTitle>
+            {subtituloExibicao && (
+              <span className="text-xs text-muted-foreground truncate">{subtituloExibicao}</span>
             )}
           </div>
         </Link>

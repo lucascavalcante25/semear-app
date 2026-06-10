@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Força conversão de descricao bytea → text (fallback se 20260610000004 não alterou). -->
+    <changeSet id="20260610000005-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <dbms type="postgresql"/>
+                <tableExists tableName="solicitacao_suporte"/>
+                <sqlCheck expectedResult="1">
+                    SELECT COUNT(*) FROM pg_attribute a
+                    JOIN pg_type t ON t.oid = a.atttypid
+                    WHERE a.attrelid = 'solicitacao_suporte'::regclass
+                      AND a.attname = 'descricao'
+                      AND a.attnum > 0
+                      AND NOT a.attisdropped
+                      AND t.typname = 'bytea'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <sql splitStatements="false">
+            ALTER TABLE solicitacao_suporte
+            ALTER COLUMN descricao TYPE text USING convert_from(descricao, 'UTF8');
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

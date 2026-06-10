@@ -8,6 +8,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.ResponseUtil;
@@ -24,7 +25,7 @@ public class SolicitacaoAcessoResource {
 
     @PostMapping("/solicitacoes-acesso")
     public ResponseEntity<SolicitacaoAcessoDTO> criar(@RequestBody SolicitacaoAcessoDTO dto) {
-        return ResponseEntity.ok(solicitacaoAcessoService.criarPublica(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(solicitacaoAcessoService.criarPublica(dto));
     }
 
     @GetMapping("/admin/solicitacoes")

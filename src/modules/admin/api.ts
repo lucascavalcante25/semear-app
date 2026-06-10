@@ -17,8 +17,29 @@ export type Plano = {
   nome: string;
   descricao?: string;
   valorMensal: number;
+  valorAnual?: number;
+  valorImplantacao?: number;
+  diasTrial?: number;
+  limiteMembros?: number | null;
+  destaque?: boolean;
+  textoBotao?: string;
+  ordemExibicao?: number;
   ativo?: boolean;
+  dataCadastro?: string;
+  dataAtualizacao?: string;
+  promocaoImplantacaoAnual?: number;
+  descontoAnualPercentual?: number;
 };
+
+export type StatusAssinatura =
+  | "EM_TESTE"
+  | "ATIVA"
+  | "PENDENTE_PAGAMENTO"
+  | "ATRASADA"
+  | "SUSPENSA"
+  | "CANCELADA";
+
+export type FormaPagamento = "PIX" | "CARTAO_LINK" | "BOLETO" | "DINHEIRO" | "OUTRO";
 
 export type AssinaturaIgreja = {
   id: number;
@@ -28,9 +49,53 @@ export type AssinaturaIgreja = {
   planoNome?: string;
   valorMensal: number;
   dataVencimento?: string;
-  statusPagamento: "PENDENTE" | "PAGO" | "ATRASADO" | "CANCELADO";
+  statusPagamento: "PENDENTE" | "PAGO" | "ATRASADO" | "ISENTO" | "CANCELADO";
   dataPagamento?: string;
   observacao?: string;
+  statusAssinatura?: StatusAssinatura;
+  dataInicioTeste?: string;
+  dataFimTeste?: string;
+  dataAtivacao?: string;
+  valorImplantacaoContratado?: number;
+  valorMensalContratado?: number;
+  valorAnualContratado?: number;
+  statusImplantacao?: AssinaturaIgreja["statusPagamento"];
+  statusMensalidade?: AssinaturaIgreja["statusPagamento"];
+  formaPagamento?: FormaPagamento;
+  proximoVencimento?: string;
+  responsavelNome?: string;
+  diasRestantesTeste?: number;
+  acessoPermitido?: boolean;
+};
+
+export type AssinaturaAcesso = {
+  igrejaId?: number;
+  statusAssinatura?: StatusAssinatura;
+  diasRestantesTeste?: number;
+  dataFimTeste?: string;
+  acessoPermitido: boolean;
+  mensagem?: string;
+};
+
+export type MensagensComerciais = {
+  mensagemAbordagem?: string;
+  mensagemPreco?: string;
+  mensagemDemo?: string;
+  mensagemFimTeste?: string;
+  whatsappContato?: string;
+  emailContato?: string;
+};
+
+export type PlanoPublico = {
+  nome: string;
+  descricao?: string;
+  valorMensal: number;
+  valorAnual?: number;
+  valorImplantacao?: number;
+  promocaoImplantacaoAnual?: number;
+  diasTrial?: number;
+  descontoAnualPercentual?: number;
+  textoBotao?: string;
 };
 
 export type FinanceiroResumo = {
@@ -67,4 +132,68 @@ export async function obterResumoFinanceiroAdmin(): Promise<FinanceiroResumo> {
 
 export async function obterConfigPlataformaAdmin(): Promise<PlataformaConfig> {
   return requisicaoApi<PlataformaConfig>("/api/admin/configuracao-plataforma", { auth: true });
+}
+
+export async function obterAssinaturaAcesso(): Promise<AssinaturaAcesso> {
+  return requisicaoApi<AssinaturaAcesso>("/api/account/assinatura-acesso", { auth: true });
+}
+
+export async function ativarAssinaturaAdmin(id: number): Promise<AssinaturaIgreja> {
+  return requisicaoApi<AssinaturaIgreja>(`/api/admin/assinaturas/${id}/ativar`, { method: "PATCH", auth: true });
+}
+
+export async function prorrogarTesteAdmin(id: number, dias = 7): Promise<AssinaturaIgreja> {
+  return requisicaoApi<AssinaturaIgreja>(`/api/admin/assinaturas/${id}/prorrogar-teste`, {
+    method: "PATCH",
+    auth: true,
+    body: { dias },
+  });
+}
+
+export async function suspenderAssinaturaAdmin(id: number, motivo?: string): Promise<AssinaturaIgreja> {
+  return requisicaoApi<AssinaturaIgreja>(`/api/admin/assinaturas/${id}/suspender`, {
+    method: "PATCH",
+    auth: true,
+    body: { motivo },
+  });
+}
+
+export async function marcarImplantacaoPagaAdmin(id: number, forma: FormaPagamento = "PIX"): Promise<AssinaturaIgreja> {
+  return requisicaoApi<AssinaturaIgreja>(`/api/admin/assinaturas/${id}/registrar-pagamento-implantacao`, {
+    method: "PATCH",
+    auth: true,
+    body: { formaPagamento: forma },
+  });
+}
+
+export async function marcarMensalidadePagaAdmin(id: number, forma: FormaPagamento = "PIX"): Promise<AssinaturaIgreja> {
+  return requisicaoApi<AssinaturaIgreja>(`/api/admin/assinaturas/${id}/registrar-pagamento-mensal`, {
+    method: "PATCH",
+    auth: true,
+    body: { formaPagamento: forma },
+  });
+}
+
+export async function registrarPagamentoAnualAdmin(id: number, forma: FormaPagamento = "PIX"): Promise<AssinaturaIgreja> {
+  return requisicaoApi<AssinaturaIgreja>(`/api/admin/assinaturas/${id}/registrar-pagamento-anual`, {
+    method: "PATCH",
+    auth: true,
+    body: { formaPagamento: forma },
+  });
+}
+
+export async function obterMensagensComerciaisAdmin(): Promise<MensagensComerciais> {
+  return requisicaoApi<MensagensComerciais>("/api/admin/planos/mensagens-comerciais", { auth: true });
+}
+
+export async function salvarMensagensComerciaisAdmin(dados: MensagensComerciais): Promise<MensagensComerciais> {
+  return requisicaoApi<MensagensComerciais>("/api/admin/planos/mensagens-comerciais", {
+    method: "PUT",
+    auth: true,
+    body: dados,
+  });
+}
+
+export async function obterPlanoPublico(): Promise<PlanoPublico> {
+  return requisicaoApi<PlanoPublico>("/api/public/plano-lancamento");
 }

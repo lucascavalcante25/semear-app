@@ -7,66 +7,42 @@ import {
   UserPlus,
   Megaphone,
   Wallet,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccess } from "@/auth/permissions";
+import { canAccess, podeAcessarSuporte } from "@/auth/permissions";
 
-const acoes = [
-  {
-    icon: BookOpen,
-    label: "Bíblia",
-    path: "/biblia",
-    color: "bg-olive text-olive-foreground",
-    bgLight: "bg-olive-light",
-  },
-  {
-    icon: BookMarked,
-    label: "Devocionais",
-    path: "/devocionais",
-    color: "bg-deep-blue text-deep-blue-foreground",
-    bgLight: "bg-deep-blue-light",
-  },
-  {
-    icon: Music,
-    label: "Louvores",
-    path: "/louvores",
-    color: "bg-gold text-gold-foreground",
-    bgLight: "bg-gold-light",
-  },
-  {
-    icon: Users,
-    label: "Membros",
-    path: "/membros",
-    color: "bg-olive text-olive-foreground",
-    bgLight: "bg-olive-light",
-  },
-  {
-    icon: UserPlus,
-    label: "Visitantes",
-    path: "/visitantes",
-    color: "bg-deep-blue text-deep-blue-foreground",
-    bgLight: "bg-deep-blue-light",
-  },
-  {
-    icon: Megaphone,
-    label: "Avisos",
-    path: "/avisos",
-    color: "bg-gold text-gold-foreground",
-    bgLight: "bg-gold-light",
-  },
-  {
-    icon: Wallet,
-    label: "Financeiro",
-    path: "/financeiro",
-    color: "bg-olive text-olive-foreground",
-    bgLight: "bg-olive-light",
-  },
+type VarianteCor = "primary" | "secondary";
+
+const VARIANTE_CLASSES: Record<VarianteCor, string> = {
+  primary: "bg-primary text-primary-foreground",
+  secondary: "bg-secondary text-secondary-foreground",
+};
+
+const acoes: Array<{
+  icon: React.ElementType;
+  label: string;
+  path: string;
+  variante: VarianteCor;
+  suporteOnly?: boolean;
+}> = [
+  { icon: BookOpen, label: "Bíblia", path: "/biblia", variante: "primary" },
+  { icon: BookMarked, label: "Devocionais", path: "/devocionais", variante: "secondary" },
+  { icon: Music, label: "Louvores", path: "/louvores", variante: "primary" },
+  { icon: Users, label: "Membros", path: "/membros", variante: "secondary" },
+  { icon: UserPlus, label: "Visitantes", path: "/visitantes", variante: "primary" },
+  { icon: Megaphone, label: "Avisos", path: "/avisos", variante: "secondary" },
+  { icon: Wallet, label: "Financeiro", path: "/financeiro", variante: "primary" },
+  { icon: LifeBuoy, label: "Suporte", path: "/suporte", variante: "secondary", suporteOnly: true },
 ];
 
 export function AcoesRapidas() {
   const { user } = usarAutenticacao();
-  const acoesVisiveis = acoes.filter((acao) => canAccess(user, acao.path));
+  const acoesVisiveis = acoes.filter((acao) => {
+    if (acao.suporteOnly) return podeAcessarSuporte(user);
+    return canAccess(user, acao.path);
+  });
 
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 min-w-0">
@@ -80,9 +56,9 @@ export function AcoesRapidas() {
           >
             <div
               className={cn(
-                "flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-200",
+                "flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-200 shadow-sm",
                 "group-hover:scale-105 group-active:scale-95",
-                acao.color
+                VARIANTE_CLASSES[acao.variante],
               )}
             >
               <Icon className="h-6 w-6" />

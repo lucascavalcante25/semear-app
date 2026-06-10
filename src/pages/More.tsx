@@ -13,16 +13,12 @@ import {
   Info,
   LogOut,
   ChevronRight,
-  Moon,
-  Sun,
   Church,
   LayoutDashboard,
 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccess, usuarioEhSuperAdmin } from "@/auth/permissions";
-import { usarTema } from "@/contexts/ThemeContext";
+import { canAccess, canWrite, podeAcessarSuporte, usuarioEhSuperAdmin } from "@/auth/permissions";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 
 interface MenuItemProps {
@@ -82,13 +78,9 @@ function MenuItem({
 export default function Mais() {
   const { logout, user } = usarAutenticacao();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = usarTema();
-  const { nomeExibicao, configuracao } = useIgrejaConfiguracao();
-  const isDarkMode = theme === "dark";
-
-  const handleDarkModeToggle = () => {
-    toggleTheme();
-  };
+  const { nomeExibicao, configuracao, publica } = useIgrejaConfiguracao();
+  const descricaoIgreja =
+    configuracao?.descricaoIgreja?.trim() || publica.descricaoIgreja?.trim() || "";
 
   const canShow = (path?: string) => {
     if (!path) {
@@ -158,18 +150,6 @@ export default function Mais() {
           </h2>
           <Card>
             <CardContent className="p-0">
-              <MenuItem
-                icon={isDarkMode ? Moon : Sun}
-                label="Modo escuro"
-                description={isDarkMode ? "Ativado" : "Desativado"}
-                onClick={handleDarkModeToggle}
-                rightElement={
-                  <Switch
-                    checked={isDarkMode}
-                    onCheckedChange={handleDarkModeToggle}
-                  />
-                }
-              />
               {canShow("/configuracoes") && (
                 <MenuItem
                   icon={Settings}
@@ -178,7 +158,7 @@ export default function Mais() {
                   path="/configuracoes"
                 />
               )}
-              {user?.role === "admin" && (
+              {canWrite(user, "/configuracoes-igreja") && (
                 <MenuItem
                   icon={Church}
                   label="Configurações da Igreja"
@@ -197,6 +177,21 @@ export default function Mais() {
             </CardContent>
           </Card>
         </section>
+
+        {descricaoIgreja && (
+          <section>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+              Nossa igreja
+            </h2>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {descricaoIgreja}
+                </p>
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* Sobre */}
         <section>
@@ -225,12 +220,14 @@ export default function Mais() {
                   }
                 }}
               />
-              <MenuItem
-                icon={HelpCircle}
-                label="Ajuda"
-                description="Perguntas frequentes"
-                path="/ajuda"
-              />
+              {podeAcessarSuporte(user) && (
+                <MenuItem
+                  icon={HelpCircle}
+                  label="Central de Suporte"
+                  description="Dúvidas e solicitações à plataforma"
+                  path="/suporte"
+                />
+              )}
               <MenuItem
                 icon={Info}
                 label={`Sobre ${nomeExibicao}`}

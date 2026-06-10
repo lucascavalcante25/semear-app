@@ -27,6 +27,7 @@ export type PreCadastroPayload = {
   dataNascimento: string;
   senha: string;
   perfilSolicitado: Role; // admin, pastor, copastor, secretaria, tesouraria, lider, membro, visitante
+  igrejaId?: number;
   observacoes?: string;
   endereco: EnderecoPayload;
 };
@@ -278,6 +279,7 @@ export const enviarPreCadastro = async (payload: PreCadastroPayload) => {
         telefoneSecundario: payload.telefoneSecundario,
         telefoneEmergencia: payload.telefoneEmergencia,
         nomeContatoEmergencia: payload.nomeContatoEmergencia,
+        igreja: payload.igrejaId ? { id: payload.igrejaId } : undefined,
       }),
     });
     return;

@@ -40,8 +40,42 @@ const CHAVE_PROGRESSO_COMUNITARIO = "progressoComunitario";
 const CHAVE_LEITURA_CAPITULOS = "leituraCapitulos";
 
 const PLANO_ANUAL_ID = "plan-anual-igreja";
-const PLANO_INICIO = new Date(2026, 4, 1);
 const TOTAL_DIAS_PLANO = 365;
+
+let planoInicioIgreja: Date | null = null;
+
+const normalizarDataLocal = (value: string | Date) => {
+  const d = typeof value === "string" ? new Date(`${value.split("T")[0]}T00:00:00`) : new Date(value);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+/** Define a data de início do plano anual da igreja (null = plano ainda não iniciado). */
+export const definirInicioPlanoIgreja = (dataIso?: string | null) => {
+  if (!dataIso) {
+    planoInicioIgreja = null;
+    return;
+  }
+  planoInicioIgreja = normalizarDataLocal(dataIso);
+};
+
+export const planoLeituraConfigurado = () => planoInicioIgreja !== null;
+
+export const planoLeituraJaIniciou = () => {
+  if (!planoInicioIgreja) return false;
+  const hoje = normalizarDataLocal(new Date());
+  return hoje.getTime() >= planoInicioIgreja.getTime();
+};
+
+const obterPlanoInicioEfetivo = (): Date | null => planoInicioIgreja;
+
+const obterDiasDesdeInicio = (): number | null => {
+  const inicio = obterPlanoInicioEfetivo();
+  if (!inicio) return null;
+  const hoje = normalizarDataLocal(new Date());
+  if (hoje.getTime() < inicio.getTime()) return -1;
+  return Math.floor((hoje.getTime() - inicio.getTime()) / 86400000);
+};
 
 const preferenciasPadrao = (userId: string): PreferenciaBibliaUsuario => ({
   id: `pref_${userId}`,
@@ -497,8 +531,10 @@ export const getLeituraDoDia = (userId: string) => {
   if (dias.length === 0) {
     return null;
   }
-  const hoje = new Date();
-  const diff = Math.floor((hoje.getTime() - PLANO_INICIO.getTime()) / 86400000);
+  const diff = obterDiasDesdeInicio();
+  if (diff === null || diff < 0) {
+    return null;
+  }
   const index = Math.min(Math.max(diff, 0), dias.length - 1);
   return { plano, dia: dias[index] };
 };
@@ -668,24 +704,43 @@ export const obterEstatisticasComunitarias = () => {
   };
 };
 
-export const obterPercentualPlano = (totalDias: number) => {
+const calcularPercentualPlano = (totalDias: number): number => {
   if (totalDias <= 0) {
     return 0;
   }
-  const hoje = new Date();
-  const diff = Math.floor((hoje.getTime() - PLANO_INICIO.getTime()) / 86400000);
+  const diff = obterDiasDesdeInicio();
+  if (diff === null || diff < 0) return 0;
   const diasPassados = Math.min(Math.max(diff + 1, 0), totalDias);
-  return Math.round((diasPassados / totalDias) * 100);
+  return (diasPassados / totalDias) * 100;
 };
 
-export const obterPlanoInicio = () => PLANO_INICIO;
+/** Percentual inteiro (útil para barras que esperam 0–100 arredondado). */
+export const obterPercentualPlano = (totalDias: number) => Math.round(calcularPercentualPlano(totalDias));
+
+/** Percentual exato com casas decimais — baseado em dias corridos do plano, não em leituras concluídas. */
+export const obterPercentualPlanoPreciso = (totalDias: number) => calcularPercentualPlano(totalDias);
+
+/** Exibe 0,3% nos primeiros dias; a partir de 10% usa número inteiro. */
+export const formatarPercentualPlano = (totalDias: number): string => {
+  const pct = calcularPercentualPlano(totalDias);
+  if (pct <= 0) return "0";
+  if (pct < 10) {
+    return pct.toLocaleString("pt-BR", {
+      minimumFractionDigits: pct < 1 ? 1 : 0,
+      maximumFractionDigits: 1,
+    });
+  }
+  return String(Math.round(pct));
+};
+
+export const obterPlanoInicio = () => obterPlanoInicioEfetivo();
 
 export const obterDiasPassadosPlano = (totalDias: number) => {
   if (totalDias <= 0) {
     return 0;
   }
-  const hoje = new Date();
-  const diff = Math.floor((hoje.getTime() - PLANO_INICIO.getTime()) / 86400000);
+  const diff = obterDiasDesdeInicio();
+  if (diff === null || diff < 0) return 0;
   return Math.min(Math.max(diff + 1, 0), totalDias);
 };
 

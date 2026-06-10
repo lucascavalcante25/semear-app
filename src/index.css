@@ -86,61 +86,61 @@
   }
 
   .dark {
-    --background: 80 20% 8%;
-    --foreground: 45 25% 95%;
+    --background: 220 16% 9%;
+    --foreground: 210 20% 96%;
 
-    --card: 80 18% 12%;
-    --card-foreground: 45 25% 95%;
+    --card: 220 14% 12%;
+    --card-foreground: 210 20% 96%;
 
-    --popover: 80 18% 12%;
-    --popover-foreground: 45 25% 95%;
+    --popover: 220 14% 12%;
+    --popover-foreground: 210 20% 96%;
 
-    --primary: 80 40% 50%;
-    --primary-foreground: 80 20% 8%;
+    --primary: 80 38% 52%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 210 50% 45%;
-    --secondary-foreground: 45 25% 95%;
+    --secondary: 210 45% 48%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 80 15% 20%;
-    --muted-foreground: 45 15% 65%;
+    --muted: 220 12% 18%;
+    --muted-foreground: 215 12% 68%;
 
-    --accent: 42 65% 50%;
-    --accent-foreground: 80 20% 8%;
+    --accent: 42 55% 52%;
+    --accent-foreground: 220 25% 10%;
 
-    --olive: 80 40% 50%;
-    --olive-foreground: 80 20% 8%;
-    --olive-light: 80 25% 25%;
-    --olive-dark: 80 45% 35%;
+    --olive: 80 38% 52%;
+    --olive-foreground: 0 0% 98%;
+    --olive-light: 220 12% 18%;
+    --olive-dark: 80 40% 38%;
 
-    --gold: 42 65% 50%;
-    --gold-foreground: 80 20% 8%;
-    --gold-light: 42 40% 25%;
-    --gold-dark: 42 70% 45%;
+    --gold: 42 55% 52%;
+    --gold-foreground: 220 25% 10%;
+    --gold-light: 220 12% 18%;
+    --gold-dark: 42 60% 45%;
 
-    --deep-blue: 210 50% 45%;
-    --deep-blue-foreground: 45 25% 95%;
-    --deep-blue-light: 210 35% 25%;
+    --deep-blue: 210 45% 48%;
+    --deep-blue-foreground: 210 20% 96%;
+    --deep-blue-light: 220 12% 18%;
 
-    --spiritual-glow: 42 50% 35%;
-    --verse-highlight: 42 30% 20%;
-    --reading-complete: 120 35% 40%;
-    --reading-pending: 45 50% 45%;
+    --spiritual-glow: 220 20% 22%;
+    --verse-highlight: 220 12% 16%;
+    --reading-complete: 120 35% 42%;
+    --reading-pending: 42 45% 48%;
 
-    --destructive: 0 65% 45%;
-    --destructive-foreground: 45 25% 95%;
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 210 20% 96%;
 
-    --border: 80 15% 20%;
-    --input: 80 15% 22%;
-    --ring: 80 40% 50%;
+    --border: 220 12% 20%;
+    --input: 220 12% 22%;
+    --ring: 80 38% 52%;
 
-    --sidebar-background: 80 18% 10%;
-    --sidebar-foreground: 45 25% 90%;
-    --sidebar-primary: 80 40% 50%;
-    --sidebar-primary-foreground: 80 20% 8%;
-    --sidebar-accent: 80 20% 18%;
-    --sidebar-accent-foreground: 45 25% 90%;
-    --sidebar-border: 80 15% 18%;
-    --sidebar-ring: 80 40% 50%;
+    --sidebar-background: 220 15% 10%;
+    --sidebar-foreground: 210 18% 92%;
+    --sidebar-primary: 80 38% 52%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 220 12% 17%;
+    --sidebar-accent-foreground: 210 18% 92%;
+    --sidebar-border: 220 12% 18%;
+    --sidebar-ring: 80 38% 52%;
   }
 }
 
@@ -168,6 +168,25 @@
 }
 
 @layer utilities {
+  /* Gradiente do versículo — paleta da igreja, sempre dentro do tom do card */
+  .verse-card-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.16) 0%,
+      hsl(var(--card)) 44%,
+      hsl(var(--secondary) / 0.14) 100%
+    );
+  }
+
+  .dark .verse-card-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.3) 0%,
+      hsl(var(--card)) 44%,
+      hsl(var(--secondary) / 0.24) 100%
+    );
+  }
+
   /* Spiritual gradients */
   .gradient-spiritual {
     background: linear-gradient(
@@ -231,8 +250,8 @@
   /* Card shadows */
   .shadow-spiritual {
     box-shadow: 
-      0 4px 6px -1px hsl(var(--olive) / 0.1),
-      0 2px 4px -1px hsl(var(--olive) / 0.06);
+      0 4px 6px -1px hsl(var(--primary) / 0.1),
+      0 2px 4px -1px hsl(var(--primary) / 0.06);
   }
 
   .shadow-gold {

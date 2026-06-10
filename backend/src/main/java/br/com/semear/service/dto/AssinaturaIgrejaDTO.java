@@ -1,5 +1,7 @@
 package br.com.semear.service.dto;
 
+import br.com.semear.domain.enumeration.FormaPagamentoPlataforma;
+import br.com.semear.domain.enumeration.StatusAssinatura;
 import br.com.semear.domain.enumeration.StatusPagamentoPlataforma;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -19,6 +21,22 @@ public class AssinaturaIgrejaDTO implements Serializable {
     private LocalDate dataPagamento;
     private String observacao;
     private Instant dataCadastro;
+    private StatusAssinatura statusAssinatura;
+    private LocalDate dataInicioTeste;
+    private LocalDate dataFimTeste;
+    private LocalDate dataAtivacao;
+    private LocalDate dataSuspensao;
+    private String motivoSuspensao;
+    private BigDecimal valorImplantacaoContratado;
+    private BigDecimal valorMensalContratado;
+    private BigDecimal valorAnualContratado;
+    private StatusPagamentoPlataforma statusImplantacao;
+    private StatusPagamentoPlataforma statusMensalidade;
+    private FormaPagamentoPlataforma formaPagamento;
+    private LocalDate proximoVencimento;
+    private String responsavelNome;
+    private Integer diasRestantesTeste;
+    private Boolean acessoPermitido;
 
     public Long getId() {
         return id;
@@ -106,5 +124,133 @@ public class AssinaturaIgrejaDTO implements Serializable {
 
     public void setDataCadastro(Instant dataCadastro) {
         this.dataCadastro = dataCadastro;
+    }
+
+    public StatusAssinatura getStatusAssinatura() {
+        return statusAssinatura;
+    }
+
+    public void setStatusAssinatura(StatusAssinatura statusAssinatura) {
+        this.statusAssinatura = statusAssinatura;
+    }
+
+    public LocalDate getDataInicioTeste() {
+        return dataInicioTeste;
+    }
+
+    public void setDataInicioTeste(LocalDate dataInicioTeste) {
+        this.dataInicioTeste = dataInicioTeste;
+    }
+
+    public LocalDate getDataFimTeste() {
+        return dataFimTeste;
+    }
+
+    public void setDataFimTeste(LocalDate dataFimTeste) {
+        this.dataFimTeste = dataFimTeste;
+    }
+
+    public LocalDate getDataAtivacao() {
+        return dataAtivacao;
+    }
+
+    public void setDataAtivacao(LocalDate dataAtivacao) {
+        this.dataAtivacao = dataAtivacao;
+    }
+
+    public LocalDate getDataSuspensao() {
+        return dataSuspensao;
+    }
+
+    public void setDataSuspensao(LocalDate dataSuspensao) {
+        this.dataSuspensao = dataSuspensao;
+    }
+
+    public String getMotivoSuspensao() {
+        return motivoSuspensao;
+    }
+
+    public void setMotivoSuspensao(String motivoSuspensao) {
+        this.motivoSuspensao = motivoSuspensao;
+    }
+
+    public BigDecimal getValorImplantacaoContratado() {
+        return valorImplantacaoContratado;
+    }
+
+    public void setValorImplantacaoContratado(BigDecimal valorImplantacaoContratado) {
+        this.valorImplantacaoContratado = valorImplantacaoContratado;
+    }
+
+    public BigDecimal getValorMensalContratado() {
+        return valorMensalContratado;
+    }
+
+    public void setValorMensalContratado(BigDecimal valorMensalContratado) {
+        this.valorMensalContratado = valorMensalContratado;
+    }
+
+    public BigDecimal getValorAnualContratado() {
+        return valorAnualContratado;
+    }
+
+    public void setValorAnualContratado(BigDecimal valorAnualContratado) {
+        this.valorAnualContratado = valorAnualContratado;
+    }
+
+    public StatusPagamentoPlataforma getStatusImplantacao() {
+        return statusImplantacao;
+    }
+
+    public void setStatusImplantacao(StatusPagamentoPlataforma statusImplantacao) {
+        this.statusImplantacao = statusImplantacao;
+    }
+
+    public StatusPagamentoPlataforma getStatusMensalidade() {
+        return statusMensalidade;
+    }
+
+    public void setStatusMensalidade(StatusPagamentoPlataforma statusMensalidade) {
+        this.statusMensalidade = statusMensalidade;
+    }
+
+    public FormaPagamentoPlataforma getFormaPagamento() {
+        return formaPagamento;
+    }
+
+    public void setFormaPagamento(FormaPagamentoPlataforma formaPagamento) {
+        this.formaPagamento = formaPagamento;
+    }
+
+    public LocalDate getProximoVencimento() {
+        return proximoVencimento;
+    }
+
+    public void setProximoVencimento(LocalDate proximoVencimento) {
+        this.proximoVencimento = proximoVencimento;
+    }
+
+    public String getResponsavelNome() {
+        return responsavelNome;
+    }
+
+    public void setResponsavelNome(String responsavelNome) {
+        this.responsavelNome = responsavelNome;
+    }
+
+    public Integer getDiasRestantesTeste() {
+        return diasRestantesTeste;
+    }
+
+    public void setDiasRestantesTeste(Integer diasRestantesTeste) {
+        this.diasRestantesTeste = diasRestantesTeste;
+    }
+
+    public Boolean getAcessoPermitido() {
+        return acessoPermitido;
+    }
+
+    public void setAcessoPermitido(Boolean acessoPermitido) {
+        this.acessoPermitido = acessoPermitido;
     }
 }

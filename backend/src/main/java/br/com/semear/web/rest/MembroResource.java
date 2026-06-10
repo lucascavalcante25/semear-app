@@ -1,11 +1,13 @@
 package br.com.semear.web.rest;
 
+import br.com.semear.config.Constants;
 import br.com.semear.domain.User;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.service.UserService;
 import br.com.semear.service.dto.AdminUserDTO;
 import br.com.semear.service.dto.DependenteCreateDTO;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -18,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.PaginationUtil;
+import tech.jhipster.web.util.ResponseUtil;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -42,6 +45,9 @@ public class MembroResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(MembroResource.class);
 
+    private static final String AUTORIZACAO_GESTAO_MEMBROS =
+        "hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_ADMIN','ROLE_ADMIN_IGREJA','ROLE_PASTOR','ROLE_COPASTOR','ROLE_SECRETARIA','ROLE_LIDER')";
+
     private final UserRepository userRepository;
     private final UserService userService;
 
@@ -61,7 +67,7 @@ public class MembroResource {
      * Acessível por ADMIN, PASTOR, COPASTOR, SECRETARIA e LIDER.
      */
     @GetMapping("")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_ADMIN_IGREJA','ROLE_PASTOR','ROLE_COPASTOR','ROLE_SECRETARIA','ROLE_LIDER')")
+    @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
     public ResponseEntity<List<AdminUserDTO>> listarMembros(
         @org.springdoc.core.annotations.ParameterObject Pageable pageable
     ) {
@@ -123,11 +129,40 @@ public class MembroResource {
     }
 
     /**
-     * {@code POST  /membros/dependentes} : Cria um dependente (criança/jovem sem login).
-     * Apenas ADMIN, PASTOR, COPASTOR ou LIDER podem cadastrar.
+     * {@code GET /membros/:login} : obtém um membro da igreja atual.
      */
+    @GetMapping("/{login}")
+    @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
+    public ResponseEntity<AdminUserDTO> obterMembro(
+        @PathVariable("login") @Pattern(regexp = Constants.LOGIN_REGEX) String login
+    ) {
+        LOG.debug("REST request to get member : {}", login);
+        return ResponseUtil.wrapOrNotFound(userService.getManagedUser(login));
+    }
+
+    /**
+     * {@code PUT /membros} : atualiza um membro da igreja atual.
+     */
+    @PutMapping("")
+    @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
+    public ResponseEntity<AdminUserDTO> atualizarMembro(@Valid @RequestBody AdminUserDTO userDTO) {
+        LOG.debug("REST request to update member : {}", userDTO);
+        return ResponseUtil.wrapOrNotFound(userService.updateManagedUser(userDTO));
+    }
+
+    /**
+     * {@code DELETE /membros/:login} : remove um membro da igreja atual.
+     */
+    @DeleteMapping("/{login}")
+    @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
+    public ResponseEntity<Void> excluirMembro(@PathVariable("login") @Pattern(regexp = Constants.LOGIN_REGEX) String login) {
+        LOG.debug("REST request to delete member : {}", login);
+        userService.deleteManagedUser(login);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/dependentes")
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_ADMIN_IGREJA','ROLE_PASTOR','ROLE_COPASTOR','ROLE_LIDER')")
+    @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
     public ResponseEntity<AdminUserDTO> criarDependente(@Valid @RequestBody DependenteCreateDTO dto) throws URISyntaxException {
         LOG.debug("REST request to create dependente: {}", dto.getNome());
         User created = userService.createDependente(dto);
