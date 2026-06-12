@@ -78,7 +78,7 @@ function ScreenshotCard({ src, alt, legenda }: { src: string; alt: string; legen
     <img
       src={src}
       alt={alt}
-      className="aspect-video w-full rounded-xl border object-cover shadow-sm"
+      className="aspect-[4/3] w-full rounded-xl border bg-muted/20 object-contain object-top shadow-sm"
       onError={() => setErro(true)}
     />
   );
