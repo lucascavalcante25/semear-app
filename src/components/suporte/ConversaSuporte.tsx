@@ -40,6 +40,7 @@ type Props = {
   onEnviar: (texto: string) => Promise<SolicitacaoSuporte>;
   buscarAtualizacao?: () => Promise<SolicitacaoSuporte>;
   onSincronizar?: (s: SolicitacaoSuporte) => void;
+  onAtualizacaoRemota?: () => void;
 };
 
 export function ConversaSuporte({
@@ -50,6 +51,7 @@ export function ConversaSuporte({
   onEnviar,
   buscarAtualizacao,
   onSincronizar,
+  onAtualizacaoRemota,
 }: Props) {
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -113,6 +115,9 @@ export function ConversaSuporte({
         if (mensagensMudaram) {
           assinaturaRef.current = novaAssinatura;
           setMensagens(novas);
+          if (visao === "cliente" && novas.some((m) => m.tipo === "MENSAGEM_SUPORTE")) {
+            onAtualizacaoRemota?.();
+          }
         }
         if (statusMudou) {
           setStatus(s.status);
@@ -134,7 +139,7 @@ export function ConversaSuporte({
       clearInterval(intervalo);
       window.removeEventListener("focus", onFocus);
     };
-  }, [buscarAtualizacao, onSincronizar]);
+  }, [buscarAtualizacao, onSincronizar, onAtualizacaoRemota, visao]);
 
   const enviar = async () => {
     const t = texto.trim();

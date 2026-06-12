@@ -1,14 +1,17 @@
 import type { Plano } from "@/modules/admin/api";
 
+/** Meses pagos no plano anual à vista (2 meses grátis em relação a 12× mensal). */
+export const MESES_PAGOS_ANUAL_AVISTA = 10;
+
 /** Valores do plano único de lançamento (fallback se API indisponível). */
 export const PLANO_LANCAMENTO_PADRAO: Plano = {
   id: 1,
   nome: "Plano Completo",
   descricao:
     "Plano único de lançamento do Minha Igreja Digital com todos os recursos. Ideal para igrejas que querem organizar membros, comunicação e gestão em um só lugar — no computador ou no celular.",
-  valorMensal: 139.9,
-  valorAnual: 1510.92,
-  valorImplantacao: 700,
+  valorMensal: 57,
+  valorAnual: 570,
+  valorImplantacao: 0,
   diasTrial: 7,
   limiteMembros: null,
   destaque: true,
@@ -47,9 +50,18 @@ export function parcela(valor: number, vezes: number) {
   return valor / vezes;
 }
 
-/** 12 × mensal (cartão) vs anual PIX com 10% off. */
+export function calcularValorAnualAvista(valorMensal: number) {
+  return valorMensal * MESES_PAGOS_ANUAL_AVISTA;
+}
+
+/** Economia do anual à vista vs 12 parcelas mensais (2 meses grátis). */
+export function economiaAnualAvista(valorMensal: number, valorAnualAvista: number) {
+  return valorMensal * 12 - valorAnualAvista;
+}
+
+/** @deprecated Use economiaAnualAvista */
 export function economiaAnualPix(valorMensal: number, valorAnualPix: number) {
-  return valorMensal * 12 - valorAnualPix;
+  return economiaAnualAvista(valorMensal, valorAnualPix);
 }
 
 export function normalizarPlano(planos: Plano[]): Plano {

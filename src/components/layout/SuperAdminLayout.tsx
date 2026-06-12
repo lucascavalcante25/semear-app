@@ -24,6 +24,7 @@ import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { usarNotificacoesSuperAdmin } from "@/hooks/use-notificacoes-super-admin";
+import { BadgeNotificacaoMenu } from "@/components/layout/BadgeNotificacaoMenu";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/super-admin/dashboard" },
@@ -35,19 +36,6 @@ const menuItems = [
   { icon: Wallet, label: "Meu Financeiro", path: "/super-admin/financeiro" },
   { icon: Settings, label: "Configurações", path: "/super-admin/configuracoes" },
 ];
-
-function BadgeNotificacaoMenu({ quantidade }: { quantidade: number }) {
-  if (quantidade <= 0) return null;
-
-  return (
-    <span
-      className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground"
-      aria-label={`${quantidade} não ${quantidade === 1 ? "vista" : "vistas"}`}
-    >
-      {quantidade > 9 ? "9+" : quantidade}
-    </span>
-  );
-}
 
 function MenuLateral({
   onNavigate,

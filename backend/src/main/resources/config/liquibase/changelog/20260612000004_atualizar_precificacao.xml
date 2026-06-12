@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260612000004-1" author="semear">
+        <update tableName="plano">
+            <column name="valor_mensal" valueNumeric="57.00"/>
+            <column name="valor_anual" valueNumeric="570.00"/>
+            <column name="valor_implantacao" valueNumeric="0.00"/>
+            <column name="promocao_implantacao_anual" valueNumeric="0.00"/>
+            <column name="desconto_anual_percentual" valueNumeric="17"/>
+            <where>id = 1</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="20260612000004-2" author="semear">
+        <update tableName="plano">
+            <column name="mensagem_preco" value="Pastor, o plano de lançamento do Minha Igreja Digital ficou assim:&#10;&#10;✅ Teste grátis por 7 dias&#10;✅ Plano mensal: R$ 57,00/mês&#10;✅ Plano anual à vista no PIX: R$ 570,00/ano (10 meses — 2 meses grátis)&#10;&#10;No cartão, o anual pode ser parcelado em 12× de R$ 57,00.&#10;&#10;Sem taxa de implantação.&#10;&#10;A plataforma funciona pelo navegador no computador e no celular, sem precisar instalar aplicativo."/>
+            <where>id = 1</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

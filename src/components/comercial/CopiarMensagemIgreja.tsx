@@ -41,7 +41,6 @@ export function CopiarMensagemIgreja({ assinatura }: Props) {
         igrejaNome: assinatura.igrejaNome,
         diasRestantesTeste: assinatura.diasRestantesTeste,
         valorMensalContratado: assinatura.valorMensalContratado ?? assinatura.valorMensal,
-        valorImplantacaoContratado: assinatura.valorImplantacaoContratado,
         valorAnualContratado: assinatura.valorAnualContratado,
       });
       await copiarTexto(texto);

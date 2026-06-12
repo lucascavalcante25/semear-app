@@ -88,4 +88,5 @@
     <include file="config/liquibase/changelog/20260612000001_rebrand_minha_igreja_digital.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260612000002_visitante_forma_chegada.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260612000003_documento_igreja.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260612000004_atualizar_precificacao.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

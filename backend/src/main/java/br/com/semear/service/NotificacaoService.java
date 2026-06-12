@@ -72,7 +72,6 @@ public class NotificacaoService {
 
         Set<Long> avisosVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_AVISO);
         Set<Long> aniversariantesVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_ANIVERSARIANTE);
-        Set<Long> suporteVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_SUPORTE);
 
         List<NotificacaoItem> itens = new ArrayList<>();
         LocalDate hoje = LocalDate.now();
@@ -123,9 +122,9 @@ public class NotificacaoService {
             }
         }
 
-        List<SolicitacaoSuporte> suportePendentes = solicitacaoSuporteRepository.findByUsuarioSolicitanteAndLidaPeloClienteFalse(user);
-        for (SolicitacaoSuporte s : suportePendentes) {
-            if (!suporteVistos.contains(s.getId())) {
+        if (usuarioPodeAcessarSuporte(user)) {
+            List<SolicitacaoSuporte> suportePendentes = solicitacaoSuporteRepository.findNaoLidasPeloClienteDaIgreja(igrejaId);
+            for (SolicitacaoSuporte s : suportePendentes) {
                 itens.add(new NotificacaoItem(
                     TIPO_SUPORTE,
                     s.getId(),
@@ -236,12 +235,17 @@ public class NotificacaoService {
 
     @Transactional
     public void resetarNotificacaoSuporte(User usuario, Long solicitacaoId) {
-        if (usuario == null || solicitacaoId == null) {
+        if (solicitacaoId == null) {
             return;
         }
-        vistaRepository
-            .findByUserAndTipoAndReferenciaId(usuario, TIPO_SUPORTE, solicitacaoId)
-            .ifPresent(vistaRepository::delete);
+        vistaRepository.deleteAllByTipoAndReferenciaId(TIPO_SUPORTE, solicitacaoId);
+    }
+
+    private boolean usuarioPodeAcessarSuporte(User user) {
+        return user
+            .getAuthorities()
+            .stream()
+            .anyMatch(a -> AuthoritiesConstants.ADMIN_IGREJA.equals(a.getName()));
     }
 
     @Transactional

@@ -10,7 +10,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { obterPlanoPublico, type PlanoPublico } from "@/modules/admin/api";
-import { PLANO_LANCAMENTO_PADRAO, RECURSOS_PLANO_LANCAMENTO, formatarMoeda } from "@/lib/plano-comercial";
+import {
+  PLANO_LANCAMENTO_PADRAO,
+  RECURSOS_PLANO_LANCAMENTO,
+  calcularValorAnualAvista,
+  economiaAnualAvista,
+  formatarMoeda,
+} from "@/lib/plano-comercial";
 import { CreditoEmpresa } from "@/components/brand/CreditoEmpresa";
 import { MARCA, PLATAFORMA, PRODUTO } from "@/lib/plataforma";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
@@ -174,7 +180,7 @@ const FAQ = [
   {
     pergunta: "Minha equipe não sabe mexer em computador. Vai conseguir?",
     resposta:
-      "O sistema foi pensado para ser simples. Oferecemos orientação na implantação e suporte pela plataforma para tirar dúvidas.",
+      "O sistema foi pensado para ser simples. Oferecemos orientação inicial e suporte pela plataforma para tirar dúvidas.",
   },
   {
     pergunta: "Como funciona o teste grátis?",
@@ -184,16 +190,16 @@ const FAQ = [
   {
     pergunta: "Como é feito o pagamento?",
     resposta:
-      "No lançamento, o pagamento é feito por PIX ou link enviado pelo suporte. Há opções mensal e anual com desconto.",
+      "Plano mensal recorrente ou anual. No PIX à vista, o anual equivale a 10 meses (2 meses grátis). No cartão, o anual pode ser parcelado em 12× com o valor mensal. Sem taxa de implantação.",
   },
   {
     pergunta: "Existe limite de membros?",
     resposta: "Neste lançamento, o plano único não possui limite de membros cadastrados.",
   },
   {
-    pergunta: "O que está incluso na implantação?",
+    pergunta: "Existe taxa de implantação?",
     resposta:
-      "Liberação da igreja, configuração inicial, orientação de uso e suporte para começar com o pé direito.",
+      "Não. Cobramos apenas a assinatura mensal ou anual. Ao liberar o acesso, ajudamos com a configuração inicial e orientação de uso.",
   },
   {
     pergunta: "E se eu não gostar?",
@@ -304,9 +310,9 @@ export default function Landing() {
   }, []);
 
   const valorMensal = plano?.valorMensal ?? PLANO_LANCAMENTO_PADRAO.valorMensal;
-  const valorAnual = plano?.valorAnual ?? PLANO_LANCAMENTO_PADRAO.valorAnual ?? 1510.92;
-  const valorImplantacao = plano?.valorImplantacao ?? PLANO_LANCAMENTO_PADRAO.valorImplantacao ?? 700;
-  const promocaoImplantacao = plano?.promocaoImplantacaoAnual ?? 500;
+  const valorAnualAvista =
+    plano?.valorAnual ?? PLANO_LANCAMENTO_PADRAO.valorAnual ?? calcularValorAnualAvista(valorMensal);
+  const economiaAnual = economiaAnualAvista(valorMensal, valorAnualAvista);
   const diasTrial = plano?.diasTrial ?? 7;
   const nomePlano = plano?.nome ?? PLANO_LANCAMENTO_PADRAO.nome;
   const slide = HERO_SLIDES[slideAtivo];
@@ -517,22 +523,37 @@ export default function Landing() {
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="text-center">
+                  <p className="text-sm font-medium text-muted-foreground">A partir de</p>
                   <p className="text-4xl font-bold">
                     {formatarMoeda(valorMensal)}
                     <span className="text-base font-normal text-muted-foreground">/mês</span>
                   </p>
                 </div>
-                <div className="space-y-2 rounded-xl border bg-muted/30 p-4 text-sm">
-                  <p>
-                    <strong>Implantação:</strong> {formatarMoeda(valorImplantacao)}
-                  </p>
-                  <p>
-                    <strong>Anual no PIX:</strong> {formatarMoeda(valorAnual)} (10% de desconto)
-                  </p>
-                  <p className="text-green-700 dark:text-green-400">
-                    <strong>Promoção anual:</strong> implantação por {formatarMoeda(promocaoImplantacao)} no PIX anual
-                  </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border bg-muted/30 p-4 text-sm">
+                    <p className="font-semibold">Plano mensal</p>
+                    <p className="mt-1 text-lg font-bold">{formatarMoeda(valorMensal)}/mês</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Renovação mensal, sem fidelidade longa.</p>
+                  </div>
+                  <div className="rounded-xl border border-green-200 bg-green-50/60 p-4 text-sm dark:border-green-900 dark:bg-green-950/30">
+                    <p className="font-semibold text-green-800 dark:text-green-300">Anual à vista (PIX)</p>
+                    <p className="mt-1 text-lg font-bold text-green-700 dark:text-green-400">
+                      {formatarMoeda(valorAnualAvista)}/ano
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      10 meses pelo preço de 12 —{" "}
+                      {economiaAnual > 0 && (
+                        <strong className="text-green-700 dark:text-green-400">
+                          economia de {formatarMoeda(economiaAnual)}
+                        </strong>
+                      )}
+                    </p>
+                  </div>
                 </div>
+                <p className="rounded-lg border bg-muted/20 px-3 py-2 text-center text-xs text-muted-foreground">
+                  Anual no cartão: 12× de {formatarMoeda(valorMensal)} (mesmo valor do mensal).{" "}
+                  <strong>Sem taxa de implantação.</strong>
+                </p>
                 <Button asChild className="w-full" size="lg">
                   <Link to="/solicitar-acesso">Começar teste grátis</Link>
                 </Button>

@@ -6,7 +6,7 @@ import {
   Smartphone,
   Sparkles,
   Users,
-  Wallet,
+  CalendarDays,
 } from "lucide-react";
 import { LayoutSuperAdmin } from "@/components/layout/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,10 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { listarPlanosAdmin, type Plano } from "@/modules/admin/api";
 import { PLATAFORMA } from "@/lib/plataforma";
 import {
-  economiaAnualPix,
+  calcularValorAnualAvista,
+  economiaAnualAvista,
   formatarMoeda,
   normalizarPlano,
-  parcela,
   PLANO_LANCAMENTO_PADRAO,
   RECURSOS_PLANO_LANCAMENTO,
   TEXTO_RENOVACAO_CARTAO_12X,
@@ -47,12 +47,10 @@ export default function PlanosSuperAdmin() {
   const usandoFallback = planos.length === 0 && !carregando;
 
   const valorMensal = plano.valorMensal ?? PLANO_LANCAMENTO_PADRAO.valorMensal;
-  const valorAnualPix =
-    plano.valorAnual ?? PLANO_LANCAMENTO_PADRAO.valorAnual ?? valorMensal * 12 * 0.9;
-  const valorImplantacao =
-    plano.valorImplantacao ?? PLANO_LANCAMENTO_PADRAO.valorImplantacao ?? 700;
+  const valorAnualAvista =
+    plano.valorAnual ?? PLANO_LANCAMENTO_PADRAO.valorAnual ?? calcularValorAnualAvista(valorMensal);
   const diasTrial = plano.diasTrial ?? PLANO_LANCAMENTO_PADRAO.diasTrial ?? 7;
-  const economiaPix = economiaAnualPix(valorMensal, valorAnualPix);
+  const economiaAnual = economiaAnualAvista(valorMensal, valorAnualAvista);
 
   return (
     <LayoutSuperAdmin>
@@ -84,7 +82,7 @@ export default function PlanosSuperAdmin() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Parcela (12×)</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Mensal</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{formatarMoeda(valorMensal)}</p>
@@ -92,10 +90,12 @@ export default function PlanosSuperAdmin() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Implantação</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Anual à vista</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{formatarMoeda(valorImplantacao)}</p>
+              <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                {formatarMoeda(valorAnualAvista)}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -145,34 +145,32 @@ export default function PlanosSuperAdmin() {
                     {diasTrial} dias grátis para testar
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    A igreja explora todos os recursos sem compromisso. Após o período de teste, escolhe
-                    como contratar: anual em 12× no cartão (com renovação após contato) ou anual à vista no PIX com
-                    desconto.
+                    A igreja explora todos os recursos sem compromisso. Após o teste, escolhe plano mensal
+                    ou anual. <strong>Sem taxa de implantação.</strong>
                   </p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="rounded-xl border p-4 space-y-2">
                     <div className="flex items-center gap-2 text-sm font-medium">
-                      <Wallet className="h-4 w-4 text-primary" />
-                      Implantação
+                      <CalendarDays className="h-4 w-4 text-primary" />
+                      Plano mensal
                     </div>
-                    <p className="text-2xl font-bold">{formatarMoeda(valorImplantacao)}</p>
+                    <p className="text-2xl font-bold">{formatarMoeda(valorMensal)}</p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Configuração inicial e orientação de uso do app web (responsivo no celular).
-                      <br />
-                      <strong>Cartão:</strong> até 3× de {formatarMoeda(parcela(valorImplantacao, 3))}
+                      Cobrança mensal recorrente. Valor de referência a partir de{" "}
+                      {formatarMoeda(valorMensal)}/mês.
                     </p>
                   </div>
 
                   <div className="rounded-xl border p-4 space-y-2 ring-2 ring-primary/20">
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <CreditCard className="h-4 w-4 text-primary" />
-                      Plano anual no cartão
+                      Anual no cartão
                     </div>
                     <p className="text-2xl font-bold">12× {formatarMoeda(valorMensal)}</p>
                     <p className="text-xs text-muted-foreground">
-                      Total: {formatarMoeda(valorMensal * 12)} em 12 parcelas no cartão
+                      Total: {formatarMoeda(valorMensal * 12)} em 12 parcelas — mesmo valor do mensal.
                     </p>
                     <p className="text-xs text-muted-foreground leading-relaxed border-t pt-2 mt-2">
                       {TEXTO_RENOVACAO_CARTAO_12X}
@@ -182,17 +180,17 @@ export default function PlanosSuperAdmin() {
                   <div className="rounded-xl border p-4 space-y-2 bg-green-50/50 dark:bg-green-950/20">
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <Smartphone className="h-4 w-4 text-green-700 dark:text-green-400" />
-                      Anual no PIX
+                      Anual à vista (PIX)
                     </div>
                     <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                      {formatarMoeda(valorAnualPix)}
+                      {formatarMoeda(valorAnualAvista)}
                     </p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      10% de desconto sobre 12 meses
-                      {economiaPix > 0 && (
+                      Equivalente a 10 meses — <strong>2 meses grátis</strong>
+                      {economiaAnual > 0 && (
                         <>
                           {" "}
-                          — economia de <strong>{formatarMoeda(economiaPix)}</strong>
+                          (economia de {formatarMoeda(economiaAnual)})
                         </>
                       )}
                     </p>
@@ -224,8 +222,8 @@ export default function PlanosSuperAdmin() {
                     <span className="font-medium">{diasTrial} dias</span>
                   </div>
                   <div className="flex justify-between gap-2 border-b pb-2">
-                    <span className="text-muted-foreground">Implantação</span>
-                    <span className="font-medium text-right">{formatarMoeda(valorImplantacao)}</span>
+                    <span className="text-muted-foreground">Mensal</span>
+                    <span className="font-medium text-right">{formatarMoeda(valorMensal)}/mês</span>
                   </div>
                   <div className="flex justify-between gap-2 border-b pb-2">
                     <span className="text-muted-foreground">Anual cartão (12×)</span>
@@ -235,11 +233,12 @@ export default function PlanosSuperAdmin() {
                     {TEXTO_RENOVACAO_CARTAO_12X}
                   </p>
                   <div className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">Anual PIX (−10%)</span>
+                    <span className="text-muted-foreground">Anual PIX (2 meses grátis)</span>
                     <span className="font-medium text-right text-green-700 dark:text-green-400">
-                      {formatarMoeda(valorAnualPix)}
+                      {formatarMoeda(valorAnualAvista)}
                     </span>
                   </div>
+                  <p className="text-xs text-muted-foreground pt-1">Sem taxa de implantação.</p>
                 </CardContent>
               </Card>
 
@@ -264,31 +263,19 @@ export default function PlanosSuperAdmin() {
             <CardTitle className="text-base">Opções comerciais</CardTitle>
             <CardDescription>Modelos de venda para apresentar às igrejas</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3 text-sm">
+          <CardContent className="grid gap-3 sm:grid-cols-2 text-sm">
             <div className="rounded-lg border p-4 space-y-1">
               <p className="font-semibold">Opção 1 — Mensal</p>
-              <p>{formatarMoeda(valorImplantacao)} de implantação</p>
-              <p>+ {formatarMoeda(valorMensal)}/mês</p>
-            </div>
-            <div className="rounded-lg border p-4 space-y-1">
-              <p className="font-semibold">Opção 2 — Anual no PIX</p>
-              <p>{formatarMoeda(valorImplantacao)} de implantação (valor padrão)</p>
-              <p>+ {formatarMoeda(valorAnualPix)}/ano no PIX</p>
-              <p className="text-xs text-muted-foreground pt-1">
-                Plano anual com implantação de tabela.
-              </p>
+              <p>{formatarMoeda(valorMensal)}/mês</p>
+              <p className="text-xs text-muted-foreground pt-1">Sem taxa de implantação.</p>
             </div>
             <div className="rounded-lg border p-4 space-y-1 bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
-              <p className="font-semibold text-green-800 dark:text-green-300">Opção 3 — Promoção no anual</p>
+              <p className="font-semibold text-green-800 dark:text-green-300">Opção 2 — Anual</p>
               <p>
-                <strong>Pagamento anual no PIX:</strong> implantação por{" "}
-                {formatarMoeda(plano.promocaoImplantacaoAnual ?? 500)}
+                <strong>PIX à vista:</strong> {formatarMoeda(valorAnualAvista)}/ano (2 meses grátis)
               </p>
-              <p>+ {formatarMoeda(valorAnualPix)}/ano no PIX</p>
-              <p className="text-xs text-green-700 dark:text-green-400 pt-1">
-                Ao fechar o plano anual no PIX, a implantação sai de {formatarMoeda(valorImplantacao)} por{" "}
-                {formatarMoeda(plano.promocaoImplantacaoAnual ?? 500)} — economia de{" "}
-                {formatarMoeda(valorImplantacao - (plano.promocaoImplantacaoAnual ?? 500))} na implantação.
+              <p>
+                <strong>Cartão:</strong> 12× de {formatarMoeda(valorMensal)}
               </p>
             </div>
           </CardContent>

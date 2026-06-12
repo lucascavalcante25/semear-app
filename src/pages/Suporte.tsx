@@ -45,6 +45,7 @@ import { marcarNotificacaoComoVista } from "@/modules/notifications/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TEXTO_SUPORTE } from "@/lib/plataforma";
+import { usarNotificacoes } from "@/contexts/NotificationsContext";
 
 const TIPOS: TipoSolicitacaoSuporte[] = ["DUVIDA", "SUGESTAO", "RECLAMACAO", "MELHORIA", "ERRO", "OUTRO"];
 const STATUS_FILTRO: (StatusSolicitacaoSuporte | "TODOS")[] = [
@@ -63,6 +64,7 @@ function formatarData(iso?: string) {
 
 export default function Suporte() {
   const { user } = usarAutenticacao();
+  const { refreshNotificacoes } = usarNotificacoes();
   const navigate = useNavigate();
   const { id: idParam } = useParams<{ id?: string }>();
   const detalheId = idParam ? Number(idParam) : null;
@@ -126,12 +128,13 @@ export default function Suporte() {
       setDetalhe(s);
       await marcarSolicitacaoLida(id).catch(() => undefined);
       await marcarNotificacaoComoVista("SUPORTE", id).catch(() => undefined);
+      void refreshNotificacoes();
     } catch {
       setDetalhe(null);
       toast.error("Solicitação não encontrada.");
       navigate("/suporte");
     }
-  }, [navigate]);
+  }, [navigate, refreshNotificacoes]);
 
   useEffect(() => {
     void carregarLista();
@@ -241,7 +244,14 @@ export default function Suporte() {
                   podeEnviar={podeClienteEnviarMensagem(detalhe.status)}
                   placeholder="Escreva uma complementação ou tréplica..."
                   buscarAtualizacao={() => obterMinhaSolicitacao(detalhe.id)}
-                  onSincronizar={sincronizarDetalhe}
+                  onSincronizar={async (atualizado) => {
+                    sincronizarDetalhe(atualizado);
+                    if (detalheId === atualizado.id) {
+                      await marcarSolicitacaoLida(atualizado.id).catch(() => undefined);
+                      await marcarNotificacaoComoVista("SUPORTE", atualizado.id).catch(() => undefined);
+                    }
+                    void refreshNotificacoes();
+                  }}
                   onEnviar={async (texto) => {
                     try {
                       const atualizado = await enviarMensagemCliente(detalhe.id, texto);
@@ -353,13 +363,21 @@ export default function Suporte() {
             {lista.map((s) => (
               <Card
                 key={s.id}
-                className="cursor-pointer transition-colors hover:bg-muted/30"
+                className={cn(
+                  "cursor-pointer transition-colors hover:bg-muted/30",
+                  s.lidaPeloCliente === false && "border-primary/40 bg-primary/5",
+                )}
                 onClick={() => navigate(`/suporte/${s.id}`)}
               >
                 <CardContent className="p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <p className="font-medium truncate">{s.titulo}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium truncate">{s.titulo}</p>
+                        {s.lidaPeloCliente === false && (
+                          <Badge className="shrink-0 bg-primary text-primary-foreground">Nova resposta</Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">{formatarData(s.createdDate)}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">

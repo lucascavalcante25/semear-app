@@ -6,6 +6,8 @@ import br.com.semear.domain.enumeration.StatusSolicitacaoSuporte;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -20,4 +22,9 @@ public interface SolicitacaoSuporteRepository extends JpaRepository<SolicitacaoS
     List<SolicitacaoSuporte> findTop5ByOrderByCreatedDateDesc();
 
     List<SolicitacaoSuporte> findByUsuarioSolicitanteAndLidaPeloClienteFalse(User usuarioSolicitante);
+
+    @Query(
+        "SELECT s FROM SolicitacaoSuporte s WHERE s.igreja.id = :igrejaId AND (s.lidaPeloCliente = false OR s.lidaPeloCliente IS NULL)"
+    )
+    List<SolicitacaoSuporte> findNaoLidasPeloClienteDaIgreja(@Param("igrejaId") Long igrejaId);
 }

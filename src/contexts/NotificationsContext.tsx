@@ -14,7 +14,7 @@ import {
 } from "@/modules/notifications/api";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 
-const INTERVALO_POLLING_MS = 30_000; // 30 segundos para novas notificações de outros usuários
+const INTERVALO_POLLING_MS = 15_000;
 
 type NotificationsContextValue = {
   pendentesCount: number;

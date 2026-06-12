@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import { canAccess, podeAcessarSuporte, usuarioEhSuperAdmin } from "@/auth/permissions";
 import { PixOfertaBloco } from "@/components/pix/PixOferta";
+import { BadgeNotificacaoMenu } from "@/components/layout/BadgeNotificacaoMenu";
 
 const menuGroups = [
   {
@@ -53,6 +55,8 @@ const menuGroups = [
 export function BarraLateral() {
   const location = useLocation();
   const { user } = usarAutenticacao();
+  const { notificacoes } = usarNotificacoes();
+  const badgeSuporte = notificacoes.filter((n) => n.tipo === "SUPORTE").length;
 
   return (
     <aside className="fixed left-0 top-14 md:top-16 bottom-0 z-30 w-64 border-r border-border bg-sidebar overflow-y-auto">
@@ -77,8 +81,10 @@ export function BarraLateral() {
               </h4>
               <ul className="space-y-1">
                 {items.map((item) => {
-                  const isActive = location.pathname === item.path;
+                  const isActive =
+                    location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
                   const Icon = item.icon;
+                  const badge = item.path === "/suporte" ? badgeSuporte : 0;
 
                   return (
                     <li key={item.path}>
@@ -91,8 +97,9 @@ export function BarraLateral() {
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         )}
                       >
-                        <Icon className="h-4 w-4" />
-                        {item.label}
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="flex-1">{item.label}</span>
+                        <BadgeNotificacaoMenu quantidade={badge} />
                       </Link>
                     </li>
                   );

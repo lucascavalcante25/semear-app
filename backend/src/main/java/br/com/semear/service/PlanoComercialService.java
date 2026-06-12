@@ -59,12 +59,12 @@ public class PlanoComercialService {
         PlanoPublicoDTO dto = new PlanoPublicoDTO();
         dto.setNome(row[0] != null ? row[0].toString() : br.com.semear.config.Constants.NOME_PLATAFORMA + " — Plano Completo");
         dto.setDescricao(row[1] != null ? row[1].toString() : null);
-        dto.setValorMensal(row[2] != null ? (BigDecimal) row[2] : new BigDecimal("139.90"));
-        dto.setValorAnual(row[3] != null ? (BigDecimal) row[3] : new BigDecimal("1510.92"));
-        dto.setValorImplantacao(row[4] != null ? (BigDecimal) row[4] : new BigDecimal("700.00"));
-        dto.setPromocaoImplantacaoAnual(row[5] != null ? (BigDecimal) row[5] : new BigDecimal("500.00"));
+        dto.setValorMensal(row[2] != null ? (BigDecimal) row[2] : new BigDecimal("57.00"));
+        dto.setValorAnual(row[3] != null ? (BigDecimal) row[3] : new BigDecimal("570.00"));
+        dto.setValorImplantacao(row[4] != null ? (BigDecimal) row[4] : BigDecimal.ZERO);
+        dto.setPromocaoImplantacaoAnual(row[5] != null ? (BigDecimal) row[5] : BigDecimal.ZERO);
         dto.setDiasTrial(row[6] != null ? ((Number) row[6]).intValue() : 7);
-        dto.setDescontoAnualPercentual(row[7] != null ? ((Number) row[7]).intValue() : 10);
+        dto.setDescontoAnualPercentual(row[7] != null ? ((Number) row[7]).intValue() : 17);
         dto.setTextoBotao(row[8] != null ? row[8].toString() : "Começar teste de 7 dias");
         return dto;
     }
@@ -72,12 +72,12 @@ public class PlanoComercialService {
     private PlanoPublicoDTO planoPublicoPadrao() {
         PlanoPublicoDTO dto = new PlanoPublicoDTO();
         dto.setNome(br.com.semear.config.Constants.NOME_PLATAFORMA + " — Plano Completo");
-        dto.setValorMensal(new BigDecimal("139.90"));
-        dto.setValorAnual(new BigDecimal("1510.92"));
-        dto.setValorImplantacao(new BigDecimal("700.00"));
-        dto.setPromocaoImplantacaoAnual(new BigDecimal("500.00"));
+        dto.setValorMensal(new BigDecimal("57.00"));
+        dto.setValorAnual(new BigDecimal("570.00"));
+        dto.setValorImplantacao(BigDecimal.ZERO);
+        dto.setPromocaoImplantacaoAnual(BigDecimal.ZERO);
         dto.setDiasTrial(7);
-        dto.setDescontoAnualPercentual(10);
+        dto.setDescontoAnualPercentual(17);
         dto.setTextoBotao("Começar teste de 7 dias");
         return dto;
     }
@@ -145,11 +145,11 @@ public class PlanoComercialService {
         p.setDescricao(
             "Plataforma web completa para igrejas organizarem membros, visitantes, avisos, louvores, devocionais, financeiro, pré-cadastros, ofertas via PIX, identidade visual e suporte."
         );
-        p.setValorMensal(new BigDecimal("139.90"));
-        p.setValorAnual(new BigDecimal("1510.92"));
-        p.setValorImplantacao(new BigDecimal("700.00"));
-        p.setPromocaoImplantacaoAnual(new BigDecimal("500.00"));
-        p.setDescontoAnualPercentual(10);
+        p.setValorMensal(new BigDecimal("57.00"));
+        p.setValorAnual(new BigDecimal("570.00"));
+        p.setValorImplantacao(BigDecimal.ZERO);
+        p.setPromocaoImplantacaoAnual(BigDecimal.ZERO);
+        p.setDescontoAnualPercentual(17);
         p.setDiasTrial(7);
         p.setAtivo(true);
         p.setDestaque(true);

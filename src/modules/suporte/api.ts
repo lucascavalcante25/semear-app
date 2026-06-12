@@ -70,6 +70,7 @@ export type SolicitacaoSuporte = {
   anexos?: SolicitacaoSuporteAnexo[];
   historico?: SolicitacaoSuporteHistorico[];
   mensagens?: SolicitacaoSuporteMensagem[];
+  lidaPeloCliente?: boolean;
   lidaPeloSuporte?: boolean;
 };
 

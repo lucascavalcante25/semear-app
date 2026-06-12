@@ -19,6 +19,8 @@ import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess, podeAcessarSuporte } from "@/auth/permissions";
 import { PixOfertaBloco } from "@/components/pix/PixOferta";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
+import { usarNotificacoes } from "@/contexts/NotificationsContext";
+import { BadgeNotificacaoMenu } from "@/components/layout/BadgeNotificacaoMenu";
 
 interface MenuMobileProps {
   onClose: () => void;
@@ -41,6 +43,8 @@ const menuItems = [
 export function MenuMobile({ onClose }: MenuMobileProps) {
   const location = useLocation();
   const { user } = usarAutenticacao();
+  const { notificacoes } = usarNotificacoes();
+  const badgeSuporte = notificacoes.filter((n) => n.tipo === "SUPORTE").length;
   const { nomeExibicao, subtituloExibicao, logoUrl } = useIgrejaConfiguracao();
   const filteredItems = menuItems.filter((item) => {
     if ("suporteOnly" in item && item.suporteOnly) {
@@ -75,8 +79,10 @@ export function MenuMobile({ onClose }: MenuMobileProps) {
       <nav className="flex-1 overflow-y-auto p-3">
         <ul className="space-y-1">
           {filteredItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive =
+              location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
             const Icon = item.icon;
+            const badge = item.path === "/suporte" ? badgeSuporte : 0;
 
             return (
               <li key={item.path}>
@@ -90,8 +96,9 @@ export function MenuMobile({ onClose }: MenuMobileProps) {
                       : "text-sidebar-foreground hover:bg-sidebar-accent"
                   )}
                 >
-                  <Icon className="h-5 w-5" />
-                  {item.label}
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span className="flex-1">{item.label}</span>
+                  <BadgeNotificacaoMenu quantidade={badge} />
                 </Link>
               </li>
             );

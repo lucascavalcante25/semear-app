@@ -20,14 +20,12 @@ Posso te enviar uma demonstração?`,
   mensagemPreco: `Pastor, o plano de lançamento do Minha Igreja Digital ficou assim:
 
 ✅ Teste grátis por 7 dias
-✅ Implantação: R$ 700,00
-✅ Mensalidade: R$ 139,90/mês
+✅ Plano mensal: R$ 57,00/mês
+✅ Plano anual à vista no PIX: R$ 570,00/ano (equivalente a 10 meses — 2 meses grátis)
 
-Também temos a opção anual no PIX:
-R$ 1.510,92 com 10% de desconto.
+No cartão, o anual pode ser parcelado em 12× de R$ 57,00 (mesmo valor do mensal).
 
-Promoção no pagamento anual no PIX:
-A implantação sai por R$ 500,00 (em vez de R$ 700,00) + R$ 1.510,92/ano no PIX.
+Sem taxa de implantação.
 
 O sistema funciona no computador e no celular, sem precisar instalar aplicativo.`,
   mensagemDemo: `Pastor, posso te mostrar uma demonstração rápida do Minha Igreja Digital?
@@ -37,9 +35,11 @@ Em poucos minutos eu consigo te mostrar como a igreja pode organizar membros, vi
 
 O teste grátis da sua igreja no Minha Igreja Digital está chegando ao fim.
 
-Para continuar usando a plataforma, podemos ativar sua assinatura no Plano Completo por R$ 139,90/mês.
+Para continuar usando a plataforma, podemos ativar sua assinatura:
 
-Também temos a opção anual no PIX com desconto.`,
+• Mensal: R$ 57,00/mês
+• Anual à vista no PIX: R$ 570,00 (2 meses grátis)
+• Anual no cartão: 12× de R$ 57,00`,
 };
 
 export type PlaceholdersMensagem = {
@@ -47,7 +47,6 @@ export type PlaceholdersMensagem = {
   nomeIgreja?: string;
   diasRestantes?: string | number;
   valorMensal?: string;
-  valorImplantacao?: string;
   valorAnual?: string;
 };
 
@@ -56,9 +55,8 @@ export function aplicarPlaceholders(texto: string, dados: PlaceholdersMensagem):
     .replaceAll("{nomePastor}", dados.nomePastor ?? "pastor")
     .replaceAll("{nomeIgreja}", dados.nomeIgreja ?? "sua igreja")
     .replaceAll("{diasRestantes}", String(dados.diasRestantes ?? "X"))
-    .replaceAll("{valorMensal}", dados.valorMensal ?? "R$ 139,90")
-    .replaceAll("{valorImplantacao}", dados.valorImplantacao ?? "R$ 700,00")
-    .replaceAll("{valorAnual}", dados.valorAnual ?? "R$ 1.510,92");
+    .replaceAll("{valorMensal}", dados.valorMensal ?? "R$ 57,00")
+    .replaceAll("{valorAnual}", dados.valorAnual ?? "R$ 570,00");
 }
 
 export async function copiarTexto(texto: string) {
@@ -71,7 +69,6 @@ export type DadosIgrejaMensagem = {
   igrejaNome?: string;
   diasRestantesTeste?: number;
   valorMensalContratado?: number;
-  valorImplantacaoContratado?: number;
   valorAnualContratado?: number;
 };
 
@@ -84,7 +81,6 @@ export function placeholdersDeAssinatura(dados: DadosIgrejaMensagem): Placeholde
     nomeIgreja: dados.igrejaNome,
     diasRestantes: dados.diasRestantesTeste,
     valorMensal: fmt(dados.valorMensalContratado),
-    valorImplantacao: fmt(dados.valorImplantacaoContratado),
     valorAnual: fmt(dados.valorAnualContratado),
   };
 }
