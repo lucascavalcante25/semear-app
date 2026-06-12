@@ -2,15 +2,13 @@ import { LayoutApp } from "@/components/layout";
 import {
   VersiculoDoDia,
   AcoesRapidas,
-  Avisos,
   Aniversariantes,
-  VisitantesDoDia,
   ProgressoEspiritual,
+  DestaqueVisitantesHoje,
+  DestaqueAvisos,
 } from "@/components/dashboard";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
-import { CardAjudaSuporte } from "@/components/suporte/CardAjudaSuporte";
-
 const Inicio = () => {
   const { user } = usarAutenticacao();
   const { configuracao, publica } = useIgrejaConfiguracao();
@@ -62,7 +60,9 @@ const Inicio = () => {
           )}
         </div>
 
-        <CardAjudaSuporte />
+        {/* Visitantes e avisos em destaque — visíveis logo no início */}
+        <DestaqueVisitantesHoje />
+        <DestaqueAvisos />
 
         {/* Versiculo do dia */}
         <VersiculoDoDia />
@@ -78,11 +78,9 @@ const Inicio = () => {
           <AcoesRapidas />
         </section>
 
-        {/* Avisos, aniversariantes e visitantes do dia */}
+        {/* Aniversariantes */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Avisos />
           <Aniversariantes />
-          <VisitantesDoDia />
         </div>
       </div>
     </LayoutApp>

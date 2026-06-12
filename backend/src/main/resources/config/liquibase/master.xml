@@ -85,4 +85,7 @@
     <include file="config/liquibase/changelog/20260611000002_comercial_assinatura_pagamentos.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260611000003_renomear_marca_produto.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260611000004_atualizar_mensagem_preco.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260612000001_rebrand_minha_igreja_digital.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260612000002_visitante_forma_chegada.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260612000003_documento_igreja.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

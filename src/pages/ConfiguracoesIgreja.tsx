@@ -38,11 +38,12 @@ import {
 import { PALETAS_CORES } from "@/data/paletas-cores";
 import { corTextoSobreFundo } from "@/lib/cores-igreja";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canWrite } from "@/auth/permissions";
+import { canWrite, podeGerenciarDocumentosIgreja } from "@/auth/permissions";
+import { DocumentosIgrejaTab } from "@/components/documentos/DocumentosIgrejaTab";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-const ABAS = ["dados", "responsavel", "endereco", "pix", "visual", "textos", "plano"] as const;
+const ABAS = ["dados", "responsavel", "endereco", "pix", "visual", "textos", "plano", "documentos"] as const;
 type AbaConfig = (typeof ABAS)[number];
 
 export default function ConfiguracoesIgreja() {
@@ -50,7 +51,10 @@ export default function ConfiguracoesIgreja() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { configuracao, recarregar, logoUrl: logoUrlAtual } = useIgrejaConfiguracao();
   const abaParam = searchParams.get("aba");
-  const abaAtiva: AbaConfig = ABAS.includes(abaParam as AbaConfig) ? (abaParam as AbaConfig) : "dados";
+  const abaSolicitada = ABAS.includes(abaParam as AbaConfig) ? (abaParam as AbaConfig) : "dados";
+  const podeDocumentos = podeGerenciarDocumentosIgreja(user);
+  const abaAtiva: AbaConfig =
+    abaSolicitada === "documentos" && !podeDocumentos ? "dados" : abaSolicitada;
   const [form, setForm] = useState<Partial<IgrejaConfiguracao>>({});
   const [dataPlano, setDataPlano] = useState("");
   const [dataReinicioPlano, setDataReinicioPlano] = useState("");
@@ -67,6 +71,12 @@ export default function ConfiguracoesIgreja() {
   useEffect(() => {
     if (configuracao) setForm(configuracao);
   }, [configuracao]);
+
+  useEffect(() => {
+    if (abaSolicitada === "documentos" && !podeDocumentos) {
+      setSearchParams({ aba: "dados" }, { replace: true });
+    }
+  }, [abaSolicitada, podeDocumentos, setSearchParams]);
 
   useEffect(() => {
     if (pathnameAnterior.current !== pathname) {
@@ -244,6 +254,7 @@ export default function ConfiguracoesIgreja() {
           <TabsTrigger value="visual">Visual</TabsTrigger>
           <TabsTrigger value="textos">Textos</TabsTrigger>
           <TabsTrigger value="plano">Plano de Leitura</TabsTrigger>
+          {podeDocumentos && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="dados">
@@ -378,7 +389,7 @@ export default function ConfiguracoesIgreja() {
               />
               <div className="space-y-2">
                 <Label>URL do logo (alternativa)</Label>
-                <Input value={form.logoUrl || ""} onChange={(e) => set("logoUrl", e.target.value)} placeholder="/logo-semear.png" />
+                <Input value={form.logoUrl || ""} onChange={(e) => set("logoUrl", e.target.value)} placeholder="/brand/logo-icon.png" />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2"><Label>Cor primária</Label><Input type="color" value={form.corPrimaria || "#5a7a3a"} onChange={(e) => set("corPrimaria", e.target.value)} /></div>
@@ -627,6 +638,12 @@ export default function ConfiguracoesIgreja() {
             </Card>
           </div>
         </TabsContent>
+
+        {podeDocumentos && (
+          <TabsContent value="documentos">
+            <DocumentosIgrejaTab />
+          </TabsContent>
+        )}
       </Tabs>
     </LayoutApp>
   );

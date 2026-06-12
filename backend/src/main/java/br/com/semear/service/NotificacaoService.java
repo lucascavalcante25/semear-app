@@ -75,12 +75,16 @@ public class NotificacaoService {
         Set<Long> suporteVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_SUPORTE);
 
         List<NotificacaoItem> itens = new ArrayList<>();
+        LocalDate hoje = LocalDate.now();
 
         Long igrejaId = tenantService.getIgrejaIdAtual();
         List<Aviso> avisos = avisoRepository
             .findAllByIgrejaIdAndAtivoIsTrue(PageRequest.of(0, 20), igrejaId)
             .getContent();
         for (Aviso a : avisos) {
+            if (!avisoEstaVigente(a, hoje)) {
+                continue;
+            }
             if (!avisosVistos.contains(a.getId())) {
                 String desc = a.getConteudo() != null && a.getConteudo().length() > 80
                     ? a.getConteudo().substring(0, 80) + "..."
@@ -95,7 +99,6 @@ public class NotificacaoService {
             }
         }
 
-        LocalDate hoje = LocalDate.now();
         List<User> aniversariantes = userRepository.findAllByIgrejaIdAndBirthDateIsNotNullAndActivatedIsTrue(igrejaId).stream()
             .filter(u -> {
                 LocalDate bd = u.getBirthDate();
@@ -257,6 +260,19 @@ public class NotificacaoService {
         vista.setVistoEm(Instant.now());
         vistaRepository.save(vista);
         LOG.debug("Notificação marcada como vista: {} {} para user {}", tipo, referenciaId, userOpt.get().getLogin());
+    }
+
+    private static boolean avisoEstaVigente(Aviso aviso, LocalDate referencia) {
+        if (aviso.getDataInicio() == null) {
+            return false;
+        }
+        if (referencia.isBefore(aviso.getDataInicio())) {
+            return false;
+        }
+        if (aviso.getDataFim() != null && referencia.isAfter(aviso.getDataFim())) {
+            return false;
+        }
+        return true;
     }
 
     private String mensagemSuporte(SolicitacaoSuporte s) {

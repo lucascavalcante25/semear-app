@@ -64,6 +64,7 @@ import {
   type AvisoApp,
   type AvisoDTO,
 } from "@/modules/announcements/api";
+import { avisoEstaVigente, filtrarAvisosVigentes } from "@/lib/aviso-vigencia";
 import { DatePicker } from "@/components/ui/date-picker";
 
 const typeConfig = {
@@ -209,9 +210,19 @@ export default function PaginaAvisos() {
     [avisos, buscaTexto],
   );
 
-  const avisosFixos = avisosFiltrados.filter((a) => a.type === "fixed");
-  const avisosUrgentes = avisosFiltrados.filter((a) => a.type === "urgent");
-  const avisosNormais = avisosFiltrados.filter((a) => a.type === "normal");
+  const avisosVigentes = useMemo(
+    () => filtrarAvisosVigentes(avisosFiltrados),
+    [avisosFiltrados],
+  );
+
+  const avisosForaDoPeriodo = useMemo(
+    () => avisosFiltrados.filter((a) => !avisoEstaVigente(a)),
+    [avisosFiltrados],
+  );
+
+  const avisosFixos = avisosVigentes.filter((a) => a.type === "fixed");
+  const avisosUrgentes = avisosVigentes.filter((a) => a.type === "urgent");
+  const avisosNormais = avisosVigentes.filter((a) => a.type === "normal");
 
   const abrirNovo = () => {
     setAvisoEmEdicao(null);
@@ -302,7 +313,9 @@ export default function PaginaAvisos() {
             <div>
               <h1 className="text-xl font-bold">Avisos</h1>
               <p className="text-sm text-muted-foreground">
-                {avisos.length} avisos ativos
+                {avisosVigentes.length} em exibição hoje
+                {avisosForaDoPeriodo.length > 0 &&
+                  ` · ${avisosForaDoPeriodo.length} fora do período`}
               </p>
             </div>
           </div>
@@ -471,13 +484,43 @@ export default function PaginaAvisos() {
           </section>
         )}
 
-        {avisosFiltrados.length === 0 && (
+        {avisosVigentes.length === 0 && avisosForaDoPeriodo.length === 0 && (
           <div className="text-center py-12">
             <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">
               Nenhum aviso encontrado
             </p>
           </div>
+        )}
+
+        {avisosVigentes.length === 0 && avisosForaDoPeriodo.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">
+              Nenhum aviso em exibição hoje. Veja os avisos fora do período abaixo.
+            </p>
+          </div>
+        )}
+
+        {podeEscreverAvisos && avisosForaDoPeriodo.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Fora do período de exibição
+            </h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Avisos ativos que ainda não começaram ou já expiraram — não aparecem no dashboard.
+            </p>
+            <div className="space-y-3 opacity-75">
+              {avisosForaDoPeriodo.map((a) => (
+                <CartaoAviso
+                  key={a.id}
+                  aviso={a}
+                  aoEditar={editarAviso}
+                  aoExcluir={excluirAviso}
+                  podeEditar={podeEscreverAvisos}
+                />
+              ))}
+            </div>
+          </section>
         )}
         </>
         )}

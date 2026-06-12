@@ -138,6 +138,10 @@ jhipster:
 # ===================================================================
 
 semear:
+  # Uploads (logos, cifras, anexos de suporte, documentos da igreja).
+  # No Render o filesystem é efêmero — arquivos podem ser perdidos em redeploy.
+  # Para persistência em produção, configure SEMEAR_UPLOAD_DIR em disco persistente ou migre para storage externo (S3/R2).
+  upload-dir: ${SEMEAR_UPLOAD_DIR:${user.home}/semear-app/uploads}
   sms:
     enabled: ${SEMEAR_SMS_ENABLED:false}
     sender: ${SEMEAR_SMS_SENDER:Semear}

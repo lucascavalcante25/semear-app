@@ -5,7 +5,7 @@ export const PLANO_LANCAMENTO_PADRAO: Plano = {
   id: 1,
   nome: "Plano Completo",
   descricao:
-    "Plano único de lançamento do WillIgreja com todos os recursos. Ideal para igrejas que querem organizar membros, comunicação e gestão em um só lugar — no computador ou no celular.",
+    "Plano único de lançamento do Minha Igreja Digital com todos os recursos. Ideal para igrejas que querem organizar membros, comunicação e gestão em um só lugar — no computador ou no celular.",
   valorMensal: 139.9,
   valorAnual: 1510.92,
   valorImplantacao: 700,
@@ -29,10 +29,14 @@ export const RECURSOS_PLANO_LANCAMENTO = [
   "Devocionais",
   "Bíblia com plano de leitura coletivo",
   "Financeiro da igreja",
+  "Documentos da Igreja",
+  "Arquivamento de atas, estatutos e contratos",
+  "Organização segura de documentos administrativos",
+  "Gestão e armazenamento de documentos da igreja",
   "PIX e ofertas configuráveis",
   "Identidade visual da igreja (cores e tema)",
-  "App web responsivo — use no celular",
-  "Central de suporte da plataforma",
+  "Funciona no computador e no celular",
+  "Central de suporte do sistema",
 ] as const;
 
 export function formatarMoeda(valor: number) {

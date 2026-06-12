@@ -7,5 +7,5 @@ export const PALETAS_CORES = [
   { nome: "Preto e Dourado", primaria: "#1a1a1a", secundaria: "#c9a84c" },
   { nome: "Verde e Branco", primaria: "#2d6a30", secundaria: "#ffffff" },
   { nome: "Cinza e Azul", primaria: "#4a5568", secundaria: "#1f4d7a" },
-  { nome: "Semear (atual)", primaria: "#5a7a3a", secundaria: "#1f4d7a" },
+  { nome: "Verde e Azul (padrão)", primaria: "#5a7a3a", secundaria: "#1f4d7a" },
 ];

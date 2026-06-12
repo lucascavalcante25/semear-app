@@ -11,7 +11,10 @@ public final class Constants {
     public static final String SYSTEM = "system";
     public static final String DEFAULT_LANGUAGE = "pt-br";
 
-    /** Empresa desenvolvedora do SaaS (suporte da plataforma, distinto das igrejas clientes). */
+    /** Nome comercial da plataforma (distinto das igrejas clientes). */
+    public static final String NOME_PLATAFORMA = "Minha Igreja Digital";
+
+    /** Empresa desenvolvedora (suporte da plataforma, distinto das igrejas clientes). */
     public static final String EMPRESA_PLATAFORMA = "WillTech Solutions Dev";
 
     private Constants() {}

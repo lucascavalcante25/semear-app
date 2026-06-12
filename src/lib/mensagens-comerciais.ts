@@ -10,14 +10,14 @@ export type MensagensComerciais = {
 export const MENSAGENS_PADRAO: MensagensComerciais = {
   mensagemAbordagem: `Olá, pastor. Tudo bem?
 
-Eu desenvolvi uma plataforma web para ajudar igrejas a organizar membros, visitantes, avisos, louvores, financeiro, devocionais e ofertas via PIX.
+Eu desenvolvi a plataforma Minha Igreja Digital para ajudar igrejas a organizar membros, visitantes, avisos, louvores, financeiro, devocionais e ofertas via PIX.
 
 Ela funciona no computador e no celular, sem precisar instalar aplicativo.
 
 Estou liberando 7 dias grátis para algumas igrejas testarem.
 
 Posso te enviar uma demonstração?`,
-  mensagemPreco: `Pastor, o plano de lançamento do WillIgreja ficou assim:
+  mensagemPreco: `Pastor, o plano de lançamento do Minha Igreja Digital ficou assim:
 
 ✅ Teste grátis por 7 dias
 ✅ Implantação: R$ 700,00
@@ -29,13 +29,13 @@ R$ 1.510,92 com 10% de desconto.
 Promoção no pagamento anual no PIX:
 A implantação sai por R$ 500,00 (em vez de R$ 700,00) + R$ 1.510,92/ano no PIX.
 
-A plataforma funciona pelo navegador no computador e no celular, sem precisar instalar aplicativo.`,
-  mensagemDemo: `Pastor, posso te mostrar uma demonstração rápida da plataforma?
+O sistema funciona no computador e no celular, sem precisar instalar aplicativo.`,
+  mensagemDemo: `Pastor, posso te mostrar uma demonstração rápida do Minha Igreja Digital?
 
 Em poucos minutos eu consigo te mostrar como a igreja pode organizar membros, visitantes, financeiro, avisos, louvores, devocionais e ofertas via PIX em um único lugar.`,
   mensagemFimTeste: `Olá, pastor. Tudo bem?
 
-O teste grátis da sua igreja no WillIgreja está chegando ao fim.
+O teste grátis da sua igreja no Minha Igreja Digital está chegando ao fim.
 
 Para continuar usando a plataforma, podemos ativar sua assinatura no Plano Completo por R$ 139,90/mês.
 

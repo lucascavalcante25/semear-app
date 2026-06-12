@@ -90,7 +90,7 @@ public class AdminPlataformaService {
 
     public PlataformaConfigDTO obterConfiguracao() {
         PlataformaConfigDTO dto = new PlataformaConfigDTO();
-        dto.setNomePlataforma("WillSas");
+        dto.setNomePlataforma(br.com.semear.config.Constants.NOME_PLATAFORMA);
         dto.setVersao(appName);
         dto.setEmailSuporte(jHipsterProperties.getMail().getFrom());
         dto.setUrlBase(jHipsterProperties.getMail().getBaseUrl());

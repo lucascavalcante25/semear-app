@@ -124,6 +124,14 @@ export const podeAcessarSuporte = (user: UserAccess | null | undefined): boolean
   return user.authorities?.includes("ROLE_ADMIN_IGREJA") ?? user.role === "admin";
 };
 
+/** Documentos da Igreja — apenas ADMIN_IGREJA e admin da plataforma */
+export const podeGerenciarDocumentosIgreja = (user: UserAccess | null | undefined): boolean => {
+  if (!user) return false;
+  if (user.authorities?.includes("ROLE_ADMIN_IGREJA")) return true;
+  if (user.authorities?.includes("ROLE_ADMIN")) return true;
+  return user.role === "admin" || user.role === "admin_igreja";
+};
+
 export const usuarioEhSuperAdmin = (user: UserAccess | null | undefined): boolean => {
   if (!user) return false;
   if (user.isSuperAdmin) return true;
@@ -280,7 +288,7 @@ export const getDefaultRouteForRole = (role: Role) => {
   return (first ? moduleToRoute[first.module] : undefined) ?? "/";
 };
 
-/** Rota inicial após login — super admin vai direto ao painel WillSas. */
+/** Rota inicial após login — super admin vai direto ao Painel da Plataforma. */
 export const getDefaultRouteForUser = (user: UserAccess | null | undefined): string => {
   if (!user) return "/login";
   if (usuarioEhSuperAdmin(user)) return "/super-admin/dashboard";

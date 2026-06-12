@@ -99,6 +99,10 @@ public class VisitanteResource {
         existente.setTelefone(visitante.getTelefone());
         existente.setComoConheceu(visitante.getComoConheceu());
         existente.setObservacoes(visitante.getObservacoes());
+        existente.setFormaChegada(visitante.getFormaChegada());
+        existente.setAcompanhanteNome(visitante.getAcompanhanteNome());
+        existente.setIgrejaOrigem(visitante.getIgrejaOrigem());
+        existente.setConvidadoPor(visitante.getConvidadoPor());
         existente.setDataVisita(visitante.getDataVisita() != null ? visitante.getDataVisita() : existente.getDataVisita());
         existente.setAtualizadoEm(Instant.now());
         existente.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));

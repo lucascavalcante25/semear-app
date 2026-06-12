@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Rebrand: WillSas / WillIgreja / Semear App → Minha Igreja Digital -->
+    <changeSet id="20260612000001-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="plano"/>
+        </preConditions>
+        <sql>
+            UPDATE plano SET descricao = REPLACE(descricao, 'WillIgreja', 'Minha Igreja Digital')
+            WHERE descricao LIKE '%WillIgreja%';
+            UPDATE plano SET descricao = REPLACE(descricao, 'WillSas', 'Minha Igreja Digital')
+            WHERE descricao LIKE '%WillSas%';
+            UPDATE plano SET descricao = REPLACE(descricao, 'Semear App', 'Minha Igreja Digital')
+            WHERE descricao LIKE '%Semear App%';
+            UPDATE plano SET nome = REPLACE(nome, 'WillIgreja', 'Minha Igreja Digital')
+            WHERE nome LIKE '%WillIgreja%';
+            UPDATE plano SET nome = REPLACE(nome, 'WillSas', 'Minha Igreja Digital')
+            WHERE nome LIKE '%WillSas%';
+            UPDATE plano SET nome = REPLACE(nome, 'Semear Completo', 'Plano Completo')
+            WHERE nome LIKE '%Semear Completo%';
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260612000001-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="config_comercial"/>
+        </preConditions>
+        <sql>
+            UPDATE config_comercial SET mensagem_abordagem = REPLACE(mensagem_abordagem, 'WillIgreja', 'Minha Igreja Digital')
+            WHERE mensagem_abordagem LIKE '%WillIgreja%';
+            UPDATE config_comercial SET mensagem_abordagem = REPLACE(mensagem_abordagem, 'WillSas', 'Minha Igreja Digital')
+            WHERE mensagem_abordagem LIKE '%WillSas%';
+            UPDATE config_comercial SET mensagem_abordagem = REPLACE(mensagem_abordagem, 'Semear App', 'Minha Igreja Digital')
+            WHERE mensagem_abordagem LIKE '%Semear App%';
+
+            UPDATE config_comercial SET mensagem_preco = REPLACE(mensagem_preco, 'WillIgreja', 'Minha Igreja Digital')
+            WHERE mensagem_preco LIKE '%WillIgreja%';
+            UPDATE config_comercial SET mensagem_preco = REPLACE(mensagem_preco, 'WillSas', 'Minha Igreja Digital')
+            WHERE mensagem_preco LIKE '%WillSas%';
+            UPDATE config_comercial SET mensagem_preco = REPLACE(mensagem_preco, 'Semear App', 'Minha Igreja Digital')
+            WHERE mensagem_preco LIKE '%Semear App%';
+            UPDATE config_comercial SET mensagem_preco = REPLACE(mensagem_preco, 'plano Semear Completo', 'Plano Completo')
+            WHERE mensagem_preco LIKE '%Semear Completo%';
+
+            UPDATE config_comercial SET mensagem_demo = REPLACE(mensagem_demo, 'WillIgreja', 'Minha Igreja Digital')
+            WHERE mensagem_demo LIKE '%WillIgreja%';
+            UPDATE config_comercial SET mensagem_demo = REPLACE(mensagem_demo, 'WillSas', 'Minha Igreja Digital')
+            WHERE mensagem_demo LIKE '%WillSas%';
+
+            UPDATE config_comercial SET mensagem_fim_teste = REPLACE(mensagem_fim_teste, 'WillIgreja', 'Minha Igreja Digital')
+            WHERE mensagem_fim_teste LIKE '%WillIgreja%';
+            UPDATE config_comercial SET mensagem_fim_teste = REPLACE(mensagem_fim_teste, 'WillSas', 'Minha Igreja Digital')
+            WHERE mensagem_fim_teste LIKE '%WillSas%';
+            UPDATE config_comercial SET mensagem_fim_teste = REPLACE(mensagem_fim_teste, 'Semear App', 'Minha Igreja Digital')
+            WHERE mensagem_fim_teste LIKE '%Semear App%';
+            UPDATE config_comercial SET mensagem_fim_teste = REPLACE(mensagem_fim_teste, 'plano Semear Completo', 'Plano Completo')
+            WHERE mensagem_fim_teste LIKE '%Semear Completo%';
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260612000001-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="config_comercial"/>
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM config_comercial WHERE mensagem_abordagem LIKE '%Minha Igreja Digital%'</sqlCheck>
+        </preConditions>
+        <update tableName="config_comercial">
+            <column name="mensagem_abordagem" value="Olá, pastor. Tudo bem?&#10;&#10;Eu desenvolvi a plataforma Minha Igreja Digital para ajudar igrejas a organizar membros, visitantes, avisos, louvores, financeiro, devocionais e ofertas via PIX.&#10;&#10;Ela funciona no computador e no celular, sem precisar instalar aplicativo.&#10;&#10;Estou liberando 7 dias grátis para algumas igrejas testarem.&#10;&#10;Posso te enviar uma demonstração?"/>
+            <where>id = 1</where>
+        </update>
+    </changeSet>
+
+    <changeSet id="20260612000001-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="plano"/>
+        </preConditions>
+        <update tableName="plano">
+            <column name="descricao" value="Plano único de lançamento do Minha Igreja Digital: todos os recursos, membros ilimitados, 7 dias para testar sem compromisso."/>
+            <where>id = 1 AND (descricao LIKE '%WillIgreja%' OR descricao LIKE '%WillSas%' OR descricao LIKE '%Semear App%')</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

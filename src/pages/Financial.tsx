@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { MARCA } from "@/lib/plataforma";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -891,7 +892,7 @@ export default function Financeiro() {
     nome: configuracao?.nome || "Igreja",
     cnpj: configuracao?.cnpj || "",
     endereco: [configuracao?.cidade, configuracao?.estado].filter(Boolean).join(" - ") || "",
-    logoUrl: logoUrl || "/logo-semear.png",
+    logoUrl: logoUrl || MARCA.logoIcon,
   };
   const podeEscreverFinanceiro = canWrite(user, "/financeiro");
   const isMobile = usarEhMobile();

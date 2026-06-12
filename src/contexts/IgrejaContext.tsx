@@ -20,11 +20,12 @@ import {
 import { aplicarCoresIgreja, limparCoresIgreja } from "@/lib/cores-igreja";
 import { definirInicioPlanoIgreja } from "@/modules/bible/service";
 import { isRotaIgreja, isRotaPublica, isRotaSuperAdmin } from "@/lib/rotas-app";
+import { MARCA } from "@/lib/plataforma";
 
 const FALLBACK_PUBLICA: IgrejaPublica = {
   nome: "Sua igreja",
   nomeFantasia: "Sua igreja",
-  logoUrl: "/logo-willsas.svg",
+  logoUrl: MARCA.logoIcon,
   corPrimaria: "#5a7a3a",
   corSecundaria: "#1f4d7a",
   temaPreferido: "SISTEMA",
@@ -142,7 +143,7 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
     () =>
       configuracao?.subtituloIgreja?.trim() ||
       publica.subtituloIgreja?.trim() ||
-      "",
+      MARCA.painelIgreja,
     [configuracao?.subtituloIgreja, publica.subtituloIgreja],
   );
 

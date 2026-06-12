@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260612000003-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="documento_igreja"/>
+            </not>
+        </preConditions>
+        <createTable tableName="documento_igreja">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usuario_upload_id" type="bigint"/>
+            <column name="nome" type="varchar(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="varchar(500)"/>
+            <column name="categoria" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome_arquivo_original" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome_arquivo_armazenado" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_arquivo" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tamanho_arquivo" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="caminho_arquivo" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_documento" type="date"/>
+            <column name="data_upload" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_atualizacao" type="${datetimeType}"/>
+            <column name="ativo" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="documento_igreja"
+            baseColumnNames="igreja_id"
+            constraintName="fk_documento_igreja_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="documento_igreja"
+            baseColumnNames="usuario_upload_id"
+            constraintName="fk_documento_igreja_usuario"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <createIndex tableName="documento_igreja" indexName="idx_documento_igreja_igreja">
+            <column name="igreja_id"/>
+        </createIndex>
+        <createIndex tableName="documento_igreja" indexName="idx_documento_igreja_categoria">
+            <column name="categoria"/>
+        </createIndex>
+        <createIndex tableName="documento_igreja" indexName="idx_documento_igreja_data_upload">
+            <column name="data_upload"/>
+        </createIndex>
+        <createIndex tableName="documento_igreja" indexName="idx_documento_igreja_ativo">
+            <column name="ativo"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

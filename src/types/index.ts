@@ -1,4 +1,4 @@
-// Semear App Type Definitions
+// Minha Igreja Digital — Type Definitions
 
 // ============ Membros ============
 export interface Membro {

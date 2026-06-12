@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { listarAvisos, type AvisoApp } from "@/modules/announcements/api";
+import { filtrarAvisosVigentes, ordenarAvisosPorDestaque } from "@/lib/aviso-vigencia";
 import { Link } from "react-router-dom";
 
 interface ItemAvisoProps {
@@ -70,8 +71,9 @@ export function Avisos() {
     const carregar = async () => {
       setCarregando(true);
       try {
-        const dados = await listarAvisos(true, 3);
-        setLista(dados);
+        const dados = await listarAvisos(true, 50);
+        const vigentes = ordenarAvisosPorDestaque(filtrarAvisosVigentes(dados));
+        setLista(vigentes.slice(0, 3));
       } catch {
         setLista([]);
       } finally {
@@ -109,7 +111,7 @@ export function Avisos() {
           lista.map((aviso) => <ItemAviso key={aviso.id} aviso={aviso} />)
         ) : (
           <div className="text-sm text-muted-foreground py-4">
-            Nenhum aviso cadastrado ainda.
+            Nenhum aviso em exibição hoje.
           </div>
         )}
       </CardContent>

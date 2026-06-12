@@ -1,5 +1,6 @@
 package br.com.semear.domain;
 
+import br.com.semear.domain.enumeration.FormaChegadaVisitante;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
@@ -41,6 +42,19 @@ public class Visitante implements Serializable {
 
     @Column(name = "observacoes", columnDefinition = "text")
     private String observacoes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "forma_chegada")
+    private FormaChegadaVisitante formaChegada;
+
+    @Column(name = "acompanhante_nome")
+    private String acompanhanteNome;
+
+    @Column(name = "igreja_origem")
+    private String igrejaOrigem;
+
+    @Column(name = "convidado_por")
+    private String convidadoPor;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "igreja_id")
@@ -105,6 +119,38 @@ public class Visitante implements Serializable {
 
     public void setObservacoes(String observacoes) {
         this.observacoes = observacoes;
+    }
+
+    public FormaChegadaVisitante getFormaChegada() {
+        return formaChegada;
+    }
+
+    public void setFormaChegada(FormaChegadaVisitante formaChegada) {
+        this.formaChegada = formaChegada;
+    }
+
+    public String getAcompanhanteNome() {
+        return acompanhanteNome;
+    }
+
+    public void setAcompanhanteNome(String acompanhanteNome) {
+        this.acompanhanteNome = acompanhanteNome;
+    }
+
+    public String getIgrejaOrigem() {
+        return igrejaOrigem;
+    }
+
+    public void setIgrejaOrigem(String igrejaOrigem) {
+        this.igrejaOrigem = igrejaOrigem;
+    }
+
+    public String getConvidadoPor() {
+        return convidadoPor;
+    }
+
+    public void setConvidadoPor(String convidadoPor) {
+        this.convidadoPor = convidadoPor;
     }
 
     public Igreja getIgreja() {

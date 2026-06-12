@@ -31,7 +31,7 @@ public class MailService {
     private static final Logger LOG = LoggerFactory.getLogger(MailService.class);
     private static final String USER = "user";
     private static final String BASE_URL = "baseUrl";
-    private static final String PLATAFORMA_NOME = "WillSas";
+    private static final String PLATAFORMA_NOME = br.com.semear.config.Constants.NOME_PLATAFORMA;
 
     private final JHipsterProperties jHipsterProperties;
     private final JavaMailSender javaMailSender;

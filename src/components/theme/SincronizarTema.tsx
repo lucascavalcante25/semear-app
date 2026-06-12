@@ -11,7 +11,7 @@ const CHAVE_TEMA_APP = "semear.tema";
 /**
  * Aplica o tema conforme o contexto:
  * - Rotas públicas (login): sempre claro
- * - Painel WillSas: preferência willsas.tema (padrão claro)
+ * - Painel da Plataforma: preferência willsas.tema (padrão claro)
  * - App da igreja: preferência do usuário (menu do cabeçalho)
  */
 export function SincronizarTema() {

@@ -33,7 +33,11 @@ public class SmsService {
         }
 
         String destino = normalizarTelefoneBrasil(telefone);
-        String conteudo = "Semear: seu código de recuperação de senha é " + codigo + ". Válido por 15 minutos.";
+        String conteudo =
+            br.com.semear.config.Constants.NOME_PLATAFORMA +
+            ": seu código de recuperação de senha é " +
+            codigo +
+            ". Válido por 15 minutos.";
 
         try {
             RestClient.create()

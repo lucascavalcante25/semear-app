@@ -57,7 +57,7 @@ public class PlanoComercialService {
 
     private PlanoPublicoDTO mapearPlanoPublico(Object[] row) {
         PlanoPublicoDTO dto = new PlanoPublicoDTO();
-        dto.setNome(row[0] != null ? row[0].toString() : "WillIgreja — Plano Completo");
+        dto.setNome(row[0] != null ? row[0].toString() : br.com.semear.config.Constants.NOME_PLATAFORMA + " — Plano Completo");
         dto.setDescricao(row[1] != null ? row[1].toString() : null);
         dto.setValorMensal(row[2] != null ? (BigDecimal) row[2] : new BigDecimal("139.90"));
         dto.setValorAnual(row[3] != null ? (BigDecimal) row[3] : new BigDecimal("1510.92"));
@@ -71,7 +71,7 @@ public class PlanoComercialService {
 
     private PlanoPublicoDTO planoPublicoPadrao() {
         PlanoPublicoDTO dto = new PlanoPublicoDTO();
-        dto.setNome("WillIgreja — Plano Completo");
+        dto.setNome(br.com.semear.config.Constants.NOME_PLATAFORMA + " — Plano Completo");
         dto.setValorMensal(new BigDecimal("139.90"));
         dto.setValorAnual(new BigDecimal("1510.92"));
         dto.setValorImplantacao(new BigDecimal("700.00"));

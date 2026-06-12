@@ -19,7 +19,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { usarTema } from "@/contexts/ThemeContext";
 import { usarEhMobile } from "@/hooks/use-mobile";
-import { PLATAFORMA } from "@/lib/plataforma";
+import { MARCA, PLATAFORMA } from "@/lib/plataforma";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -69,11 +69,10 @@ function MenuLateral({
         <div className="flex items-center gap-2">
           <img src={PLATAFORMA.logoUrl} alt="" className="h-8 w-8 rounded-lg" aria-hidden />
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Plataforma</p>
-            <h1 className="text-lg font-bold leading-tight">{PLATAFORMA.nome}</h1>
+            <h1 className="text-base font-bold leading-tight">{MARCA.nome}</h1>
           </div>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">Painel do dono</p>
+        <p className="mt-1 text-xs text-muted-foreground">{MARCA.painelPlataforma}</p>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {menuItems.map((item) => {
@@ -116,7 +115,7 @@ function MenuLateral({
         <Button variant="ghost" className="w-full justify-start gap-2" asChild>
           <Link to="/" onClick={onNavigate}>
             <ArrowLeft className="h-4 w-4" />
-            Voltar ao app da igreja
+            Voltar à área da igreja
           </Link>
         </Button>
         <Button

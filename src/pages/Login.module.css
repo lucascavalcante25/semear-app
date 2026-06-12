@@ -1,4 +1,4 @@
-/* Login WillSas — tema claro universal */
+/* Login Minha Igreja Digital — inspirado em layout profissional de gestão ministerial */
 
 .root {
   position: fixed;
@@ -6,22 +6,355 @@
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #eef2f6;
+}
+
+.topNav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid #e2e8f0;
+  backdrop-filter: blur(8px);
+}
+
+.navBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: #1e293b;
+  text-decoration: none;
+}
+
+.navBrand:hover {
+  color: #0f172a;
+}
+
+.navBrand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .navBrand span {
+    max-width: 8.5rem;
+  }
+
+  .topNav {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+}
+
+.navBrandIcon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.navLink {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #475569;
+  text-decoration: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.navLink:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+
+.navLinkPrimary {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  transition: color 0.15s, background 0.15s;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.navLinkPrimary:hover {
+  background: hsl(var(--primary) / 0.9);
+  color: hsl(var(--primary-foreground));
+}
+
+@media (max-width: 520px) {
+  .navLinks {
+    gap: 0.125rem;
+  }
+
+  .navLink {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .navLinkPrimary {
+    font-size: 0.6875rem;
+    padding: 0.375rem 0.625rem;
+    white-space: nowrap;
+  }
+}
+
+.splitShell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  box-sizing: border-box;
-  overflow: auto;
-  background: linear-gradient(160deg, #f8fafc 0%, #e2e8f0 45%, #f1f5f9 100%);
+  width: 100%;
+  max-width: min(92rem, 100%);
+  margin: 0 auto;
+  padding: 1rem clamp(0.875rem, 2.5vw, 2.5rem) 1.25rem;
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  gap: 0;
+}
+
+.loginFrame {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: stretch;
+}
+
+.brandPanel {
+  display: none;
+  flex: 1.05;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.5rem 2.25rem;
+  border-radius: 1.25rem 0 0 1.25rem;
+  background: linear-gradient(145deg, #4a6b32 0%, #5a7a3a 42%, #3d5c80 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.brandPanelIconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.25rem;
+  height: 4.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.brandPanelChurchIcon {
+  width: 2.35rem;
+  height: 2.35rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.brandPanelTitle {
+  font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.brandPanelSlogan {
+  margin-top: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.brandPanelDesc {
+  margin-top: 1.25rem;
+  font-size: clamp(0.875rem, 1.1vw, 1rem);
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 36rem;
+}
+
+.brandPanelVerse {
+  margin-top: 1.75rem;
+  min-height: 3rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 36rem;
+}
+
+.loginColumn {
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.loginShell {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .splitShell {
+    padding: 1.5rem clamp(1.5rem, 3vw, 3rem) 2rem;
+  }
+
+  .loginFrame {
+    flex-direction: row;
+    align-items: stretch;
+    filter: drop-shadow(0 18px 42px rgba(15, 23, 42, 0.11));
+  }
+
+  .brandPanel {
+    display: flex;
+    flex: 1.1;
+    min-width: 0;
+    padding: 2.5rem clamp(2rem, 3vw, 3.25rem);
+    border-radius: 1.25rem 0 0 1.25rem;
+  }
+
+  .loginColumn {
+    flex: 0 0 min(38rem, 44%);
+    max-width: 38rem;
+    margin-left: -2.5rem;
+    align-self: stretch;
+    z-index: 1;
+  }
+
+  .loginShell {
+    border-radius: 1.25rem;
+    box-shadow: 0 10px 36px rgba(15, 23, 42, 0.1);
+    height: 100%;
+  }
+
+  .card {
+    padding: 2rem 2.25rem 1.75rem;
+  }
+
+  .brandPanelDesc,
+  .brandPanelVerse {
+    max-width: none;
+  }
+
+  .accessSectionGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
+  .brandPanel {
+    flex: 1.2;
+    padding: 2.75rem 3.5rem;
+  }
+
+  .loginColumn {
+    flex-basis: 40rem;
+    max-width: 40rem;
+  }
 }
 
 .content {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 24rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+
+.card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1.75rem 1.5rem 1.5rem;
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .card {
+    padding: 2rem;
+  }
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cardSubtitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.typewriterMobile {
+  display: block;
+  margin-top: 1.25rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0 0.25rem;
+}
+
+.typewriterMobileText {
+  font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+  color: #475569;
+  text-align: center;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.typewriterCursorDark {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #334155;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@media (min-width: 900px) {
+  .typewriterMobile {
+    display: none;
+  }
 }
 
 /* Formulários longos (pré-cadastro, solicitar acesso, etc.) */
@@ -51,18 +384,17 @@
   flex-shrink: 0;
 }
 
-.card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
-  padding: 2rem;
-  width: 100%;
-}
-
-@media (max-width: 480px) {
+@media (max-height: 720px) {
   .card {
     padding: 1.25rem;
+  }
+
+  .brandPanel {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .platformFooter {
+    margin-top: 0.75rem;
   }
 }
 
@@ -75,15 +407,96 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  background: #f8fafc;
+  background: #eef2f6;
   pointer-events: none;
 }
 
 .splashLogo {
-  width: 72px;
-  height: 72px;
+  width: min(420px, 88vw);
+  height: auto;
+  max-height: 220px;
   object-fit: contain;
   animation: splashIn 1.2s ease-out forwards;
+}
+
+.logoInCard {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 0 0.75rem;
+}
+
+.brandLogo {
+  width: min(300px, 100%);
+  height: auto;
+  max-height: 120px;
+  object-fit: contain;
+}
+
+@media (max-width: 479px) {
+  .brandLogo {
+    max-height: 96px;
+  }
+
+  .card {
+    padding: 1.25rem 1.125rem 1.125rem;
+  }
+
+  .logoInCard {
+    padding-bottom: 0.5rem;
+  }
+}
+
+.accessSection {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.accessSectionGrid {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.accessSectionTitle {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+}
+
+.accessOption,
+.accessOptionAdmin {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.accessOptionAdmin {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-color: #cbd5e1;
+}
+
+.accessOptionLabel {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.accessOptionHint {
+  margin: 0 0 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #64748b;
 }
 
 .splashNome {
@@ -100,6 +513,7 @@
 
 .formWrapper {
   animation: formIn 0.6s ease-out forwards;
+  width: 100%;
 }
 
 @keyframes splashIn {
@@ -142,30 +556,48 @@
   text-align: center;
 }
 
-.typewriterWrapper {
-  margin-top: 1.5rem;
-  width: 100%;
-  max-width: 24rem;
-  min-height: 3.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 0.5rem;
+.credentialsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) auto;
+  gap: 0.75rem 0.875rem;
+  align-items: end;
 }
 
-.typewriterText {
-  font-size: clamp(0.8rem, 2.5vw, 0.9rem);
-  color: #475569;
-  text-align: center;
-  line-height: 1.5;
-  font-style: italic;
+.submitColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.submitButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2.5rem;
+  min-width: 7.25rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .credentialsRow {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .submitButton {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .typewriterCursor {
   display: inline-block;
   width: 2px;
   height: 1em;
-  background: #334155;
+  background: rgba(255, 255, 255, 0.85);
   margin-left: 2px;
   vertical-align: text-bottom;
   animation: blink 1s step-end infinite;
@@ -179,6 +611,7 @@
 
 .platformFooter {
   margin-top: 1.25rem;
+  width: 100%;
   font-size: 0.75rem;
   color: #94a3b8;
   text-align: center;

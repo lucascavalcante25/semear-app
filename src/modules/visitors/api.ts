@@ -1,5 +1,7 @@
 import { requisicaoApi } from "@/modules/api/client";
 
+export type FormaChegadaVisitante = "SOZINHO" | "COM_ALGUEM" | "CONVIDADO";
+
 export type VisitanteDTO = {
   id?: number;
   nome: string;
@@ -7,6 +9,10 @@ export type VisitanteDTO = {
   dataVisita: string; // yyyy-mm-dd
   comoConheceu?: string | null;
   observacoes?: string | null;
+  formaChegada?: FormaChegadaVisitante | null;
+  acompanhanteNome?: string | null;
+  igrejaOrigem?: string | null;
+  convidadoPor?: string | null;
   criadoEm?: string;
   criadoPor?: string | null;
   atualizadoEm?: string | null;
@@ -20,6 +26,10 @@ export type VisitanteApp = {
   visitDate: Date;
   howHeard?: string;
   notes?: string;
+  arrivalType?: FormaChegadaVisitante;
+  companionName?: string;
+  churchOrigin?: string;
+  invitedBy?: string;
   createdAt: Date;
 };
 
@@ -32,8 +42,37 @@ export const mapearVisitante = (dto: VisitanteDTO): VisitanteApp => ({
   visitDate: toDateLocal(dto.dataVisita),
   howHeard: dto.comoConheceu ?? undefined,
   notes: dto.observacoes ?? undefined,
+  arrivalType: dto.formaChegada ?? undefined,
+  companionName: dto.acompanhanteNome ?? undefined,
+  churchOrigin: dto.igrejaOrigem ?? undefined,
+  invitedBy: dto.convidadoPor ?? undefined,
   createdAt: dto.criadoEm ? new Date(dto.criadoEm) : new Date(),
 });
+
+/** Texto amigável sobre como o visitante chegou (dashboard e listagem). */
+export function textoFormaChegada(visitante: VisitanteApp): string | undefined {
+  if (!visitante.arrivalType) return undefined;
+
+  if (visitante.arrivalType === "SOZINHO") {
+    return "Veio sozinho(a)";
+  }
+  if (visitante.arrivalType === "COM_ALGUEM") {
+    return visitante.companionName
+      ? `Veio com ${visitante.companionName}`
+      : "Veio acompanhado(a)";
+  }
+  if (visitante.arrivalType === "CONVIDADO") {
+    const partes = ["De outra igreja"];
+    if (visitante.churchOrigin) {
+      partes.push(`(${visitante.churchOrigin})`);
+    }
+    if (visitante.invitedBy) {
+      partes.push(`— convidado(a) por ${visitante.invitedBy}`);
+    }
+    return partes.join(" ");
+  }
+  return undefined;
+}
 
 export const listarVisitantes = async (): Promise<VisitanteApp[]> => {
   const params = new URLSearchParams();
@@ -62,6 +101,48 @@ export type CriarVisitantePayload = {
   dataVisita?: string; // yyyy-mm-dd
   comoConheceu?: string;
   observacoes?: string;
+  formaChegada?: FormaChegadaVisitante;
+  acompanhanteNome?: string;
+  igrejaOrigem?: string;
+  convidadoPor?: string;
+};
+
+const montarCamposChegada = (payload: {
+  formaChegada?: FormaChegadaVisitante;
+  acompanhanteNome?: string;
+  igrejaOrigem?: string;
+  convidadoPor?: string;
+}): Pick<VisitanteDTO, "formaChegada" | "acompanhanteNome" | "igrejaOrigem" | "convidadoPor"> => {
+  if (!payload.formaChegada) {
+    return {
+      formaChegada: null,
+      acompanhanteNome: null,
+      igrejaOrigem: null,
+      convidadoPor: null,
+    };
+  }
+  if (payload.formaChegada === "SOZINHO") {
+    return {
+      formaChegada: "SOZINHO",
+      acompanhanteNome: null,
+      igrejaOrigem: null,
+      convidadoPor: null,
+    };
+  }
+  if (payload.formaChegada === "COM_ALGUEM") {
+    return {
+      formaChegada: "COM_ALGUEM",
+      acompanhanteNome: payload.acompanhanteNome?.trim() || null,
+      igrejaOrigem: null,
+      convidadoPor: null,
+    };
+  }
+  return {
+    formaChegada: "CONVIDADO",
+    acompanhanteNome: null,
+    igrejaOrigem: payload.igrejaOrigem?.trim() || null,
+    convidadoPor: payload.convidadoPor?.trim() || null,
+  };
 };
 
 export const criarVisitante = async (payload: CriarVisitantePayload): Promise<VisitanteApp> => {
@@ -74,6 +155,7 @@ export const criarVisitante = async (payload: CriarVisitantePayload): Promise<Vi
     dataVisita: payload.dataVisita || `${yyyy}-${mm}-${dd}`,
     comoConheceu: payload.comoConheceu?.trim() || undefined,
     observacoes: payload.observacoes?.trim() || undefined,
+    ...montarCamposChegada(payload),
   };
   const created = await requisicaoApi<VisitanteDTO>("/api/visitantes", {
     method: "POST",
@@ -100,4 +182,3 @@ export const atualizarVisitante = async (payload: AtualizarVisitantePayload): Pr
 export const excluirVisitante = async (id: number): Promise<void> => {
   await requisicaoApi(`/api/visitantes/${id}`, { method: "DELETE", auth: true });
 };
-

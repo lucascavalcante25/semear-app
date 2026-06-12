@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { BannerTesteGratis } from "@/components/comercial/BannerTesteGratis";
+import { BotaoFlutuanteSuporte } from "@/components/suporte/BotaoFlutuanteSuporte";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { Cabecalho } from "./Header";
@@ -35,6 +36,8 @@ export function LayoutApp({ children }: LayoutAppProps) {
 
       {/* Mobile Bottom Navigation */}
       {isMobile && <NavegacaoInferior />}
+
+      <BotaoFlutuanteSuporte />
     </div>
   );
 }

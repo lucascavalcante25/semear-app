@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -33,8 +34,10 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  Loader2
+  Loader2,
+  Users,
 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +53,8 @@ import {
   criarVisitante,
   excluirVisitante,
   listarVisitantes,
+  textoFormaChegada,
+  type FormaChegadaVisitante,
   type VisitanteApp,
   type VisitanteDTO,
 } from "@/modules/visitors/api";
@@ -75,6 +80,7 @@ interface CartaoVisitanteProps {
 
 function CartaoVisitante({ visitante, aoEditar, aoExcluir, podeEditar }: CartaoVisitanteProps) {
   const visitaHoje = isToday(visitante.visitDate);
+  const chegada = textoFormaChegada(visitante);
 
   return (
     <Card className={cn(
@@ -136,6 +142,13 @@ function CartaoVisitante({ visitante, aoEditar, aoExcluir, podeEditar }: CartaoV
                 })}
               </p>
               
+              {chegada && (
+                <p className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  {chegada}
+                </p>
+              )}
+
               {visitante.howHeard && (
                 <p className="flex items-center gap-1.5">
                   <MessageSquare className="h-3.5 w-3.5" />
@@ -171,6 +184,10 @@ export default function Visitantes() {
   const [formComoConheceu, setFormComoConheceu] = useState("");
   const [formObservacoes, setFormObservacoes] = useState("");
   const [formDataVisita, setFormDataVisita] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [formFormaChegada, setFormFormaChegada] = useState<FormaChegadaVisitante | "">("");
+  const [formAcompanhanteNome, setFormAcompanhanteNome] = useState("");
+  const [formIgrejaOrigem, setFormIgrejaOrigem] = useState("");
+  const [formConvidadoPor, setFormConvidadoPor] = useState("");
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -189,12 +206,20 @@ export default function Visitantes() {
     void carregar();
   }, [carregar]);
 
+  const limparFormChegada = () => {
+    setFormFormaChegada("");
+    setFormAcompanhanteNome("");
+    setFormIgrejaOrigem("");
+    setFormConvidadoPor("");
+  };
+
   const abrirNovo = () => {
     setVisitanteEmEdicao(null);
     setFormNome("");
     setFormComoConheceu("");
     setFormObservacoes("");
     setFormDataVisita(new Date().toISOString().slice(0, 10));
+    limparFormChegada();
     setDialogAberto(true);
   };
 
@@ -204,6 +229,10 @@ export default function Visitantes() {
     setFormComoConheceu(v.howHeard ?? "");
     setFormObservacoes(v.notes ?? "");
     setFormDataVisita(v.visitDate.toISOString().slice(0, 10));
+    setFormFormaChegada(v.arrivalType ?? "");
+    setFormAcompanhanteNome(v.companionName ?? "");
+    setFormIgrejaOrigem(v.churchOrigin ?? "");
+    setFormConvidadoPor(v.invitedBy ?? "");
     setDialogAberto(true);
   };
 
@@ -220,12 +249,25 @@ export default function Visitantes() {
     }
     setSalvando(true);
     try {
+      const camposChegada = formFormaChegada
+        ? {
+            formaChegada: formFormaChegada,
+            acompanhanteNome:
+              formFormaChegada === "COM_ALGUEM" ? formAcompanhanteNome.trim() || undefined : undefined,
+            igrejaOrigem:
+              formFormaChegada === "CONVIDADO" ? formIgrejaOrigem.trim() || undefined : undefined,
+            convidadoPor:
+              formFormaChegada === "CONVIDADO" ? formConvidadoPor.trim() || undefined : undefined,
+          }
+        : {};
+
       if (!visitanteEmEdicao) {
         await criarVisitante({
           nome: formNome,
           comoConheceu: formComoConheceu,
           observacoes: formObservacoes,
           dataVisita: formDataVisita,
+          ...camposChegada,
         });
         toast.success("Visitante cadastrado.");
       } else {
@@ -236,6 +278,13 @@ export default function Visitantes() {
           dataVisita: formDataVisita,
           comoConheceu: formComoConheceu.trim() || null,
           observacoes: formObservacoes.trim() || null,
+          formaChegada: formFormaChegada || null,
+          acompanhanteNome:
+            formFormaChegada === "COM_ALGUEM" ? formAcompanhanteNome.trim() || null : null,
+          igrejaOrigem:
+            formFormaChegada === "CONVIDADO" ? formIgrejaOrigem.trim() || null : null,
+          convidadoPor:
+            formFormaChegada === "CONVIDADO" ? formConvidadoPor.trim() || null : null,
         };
         await atualizarVisitante(dto);
         toast.success("Visitante atualizado.");
@@ -297,14 +346,14 @@ export default function Visitantes() {
                 Novo
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
+            <DialogContent className="max-w-md max-h-[90dvh] flex flex-col gap-0 overflow-hidden p-0">
+              <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
                 <DialogTitle>{visitanteEmEdicao ? "Editar Visitante" : "Novo Visitante"}</DialogTitle>
                 <DialogDescription>
                   {visitanteEmEdicao ? "Atualize os dados do visitante." : "Registre um novo visitante."}
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-4">
+              <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-2 space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome *</Label>
                   <Input
@@ -323,6 +372,75 @@ export default function Visitantes() {
                     placeholder="Selecione a data"
                   />
                 </div>
+                <div className="space-y-3">
+                  <Label>Como veio ao culto?</Label>
+                  <RadioGroup
+                    value={formFormaChegada}
+                    onValueChange={(v) => {
+                      const forma = v as FormaChegadaVisitante;
+                      setFormFormaChegada(forma);
+                      setFormAcompanhanteNome("");
+                      setFormIgrejaOrigem("");
+                      setFormConvidadoPor("");
+                    }}
+                    className="gap-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="SOZINHO" id="chegada-sozinho" />
+                      <Label htmlFor="chegada-sozinho" className="font-normal cursor-pointer">
+                        Veio sozinho(a)
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="COM_ALGUEM" id="chegada-acompanhado" />
+                      <Label htmlFor="chegada-acompanhado" className="font-normal cursor-pointer">
+                        Veio com alguém
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="CONVIDADO" id="chegada-convidado" />
+                      <Label htmlFor="chegada-convidado" className="font-normal cursor-pointer">
+                        É de outra igreja e veio convidado(a)
+                      </Label>
+                    </div>
+                  </RadioGroup>
+
+                  {formFormaChegada === "COM_ALGUEM" && (
+                    <div className="space-y-2 pl-1">
+                      <Label htmlFor="acompanhante">Com quem veio?</Label>
+                      <Input
+                        id="acompanhante"
+                        placeholder="Ex: Maria Silva"
+                        value={formAcompanhanteNome}
+                        onChange={(e) => setFormAcompanhanteNome(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {formFormaChegada === "CONVIDADO" && (
+                    <div className="space-y-3 pl-1">
+                      <div className="space-y-2">
+                        <Label htmlFor="igrejaOrigem">Igreja de origem</Label>
+                        <Input
+                          id="igrejaOrigem"
+                          placeholder="Ex: Igreja Batista Central"
+                          value={formIgrejaOrigem}
+                          onChange={(e) => setFormIgrejaOrigem(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="convidadoPor">Convidado(a) por</Label>
+                        <Input
+                          id="convidadoPor"
+                          placeholder="Ex: João, membro da igreja"
+                          value={formConvidadoPor}
+                          onChange={(e) => setFormConvidadoPor(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="howHeard">Como conheceu a igreja?</Label>
                   <Input
@@ -341,16 +459,16 @@ export default function Visitantes() {
                     onChange={(e) => setFormObservacoes(e.target.value)}
                   />
                 </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={salvar} disabled={salvando}>
-                    {salvando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Salvar
-                  </Button>
-                </div>
               </div>
+              <DialogFooter className="shrink-0 gap-2 border-t bg-background px-6 py-4 sm:justify-end">
+                <Button variant="outline" onClick={() => setDialogAberto(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={salvar} disabled={salvando}>
+                  {salvando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Salvar
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>

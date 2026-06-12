@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { ArrowLeft } from "lucide-react";
-import { PLATAFORMA } from "@/lib/plataforma";
+import { MARCA } from "@/lib/plataforma";
 import styles from "@/pages/Login.module.css";
 
 type Props = {
@@ -37,8 +37,8 @@ export function PublicPageShell({
             {voltarLabel}
           </Link>
           <div className="flex items-center gap-2">
-            <img src={PLATAFORMA.logoUrl} alt="" className="h-8 w-8 rounded-lg" aria-hidden />
-            <span className="font-semibold text-slate-800">{PLATAFORMA.nome}</span>
+            <img src={MARCA.logoIcon} alt="" className="h-8 w-8 rounded-lg" aria-hidden />
+            <span className="font-semibold text-slate-800">{MARCA.nome}</span>
           </div>
         </div>
 
@@ -51,7 +51,7 @@ export function PublicPageShell({
 
         {children}
 
-        <p className={styles.platformFooter}>{PLATAFORMA.nome} · {PLATAFORMA.empresa}</p>
+        <p className={styles.platformFooter}>{MARCA.creditoRodape}</p>
       </div>
     </div>
   );

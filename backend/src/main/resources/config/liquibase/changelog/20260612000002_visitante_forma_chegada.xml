@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260612000002-1" author="semear">
+        <addColumn tableName="visitante">
+            <column name="forma_chegada" type="varchar(50)"/>
+            <column name="acompanhante_nome" type="varchar(255)"/>
+            <column name="igreja_origem" type="varchar(255)"/>
+            <column name="convidado_por" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

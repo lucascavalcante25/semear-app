@@ -1,7 +1,8 @@
+import { MARCA } from "@/lib/plataforma";
 import { requisicaoApi, URL_BASE_API } from "@/modules/api/client";
 
 export function resolverUrlLogo(logoUrl?: string, versaoCache?: string | number): string {
-  if (!logoUrl) return "/logo-semear.png";
+  if (!logoUrl) return MARCA.logoIcon;
   let url = logoUrl;
   if (logoUrl.startsWith("/api/") && URL_BASE_API) {
     url = `${URL_BASE_API}${logoUrl}`;
