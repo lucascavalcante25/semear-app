@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { obterPlanoPublico, type PlanoPublico } from "@/modules/admin/api";
 import { PLANO_LANCAMENTO_PADRAO, RECURSOS_PLANO_LANCAMENTO, formatarMoeda } from "@/lib/plano-comercial";
 import { PLATAFORMA, PRODUTO } from "@/lib/plataforma";
@@ -15,6 +16,7 @@ import {
   Sparkles,
   Users,
   Wallet,
+  ZoomIn,
 } from "lucide-react";
 
 const BENEFICIOS = [
@@ -73,14 +75,39 @@ function PlaceholderImagem({ legenda }: { legenda: string }) {
 
 function ScreenshotCard({ src, alt, legenda }: { src: string; alt: string; legenda: string }) {
   const [erro, setErro] = useState(false);
+  const [ampliado, setAmpliado] = useState(false);
+
   if (erro) return <PlaceholderImagem legenda={legenda} />;
+
   return (
-    <img
-      src={src}
-      alt={alt}
-      className="aspect-[4/3] w-full rounded-xl border bg-muted/20 object-contain object-top shadow-sm"
-      onError={() => setErro(true)}
-    />
+    <>
+      <button
+        type="button"
+        onClick={() => setAmpliado(true)}
+        className="group relative w-full overflow-hidden rounded-xl border bg-muted/20 shadow-sm transition hover:ring-2 hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label={`Ampliar screenshot: ${legenda}`}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="aspect-[4/3] w-full object-contain object-top"
+          onError={() => setErro(true)}
+        />
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
+          <span className="flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium opacity-0 shadow-sm transition group-hover:opacity-100">
+            <ZoomIn className="h-3.5 w-3.5" />
+            Clique para ampliar
+          </span>
+        </span>
+      </button>
+
+      <Dialog open={ampliado} onOpenChange={setAmpliado}>
+        <DialogContent className="max-h-[95vh] w-[95vw] max-w-5xl overflow-auto p-3 sm:p-4">
+          <DialogTitle className="mb-2 text-center text-base font-semibold">{legenda}</DialogTitle>
+          <img src={src} alt={alt} className="mx-auto max-h-[80vh] w-full rounded-lg object-contain" />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -166,7 +193,9 @@ export default function Landing() {
       <section className="border-y bg-muted/30 py-16">
         <div className="mx-auto max-w-6xl px-4">
           <h2 className="mb-2 text-2xl font-bold">Veja o sistema por dentro</h2>
-          <p className="mb-8 text-muted-foreground">Screenshots reais do painel da igreja.</p>
+          <p className="mb-8 text-muted-foreground">
+            Screenshots reais do painel da igreja. Clique em qualquer imagem para ampliar.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {SCREENSHOTS.map((s) => (
               <div key={s.legenda} className="space-y-2">
