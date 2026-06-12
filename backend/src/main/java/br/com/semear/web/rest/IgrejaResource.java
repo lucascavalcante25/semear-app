@@ -44,6 +44,7 @@ public class IgrejaResource {
 
     @GetMapping("/igreja/atual")
     @RolesAllowed({
+        AuthoritiesConstants.SUPER_ADMIN,
         AuthoritiesConstants.ADMIN,
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
@@ -69,6 +70,7 @@ public class IgrejaResource {
 
     @GetMapping("/igreja/configuracao")
     @RolesAllowed({
+        AuthoritiesConstants.SUPER_ADMIN,
         AuthoritiesConstants.ADMIN,
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
@@ -92,6 +94,7 @@ public class IgrejaResource {
 
     @GetMapping("/igreja/pix")
     @RolesAllowed({
+        AuthoritiesConstants.SUPER_ADMIN,
         AuthoritiesConstants.ADMIN,
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
@@ -117,6 +120,7 @@ public class IgrejaResource {
 
     @GetMapping("/igreja/identidade-visual")
     @RolesAllowed({
+        AuthoritiesConstants.SUPER_ADMIN,
         AuthoritiesConstants.ADMIN,
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,

@@ -10,6 +10,7 @@ import { ProvedorTema } from "@/contexts/ThemeContext";
 import { ProvedorIgreja } from "@/contexts/IgrejaContext";
 import { SincronizarTema } from "@/components/theme/SincronizarTema";
 import { SincronizarCoresIgreja } from "@/components/theme/SincronizarCoresIgreja";
+import { SincronizarIgreja } from "@/components/theme/SincronizarIgreja";
 import { LimparBloqueioNavegacao } from "@/components/navigation/LimparBloqueioNavegacao";
 import { RequerSuperAdmin } from "@/components/auth/RequireSuperAdmin";
 import DashboardSuperAdmin from "./pages/super-admin/Dashboard";
@@ -57,6 +58,7 @@ const App = () => (
           <ProvedorNotificacoes>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <SincronizarTema />
+            <SincronizarIgreja />
             <SincronizarCoresIgreja />
             <LimparBloqueioNavegacao />
             <Routes>

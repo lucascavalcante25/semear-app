@@ -23,19 +23,41 @@ import { PLATAFORMA } from "@/lib/plataforma";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { usarNotificacoesSuperAdmin } from "@/hooks/use-notificacoes-super-admin";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/super-admin/dashboard" },
   { icon: Church, label: "Igrejas", path: "/super-admin/igrejas" },
-  { icon: ClipboardList, label: "Solicitações", path: "/super-admin/solicitacoes" },
-  { icon: Headphones, label: "Suporte dos Clientes", path: "/super-admin/suporte" },
+  { icon: ClipboardList, label: "Solicitações", path: "/super-admin/solicitacoes", badge: "solicitacoes" as const },
+  { icon: Headphones, label: "Suporte dos Clientes", path: "/super-admin/suporte", badge: "suporte" as const },
   { icon: Users, label: "Usuários", path: "/super-admin/usuarios" },
   { icon: CreditCard, label: "Planos", path: "/super-admin/planos" },
   { icon: Wallet, label: "Meu Financeiro", path: "/super-admin/financeiro" },
   { icon: Settings, label: "Configurações", path: "/super-admin/configuracoes" },
 ];
 
-function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
+function BadgeNotificacaoMenu({ quantidade }: { quantidade: number }) {
+  if (quantidade <= 0) return null;
+
+  return (
+    <span
+      className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground"
+      aria-label={`${quantidade} não ${quantidade === 1 ? "vista" : "vistas"}`}
+    >
+      {quantidade > 9 ? "9+" : quantidade}
+    </span>
+  );
+}
+
+function MenuLateral({
+  onNavigate,
+  badgeSolicitacoes,
+  badgeSuporte,
+}: {
+  onNavigate?: () => void;
+  badgeSolicitacoes: number;
+  badgeSuporte: number;
+}) {
   const location = useLocation();
   const { logout } = usarAutenticacao();
   const { theme, setTheme } = usarTema();
@@ -57,6 +79,12 @@ function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
         {menuItems.map((item) => {
           const Icon = item.icon;
           const ativo = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+          const badge =
+            item.badge === "solicitacoes"
+              ? badgeSolicitacoes
+              : item.badge === "suporte"
+                ? badgeSuporte
+                : 0;
           return (
             <Link
               key={item.path}
@@ -69,8 +97,9 @@ function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
                   : "hover:bg-sidebar-accent/60",
               )}
             >
-              <Icon className="h-4 w-4" />
-              {item.label}
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{item.label}</span>
+              <BadgeNotificacaoMenu quantidade={badge} />
             </Link>
           );
         })}
@@ -109,6 +138,7 @@ function MenuLateral({ onNavigate }: { onNavigate?: () => void }) {
 export function LayoutSuperAdmin({ children }: { children: React.ReactNode }) {
   const isMobile = usarEhMobile();
   const [menuAberto, setMenuAberto] = useState(false);
+  const { badgeSolicitacoes, badgeSuporte, temAlgumaNotificacao } = usarNotificacoesSuperAdmin();
   useTituloDocumento({ area: "plataforma" });
 
   return (
@@ -116,7 +146,7 @@ export function LayoutSuperAdmin({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen">
         {!isMobile && (
           <aside className="w-64 shrink-0 border-r border-border">
-            <MenuLateral />
+            <MenuLateral badgeSolicitacoes={badgeSolicitacoes} badgeSuporte={badgeSuporte} />
           </aside>
         )}
         <div className="flex min-w-0 flex-1 flex-col">
@@ -124,12 +154,19 @@ export function LayoutSuperAdmin({ children }: { children: React.ReactNode }) {
             <header className="flex h-14 items-center gap-2 border-b px-3">
               <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="relative">
                     <Menu className="h-5 w-5" />
+                    {temAlgumaNotificacao && (
+                      <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-background" />
+                    )}
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 p-0">
-                  <MenuLateral onNavigate={() => setMenuAberto(false)} />
+                  <MenuLateral
+                    onNavigate={() => setMenuAberto(false)}
+                    badgeSolicitacoes={badgeSolicitacoes}
+                    badgeSuporte={badgeSuporte}
+                  />
                 </SheetContent>
               </Sheet>
               <span className="font-semibold">{PLATAFORMA.nome}</span>

@@ -35,6 +35,7 @@ public class IgrejaService {
 
     private static final Logger LOG = LoggerFactory.getLogger(IgrejaService.class);
     private static final String ENTITY_NAME = "igreja";
+    private static final List<StatusIgreja> STATUS_IGREJA_OPERACIONAL = List.of(StatusIgreja.ATIVA, StatusIgreja.EM_TESTE);
 
     private final IgrejaRepository igrejaRepository;
     private final UserRepository userRepository;
@@ -98,9 +99,7 @@ public class IgrejaService {
 
     @Transactional(readOnly = true)
     public Optional<IgrejaPublicaDTO> obterConfiguracaoPublica() {
-        return igrejaRepository
-            .findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA)
-            .map(igrejaMapper::toPublicaDto);
+        return obterPrimeiraIgrejaOperacional().map(igrejaMapper::toPublicaDto);
     }
 
     @Transactional(readOnly = true)
@@ -309,13 +308,20 @@ public class IgrejaService {
 
     private Optional<Igreja> resolverIgrejaDoUsuarioLogado() {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.SUPER_ADMIN)) {
-            return igrejaRepository.findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA);
+            return obterPrimeiraIgrejaOperacional();
         }
         User user = obterUsuarioLogado();
         if (user.getIgreja() != null) {
             return Optional.of(user.getIgreja());
         }
-        return igrejaRepository.findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA);
+        return obterPrimeiraIgrejaOperacional();
+    }
+
+    private Optional<Igreja> obterPrimeiraIgrejaOperacional() {
+        return igrejaRepository
+            .findByStatusIn(STATUS_IGREJA_OPERACIONAL, Sort.by(Sort.Direction.ASC, "id"))
+            .stream()
+            .findFirst();
     }
 
     private User obterUsuarioLogado() {
