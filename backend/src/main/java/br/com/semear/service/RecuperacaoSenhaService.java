@@ -128,9 +128,7 @@ public class RecuperacaoSenhaService {
         } catch (IllegalStateException e) {
             LOG.warn("Falha ao enviar SMS de recuperação para user {}: {}", user.getLogin(), e.getMessage());
             recuperacaoSenhaRepository.delete(registro);
-            return respostaFalhaEnvio(
-                "Não foi possível enviar o SMS agora. Tente receber o código por e-mail ou contate a secretaria da igreja."
-            );
+            return respostaFalhaEnvio(e.getMessage());
         } catch (Exception e) {
             LOG.warn("Falha ao enviar código de recuperação para user {}", user.getLogin(), e);
             recuperacaoSenhaRepository.delete(registro);
@@ -238,7 +236,7 @@ public class RecuperacaoSenhaService {
 
         opcoes.setEmailDisponivel(emailDisponivel);
         opcoes.setSmsDisponivel(smsDisponivel);
-        opcoes.setEscolhaNecessaria(temEmail && temTelefone);
+        opcoes.setEscolhaNecessaria(emailDisponivel && smsDisponivel);
 
         if (temEmail) {
             opcoes.setEmailMascarado(mascararEmail(user.getEmail()));
@@ -274,17 +272,7 @@ public class RecuperacaoSenhaService {
 
         opcoes.setPodeRecuperar(true);
         if (opcoes.isEscolhaNecessaria()) {
-            if (emailDisponivel && smsDisponivel) {
-                opcoes.setMensagem("Escolha como deseja receber o código de verificação.");
-            } else if (emailDisponivel) {
-                opcoes.setMensagem(
-                    "Seu cadastro possui e-mail e celular. O envio por SMS não está disponível no momento — use o e-mail."
-                );
-            } else {
-                opcoes.setMensagem(
-                    "Seu cadastro possui e-mail e celular. O envio por e-mail não está disponível no momento — use o SMS."
-                );
-            }
+            opcoes.setMensagem("Escolha como deseja receber o código de verificação.");
         } else if (emailDisponivel) {
             opcoes.setMensagem("Enviaremos o código para o e-mail " + opcoes.getEmailMascarado() + ".");
         } else {

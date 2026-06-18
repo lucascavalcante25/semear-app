@@ -7,11 +7,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 @Service
 public class SmsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SmsService.class);
+    private static final String BREVO_SMS_URL = "https://api.brevo.com/v3/transactionalSMS/send";
+
+    private final RestClient brevoClient;
 
     @Value("${semear.sms.enabled:false}")
     private boolean smsEnabled;
@@ -21,6 +25,10 @@ public class SmsService {
 
     @Value("${semear.sms.sender:Semear}")
     private String smsSender;
+
+    public SmsService() {
+        this.brevoClient = RestClient.create();
+    }
 
     public boolean isDisponivel() {
         return smsEnabled && brevoApiKey != null && !brevoApiKey.isBlank();
@@ -35,14 +43,14 @@ public class SmsService {
         String destino = normalizarTelefoneBrasil(telefone);
         String conteudo =
             br.com.semear.config.Constants.NOME_PLATAFORMA +
-            ": seu código de recuperação de senha é " +
+            ": codigo de recuperacao " +
             codigo +
-            ". Válido por 15 minutos.";
+            ". Valido por 15 minutos.";
 
         try {
-            RestClient.create()
+            brevoClient
                 .post()
-                .uri("https://api.brevo.com/v3/transactionalSMS/sms")
+                .uri(BREVO_SMS_URL)
                 .header("api-key", brevoApiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(
@@ -50,7 +58,7 @@ public class SmsService {
                         "type",
                         "transactional",
                         "unicodeEnabled",
-                        true,
+                        false,
                         "sender",
                         smsSender,
                         "recipient",
@@ -62,10 +70,29 @@ public class SmsService {
                 .retrieve()
                 .toBodilessEntity();
             LOG.debug("SMS de recuperação enviado para {}", mascararTelefone(destino));
+        } catch (RestClientResponseException e) {
+            LOG.warn(
+                "Brevo rejeitou SMS de recuperação para {} — HTTP {}: {}",
+                mascararTelefone(destino),
+                e.getStatusCode().value(),
+                e.getResponseBodyAsString()
+            );
+            throw new IllegalStateException(mensagemErroBrevo(e), e);
         } catch (Exception e) {
             LOG.warn("Falha ao enviar SMS de recuperação para {}", mascararTelefone(destino), e);
-            throw new IllegalStateException("Falha ao enviar SMS");
+            throw new IllegalStateException("Falha ao enviar SMS. Tente receber o código por e-mail.", e);
         }
+    }
+
+    private String mensagemErroBrevo(RestClientResponseException e) {
+        int status = e.getStatusCode().value();
+        if (status == 402) {
+            return "SMS indisponível: verifique créditos ou Sender ID no Brevo. Tente receber o código por e-mail.";
+        }
+        if (status == 400) {
+            return "Não foi possível enviar SMS para este número. Verifique o celular cadastrado ou use e-mail.";
+        }
+        return "Falha ao enviar SMS. Tente receber o código por e-mail.";
     }
 
     private String normalizarTelefoneBrasil(String telefone) {
