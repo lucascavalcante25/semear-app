@@ -184,7 +184,7 @@ export default function Entrar() {
                   </div>
 
                   <div className="space-y-1 text-center mb-6">
-                    <h1 className={styles.cardTitle}>Login</h1>
+                    <h1 className={styles.cardTitle}>Bem-vindo de volta</h1>
                     <p className={styles.cardSubtitle}>
                       Entre com CPF e senha. Se você é membro, use os dados enviados pela igreja.
                     </p>
