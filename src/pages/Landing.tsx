@@ -53,32 +53,42 @@ const HERO_SLIDES = [
     titulo: "Sua igreja organizada em um só lugar",
     subtitulo:
       "Membros, visitantes, avisos, documentos, louvores, devocionais, financeiro e ofertas via PIX — no computador e no celular.",
+    imagem: "/landing/dashboard.png",
+    imagemAlt: "Painel principal com visão geral da igreja",
   },
   {
     destaque: "Teste grátis, sem compromisso",
     titulo: "Foque no que realmente importa: vidas",
     subtitulo:
       "Gestão completa para sua igreja — membros, avisos, louvores, financeiro e PIX em um sistema simples.",
+    imagem: "/landing/membros.png",
+    imagemAlt: "Cadastro e gestão de membros da igreja",
   },
   {
     destaque: "Organize sua igreja sem burocracia",
     titulo: "Secretaria, finanças e comunicação em um só lugar",
     subtitulo:
       "Chega de dados espalhados em planilhas, cadernos e grupos de WhatsApp. Tudo integrado e acessível no celular.",
+    imagem: "/landing/financeiro.png",
+    imagemAlt: "Módulo financeiro da igreja",
   },
   {
     destaque: "Desenvolvido para a realidade da igreja",
     titulo: "Tecnologia a serviço do ministério",
     subtitulo:
       "Plataforma criada para pastores e líderes que querem menos papelada e mais tempo com as pessoas.",
+    imagem: "/landing/pix.png",
+    imagemAlt: "Ofertas via PIX integradas ao sistema",
   },
   {
     destaque: "Suporte dentro do próprio sistema",
     titulo: "Dúvidas, erros e sugestões com quem entende sua igreja",
     subtitulo:
       "Abra chamados direto no sistema para tirar dúvidas, reportar problemas e enviar ideias de melhoria. A equipe acompanha cada solicitação da sua igreja.",
+    imagem: "/landing/suporte.png",
+    imagemAlt: "Central de suporte integrada",
   },
-];
+] as const;
 
 const PILARES = [
   {
@@ -354,48 +364,83 @@ export default function Landing() {
       {/* Hero slider */}
       <section className="relative overflow-hidden border-b bg-gradient-to-br from-primary/15 via-background to-primary/5">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
-        <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24">
+        <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-20 lg:py-24">
           <div
             className={cn(
-              "mx-auto max-w-3xl space-y-6 text-center transition-all duration-700 ease-in-out",
+              "grid items-center gap-10 transition-all duration-700 ease-in-out lg:grid-cols-2 lg:gap-12 xl:gap-16",
               fadeVisivel ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
             )}
           >
-            <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-              {slideAtivo === HERO_SLIDES.length - 1 ? (
-                <Headphones className="h-4 w-4" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {slide.destaque}
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-5xl lg:text-6xl">{slide.titulo}</h1>
-            <p className="text-lg text-muted-foreground sm:text-xl">{slide.subtitulo}</p>
-            <div className="flex flex-wrap justify-center gap-3 pt-2">
-              <Button asChild size="lg" className="gap-2 px-8">
-                <Link to="/solicitar-acesso">
-                  Testar grátis por {diasTrial} dias
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <Link to="/login">Entrar no sistema</Link>
-              </Button>
+            <div className="order-2 space-y-6 text-center lg:order-1 lg:text-left">
+              <p className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
+                {slideAtivo === HERO_SLIDES.length - 1 ? (
+                  <Headphones className="h-4 w-4" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {slide.destaque}
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl xl:text-[3.25rem] xl:leading-[1.1]">
+                {slide.titulo}
+              </h1>
+              <p className="text-base text-muted-foreground sm:text-lg lg:max-w-xl">{slide.subtitulo}</p>
+              <div className="flex flex-wrap justify-center gap-3 pt-1 lg:justify-start">
+                <Button asChild size="lg" className="gap-2 px-8">
+                  <Link to="/solicitar-acesso">
+                    Testar grátis por {diasTrial} dias
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link to="/login">Entrar no sistema</Link>
+                </Button>
+              </div>
             </div>
-            <div className="flex justify-center gap-2 pt-4">
-              {HERO_SLIDES.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  aria-label={`Slide ${i + 1}`}
-                  onClick={() => mudarSlide(i)}
-                  className={cn(
-                    "h-2 rounded-full transition-all duration-500 ease-in-out",
-                    i === slideAtivo ? "w-8 bg-primary" : "w-2 bg-primary/30 hover:bg-primary/50",
-                  )}
+
+            <div className="order-1 lg:order-2">
+              <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+                <div
+                  className="pointer-events-none absolute -right-4 -top-6 h-32 w-32 rounded-full bg-primary/20 blur-3xl sm:h-40 sm:w-40"
+                  aria-hidden
                 />
-              ))}
+                <div
+                  className="pointer-events-none absolute -bottom-6 -left-4 h-28 w-28 rounded-full bg-primary/10 blur-3xl sm:h-36 sm:w-36"
+                  aria-hidden
+                />
+                <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-background/90 p-2 shadow-2xl shadow-primary/10 ring-1 ring-black/5 backdrop-blur-sm">
+                  <div className="flex items-center gap-1.5 border-b border-border/60 px-3 py-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-red-400/90" aria-hidden />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-400/90" aria-hidden />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/90" aria-hidden />
+                    <span className="ml-2 truncate text-[0.65rem] text-muted-foreground sm:text-xs">
+                      {MARCA.nome}
+                    </span>
+                  </div>
+                  <img
+                    key={slide.imagem}
+                    src={slide.imagem}
+                    alt={slide.imagemAlt}
+                    className="aspect-[4/3] w-full rounded-b-xl object-cover object-top"
+                    loading={slideAtivo === 0 ? "eager" : "lazy"}
+                  />
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div className="mt-8 flex justify-center gap-2 lg:mt-10">
+            {HERO_SLIDES.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Slide ${i + 1}`}
+                onClick={() => mudarSlide(i)}
+                className={cn(
+                  "h-2 rounded-full transition-all duration-500 ease-in-out",
+                  i === slideAtivo ? "w-8 bg-primary" : "w-2 bg-primary/30 hover:bg-primary/50",
+                )}
+              />
+            ))}
           </div>
         </div>
       </section>
