@@ -22,10 +22,9 @@ Posso te enviar uma demonstração?`,
 ✅ Teste grátis por 7 dias
 ✅ Plano mensal: R$ 57,00/mês
 ✅ Plano anual à vista no PIX: R$ 570,00/ano (equivalente a 10 meses — 2 meses grátis)
+✅ Taxa de adesão promocional: R$ 200,00 (pagamento único na ativação)
 
 No cartão, o anual pode ser parcelado em 12× de R$ 57,00 (mesmo valor do mensal).
-
-Sem taxa de implantação.
 
 O sistema funciona no computador e no celular, sem precisar instalar aplicativo.`,
   mensagemDemo: `Pastor, posso te mostrar uma demonstração rápida do Minha Igreja Digital?

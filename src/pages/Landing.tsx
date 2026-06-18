@@ -13,9 +13,11 @@ import { obterPlanoPublico, type PlanoPublico } from "@/modules/admin/api";
 import {
   PLANO_LANCAMENTO_PADRAO,
   RECURSOS_PLANO_LANCAMENTO,
+  TAXA_ADESAO_REFERENCIA,
   calcularValorAnualAvista,
   economiaAnualAvista,
   formatarMoeda,
+  obterTaxaAdesao,
 } from "@/lib/plano-comercial";
 import { CreditoEmpresa } from "@/components/brand/CreditoEmpresa";
 import { MARCA, PLATAFORMA, PRODUTO } from "@/lib/plataforma";
@@ -190,16 +192,16 @@ const FAQ = [
   {
     pergunta: "Como é feito o pagamento?",
     resposta:
-      "Plano mensal recorrente ou anual. No PIX à vista, o anual equivale a 10 meses (2 meses grátis). No cartão, o anual pode ser parcelado em 12× com o valor mensal. Sem taxa de implantação.",
+      "Taxa única de adesão promocional de R$ 200,00 na ativação após o teste, mais assinatura mensal (R$ 57/mês) ou anual. No PIX à vista, o anual equivale a 10 meses (2 meses grátis). No cartão, o anual pode ser parcelado em 12× com o valor mensal.",
   },
   {
     pergunta: "Existe limite de membros?",
     resposta: "Neste lançamento, o plano único não possui limite de membros cadastrados.",
   },
   {
-    pergunta: "Existe taxa de implantação?",
+    pergunta: "Existe taxa de adesão?",
     resposta:
-      "Não. Cobramos apenas a assinatura mensal ou anual. Ao liberar o acesso, ajudamos com a configuração inicial e orientação de uso.",
+      "Sim. Na promoção de lançamento, a taxa única de adesão ao sistema é de R$ 200,00 (cobrada uma vez, na ativação após o teste grátis). Inclui orientação e configuração inicial. A mensalidade é cobrada à parte.",
   },
   {
     pergunta: "E se eu não gostar?",
@@ -315,6 +317,8 @@ export default function Landing() {
   const economiaAnual = economiaAnualAvista(valorMensal, valorAnualAvista);
   const diasTrial = plano?.diasTrial ?? 7;
   const nomePlano = plano?.nome ?? PLANO_LANCAMENTO_PADRAO.nome;
+  const taxaAdesao = obterTaxaAdesao(plano?.valorImplantacao);
+  const taxaAdesaoReferencia = TAXA_ADESAO_REFERENCIA;
   const slide = HERO_SLIDES[slideAtivo];
 
   return (
@@ -523,10 +527,30 @@ export default function Landing() {
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="text-center">
-                  <p className="text-sm font-medium text-muted-foreground">A partir de</p>
+                  <p className="text-sm font-medium text-muted-foreground">Assinatura a partir de</p>
                   <p className="text-4xl font-bold">
                     {formatarMoeda(valorMensal)}
                     <span className="text-base font-normal text-muted-foreground">/mês</span>
+                  </p>
+                </div>
+                <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/80 p-4 text-center dark:border-amber-900/60 dark:from-amber-950/40 dark:to-orange-950/20">
+                  <span className="inline-flex rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                    Promoção de lançamento
+                  </span>
+                  <p className="mt-2 text-sm font-semibold text-foreground">Taxa de adesão ao sistema</p>
+                  <p className="mt-1 flex flex-wrap items-baseline justify-center gap-2">
+                    {taxaAdesaoReferencia > taxaAdesao && (
+                      <span className="text-sm text-muted-foreground line-through">
+                        {formatarMoeda(taxaAdesaoReferencia)}
+                      </span>
+                    )}
+                    <span className="text-2xl font-bold text-amber-800 dark:text-amber-300">
+                      {formatarMoeda(taxaAdesao)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">pagamento único</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Cobrada na ativação, após o teste grátis. Inclui configuração inicial e orientação.
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -551,8 +575,8 @@ export default function Landing() {
                   </div>
                 </div>
                 <p className="rounded-lg border bg-muted/20 px-3 py-2 text-center text-xs text-muted-foreground">
-                  Anual no cartão: 12× de {formatarMoeda(valorMensal)} (mesmo valor do mensal).{" "}
-                  <strong>Sem taxa de implantação.</strong>
+                  Anual no cartão: 12× de {formatarMoeda(valorMensal)} (mesmo valor do mensal). Adesão promocional:{" "}
+                  <strong>{formatarMoeda(taxaAdesao)}</strong> (única vez).
                 </p>
                 <Button asChild className="w-full" size="lg">
                   <Link to="/solicitar-acesso">Começar teste grátis</Link>
