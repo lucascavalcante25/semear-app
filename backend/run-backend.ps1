@@ -1,7 +1,7 @@
 # Script para iniciar o backend Semear com Java 17
 # Use este script no terminal integrado quando o Java padrão for 8
 
-$JAVA_17 = "C:\Users\009869c9\Documents\Aplicativos\Java\jdk-17"
+$JAVA_17 = "C:\Program Files\Java\jdk-17"
 $env:JAVA_HOME = $JAVA_17
 $env:Path = "$JAVA_17\bin;$env:Path"
 

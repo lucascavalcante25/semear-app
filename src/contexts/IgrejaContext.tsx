@@ -17,7 +17,7 @@ import {
   type IgrejaPix,
   type IgrejaPublica,
 } from "@/modules/igreja/api";
-import { aplicarCoresIgreja, limparCoresIgreja } from "@/lib/cores-igreja";
+import { limparCoresIgreja } from "@/lib/cores-igreja";
 import { definirInicioPlanoIgreja } from "@/modules/bible/service";
 import { isRotaIgreja, isRotaPublica, isRotaSuperAdmin } from "@/lib/rotas-app";
 import { MARCA } from "@/lib/plataforma";
@@ -85,7 +85,7 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
         cidade: "Eusébio",
       });
       if (aplicarBrandingIgreja) {
-        aplicarCoresIgreja(FALLBACK_PUBLICA.corPrimaria, FALLBACK_PUBLICA.corSecundaria);
+        limparCoresIgreja();
       }
       return;
     }
@@ -96,7 +96,7 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
         const pub = await obterConfiguracaoPublica();
         if (pub) {
           setPublica(pub);
-          aplicarCoresIgreja(pub.corPrimaria, pub.corSecundaria);
+          limparCoresIgreja();
         }
       }
 
@@ -108,10 +108,8 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
             ...prev,
             ...cfg,
             logoUrl: cfg.logoUrl || prev.logoUrl,
-            corPrimaria: cfg.corPrimaria || prev.corPrimaria,
-            corSecundaria: cfg.corSecundaria || prev.corSecundaria,
           }));
-          aplicarCoresIgreja(cfg.corPrimaria, cfg.corSecundaria);
+          limparCoresIgreja();
           definirInicioPlanoIgreja(cfg.dataInicioPlanoLeitura ?? null);
         }
         if (pixData) setPix(pixData);

@@ -145,8 +145,8 @@ const MODULOS = [
     icon: Wallet,
   },
   {
-    titulo: "PIX e identidade",
-    descricao: "Chave PIX para ofertas, cores e logo da sua igreja no sistema.",
+    titulo: "PIX e logo",
+    descricao: "Chave PIX para ofertas e logo da sua igreja no sistema.",
     icon: CreditCard,
   },
   {

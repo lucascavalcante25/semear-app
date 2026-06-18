@@ -40,10 +40,10 @@ cd backend
 
 ### Opção 2: Definir JAVA_HOME manualmente
 
-Se o Java 17 está em `C:\Users\009869c9\Documents\Aplicativos\Java\jdk-17`:
+Se o Java 17 está em `C:\Program Files\Java\jdk-17`:
 
 ```powershell
-$env:JAVA_HOME="C:\Users\009869c9\Documents\Aplicativos\Java\jdk-17"
+$env:JAVA_HOME="C:\Program Files\Java\jdk-17"
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
 cd backend
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"

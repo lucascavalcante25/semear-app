@@ -123,8 +123,8 @@ export default function Entrar() {
           aria-hidden="true"
         >
           <img
-            src={MARCA.logoEmpresa}
-            alt={MARCA.empresa}
+            src={MARCA.logoLogin}
+            alt={MARCA.nome}
             className={styles.splashLogo}
           />
           <span className={styles.splashNome}>{MARCA.nome}</span>
@@ -177,8 +177,8 @@ export default function Entrar() {
                 <div className={styles.card}>
                   <div className={styles.logoInCard}>
                     <img
-                      src={MARCA.logoEmpresa}
-                      alt={MARCA.empresa}
+                      src={MARCA.logoLogin}
+                      alt={MARCA.nome}
                       className={styles.brandLogo}
                     />
                   </div>

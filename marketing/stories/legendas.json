@@ -1,0 +1,121 @@
+[
+  {
+    "file": "01-login.png",
+    "legenda": "Tela de login — acesso seguro para membros e líderes",
+    "textoOverlay": "Acesse de qualquer lugar",
+    "textoStory": "Membros e líderes entram com CPF e senha — simples, seguro e disponível no celular ou computador.\n\nMinha Igreja Digital · WillTech Solutions Dev",
+    "hashtags": "#MinhaIgrejaDigital #igreja #tecnologia #pastor"
+  },
+  {
+    "file": "02-landing-hero.png",
+    "legenda": "Página inicial — sua igreja organizada em um só lugar",
+    "textoOverlay": "Sua igreja organizada",
+    "textoStory": "Chega de planilhas e grupos de WhatsApp para tudo.\n\nMembros, avisos, financeiro, documentos e muito mais — tudo integrado.\n\nTeste grátis por 7 dias.",
+    "hashtags": "#gestãodeigreja #igrejaevangélica #sistemaigreja"
+  },
+  {
+    "file": "03-landing-modulos.png",
+    "legenda": "Módulos integrados da plataforma",
+    "textoOverlay": "12+ módulos integrados",
+    "textoStory": "Membros · Visitantes · Avisos · Louvores · Devocionais · Bíblia · Financeiro · PIX · Documentos · Suporte\n\nUm plano completo para sua igreja.",
+    "hashtags": "#igrejadigital #ministerio #louvor"
+  },
+  {
+    "file": "04-landing-precos.png",
+    "legenda": "Planos e preços — teste grátis 7 dias",
+    "textoOverlay": "A partir de R$ 57/mês",
+    "textoStory": "Plano completo com membros ilimitados.\n\nR$ 57/mês · Anual no PIX com 2 meses grátis · Sem taxa de implantação.\n\nComece seu teste de 7 dias hoje.",
+    "hashtags": "#igreja #saas #testegratis"
+  },
+  {
+    "file": "05-dashboard.png",
+    "legenda": "Dashboard — visão geral da igreja",
+    "textoOverlay": "Tudo em um painel",
+    "textoStory": "Veja avisos, aniversariantes, finanças e indicadores importantes assim que entrar no sistema.\n\nGestão clara para pastores e líderes.",
+    "hashtags": "#dashboard #gestão #igreja"
+  },
+  {
+    "file": "06-membros.png",
+    "legenda": "Cadastro e gestão de membros",
+    "textoOverlay": "Membros organizados",
+    "textoStory": "Cadastro completo, perfis, aniversariantes e aprovação de pré-cadastros online.\n\nSua secretaria mais eficiente.",
+    "hashtags": "#membros #secretaria #igreja"
+  },
+  {
+    "file": "07-visitantes.png",
+    "legenda": "Acompanhamento de visitantes",
+    "textoOverlay": "Cuidado com cada visita",
+    "textoStory": "Registre visitantes, acompanhe integrações e não perca ninguém no caminho.\n\nEvangelismo com organização.",
+    "hashtags": "#visitantes #evangelismo #igreja"
+  },
+  {
+    "file": "08-avisos.png",
+    "legenda": "Avisos e comunicação com a igreja",
+    "textoOverlay": "Comunique com clareza",
+    "textoStory": "Publique avisos fixos, urgentes e mantenha toda a igreja informada — direto no sistema.",
+    "hashtags": "#comunicação #avisos #igreja"
+  },
+  {
+    "file": "09-louvores.png",
+    "legenda": "Louvores e repertório",
+    "textoOverlay": "Louvor organizado",
+    "textoStory": "Organize repertório, grupos e escalas do ministério de louvor em um só lugar.",
+    "hashtags": "#louvor #ministeriodemusica #igreja"
+  },
+  {
+    "file": "10-devocionais.png",
+    "legenda": "Devocionais para edificação",
+    "textoOverlay": "Edifique a congregação",
+    "textoStory": "Publique devocionais diários e fortaleça a vida espiritual dos membros.",
+    "hashtags": "#devocional #palavra #igreja"
+  },
+  {
+    "file": "11-biblia.png",
+    "legenda": "Bíblia com plano de leitura coletivo",
+    "textoOverlay": "Leitura bíblica integrada",
+    "textoStory": "Leia a Bíblia no sistema e acompanhe planos de leitura configurados pela sua igreja.",
+    "hashtags": "#biblia #leiturabiblica #igreja"
+  },
+  {
+    "file": "12-financeiro.png",
+    "legenda": "Financeiro da igreja",
+    "textoOverlay": "Finanças sob controle",
+    "textoStory": "Registre entradas e saídas, acompanhe relatórios e tenha visão clara das finanças da igreja.",
+    "hashtags": "#financeiro #tesouraria #igreja"
+  },
+  {
+    "file": "13-pix.png",
+    "legenda": "Ofertas via PIX configurável",
+    "textoOverlay": "PIX para ofertas",
+    "textoStory": "Configure a chave PIX da igreja e facilite as ofertas dos membros — tudo dentro do sistema.",
+    "hashtags": "#pix #ofertas #igreja"
+  },
+  {
+    "file": "14-documentos.png",
+    "legenda": "Documentos da igreja na nuvem",
+    "textoOverlay": "Documentos seguros",
+    "textoStory": "Guarde atas, estatutos, contratos e certidões em um só lugar — organizados e acessíveis.",
+    "hashtags": "#documentos #igreja #organização"
+  },
+  {
+    "file": "15-configuracoes.png",
+    "legenda": "Identidade visual da igreja",
+    "textoOverlay": "Sua igreja, sua cara",
+    "textoStory": "Personalize cores, logo e identidade visual. Cada igreja com seu próprio ambiente no sistema.",
+    "hashtags": "#identidadevisual #igreja #personalização"
+  },
+  {
+    "file": "16-suporte.png",
+    "legenda": "Central de suporte integrada",
+    "textoOverlay": "Suporte no sistema",
+    "textoStory": "Dúvidas, erros ou sugestões? Abra um chamado direto no app. A equipe WillTech acompanha cada solicitação.",
+    "hashtags": "#suporte #saas #igreja"
+  },
+  {
+    "file": "17-pre-cadastro.png",
+    "legenda": "Pré-cadastro online para novos membros",
+    "textoOverlay": "Cadastro online fácil",
+    "textoStory": "Novos membros se cadastram pela internet. A secretaria aprova com um clique.\n\nMenos papelada, mais pessoas.",
+    "hashtags": "#precadastro #membros #igreja"
+  }
+]

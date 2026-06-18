@@ -9,10 +9,30 @@ export type RespostaRecuperacao = {
   codigoEnviado: boolean;
 };
 
-export async function iniciarRecuperacaoSenha(cpf: string): Promise<RespostaRecuperacao> {
-  return requisicaoApi<RespostaRecuperacao>("/api/recuperacao-senha/iniciar", {
+export type OpcoesRecuperacao = {
+  mensagem: string;
+  podeRecuperar: boolean;
+  emailDisponivel: boolean;
+  smsDisponivel: boolean;
+  escolhaNecessaria: boolean;
+  emailMascarado?: string;
+  telefoneMascarado?: string;
+};
+
+export async function consultarOpcoesRecuperacao(cpf: string): Promise<OpcoesRecuperacao> {
+  return requisicaoApi<OpcoesRecuperacao>("/api/recuperacao-senha/opcoes", {
     method: "POST",
     body: { cpf },
+  });
+}
+
+export async function iniciarRecuperacaoSenha(
+  cpf: string,
+  canal?: CanalRecuperacao,
+): Promise<RespostaRecuperacao> {
+  return requisicaoApi<RespostaRecuperacao>("/api/recuperacao-senha/iniciar", {
+    method: "POST",
+    body: canal ? { cpf, canal } : { cpf },
   });
 }
 

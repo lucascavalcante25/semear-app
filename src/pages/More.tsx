@@ -162,7 +162,7 @@ export default function Mais() {
                 <MenuItem
                   icon={Church}
                   label="Configurações da Igreja"
-                  description="Dados, PIX e identidade visual"
+                  description="Dados, PIX e logo da igreja"
                   path="/configuracoes-igreja"
                 />
               )}

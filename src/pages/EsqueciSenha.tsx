@@ -1,39 +1,70 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Mail, Smartphone } from "lucide-react";
+import { ArrowLeft, Mail, Smartphone, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CampoSenha } from "@/components/ui/password-input";
 import { IndicadorValidacaoSenha } from "@/components/ui/indicador-validacao-senha";
-import { PublicPageShell } from "@/components/layout/PublicPageShell";
-import { Card, CardContent } from "@/components/ui/card";
 import { aplicarMascaraCpf, validarCpf } from "@/lib/mascara-telefone";
+import { MARCA } from "@/lib/plataforma";
+import { useTituloDocumento } from "@/hooks/use-titulo-documento";
+import { cn } from "@/lib/utils";
 import {
   concluirRecuperacaoSenha,
+  consultarOpcoesRecuperacao,
   iniciarRecuperacaoSenha,
   validarCodigoRecuperacao,
+  type CanalRecuperacao,
+  type OpcoesRecuperacao,
 } from "@/modules/auth/recuperacaoSenha";
 import { toast } from "sonner";
+import styles from "./Login.module.css";
 
-type Etapa = "cpf" | "codigo" | "senha" | "sucesso";
+type Etapa = "cpf" | "canal" | "codigo" | "senha" | "sucesso";
 
 export default function EsqueciSenha() {
+  useTituloDocumento({ area: "produto" });
+
   const [etapa, setEtapa] = useState<Etapa>("cpf");
   const [cpf, setCpf] = useState("");
+  const [canalEscolhido, setCanalEscolhido] = useState<CanalRecuperacao | null>(null);
+  const [opcoes, setOpcoes] = useState<OpcoesRecuperacao | null>(null);
   const [codigo, setCodigo] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [infoEnvio, setInfoEnvio] = useState<{
-    canal?: "EMAIL" | "SMS";
+    canal?: CanalRecuperacao;
     destino?: string;
   } | null>(null);
 
   const cpfDigitos = cpf.replace(/\D/g, "");
 
-  const enviarCpf = async (e: React.FormEvent) => {
+  const enviarCodigo = async (canal?: CanalRecuperacao) => {
+    setErro(null);
+    setCarregando(true);
+    try {
+      const resposta = await iniciarRecuperacaoSenha(cpfDigitos, canal);
+      if (resposta.codigoEnviado) {
+        setInfoEnvio({ canal: resposta.canal, destino: resposta.destinoMascarado });
+        setEtapa("codigo");
+        toast.success(resposta.mensagem);
+      } else {
+        setErro(resposta.mensagem);
+        toast.error(resposta.mensagem);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Não foi possível enviar o código.";
+      setErro(msg);
+      toast.error(msg);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const continuarCpf = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
     if (!validarCpf(cpf)) {
@@ -42,19 +73,59 @@ export default function EsqueciSenha() {
     }
     setCarregando(true);
     try {
-      const resposta = await iniciarRecuperacaoSenha(cpfDigitos);
-      if (resposta.codigoEnviado) {
-        setInfoEnvio({ canal: resposta.canal, destino: resposta.destinoMascarado });
-        setEtapa("codigo");
-        toast.success(resposta.mensagem);
-      } else {
-        setErro(resposta.mensagem);
+      const res = await consultarOpcoesRecuperacao(cpfDigitos);
+      setOpcoes(res);
+
+      if (!res.podeRecuperar) {
+        setErro(res.mensagem);
+        return;
       }
+
+      if (res.escolhaNecessaria) {
+        if (res.emailDisponivel && !res.smsDisponivel) {
+          setCanalEscolhido("EMAIL");
+        } else if (!res.emailDisponivel && res.smsDisponivel) {
+          setCanalEscolhido("SMS");
+        } else {
+          setCanalEscolhido(null);
+        }
+        setEtapa("canal");
+        return;
+      }
+
+      const canalUnico: CanalRecuperacao = res.emailDisponivel ? "EMAIL" : "SMS";
+      setCanalEscolhido(canalUnico);
+      setEtapa("canal");
     } catch (err) {
-      setErro(err instanceof Error ? err.message : "Não foi possível enviar o código.");
+      setErro(err instanceof Error ? err.message : "Não foi possível consultar o cadastro.");
     } finally {
       setCarregando(false);
     }
+  };
+
+  const canalEnvioDisponivel = (canal: CanalRecuperacao) =>
+    canal === "EMAIL" ? Boolean(opcoes?.emailDisponivel) : Boolean(opcoes?.smsDisponivel);
+
+  const confirmarCanal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErro(null);
+
+    if (opcoes?.escolhaNecessaria && !canalEscolhido) {
+      setErro("Escolha e-mail ou SMS para receber o código.");
+      return;
+    }
+
+    if (canalEscolhido && !canalEnvioDisponivel(canalEscolhido)) {
+      setErro(
+        canalEscolhido === "SMS"
+          ? "O envio por SMS não está disponível no momento. Escolha e-mail."
+          : "O envio por e-mail não está disponível no momento. Escolha SMS.",
+      );
+      return;
+    }
+
+    const canal = canalEscolhido ?? (opcoes?.emailDisponivel ? "EMAIL" : "SMS");
+    await enviarCodigo(canal);
   };
 
   const validarCodigo = async (e: React.FormEvent) => {
@@ -102,26 +173,45 @@ export default function EsqueciSenha() {
     }
   };
 
-  const tituloEtapa = {
+  const titulos: Record<Etapa, string> = {
     cpf: "Recuperar senha",
+    canal: "Como receber o código?",
     codigo: "Verificar código",
     senha: "Nova senha",
     sucesso: "Senha alterada",
-  }[etapa];
+  };
 
-  const subtituloEtapa = {
-    cpf: "Informe seu CPF para receber um código de verificação.",
+  const subtitulos: Record<Etapa, string> = {
+    cpf: "Informe seu CPF para localizar seu cadastro.",
+    canal: opcoes?.mensagem ?? "Escolha o canal de envio do código.",
     codigo: "Digite o código de 6 dígitos que enviamos para você.",
     senha: "Escolha uma nova senha para sua conta.",
     sucesso: "Tudo certo! Agora você pode entrar com a nova senha.",
-  }[etapa];
+  };
 
   return (
-    <PublicPageShell titulo={tituloEtapa} subtitulo={subtituloEtapa}>
-      <Card className="w-full shadow-lg">
-        <CardContent className="pt-6 space-y-4">
+    <div className={styles.recoverRoot} role="main" aria-label="Recuperação de senha">
+      <div className={styles.recoverShell}>
+        <Link to="/login" className={styles.recoverBack}>
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Voltar ao login
+        </Link>
+
+        <div className={styles.recoverCard}>
+          <div className={styles.recoverLogoWrap}>
+            <img src={MARCA.logoLogin} alt={MARCA.nome} className={styles.recoverLogo} />
+          </div>
+
+          <div className={styles.recoverHeader}>
+            <div className={styles.recoverIconBadge} aria-hidden>
+              <KeyRound className="h-5 w-5" />
+            </div>
+            <h1 className={styles.recoverTitle}>{titulos[etapa]}</h1>
+            <p className={styles.recoverSubtitle}>{subtitulos[etapa]}</p>
+          </div>
+
           {etapa === "cpf" && (
-            <form className="space-y-4" onSubmit={enviarCpf}>
+            <form className={styles.recoverForm} onSubmit={continuarCpf}>
               <div className="space-y-2">
                 <Label htmlFor="cpf">CPF</Label>
                 <Input
@@ -131,27 +221,120 @@ export default function EsqueciSenha() {
                   placeholder="000.000.000-00"
                   maxLength={14}
                   required
+                  autoFocus
                 />
               </div>
-              {erro && <p className="text-sm text-destructive" role="alert">{erro}</p>}
+              {erro && (
+                <p className={styles.recoverError} role="alert">
+                  {erro}
+                </p>
+              )}
+              <Button type="submit" disabled={carregando} className="w-full">
+                {carregando ? "Consultando..." : "Continuar"}
+              </Button>
+            </form>
+          )}
+
+          {etapa === "canal" && opcoes && (
+            <form className={styles.recoverForm} onSubmit={confirmarCanal}>
+              {opcoes.escolhaNecessaria ? (
+                <div className={styles.canalGrid} role="radiogroup" aria-label="Canal de envio">
+                  {opcoes.emailMascarado && (
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={canalEscolhido === "EMAIL"}
+                      aria-disabled={!opcoes.emailDisponivel}
+                      disabled={!opcoes.emailDisponivel}
+                      className={cn(
+                        styles.canalOption,
+                        canalEscolhido === "EMAIL" && styles.canalOptionActive,
+                        !opcoes.emailDisponivel && styles.canalOptionDisabled,
+                      )}
+                      onClick={() => opcoes.emailDisponivel && setCanalEscolhido("EMAIL")}
+                    >
+                      <Mail className="h-5 w-5 shrink-0" aria-hidden />
+                      <span>
+                        <strong>E-mail</strong>
+                        <small>{opcoes.emailMascarado}</small>
+                        {!opcoes.emailDisponivel && (
+                          <small className={styles.canalIndisponivel}>Indisponível no momento</small>
+                        )}
+                      </span>
+                    </button>
+                  )}
+                  {opcoes.telefoneMascarado && (
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={canalEscolhido === "SMS"}
+                      aria-disabled={!opcoes.smsDisponivel}
+                      disabled={!opcoes.smsDisponivel}
+                      className={cn(
+                        styles.canalOption,
+                        canalEscolhido === "SMS" && styles.canalOptionActive,
+                        !opcoes.smsDisponivel && styles.canalOptionDisabled,
+                      )}
+                      onClick={() => opcoes.smsDisponivel && setCanalEscolhido("SMS")}
+                    >
+                      <Smartphone className="h-5 w-5 shrink-0" aria-hidden />
+                      <span>
+                        <strong>SMS</strong>
+                        <small>{opcoes.telefoneMascarado}</small>
+                        {!opcoes.smsDisponivel && (
+                          <small className={styles.canalIndisponivel}>Indisponível no momento</small>
+                        )}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className={styles.canalInfo}>
+                  {opcoes.emailDisponivel ? (
+                    <Mail className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  ) : (
+                    <Smartphone className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  )}
+                  <p>{opcoes.mensagem}</p>
+                </div>
+              )}
+
+              {erro && (
+                <p className={styles.recoverError} role="alert">
+                  {erro}
+                </p>
+              )}
               <Button type="submit" disabled={carregando} className="w-full">
                 {carregando ? "Enviando..." : "Enviar código"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                disabled={carregando}
+                onClick={() => {
+                  setErro(null);
+                  setOpcoes(null);
+                  setEtapa("cpf");
+                }}
+              >
+                Alterar CPF
               </Button>
             </form>
           )}
 
           {etapa === "codigo" && (
-            <form className="space-y-4" onSubmit={validarCodigo}>
+            <form className={styles.recoverForm} onSubmit={validarCodigo}>
               {infoEnvio && (
-                <div className="rounded-lg border bg-muted/40 p-3 text-sm flex items-start gap-2">
+                <div className={styles.canalInfo}>
                   {infoEnvio.canal === "SMS" ? (
-                    <Smartphone className="h-4 w-4 mt-0.5 shrink-0" />
+                    <Smartphone className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                   ) : (
-                    <Mail className="h-4 w-4 mt-0.5 shrink-0" />
+                    <Mail className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                   )}
-                  <span>
+                  <p>
                     Código enviado para <strong>{infoEnvio.destino}</strong>
-                  </span>
+                  </p>
                 </div>
               )}
               <div className="space-y-2">
@@ -164,10 +347,15 @@ export default function EsqueciSenha() {
                   placeholder="000000"
                   maxLength={6}
                   required
-                  className="tracking-[0.3em] text-center text-lg"
+                  autoFocus
+                  className="tracking-[0.35em] text-center text-xl font-semibold"
                 />
               </div>
-              {erro && <p className="text-sm text-destructive" role="alert">{erro}</p>}
+              {erro && (
+                <p className={styles.recoverError} role="alert">
+                  {erro}
+                </p>
+              )}
               <Button type="submit" disabled={carregando} className="w-full">
                 {carregando ? "Verificando..." : "Continuar"}
               </Button>
@@ -179,20 +367,8 @@ export default function EsqueciSenha() {
                 onClick={async () => {
                   setErro(null);
                   setCodigo("");
-                  setCarregando(true);
-                  try {
-                    const resposta = await iniciarRecuperacaoSenha(cpfDigitos);
-                    if (resposta.codigoEnviado) {
-                      setInfoEnvio({ canal: resposta.canal, destino: resposta.destinoMascarado });
-                      toast.success("Novo código enviado!");
-                    } else {
-                      setErro(resposta.mensagem);
-                    }
-                  } catch (err) {
-                    setErro(err instanceof Error ? err.message : "Não foi possível reenviar.");
-                  } finally {
-                    setCarregando(false);
-                  }
+                  const canal = canalEscolhido ?? (opcoes?.emailDisponivel ? "EMAIL" : "SMS");
+                  await enviarCodigo(canal);
                 }}
               >
                 Reenviar código
@@ -201,7 +377,7 @@ export default function EsqueciSenha() {
           )}
 
           {etapa === "senha" && (
-            <form className="space-y-4" onSubmit={redefinirSenha}>
+            <form className={styles.recoverForm} onSubmit={redefinirSenha}>
               <div className="space-y-2">
                 <Label htmlFor="novaSenha">Nova senha</Label>
                 <CampoSenha
@@ -223,7 +399,11 @@ export default function EsqueciSenha() {
                 />
               </div>
               <IndicadorValidacaoSenha senha={novaSenha} confirmarSenha={confirmarSenha} />
-              {erro && <p className="text-sm text-destructive" role="alert">{erro}</p>}
+              {erro && (
+                <p className={styles.recoverError} role="alert">
+                  {erro}
+                </p>
+              )}
               <Button type="submit" disabled={carregando} className="w-full">
                 {carregando ? "Salvando..." : "Definir nova senha"}
               </Button>
@@ -231,8 +411,8 @@ export default function EsqueciSenha() {
           )}
 
           {etapa === "sucesso" && (
-            <div className="space-y-4 text-center">
-              <p className="text-sm text-muted-foreground">
+            <div className={styles.recoverForm}>
+              <p className="text-sm text-center text-muted-foreground">
                 Sua senha foi redefinida com sucesso.
               </p>
               <Button asChild className="w-full">
@@ -240,17 +420,10 @@ export default function EsqueciSenha() {
               </Button>
             </div>
           )}
+        </div>
 
-          {etapa !== "sucesso" && (
-            <Button asChild variant="ghost" className="w-full">
-              <Link to="/login" className="inline-flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Voltar ao login
-              </Link>
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    </PublicPageShell>
+        <p className={styles.recoverFooter}>{MARCA.creditoRodape}</p>
+      </div>
+    </div>
   );
 }

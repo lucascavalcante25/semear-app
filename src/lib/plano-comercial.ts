@@ -37,7 +37,8 @@ export const RECURSOS_PLANO_LANCAMENTO = [
   "Organização segura de documentos administrativos",
   "Gestão e armazenamento de documentos da igreja",
   "PIX e ofertas configuráveis",
-  "Identidade visual da igreja (cores e tema)",
+  "Logo da igreja no menu e cabeçalho",
+  "Modo claro e escuro no perfil do usuário",
   "Funciona no computador e no celular",
   "Central de suporte do sistema",
 ] as const;

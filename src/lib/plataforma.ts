@@ -31,6 +31,8 @@ export const MARCA = {
   appleTouchIcon: assetMarca("/brand/apple-touch-icon.png"),
   /** Logo completo da empresa desenvolvedora (WillTech Solutions Dev) */
   logoEmpresa: assetMarca("/brand/willtech-logo.png"),
+  /** Logo exibida na splash e no card de login */
+  logoLogin: assetMarca("/logo-semear.png"),
   painelPlataforma: "Painel da Plataforma",
   painelIgreja: "Painel da Igreja",
   nomePlanoCompleto: "Minha Igreja Digital — Plano Completo",

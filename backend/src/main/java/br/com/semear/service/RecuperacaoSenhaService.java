@@ -7,8 +7,10 @@ import br.com.semear.repository.RecuperacaoSenhaRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.service.dto.RecuperacaoSenhaConcluirDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaIniciarDTO;
+import br.com.semear.service.dto.RecuperacaoSenhaOpcoesDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaRespostaDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaValidarDTO;
+import br.com.semear.service.exception.EmailEnvioException;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import br.com.semear.web.rest.vm.ManagedUserVM;
 import java.security.SecureRandom;
@@ -52,6 +54,23 @@ public class RecuperacaoSenhaService {
         this.userService = userService;
     }
 
+    @Transactional(readOnly = true)
+    public RecuperacaoSenhaOpcoesDTO consultarOpcoes(String cpfBruto) {
+        RecuperacaoSenhaOpcoesDTO resposta = opcoesGenericas();
+        String cpf = normalizarCpf(cpfBruto);
+        if (cpf == null || cpf.length() != 11) {
+            return resposta;
+        }
+
+        Optional<User> userOpt = userRepository.findOneByLogin(cpf).filter(User::isActivated);
+        if (userOpt.isEmpty()) {
+            LOG.debug("Consulta de opções de recuperação para CPF não encontrado ou inativo");
+            return resposta;
+        }
+
+        return montarOpcoes(userOpt.get());
+    }
+
     public RecuperacaoSenhaRespostaDTO iniciar(RecuperacaoSenhaIniciarDTO dto) {
         RecuperacaoSenhaRespostaDTO resposta = respostaGenerica();
         String cpf = normalizarCpf(dto.getCpf());
@@ -71,14 +90,19 @@ public class RecuperacaoSenhaService {
             return resposta;
         }
 
-        CanalRecuperacaoSenha canal = resolverCanal(user);
-        if (canal == null) {
-            LOG.warn("Usuário {} sem e-mail e sem telefone para recuperação", user.getLogin());
+        RecuperacaoSenhaOpcoesDTO opcoes = montarOpcoes(user);
+        if (!opcoes.isPodeRecuperar()) {
+            LOG.warn("Usuário {} sem canal disponível para recuperação", user.getLogin());
             return resposta;
         }
 
-        if (canal == CanalRecuperacaoSenha.SMS && !smsService.isDisponivel()) {
-            LOG.warn("SMS indisponível para recuperação do usuário {}", user.getLogin());
+        CanalRecuperacaoSenha canal;
+        try {
+            canal = resolverCanalEscolhido(opcoes, dto.getCanal());
+        } catch (BadRequestAlertException e) {
+            throw e;
+        } catch (IllegalArgumentException e) {
+            LOG.warn("Canal inválido na recuperação para user {}: {}", user.getLogin(), e.getMessage());
             return resposta;
         }
 
@@ -97,10 +121,20 @@ public class RecuperacaoSenhaService {
 
         try {
             enviarCodigo(user, canal, codigo);
+        } catch (EmailEnvioException e) {
+            LOG.warn("Falha ao enviar e-mail de recuperação para user {}: {}", user.getLogin(), e.getMessage());
+            recuperacaoSenhaRepository.delete(registro);
+            return respostaFalhaEnvio(e.getMessage());
+        } catch (IllegalStateException e) {
+            LOG.warn("Falha ao enviar SMS de recuperação para user {}: {}", user.getLogin(), e.getMessage());
+            recuperacaoSenhaRepository.delete(registro);
+            return respostaFalhaEnvio(
+                "Não foi possível enviar o SMS agora. Tente receber o código por e-mail ou contate a secretaria da igreja."
+            );
         } catch (Exception e) {
             LOG.warn("Falha ao enviar código de recuperação para user {}", user.getLogin(), e);
             recuperacaoSenhaRepository.delete(registro);
-            return resposta;
+            return respostaFalhaEnvio("Não foi possível enviar o código. Tente novamente em instantes.");
         }
 
         resposta.setCodigoEnviado(true);
@@ -188,28 +222,114 @@ public class RecuperacaoSenhaService {
 
     private void enviarCodigo(User user, CanalRecuperacaoSenha canal, String codigo) {
         if (canal == CanalRecuperacaoSenha.EMAIL) {
-            mailService.sendCodigoRecuperacaoEmail(user.getEmail(), codigo);
+            mailService.sendCodigoRecuperacaoEmailSync(user.getEmail(), codigo);
             return;
         }
         String telefone = StringUtils.firstNonBlank(user.getPhone(), user.getPhoneSecondary());
         smsService.enviarCodigoRecuperacao(telefone, codigo);
     }
 
-    private CanalRecuperacaoSenha resolverCanal(User user) {
-        if (StringUtils.isNotBlank(user.getEmail())) {
-            return CanalRecuperacaoSenha.EMAIL;
+    private RecuperacaoSenhaOpcoesDTO montarOpcoes(User user) {
+        RecuperacaoSenhaOpcoesDTO opcoes = new RecuperacaoSenhaOpcoesDTO();
+        boolean temEmail = StringUtils.isNotBlank(user.getEmail());
+        boolean temTelefone = StringUtils.isNotBlank(user.getPhone()) || StringUtils.isNotBlank(user.getPhoneSecondary());
+        boolean emailDisponivel = temEmail && mailService.isEnvioDisponivel();
+        boolean smsDisponivel = temTelefone && smsService.isDisponivel();
+
+        opcoes.setEmailDisponivel(emailDisponivel);
+        opcoes.setSmsDisponivel(smsDisponivel);
+        opcoes.setEscolhaNecessaria(temEmail && temTelefone);
+
+        if (temEmail) {
+            opcoes.setEmailMascarado(mascararEmail(user.getEmail()));
         }
-        if (StringUtils.isNotBlank(user.getPhone()) || StringUtils.isNotBlank(user.getPhoneSecondary())) {
-            return CanalRecuperacaoSenha.SMS;
+        if (temTelefone) {
+            opcoes.setTelefoneMascarado(mascararTelefone(StringUtils.firstNonBlank(user.getPhone(), user.getPhoneSecondary())));
         }
-        return null;
+
+        if (!emailDisponivel && !smsDisponivel) {
+            opcoes.setPodeRecuperar(false);
+            if (temEmail && !mailService.isEnvioDisponivel() && temTelefone && !smsService.isDisponivel()) {
+                opcoes.setMensagem(
+                    "O envio de e-mail e SMS não está disponível no momento. Peça à secretaria da igreja para redefinir sua senha."
+                );
+            } else if (temEmail && !mailService.isEnvioDisponivel()) {
+                opcoes.setMensagem(
+                    "Seu cadastro possui e-mail, mas o envio não está configurado no servidor. " +
+                    "Peça à secretaria da igreja para cadastrar seu celular ou redefinir sua senha."
+                );
+            } else if (temTelefone && !smsService.isDisponivel()) {
+                opcoes.setMensagem(
+                    "Seu cadastro possui celular, mas o envio por SMS não está disponível no momento. " +
+                    "Peça à secretaria da igreja para cadastrar ou atualizar seu e-mail."
+                );
+            } else {
+                opcoes.setMensagem(
+                    "Seu cadastro não possui e-mail nem celular para recuperação. " +
+                    "Procure a secretaria da igreja para atualizar seus dados."
+                );
+            }
+            return opcoes;
+        }
+
+        opcoes.setPodeRecuperar(true);
+        if (opcoes.isEscolhaNecessaria()) {
+            if (emailDisponivel && smsDisponivel) {
+                opcoes.setMensagem("Escolha como deseja receber o código de verificação.");
+            } else if (emailDisponivel) {
+                opcoes.setMensagem(
+                    "Seu cadastro possui e-mail e celular. O envio por SMS não está disponível no momento — use o e-mail."
+                );
+            } else {
+                opcoes.setMensagem(
+                    "Seu cadastro possui e-mail e celular. O envio por e-mail não está disponível no momento — use o SMS."
+                );
+            }
+        } else if (emailDisponivel) {
+            opcoes.setMensagem("Enviaremos o código para o e-mail " + opcoes.getEmailMascarado() + ".");
+        } else {
+            opcoes.setMensagem("Enviaremos o código por SMS para o celular " + opcoes.getTelefoneMascarado() + ".");
+        }
+        return opcoes;
     }
 
-    private void invalidarCodigosPendentes(User user) {
-        recuperacaoSenhaRepository.findAllByUserAndUsadoIsFalse(user).forEach(r -> {
-            r.setUsado(true);
-            recuperacaoSenhaRepository.save(r);
-        });
+    private CanalRecuperacaoSenha resolverCanalEscolhido(RecuperacaoSenhaOpcoesDTO opcoes, CanalRecuperacaoSenha canalSolicitado) {
+        if (opcoes.isEscolhaNecessaria()) {
+            if (canalSolicitado == null) {
+                throw new BadRequestAlertException("Escolha e-mail ou SMS para receber o código", ENTITY, "canalobrigatorio");
+            }
+            if (canalSolicitado == CanalRecuperacaoSenha.EMAIL && !opcoes.isEmailDisponivel()) {
+                throw new BadRequestAlertException("E-mail não disponível para recuperação", ENTITY, "canalinvalido");
+            }
+            if (canalSolicitado == CanalRecuperacaoSenha.SMS && !opcoes.isSmsDisponivel()) {
+                throw new BadRequestAlertException("SMS não disponível para recuperação", ENTITY, "canalinvalido");
+            }
+            return canalSolicitado;
+        }
+
+        if (opcoes.isEmailDisponivel()) {
+            return CanalRecuperacaoSenha.EMAIL;
+        }
+        if (opcoes.isSmsDisponivel()) {
+            return CanalRecuperacaoSenha.SMS;
+        }
+        throw new IllegalArgumentException("Nenhum canal disponível");
+    }
+
+    private RecuperacaoSenhaRespostaDTO respostaFalhaEnvio(String mensagem) {
+        RecuperacaoSenhaRespostaDTO resposta = new RecuperacaoSenhaRespostaDTO();
+        resposta.setMensagem(mensagem);
+        resposta.setCodigoEnviado(false);
+        return resposta;
+    }
+
+    private RecuperacaoSenhaOpcoesDTO opcoesGenericas() {
+        RecuperacaoSenhaOpcoesDTO resposta = new RecuperacaoSenhaOpcoesDTO();
+        resposta.setMensagem(
+            "Se o CPF estiver cadastrado e possuir e-mail ou celular, você poderá receber um código de verificação."
+        );
+        resposta.setPodeRecuperar(false);
+        return resposta;
     }
 
     private RecuperacaoSenhaRespostaDTO respostaGenerica() {
@@ -219,6 +339,13 @@ public class RecuperacaoSenhaService {
         );
         resposta.setCodigoEnviado(false);
         return resposta;
+    }
+
+    private void invalidarCodigosPendentes(User user) {
+        recuperacaoSenhaRepository.findAllByUserAndUsadoIsFalse(user).forEach(r -> {
+            r.setUsado(true);
+            recuperacaoSenhaRepository.save(r);
+        });
     }
 
     private String gerarCodigo() {

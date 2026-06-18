@@ -35,8 +35,6 @@ import {
   type IgrejaConfiguracao,
   type TipoChavePix,
 } from "@/modules/igreja/api";
-import { PALETAS_CORES } from "@/data/paletas-cores";
-import { corTextoSobreFundo } from "@/lib/cores-igreja";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canWrite, podeGerenciarDocumentosIgreja } from "@/auth/permissions";
 import { DocumentosIgrejaTab } from "@/components/documentos/DocumentosIgrejaTab";
@@ -227,9 +225,9 @@ export default function ConfiguracoesIgreja() {
   const salvarVisual = async () => {
     setSalvando(true);
     try {
-      await atualizarIdentidadeVisual(form);
+      await atualizarIdentidadeVisual({ logoUrl: form.logoUrl });
       await recarregar();
-      toast.success("Identidade visual atualizada!");
+      toast.success("Logo atualizado!");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
@@ -251,7 +249,7 @@ export default function ConfiguracoesIgreja() {
           <TabsTrigger value="responsavel">Responsável</TabsTrigger>
           <TabsTrigger value="endereco">Endereço</TabsTrigger>
           <TabsTrigger value="pix">PIX</TabsTrigger>
-          <TabsTrigger value="visual">Visual</TabsTrigger>
+          <TabsTrigger value="visual">Logo</TabsTrigger>
           <TabsTrigger value="textos">Textos</TabsTrigger>
           <TabsTrigger value="plano">Plano de Leitura</TabsTrigger>
           {podeDocumentos && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
@@ -327,8 +325,14 @@ export default function ConfiguracoesIgreja() {
 
         <TabsContent value="visual">
           <Card>
-            <CardHeader><CardTitle>Identidade visual</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Logo da igreja</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground rounded-lg border bg-muted/40 p-3">
+                As cores do sistema são padronizadas (verde oliva e azul — padrão Semear).
+                Para alternar entre modo claro e escuro, use o menu do seu perfil no canto superior.
+              </p>
               <div className="space-y-2">
                 <Label>Logo da igreja</Label>
                 <div className="flex flex-wrap items-center gap-4">
@@ -391,50 +395,7 @@ export default function ConfiguracoesIgreja() {
                 <Label>URL do logo (alternativa)</Label>
                 <Input value={form.logoUrl || ""} onChange={(e) => set("logoUrl", e.target.value)} placeholder="/brand/logo-icon.png" />
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2"><Label>Cor primária</Label><Input type="color" value={form.corPrimaria || "#5a7a3a"} onChange={(e) => set("corPrimaria", e.target.value)} /></div>
-                <div className="space-y-2"><Label>Cor secundária</Label><Input type="color" value={form.corSecundaria || "#1f4d7a"} onChange={(e) => set("corSecundaria", e.target.value)} /></div>
-              </div>
-              <div className="space-y-2">
-                <Label>Paletas sugeridas</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {PALETAS_CORES.map((p) => (
-                    <button
-                      key={p.nome}
-                      type="button"
-                      className="rounded-lg border p-2 text-left text-xs hover:border-primary"
-                      onClick={() => setForm((f) => ({ ...f, corPrimaria: p.primaria, corSecundaria: p.secundaria }))}
-                    >
-                      <div className="flex gap-1 mb-1">
-                        <span className="h-4 w-4 rounded" style={{ background: p.primaria }} />
-                        <span className="h-4 w-4 rounded border" style={{ background: p.secundaria }} />
-                      </div>
-                      {p.nome}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: form.corPrimaria }}>
-                <div
-                  className="h-8 rounded text-sm flex items-center px-3"
-                  style={{
-                    background: form.corPrimaria,
-                    color: corTextoSobreFundo(form.corPrimaria),
-                  }}
-                >
-                  Botão principal
-                </div>
-                <div
-                  className="h-6 rounded text-xs flex items-center px-2"
-                  style={{
-                    background: form.corSecundaria,
-                    color: corTextoSobreFundo(form.corSecundaria),
-                  }}
-                >
-                  Destaque secundário
-                </div>
-              </div>
-              <Button onClick={salvarVisual} disabled={salvando}>Salvar visual</Button>
+              <Button onClick={salvarVisual} disabled={salvando}>Salvar logo</Button>
             </CardContent>
           </Card>
         </TabsContent>

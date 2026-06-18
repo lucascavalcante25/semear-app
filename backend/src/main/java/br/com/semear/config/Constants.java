@@ -17,5 +17,9 @@ public final class Constants {
     /** Empresa desenvolvedora (suporte da plataforma, distinto das igrejas clientes). */
     public static final String EMPRESA_PLATAFORMA = "WillTech Solutions Dev";
 
+    /** Paleta fixa do sistema (verde oliva + azul profundo — padrão Semear). */
+    public static final String COR_PRIMARIA_PADRAO = "#5a7a3a";
+    public static final String COR_SECUNDARIA_PADRAO = "#1f4d7a";
+
     private Constants() {}
 }

@@ -1,6 +1,8 @@
 package br.com.semear.service;
 
+import br.com.semear.config.Constants;
 import br.com.semear.domain.User;
+import br.com.semear.service.exception.EmailEnvioException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +43,12 @@ public class MailService {
     @Value("${semear.brevo.api-key:}")
     private String brevoApiKey;
 
+    @Value("${spring.mail.username:}")
+    private String smtpUsername;
+
+    @Value("${spring.mail.password:}")
+    private String smtpPassword;
+
     public MailService(
         JHipsterProperties jHipsterProperties,
         JavaMailSender javaMailSender,
@@ -57,9 +65,58 @@ public class MailService {
         return brevoApiKey != null && !brevoApiKey.isBlank();
     }
 
+    /** Indica se há Brevo API ou SMTP configurado para envio real. */
+    public boolean isEnvioDisponivel() {
+        return brevoDisponivel() || (org.apache.commons.lang3.StringUtils.isNotBlank(smtpUsername) && org.apache.commons.lang3.StringUtils.isNotBlank(smtpPassword));
+    }
+
     @Async
     public void sendEmail(String to, String subject, String content, boolean isMultipart, boolean isHtml) {
         sendEmailSync(to, subject, content, isMultipart, isHtml);
+    }
+
+    /**
+     * Envio síncrono obrigatório — falha com {@link EmailEnvioException} se o e-mail não for entregue.
+     * Usado em fluxos críticos (recuperação de senha).
+     */
+    public void sendEmailObrigatorioSync(String to, String subject, String content, boolean isHtml) {
+        if (!isEnvioDisponivel()) {
+            throw new EmailEnvioException(
+                "O envio de e-mail não está configurado no servidor. Configure o Brevo ou peça ajuda à secretaria da igreja."
+            );
+        }
+
+        Exception ultimoErro = null;
+
+        if (brevoDisponivel()) {
+            try {
+                enviarViaBrevoApi(to, subject, content);
+                LOG.debug("Sent email via Brevo API to '{}'", to);
+                return;
+            } catch (Exception e) {
+                ultimoErro = e;
+                LOG.warn("Brevo API failed for '{}', trying SMTP fallback", to, e);
+            }
+        }
+
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        try {
+            MimeMessageHelper message = new MimeMessageHelper(mimeMessage, false, StandardCharsets.UTF_8.name());
+            message.setTo(to);
+            message.setFrom(jHipsterProperties.getMail().getFrom());
+            message.setSubject(subject);
+            message.setText(content, isHtml);
+            javaMailSender.send(mimeMessage);
+            LOG.debug("Sent email via SMTP to '{}'", to);
+        } catch (MailException | MessagingException e) {
+            ultimoErro = e;
+            LOG.warn("Email could not be sent to user '{}'", to, e);
+        }
+
+        throw new EmailEnvioException(
+            "Não foi possível enviar o e-mail agora. Verifique se o remetente está verificado no Brevo ou tente novamente mais tarde.",
+            ultimoErro
+        );
     }
 
     private void sendEmailSync(String to, String subject, String content, boolean isMultipart, boolean isHtml) {
@@ -154,24 +211,18 @@ public class MailService {
         sendEmailFromTemplateSync(user, "mail/passwordResetEmail", "email.reset.title");
     }
 
-    @Async
-    public void sendCodigoRecuperacaoEmail(String to, String codigo) {
+    /** Envio síncrono — usado na recuperação de senha (propaga falha ao caller). */
+    public void sendCodigoRecuperacaoEmailSync(String to, String codigo) {
         String subject = "Código de recuperação de senha — " + PLATAFORMA_NOME;
-        String content =
-            "<p>Olá,</p>" +
-            "<p>Recebemos uma solicitação para redefinir sua senha na plataforma <strong>" +
-            PLATAFORMA_NOME +
-            "</strong>.</p>" +
-            "<p>Seu código de verificação é:</p>" +
-            "<p style=\"font-size:24px;font-weight:bold;letter-spacing:4px\">" +
-            codigo +
-            "</p>" +
-            "<p>Este código é válido por <strong>15 minutos</strong>.</p>" +
-            "<p>Se você não solicitou esta alteração, ignore este e-mail.</p>" +
-            "<p>— Equipe " +
-            PLATAFORMA_NOME +
-            "</p>";
-        sendEmailSync(to, subject, content, false, true);
+        String baseUrl = jHipsterProperties.getMail().getBaseUrl();
+        Context context = new Context(Locale.forLanguageTag("pt-br"));
+        context.setVariable("codigo", codigo);
+        context.setVariable("plataformaNome", PLATAFORMA_NOME);
+        context.setVariable("empresaNome", Constants.EMPRESA_PLATAFORMA);
+        context.setVariable("baseUrl", baseUrl != null ? baseUrl : "");
+        context.setVariable("loginUrl", baseUrl != null && !baseUrl.isBlank() ? baseUrl + "/login" : "#");
+        String content = templateEngine.process("mail/codigoRecuperacaoEmail", context);
+        sendEmailObrigatorioSync(to, subject, content, true);
     }
 
     @Async

@@ -37,3 +37,9 @@ services:
         sync: false  # E-mail remetente verificado no Brevo
       - key: SEMEAR_MAIL_BASE_URL
         sync: false  # URL do frontend em produção
+      - key: SEMEAR_BREVO_API_KEY
+        sync: false  # Chave API Brevo (e-mail + SMS)
+      - key: SEMEAR_SMS_ENABLED
+        value: "false"
+      - key: SEMEAR_SMS_SENDER
+        value: Semear

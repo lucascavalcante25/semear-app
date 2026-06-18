@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "screenshots:landing": "node scripts/capture-landing-screenshots.mjs"
+    "screenshots:landing": "node scripts/capture-landing-screenshots.mjs",
+    "screenshots:stories": "node scripts/capture-stories-marketing.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

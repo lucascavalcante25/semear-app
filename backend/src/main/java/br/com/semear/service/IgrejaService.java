@@ -1,5 +1,6 @@
 package br.com.semear.service;
 
+import br.com.semear.config.Constants;
 import br.com.semear.domain.Igreja;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.StatusIgreja;
@@ -258,8 +259,8 @@ public class IgrejaService {
             .orElseThrow(() -> new BadRequestAlertException("Usuário sem igreja vinculada", ENTITY_NAME, "semigreja"));
         validarAcessoIgreja(igreja);
         igreja.setLogoUrl(dto.getLogoUrl());
-        igreja.setCorPrimaria(dto.getCorPrimaria());
-        igreja.setCorSecundaria(dto.getCorSecundaria());
+        igreja.setCorPrimaria(Constants.COR_PRIMARIA_PADRAO);
+        igreja.setCorSecundaria(Constants.COR_SECUNDARIA_PADRAO);
         igreja.setTextoBoasVindas(dto.getTextoBoasVindas());
         igreja.setDescricaoIgreja(dto.getDescricaoIgreja());
         igreja.setSubtituloIgreja(dto.getSubtituloIgreja());
@@ -356,8 +357,6 @@ public class IgrejaService {
         if (dto.getBancoPix() != null) igreja.setBancoPix(dto.getBancoPix());
         if (dto.getDocumentoTitularPix() != null) igreja.setDocumentoTitularPix(dto.getDocumentoTitularPix());
         if (dto.getLogoUrl() != null) igreja.setLogoUrl(dto.getLogoUrl());
-        if (dto.getCorPrimaria() != null) igreja.setCorPrimaria(dto.getCorPrimaria());
-        if (dto.getCorSecundaria() != null) igreja.setCorSecundaria(dto.getCorSecundaria());
         if (dto.getTemaPreferido() != null) igreja.setTemaPreferido(dto.getTemaPreferido());
         if (dto.getTextoBoasVindas() != null) igreja.setTextoBoasVindas(dto.getTextoBoasVindas());
         if (dto.getDescricaoIgreja() != null) igreja.setDescricaoIgreja(dto.getDescricaoIgreja());

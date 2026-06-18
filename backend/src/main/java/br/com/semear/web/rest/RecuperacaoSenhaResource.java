@@ -2,7 +2,9 @@ package br.com.semear.web.rest;
 
 import br.com.semear.service.RecuperacaoSenhaService;
 import br.com.semear.service.dto.RecuperacaoSenhaConcluirDTO;
+import br.com.semear.service.dto.RecuperacaoSenhaConsultaDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaIniciarDTO;
+import br.com.semear.service.dto.RecuperacaoSenhaOpcoesDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaRespostaDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaValidarDTO;
 import org.slf4j.Logger;
@@ -23,6 +25,12 @@ public class RecuperacaoSenhaResource {
 
     public RecuperacaoSenhaResource(RecuperacaoSenhaService recuperacaoSenhaService) {
         this.recuperacaoSenhaService = recuperacaoSenhaService;
+    }
+
+    @PostMapping("/opcoes")
+    public ResponseEntity<RecuperacaoSenhaOpcoesDTO> consultarOpcoes(@RequestBody RecuperacaoSenhaConsultaDTO dto) {
+        LOG.debug("REST request to get password recovery options");
+        return ResponseEntity.ok(recuperacaoSenhaService.consultarOpcoes(dto.getCpf()));
     }
 
     @PostMapping("/iniciar")

@@ -1,0 +1,10 @@
+Arquivo: 11-biblia.png
+
+Legenda: Bíblia com plano de leitura coletivo
+
+Texto overlay: Leitura bíblica integrada
+
+Texto do story:
+Leia a Bíblia no sistema e acompanhe planos de leitura configurados pela sua igreja.
+
+Hashtags: #biblia #leiturabiblica #igreja

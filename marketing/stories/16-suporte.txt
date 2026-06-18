@@ -1,0 +1,10 @@
+Arquivo: 16-suporte.png
+
+Legenda: Central de suporte integrada
+
+Texto overlay: Suporte no sistema
+
+Texto do story:
+Dúvidas, erros ou sugestões? Abra um chamado direto no app. A equipe WillTech acompanha cada solicitação.
+
+Hashtags: #suporte #saas #igreja
