@@ -37,7 +37,7 @@ export function PublicPageShell({
             {voltarLabel}
           </Link>
           <div className="flex items-center gap-2">
-            <img src={MARCA.logoIcon} alt="" className="h-8 w-8 rounded-lg" aria-hidden />
+            <img src={MARCA.logoLogin} alt="" className="h-8 w-8 rounded-lg" aria-hidden />
             <span className="font-semibold text-slate-800">{MARCA.nome}</span>
           </div>
         </div>

@@ -136,7 +136,7 @@ export default function Entrar() {
           <header className={styles.topNav}>
             <Link to="/" className={styles.navBrand}>
               <img
-                src={MARCA.logoIcon}
+                src={MARCA.logoLogin}
                 alt=""
                 aria-hidden="true"
                 className={styles.navBrandIcon}
