@@ -99,7 +99,6 @@ public class SolicitacaoSuporteService {
     }
 
     public SolicitacaoSuporteDTO criar(SolicitacaoSuporteDTO dto, List<MultipartFile> anexos) {
-        validarAdminIgreja();
         validarCamposCriacao(dto);
 
         User usuario = tenantService.getUsuarioAtual();
@@ -142,8 +141,8 @@ public class SolicitacaoSuporteService {
         LocalDate dataInicio,
         LocalDate dataFim
     ) {
-        validarAdminIgreja();
         Long igrejaId = tenantService.getIgrejaIdAtual();
+        User usuario = tenantService.getUsuarioAtual();
         Instant inicio = dataInicio != null ? dataInicio.atStartOfDay(ZoneId.systemDefault()).toInstant() : null;
         Instant fim = dataFim != null ? dataFim.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant() : null;
         String buscaNorm = normalizarBusca(busca);
@@ -151,6 +150,9 @@ public class SolicitacaoSuporteService {
         Specification<SolicitacaoSuporte> spec = Specification.where((root, query, cb) ->
             cb.equal(root.get("igreja").get("id"), igrejaId)
         );
+        if (!ehAdminIgreja()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("usuarioSolicitante").get("id"), usuario.getId()));
+        }
         spec = aplicarFiltrosComuns(spec, status, tipo, inicio, fim, buscaNorm);
 
         return solicitacaoSuporteRepository
@@ -162,19 +164,19 @@ public class SolicitacaoSuporteService {
 
     @Transactional(readOnly = true)
     public Optional<SolicitacaoSuporteDTO> obterDaIgreja(Long id) {
-        validarAdminIgreja();
         return solicitacaoSuporteRepository
             .findById(id)
             .map(s -> {
                 tenantService.validarMesmaIgreja(s.getIgreja());
+                validarProprietarioOuAdminIgreja(s);
                 return toDto(s, false, true);
             });
     }
 
     public void marcarComoLidaPeloCliente(Long id) {
-        validarAdminIgreja();
         SolicitacaoSuporte s = obterOuFalhar(id);
         tenantService.validarMesmaIgreja(s.getIgreja());
+        validarProprietarioOuAdminIgreja(s);
         s.setLidaPeloCliente(true);
         solicitacaoSuporteRepository.save(s);
     }
@@ -186,9 +188,9 @@ public class SolicitacaoSuporteService {
     }
 
     public SolicitacaoSuporteDTO enviarMensagemCliente(Long id, String texto) {
-        validarAdminIgreja();
         SolicitacaoSuporte s = obterOuFalhar(id);
         tenantService.validarMesmaIgreja(s.getIgreja());
+        validarProprietarioOuAdminIgreja(s);
         validarPodeEnviarMensagemCliente(s);
         validarTextoMensagem(texto);
 
@@ -207,9 +209,9 @@ public class SolicitacaoSuporteService {
     }
 
     public SolicitacaoSuporteDTO cancelarCliente(Long id, String motivo) {
-        validarAdminIgreja();
         SolicitacaoSuporte s = obterOuFalhar(id);
         tenantService.validarMesmaIgreja(s.getIgreja());
+        validarProprietarioOuAdminIgreja(s);
         if (s.getStatus() != StatusSolicitacaoSuporte.ABERTA && s.getStatus() != StatusSolicitacaoSuporte.EM_ANALISE) {
             throw new BadRequestAlertException("Só é possível cancelar solicitações abertas ou em análise", ENTITY, "cancelamentoinvalido");
         }
@@ -452,8 +454,8 @@ public class SolicitacaoSuporteService {
         SolicitacaoSuporteAnexo anexo = anexoOpt.get();
         SolicitacaoSuporte s = anexo.getSolicitacaoSuporte();
         if (!admin) {
-            validarAdminIgreja();
             tenantService.validarMesmaIgreja(s.getIgreja());
+            validarProprietarioOuAdminIgreja(s);
         }
 
         Path path = Paths.get(uploadDir, anexo.getCaminhoArmazenamento()).toAbsolutePath().normalize();
@@ -475,8 +477,8 @@ public class SolicitacaoSuporteService {
     public Optional<AnexoDownload> obterZipAnexos(Long solicitacaoId, boolean admin) {
         SolicitacaoSuporte s = obterOuFalhar(solicitacaoId);
         if (!admin) {
-            validarAdminIgreja();
             tenantService.validarMesmaIgreja(s.getIgreja());
+            validarProprietarioOuAdminIgreja(s);
         }
 
         List<SolicitacaoSuporteAnexo> anexos = anexoRepository.findAllBySolicitacaoSuporteId(solicitacaoId);
@@ -661,8 +663,23 @@ public class SolicitacaoSuporteService {
             .orElseThrow(() -> new BadRequestAlertException("Solicitação não encontrada", ENTITY, "naoencontrada"));
     }
 
-    private void validarAdminIgreja() {
-        if (!SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN_IGREJA)) {
+    private boolean ehAdminIgreja() {
+        return SecurityUtils.hasCurrentUserAnyOfAuthorities(
+            AuthoritiesConstants.ADMIN_IGREJA,
+            AuthoritiesConstants.ADMIN
+        );
+    }
+
+    private void validarProprietarioOuAdminIgreja(SolicitacaoSuporte s) {
+        if (ehAdminIgreja()) {
+            return;
+        }
+        User atual = tenantService.getUsuarioAtual();
+        if (
+            s.getUsuarioSolicitante() == null ||
+            atual.getId() == null ||
+            !Objects.equals(s.getUsuarioSolicitante().getId(), atual.getId())
+        ) {
             throw new BadRequestAlertException("Acesso negado", ENTITY, "acessonegado");
         }
     }

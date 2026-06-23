@@ -118,10 +118,9 @@ export type UserAccess = {
   permissions?: ModulePermission[];
 };
 
-/** Central de Suporte — apenas ADMIN_IGREJA (não pastor, líder, etc.) */
+/** Central de Suporte — disponível para qualquer usuário autenticado da igreja */
 export const podeAcessarSuporte = (user: UserAccess | null | undefined): boolean => {
-  if (!user) return false;
-  return user.authorities?.includes("ROLE_ADMIN_IGREJA") ?? user.role === "admin";
+  return user != null;
 };
 
 /** Documentos da Igreja — apenas ADMIN_IGREJA e admin da plataforma */
