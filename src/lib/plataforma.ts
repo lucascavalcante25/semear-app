@@ -7,7 +7,7 @@
  */
 
 /** Incrementar ao trocar logo/favicon para forçar atualização no navegador. */
-export const VERSAO_MARCA = "8";
+export const VERSAO_MARCA = "9";
 
 export function assetMarca(caminho: string): string {
   return `${caminho}?v=${VERSAO_MARCA}`;
@@ -22,7 +22,7 @@ export const MARCA = {
     "Minha Igreja Digital é uma plataforma web criada para ajudar igrejas a organizar sua gestão em um só lugar. Com ela, é possível acompanhar membros, visitantes, avisos, documentos da igreja, louvores, devocionais, financeiro, pré-cadastros, ofertas via PIX e muito mais, de forma simples, moderna e acessível pelo computador ou celular.",
   empresa: "WillTech Solutions Dev",
   creditoRodape: "Desenvolvido por WillTech Solutions Dev",
-  /** Ícone da plataforma (pacote favicon_io) */
+  /** Ícone da plataforma (folhas verdes Semear) */
   logoIcon: assetMarca("/brand/logo-icon.png"),
   logoIcon512: assetMarca("/brand/logo-icon-512.png"),
   faviconIco: assetMarca("/favicon.ico"),

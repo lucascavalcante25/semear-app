@@ -1,5 +1,5 @@
 /**
- * Gera ícones PWA a partir do SVG oficial da plataforma (public/brand/logo-icon.svg).
+ * Gera ícones PWA a partir das folhas verdes (public/logo-semear.png).
  * Uso: node scripts/generate-pwa-icons.mjs
  */
 import sharp from "sharp";
@@ -7,7 +7,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const svg = path.join(root, "public/brand/logo-icon.svg");
+const origem = path.join(root, "public/logo-semear.png");
 const outDir = path.join(root, "public/brand");
 
 const tamanhos = [
@@ -20,9 +20,14 @@ const tamanhos = [
 
 for (const [arquivo, px] of tamanhos) {
   const destino = path.join(outDir, arquivo);
-  await sharp(svg).resize(px, px).png().toFile(destino);
+  await sharp(origem)
+    .resize(px, px, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 1 } })
+    .png()
+    .toFile(destino);
   console.log(`OK ${arquivo} (${px}x${px})`);
 }
 
-await sharp(svg).resize(32, 32).toFile(path.join(root, "public/favicon.ico"));
+await sharp(origem)
+  .resize(32, 32, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 1 } })
+  .toFile(path.join(root, "public/favicon.ico"));
 console.log("OK favicon.ico");
