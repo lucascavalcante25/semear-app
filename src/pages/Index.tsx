@@ -5,6 +5,7 @@ import {
   Aniversariantes,
   ProgressoEspiritual,
   DestaqueVisitantesHoje,
+  DestaqueAniversariantesSemana,
   DestaqueAvisos,
 } from "@/components/dashboard";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -60,8 +61,9 @@ const Inicio = () => {
           )}
         </div>
 
-        {/* Visitantes e avisos em destaque — visíveis logo no início */}
+        {/* Visitantes e aniversariantes em destaque — visíveis logo no início */}
         <DestaqueVisitantesHoje />
+        <DestaqueAniversariantesSemana />
         <DestaqueAvisos />
 
         {/* Versiculo do dia */}

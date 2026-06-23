@@ -5,5 +5,6 @@ export { Avisos } from "./Announcements";
 export { Aniversariantes } from "./Birthdays";
 export { VisitantesDoDia } from "./VisitantesDoDia";
 export { DestaqueVisitantesHoje } from "./DestaqueVisitantesHoje";
+export { DestaqueAniversariantesSemana } from "./DestaqueAniversariantesSemana";
 export { DestaqueAvisos } from "./DestaqueAvisos";
 export { ProgressoEspiritual } from "./SpiritualProgress";

@@ -31,6 +31,7 @@ import ConfiguracoesIgreja from "./pages/ConfiguracoesIgreja";
 import Inicio from "./pages/Index";
 import Biblia from "./pages/Bible";
 import Membros from "./pages/Members";
+import AniversariantesPagina from "./pages/Birthdays";
 import Louvores from "./pages/Praise";
 import Financeiro from "./pages/Financial";
 import Visitantes from "./pages/Visitors";
@@ -177,6 +178,14 @@ const App = () => (
                 element={
                   <RequerAutenticacao>
                     <Membros />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/aniversariantes"
+                element={
+                  <RequerAutenticacao>
+                    <AniversariantesPagina />
                   </RequerAutenticacao>
                 }
               />

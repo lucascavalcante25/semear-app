@@ -7,7 +7,7 @@
  */
 
 /** Incrementar ao trocar logo/favicon para forçar atualização no navegador. */
-export const VERSAO_MARCA = "7";
+export const VERSAO_MARCA = "8";
 
 export function assetMarca(caminho: string): string {
   return `${caminho}?v=${VERSAO_MARCA}`;

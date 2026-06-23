@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { listarAniversariantes } from "@/modules/members/birthdays";
+import { listarAniversariantes, obterDiasAteAniversario, obterIniciaisAniversariante } from "@/modules/members/birthdays";
 import { useAvatarUrlByUserId } from "@/hooks/use-avatar-url";
 import { Link } from "react-router-dom";
 
@@ -17,31 +17,12 @@ type Aniversario = {
   photoUrl?: string;
 };
 
-function obterIniciais(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-function obterDiasAte(date: Date): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const birthdayThisYear = new Date(today.getFullYear(), date.getMonth(), date.getDate());
-  if (birthdayThisYear < today) {
-    birthdayThisYear.setFullYear(today.getFullYear() + 1);
-  }
-  return Math.ceil((birthdayThisYear.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
 interface ItemAniversarioProps {
   aniversario: Aniversario;
 }
 
 function ItemAniversario({ aniversario }: ItemAniversarioProps) {
-  const diasAte = obterDiasAte(aniversario.date);
+  const diasAte = obterDiasAteAniversario(aniversario.date);
   const ehHoje = diasAte === 0;
   const avatarUrl = useAvatarUrlByUserId(aniversario.id);
 
@@ -58,7 +39,7 @@ function ItemAniversario({ aniversario }: ItemAniversarioProps) {
           "text-xs font-medium",
           ehHoje ? "bg-gold text-gold-foreground" : "bg-olive-light text-olive-dark"
         )}>
-          {obterIniciais(aniversario.name)}
+          {obterIniciaisAniversariante(aniversario.name)}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
@@ -111,7 +92,7 @@ export function Aniversariantes() {
             <CardTitle className="text-base">Aniversariantes</CardTitle>
           </div>
           <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground">
-            <Link to="/membros">
+            <Link to="/aniversariantes">
               Ver todos
               <ChevronRight className="h-3 w-3 ml-1" />
             </Link>

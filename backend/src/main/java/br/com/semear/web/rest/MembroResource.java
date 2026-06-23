@@ -109,6 +109,27 @@ public class MembroResource {
             .collect(Collectors.toList());
     }
 
+    /**
+     * {@code GET /membros/aniversariantes/calendario} : todos os aniversariantes do ano, ordenados por mês/dia.
+     */
+    @GetMapping("/aniversariantes/calendario")
+    public List<AniversarianteVM> listarCalendarioAniversariantes() {
+        LOG.debug("REST request to get birthday calendar");
+
+        return userRepository.findAllComBirthDateParaAniversariantes().stream()
+            .sorted(
+                Comparator.comparing((User u) -> u.getBirthDate().getMonthValue())
+                    .thenComparing(u -> u.getBirthDate().getDayOfMonth())
+                    .thenComparing(MembroResource::montarNome, String.CASE_INSENSITIVE_ORDER)
+            )
+            .map(u -> {
+                String name = montarNome(u);
+                String avatarUrl = temAvatar(u) ? "/api/avatars/" + u.getId() : null;
+                return new AniversarianteVM(u.getId(), name, u.getBirthDate(), avatarUrl);
+            })
+            .collect(Collectors.toList());
+    }
+
     private static boolean temAvatar(User u) {
         return (u.getImageData() != null && u.getImageData().length > 0)
             || (u.getImageUrl() != null && !u.getImageUrl().isBlank());
