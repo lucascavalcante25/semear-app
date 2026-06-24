@@ -97,6 +97,15 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     @Column(name = "birth_date")
     private LocalDate birthDate;
 
+    @Column(name = "data_batismo")
+    private LocalDate dataBatismo;
+
+    @Column(name = "data_casamento")
+    private LocalDate dataCasamento;
+
+    @Column(name = "data_membro_since")
+    private LocalDate dataMembroSince;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "sexo", length = 50)
     private Sexo sexo;
@@ -293,6 +302,30 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public LocalDate getDataBatismo() {
+        return dataBatismo;
+    }
+
+    public void setDataBatismo(LocalDate dataBatismo) {
+        this.dataBatismo = dataBatismo;
+    }
+
+    public LocalDate getDataCasamento() {
+        return dataCasamento;
+    }
+
+    public void setDataCasamento(LocalDate dataCasamento) {
+        this.dataCasamento = dataCasamento;
+    }
+
+    public LocalDate getDataMembroSince() {
+        return dataMembroSince;
+    }
+
+    public void setDataMembroSince(LocalDate dataMembroSince) {
+        this.dataMembroSince = dataMembroSince;
     }
 
     public Sexo getSexo() {

@@ -2,7 +2,9 @@ package br.com.semear.web.rest;
 
 import br.com.semear.config.Constants;
 import br.com.semear.domain.User;
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.repository.UserRepository;
+import br.com.semear.service.ModuleAccessService;
 import br.com.semear.service.UserService;
 import br.com.semear.service.dto.AdminUserDTO;
 import br.com.semear.service.dto.DependenteCreateDTO;
@@ -50,10 +52,12 @@ public class MembroResource {
 
     private final UserRepository userRepository;
     private final UserService userService;
+    private final ModuleAccessService moduleAccessService;
 
-    public MembroResource(UserRepository userRepository, UserService userService) {
+    public MembroResource(UserRepository userRepository, UserService userService, ModuleAccessService moduleAccessService) {
         this.userRepository = userRepository;
         this.userService = userService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     private static boolean onlyContainsAllowedProperties(Pageable pageable) {
@@ -71,6 +75,7 @@ public class MembroResource {
     public ResponseEntity<List<AdminUserDTO>> listarMembros(
         @org.springdoc.core.annotations.ParameterObject Pageable pageable
     ) {
+        moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.READ);
         LOG.debug("REST request to list members");
         if (!onlyContainsAllowedProperties(pageable)) {
             return ResponseEntity.badRequest().build();
@@ -84,6 +89,7 @@ public class MembroResource {
 
     @GetMapping("/aniversariantes")
     public List<AniversarianteVM> listarAniversariantes(@RequestParam(name = "days", required = false, defaultValue = "7") int days) {
+        moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.READ);
         int janela = Math.max(1, Math.min(days, 60));
         LOG.debug("REST request to get upcoming birthdays (days={})", janela);
 
@@ -114,6 +120,7 @@ public class MembroResource {
      */
     @GetMapping("/aniversariantes/calendario")
     public List<AniversarianteVM> listarCalendarioAniversariantes() {
+        moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.READ);
         LOG.debug("REST request to get birthday calendar");
 
         return userRepository.findAllComBirthDateParaAniversariantes().stream()
@@ -157,6 +164,7 @@ public class MembroResource {
     public ResponseEntity<AdminUserDTO> obterMembro(
         @PathVariable("login") @Pattern(regexp = Constants.LOGIN_REGEX) String login
     ) {
+        moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.READ);
         LOG.debug("REST request to get member : {}", login);
         return ResponseUtil.wrapOrNotFound(userService.getManagedUser(login));
     }
@@ -167,6 +175,7 @@ public class MembroResource {
     @PutMapping("")
     @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
     public ResponseEntity<AdminUserDTO> atualizarMembro(@Valid @RequestBody AdminUserDTO userDTO) {
+        moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to update member : {}", userDTO);
         return ResponseUtil.wrapOrNotFound(userService.updateManagedUser(userDTO));
     }
@@ -177,6 +186,7 @@ public class MembroResource {
     @DeleteMapping("/{login}")
     @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
     public ResponseEntity<Void> excluirMembro(@PathVariable("login") @Pattern(regexp = Constants.LOGIN_REGEX) String login) {
+        moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to delete member : {}", login);
         userService.deleteManagedUser(login);
         return ResponseEntity.noContent().build();
@@ -185,6 +195,7 @@ public class MembroResource {
     @PostMapping("/dependentes")
     @PreAuthorize(AUTORIZACAO_GESTAO_MEMBROS)
     public ResponseEntity<AdminUserDTO> criarDependente(@Valid @RequestBody DependenteCreateDTO dto) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to create dependente: {}", dto.getNome());
         User created = userService.createDependente(dto);
         AdminUserDTO result = new AdminUserDTO(created);

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260625000010-1" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="crianca"/></not></preConditions>
+        <createTable tableName="crianca">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="nome" type="varchar(150)"><constraints nullable="false"/></column>
+            <column name="data_nascimento" type="date"/>
+            <column name="observacoes" type="${clobType}"/>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="crianca" baseColumnNames="igreja_id" constraintName="fk_crianca_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260625000010-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="crianca_responsavel"/></not></preConditions>
+        <createTable tableName="crianca_responsavel">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="crianca_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="parentesco" type="varchar(50)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="crianca_responsavel" baseColumnNames="crianca_id" constraintName="fk_crianca_resp_crianca" referencedTableName="crianca" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="crianca_responsavel" baseColumnNames="user_id" constraintName="fk_crianca_resp_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="crianca_responsavel" columnNames="crianca_id, user_id" constraintName="uk_crianca_responsavel"/>
+    </changeSet>
+</databaseChangeLog>

@@ -12,12 +12,15 @@ import {
   marcarNotificacaoComoVista,
   type NotificacaoItem,
 } from "@/modules/notifications/api";
+import { listarLiderancaOracao } from "@/modules/oracao/api";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { ehLiderancaOracao } from "@/auth/permissions";
 
 const INTERVALO_POLLING_MS = 15_000;
 
 type NotificationsContextValue = {
   pendentesCount: number;
+  pedidosOracaoPendentes: number;
   notificacoes: NotificacaoItem[];
   refreshNotificacoes: () => Promise<void>;
   removerNotificacaoLocal: (tipo: string, referenciaId: number) => void;
@@ -28,6 +31,7 @@ const NotificationsContext = createContext<NotificationsContextValue | undefined
 export function ProvedorNotificacoes({ children }: { children: React.ReactNode }) {
   const { user } = usarAutenticacao();
   const [pendentesCount, setPendentesCount] = useState(0);
+  const [pedidosOracaoPendentes, setPedidosOracaoPendentes] = useState(0);
   const [notificacoes, setNotificacoes] = useState<NotificacaoItem[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -50,6 +54,20 @@ export function ProvedorNotificacoes({ children }: { children: React.ReactNode }
       setNotificacoes(lista ?? []);
     } catch {
       setNotificacoes([]);
+    }
+
+    if (ehLiderancaOracao(user)) {
+      try {
+        const pendentes = await listarLiderancaOracao({
+          status: "AGUARDANDO_APROVACAO",
+          size: 200,
+        });
+        setPedidosOracaoPendentes(pendentes.length);
+      } catch {
+        setPedidosOracaoPendentes(0);
+      }
+    } else {
+      setPedidosOracaoPendentes(0);
     }
   }, [user]);
 
@@ -87,6 +105,7 @@ export function ProvedorNotificacoes({ children }: { children: React.ReactNode }
 
   const value: NotificationsContextValue = {
     pendentesCount,
+    pedidosOracaoPendentes,
     notificacoes,
     refreshNotificacoes,
     removerNotificacaoLocal,

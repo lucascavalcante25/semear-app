@@ -2,6 +2,7 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.PreferenciaBibliaUsuario;
 import br.com.semear.repository.PreferenciaBibliaUsuarioRepository;
+import br.com.semear.service.BibliaUsuarioAccessService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -35,9 +36,14 @@ public class PreferenciaBibliaUsuarioResource {
     private String applicationName;
 
     private final PreferenciaBibliaUsuarioRepository preferenciaBibliaUsuarioRepository;
+    private final BibliaUsuarioAccessService bibliaUsuarioAccessService;
 
-    public PreferenciaBibliaUsuarioResource(PreferenciaBibliaUsuarioRepository preferenciaBibliaUsuarioRepository) {
+    public PreferenciaBibliaUsuarioResource(
+        PreferenciaBibliaUsuarioRepository preferenciaBibliaUsuarioRepository,
+        BibliaUsuarioAccessService bibliaUsuarioAccessService
+    ) {
         this.preferenciaBibliaUsuarioRepository = preferenciaBibliaUsuarioRepository;
+        this.bibliaUsuarioAccessService = bibliaUsuarioAccessService;
     }
 
     /**
@@ -55,6 +61,7 @@ public class PreferenciaBibliaUsuarioResource {
         if (preferenciaBibliaUsuario.getId() != null) {
             throw new BadRequestAlertException("A new preferenciaBibliaUsuario cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        preferenciaBibliaUsuario.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         preferenciaBibliaUsuario = preferenciaBibliaUsuarioRepository.save(preferenciaBibliaUsuario);
         return ResponseEntity.created(new URI("/api/preferencia-biblia-usuarios/" + preferenciaBibliaUsuario.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, preferenciaBibliaUsuario.getId().toString()))
@@ -84,10 +91,11 @@ public class PreferenciaBibliaUsuarioResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!preferenciaBibliaUsuarioRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            preferenciaBibliaUsuarioRepository.findById(id),
+            PreferenciaBibliaUsuario::getUsuario
+        );
+        preferenciaBibliaUsuario.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         preferenciaBibliaUsuario = preferenciaBibliaUsuarioRepository.save(preferenciaBibliaUsuario);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, preferenciaBibliaUsuario.getId().toString()))
@@ -118,9 +126,10 @@ public class PreferenciaBibliaUsuarioResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!preferenciaBibliaUsuarioRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            preferenciaBibliaUsuarioRepository.findById(id),
+            PreferenciaBibliaUsuario::getUsuario
+        );
 
         Optional<PreferenciaBibliaUsuario> result = preferenciaBibliaUsuarioRepository
             .findById(preferenciaBibliaUsuario.getId())
@@ -171,11 +180,7 @@ public class PreferenciaBibliaUsuarioResource {
         @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload
     ) {
         LOG.debug("REST request to get all PreferenciaBibliaUsuarios");
-        if (eagerload) {
-            return preferenciaBibliaUsuarioRepository.findAllWithEagerRelationships();
-        } else {
-            return preferenciaBibliaUsuarioRepository.findAll();
-        }
+        return preferenciaBibliaUsuarioRepository.findByUsuarioIsCurrentUser();
     }
 
     /**
@@ -187,7 +192,10 @@ public class PreferenciaBibliaUsuarioResource {
     @GetMapping("/{id}")
     public ResponseEntity<PreferenciaBibliaUsuario> getPreferenciaBibliaUsuario(@PathVariable("id") Long id) {
         LOG.debug("REST request to get PreferenciaBibliaUsuario : {}", id);
-        Optional<PreferenciaBibliaUsuario> preferenciaBibliaUsuario = preferenciaBibliaUsuarioRepository.findOneWithEagerRelationships(id);
+        Optional<PreferenciaBibliaUsuario> preferenciaBibliaUsuario = bibliaUsuarioAccessService.filtrarPropriedade(
+            preferenciaBibliaUsuarioRepository.findOneWithEagerRelationships(id),
+            PreferenciaBibliaUsuario::getUsuario
+        );
         return ResponseUtil.wrapOrNotFound(preferenciaBibliaUsuario);
     }
 
@@ -200,6 +208,10 @@ public class PreferenciaBibliaUsuarioResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePreferenciaBibliaUsuario(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete PreferenciaBibliaUsuario : {}", id);
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            preferenciaBibliaUsuarioRepository.findById(id),
+            PreferenciaBibliaUsuario::getUsuario
+        );
         preferenciaBibliaUsuarioRepository.deleteById(id);
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))

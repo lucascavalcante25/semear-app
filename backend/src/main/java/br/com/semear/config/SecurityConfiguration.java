@@ -57,6 +57,7 @@ public class SecurityConfiguration {
                     .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/igrejas/publicas")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/igrejas/*/logo")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/public/**")).permitAll()
+                    .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/public/igrejas/*/pedidos-oracao")).permitAll()
                     .requestMatchers(mvc.pattern("/api/admin/**")).hasAnyAuthority(
                         AuthoritiesConstants.SUPER_ADMIN,
                         AuthoritiesConstants.ADMIN

@@ -53,6 +53,10 @@ export type IgrejaConfiguracao = {
   dataInicioPlanoLeitura?: string;
   cicloPlanoLeitura?: number;
   dataAtualizacao?: string;
+  requerAprovacaoOracaoPublica?: boolean;
+  slug?: string;
+  horarioCulto?: string;
+  siteAtivo?: boolean;
 };
 
 export type IgrejaPublica = Pick<

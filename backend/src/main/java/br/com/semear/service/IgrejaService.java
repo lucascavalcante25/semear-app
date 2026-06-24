@@ -362,6 +362,7 @@ public class IgrejaService {
         if (dto.getDescricaoIgreja() != null) igreja.setDescricaoIgreja(dto.getDescricaoIgreja());
         if (dto.getTextoAgradecimentoOferta() != null) igreja.setTextoAgradecimentoOferta(dto.getTextoAgradecimentoOferta());
         if (dto.getDataInicioPlanoLeitura() != null) igreja.setDataInicioPlanoLeitura(dto.getDataInicioPlanoLeitura());
+        if (dto.getRequerAprovacaoOracaoPublica() != null) igreja.setRequerAprovacaoOracaoPublica(dto.getRequerAprovacaoOracaoPublica());
         if (dto.getStatus() != null && SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.SUPER_ADMIN)) {
             igreja.setStatus(dto.getStatus());
         }

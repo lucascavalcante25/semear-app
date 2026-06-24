@@ -33,6 +33,7 @@ import {
   Loader2,
   Trash2,
   Printer,
+  Download,
   ChevronDown,
   ChevronRight,
   Search,
@@ -57,6 +58,7 @@ import {
   criarLancamento,
   atualizarLancamento,
   excluirLancamento,
+  exportarLancamentosCsv,
   type LancamentoApp,
 } from "@/modules/financeiro/api";
 import { formatarMoeda, valorMoedaParaNumero } from "@/lib/masks";
@@ -908,7 +910,9 @@ export default function Financeiro() {
     categoria: "",
     descricao: "",
     metodoPagamento: "",
+    centroCusto: "",
   });
+  const [exportandoCsv, setExportandoCsv] = useState(false);
   const [mesSelecionado, setMesSelecionado] = useState<number | null>(null);
   const [lancamentoDetalhe, setLancamentoDetalhe] = useState<LancamentoApp | null>(null);
   const [abaTipo, setAbaTipo] = useState<FiltroTipoLancamento>("all");
@@ -1003,6 +1007,7 @@ export default function Financeiro() {
         paymentMethod: formData.metodoPagamento
           ? (formData.metodoPagamento as "cash" | "pix" | "card" | "transfer")
           : undefined,
+        centroCusto: formData.centroCusto.trim() || undefined,
       };
 
       if (lancamentoEditando) {
@@ -1043,7 +1048,26 @@ export default function Financeiro() {
       categoria: "",
       descricao: "",
       metodoPagamento: "",
+      centroCusto: "",
     });
+  };
+
+  const handleExportarCsv = async () => {
+    setExportandoCsv(true);
+    try {
+      const blob = await exportarLancamentosCsv();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `lancamentos-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV exportado.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao exportar CSV.");
+    } finally {
+      setExportandoCsv(false);
+    }
   };
 
   const abrirFormularioNovo = () => {
@@ -1061,6 +1085,7 @@ export default function Financeiro() {
       categoria: lancamento.category,
       descricao: lancamento.description,
       metodoPagamento: lancamento.paymentMethod ?? "",
+      centroCusto: lancamento.centroCusto ?? "",
     });
     setLancamentoDetalhe(null);
     setDialogAberto(true);
@@ -1082,14 +1107,29 @@ export default function Financeiro() {
             </div>
           </div>
 
-          <Button
-            className="gap-1.5 sm:gap-2 shrink-0"
-            disabled={!podeEscreverFinanceiro}
-            onClick={abrirFormularioNovo}
-          >
-            <Plus className="h-4 w-4" />
-            Novo
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              className="gap-1.5"
+              disabled={exportandoCsv}
+              onClick={() => void handleExportarCsv()}
+            >
+              {exportandoCsv ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              CSV
+            </Button>
+            <Button
+              className="gap-1.5 sm:gap-2 shrink-0"
+              disabled={!podeEscreverFinanceiro}
+              onClick={abrirFormularioNovo}
+            >
+              <Plus className="h-4 w-4" />
+              Novo
+            </Button>
+          </div>
 
           <Dialog
             open={dialogAberto}
@@ -1194,6 +1234,18 @@ export default function Financeiro() {
                     value={formData.descricao}
                     onChange={(e) =>
                       setFormData((f) => ({ ...f, descricao: e.target.value }))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="centroCusto">Centro de custo</Label>
+                  <Input
+                    id="centroCusto"
+                    placeholder="Ex.: Louvor, Infantil, Missões..."
+                    value={formData.centroCusto}
+                    onChange={(e) =>
+                      setFormData((f) => ({ ...f, centroCusto: e.target.value }))
                     }
                   />
                 </div>

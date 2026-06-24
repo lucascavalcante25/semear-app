@@ -2,6 +2,23 @@ import { requisicaoApi } from "@/modules/api/client";
 
 export type FormaChegadaVisitante = "SOZINHO" | "COM_ALGUEM" | "CONVIDADO";
 
+export type EstadoFunilVisitante =
+  | "NOVO"
+  | "CONTATO_INICIAL"
+  | "ACOMPANHAMENTO"
+  | "INTEGRACAO"
+  | "MEMBRO"
+  | "INATIVO";
+
+export const LABEL_ESTADO_FUNIL: Record<EstadoFunilVisitante, string> = {
+  NOVO: "Novo",
+  CONTATO_INICIAL: "Contato inicial",
+  ACOMPANHAMENTO: "Acompanhamento",
+  INTEGRACAO: "Integração",
+  MEMBRO: "Membro",
+  INATIVO: "Inativo",
+};
+
 export type VisitanteDTO = {
   id?: number;
   nome: string;
@@ -13,6 +30,8 @@ export type VisitanteDTO = {
   acompanhanteNome?: string | null;
   igrejaOrigem?: string | null;
   convidadoPor?: string | null;
+  estadoFunil?: EstadoFunilVisitante | null;
+  dataProximoContato?: string | null;
   criadoEm?: string;
   criadoPor?: string | null;
   atualizadoEm?: string | null;
@@ -30,6 +49,8 @@ export type VisitanteApp = {
   companionName?: string;
   churchOrigin?: string;
   invitedBy?: string;
+  funnelState?: EstadoFunilVisitante;
+  nextContactDate?: Date;
   createdAt: Date;
 };
 
@@ -46,6 +67,8 @@ export const mapearVisitante = (dto: VisitanteDTO): VisitanteApp => ({
   companionName: dto.acompanhanteNome ?? undefined,
   churchOrigin: dto.igrejaOrigem ?? undefined,
   invitedBy: dto.convidadoPor ?? undefined,
+  funnelState: dto.estadoFunil ?? undefined,
+  nextContactDate: dto.dataProximoContato ? toDateLocal(dto.dataProximoContato) : undefined,
   createdAt: dto.criadoEm ? new Date(dto.criadoEm) : new Date(),
 });
 
@@ -105,6 +128,8 @@ export type CriarVisitantePayload = {
   acompanhanteNome?: string;
   igrejaOrigem?: string;
   convidadoPor?: string;
+  estadoFunil?: EstadoFunilVisitante;
+  dataProximoContato?: string;
 };
 
 const montarCamposChegada = (payload: {
@@ -156,6 +181,8 @@ export const criarVisitante = async (payload: CriarVisitantePayload): Promise<Vi
     comoConheceu: payload.comoConheceu?.trim() || undefined,
     observacoes: payload.observacoes?.trim() || undefined,
     ...montarCamposChegada(payload),
+    estadoFunil: payload.estadoFunil ?? undefined,
+    dataProximoContato: payload.dataProximoContato || undefined,
   };
   const created = await requisicaoApi<VisitanteDTO>("/api/visitantes", {
     method: "POST",

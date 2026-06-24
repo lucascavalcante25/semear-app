@@ -8,11 +8,15 @@ import {
   DestaqueAniversariantesSemana,
   DestaqueAvisos,
 } from "@/components/dashboard";
+import { BannerInformativoDashboard } from "@/components/dashboard/BannerInformativoDashboard";
+import { AlertasSecretariaEscalas } from "@/components/escalas/AlertasSecretariaEscalas";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
+import { podeVerVisaoGerencial } from "@/auth/permissions";
 const Inicio = () => {
   const { user } = usarAutenticacao();
   const { configuracao, publica } = useIgrejaConfiguracao();
+  const visaoGerencial = podeVerVisaoGerencial(user);
   const textoBoasVindas =
     configuracao?.textoBoasVindas?.trim() || publica.textoBoasVindas?.trim() || "";
 
@@ -61,9 +65,13 @@ const Inicio = () => {
           )}
         </div>
 
-        {/* Visitantes e aniversariantes em destaque — visíveis logo no início */}
-        <DestaqueVisitantesHoje />
-        <DestaqueAniversariantesSemana />
+        {/* Alertas de escalas — somente liderança / administração */}
+        {visaoGerencial && <AlertasSecretariaEscalas />}
+
+        <BannerInformativoDashboard />
+
+        {visaoGerencial && <DestaqueVisitantesHoje />}
+        {visaoGerencial && <DestaqueAniversariantesSemana />}
         <DestaqueAvisos />
 
         {/* Versiculo do dia */}

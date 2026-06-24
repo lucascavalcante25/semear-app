@@ -8,3 +8,4 @@ export { DestaqueVisitantesHoje } from "./DestaqueVisitantesHoje";
 export { DestaqueAniversariantesSemana } from "./DestaqueAniversariantesSemana";
 export { DestaqueAvisos } from "./DestaqueAvisos";
 export { ProgressoEspiritual } from "./SpiritualProgress";
+export { BannerInformativoDashboard } from "./BannerInformativoDashboard";

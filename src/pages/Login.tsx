@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CampoSenha } from "@/components/ui/password-input";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { aplicarMascaraCpf } from "@/lib/mascara-telefone";
 import { MARCA } from "@/lib/plataforma";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
-import { Church, DoorOpen, Eye, EyeOff } from "lucide-react";
+import { Church, DoorOpen } from "lucide-react";
 import styles from "./Login.module.css";
 
 const PASSAGENS_BIBLICAS = [
@@ -40,7 +41,6 @@ export default function Entrar() {
   const location = useLocation();
   const [identificador, setIdentificador] = useState("");
   const [password, setPassword] = useState("");
-  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -221,32 +221,15 @@ export default function Entrar() {
                             Esqueceu?
                           </Link>
                         </div>
-                        <div className="relative">
-                          <Input
-                            id="password"
-                            type={mostrarSenha ? "text" : "password"}
-                            value={password}
-                            onChange={(event) => setPassword(event.target.value)}
-                            placeholder="••••••••"
-                            autoComplete="current-password"
-                            required
-                            aria-label="Senha"
-                            className="pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setMostrarSenha((v) => !v)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-slate-500 hover:bg-slate-100 transition-colors"
-                            aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
-                            title={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
-                          >
-                            {mostrarSenha ? (
-                              <EyeOff className="h-4 w-4" aria-hidden />
-                            ) : (
-                              <Eye className="h-4 w-4" aria-hidden />
-                            )}
-                          </button>
-                        </div>
+                        <CampoSenha
+                          id="password"
+                          value={password}
+                          onChange={setPassword}
+                          placeholder="••••••••"
+                          autoComplete="current-password"
+                          required
+                          aria-label="Senha"
+                        />
                       </div>
 
                       <div className={styles.submitColumn}>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260627000005-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="escala_config_automatica" columnName="modo_limpeza"/></not>
+        </preConditions>
+        <addColumn tableName="escala_config_automatica">
+            <column name="modo_limpeza" type="varchar(20)" defaultValue="MENSAL">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        <sql>
+            UPDATE escala_config_automatica SET modo_limpeza = 'POR_CULTO' WHERE limpeza_mensal = false;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

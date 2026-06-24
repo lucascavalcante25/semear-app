@@ -69,17 +69,6 @@ type DevocionalApi = {
   dataPublicacao: string;
 };
 
-// Mock para fallback (dados do banco)
-const DEVOCIONAL_MOCK = {
-  titulo: "Fé e Expectativa",
-  mes: MESES[new Date().getMonth()],
-  dia: new Date().getDate(),
-  diaSemana: DIAS_SEMANA[new Date().getDay()],
-  versiculoTexto: "Ora, a fé é a certeza daquilo que esperamos e a prova das coisas que não vemos.",
-  versiculoReferencia: "Hebreus 11:1",
-  conteudo: "Reflexão sobre o versículo: a fé nos move a confiar em Deus mesmo quando não vemos. Que este devocional fortaleça sua fé e renove suas esperanças neste dia.",
-};
-
 interface ConteudoDevocionalProps {
   titulo: string;
   mes: string;
@@ -482,11 +471,6 @@ export default function PaginaDevocionais() {
 
   useEffect(() => {
     const buscar = async () => {
-      if (!URL_BASE_API) {
-        setDevocional(DEVOCIONAL_MOCK);
-        setCarregando(false);
-        return;
-      }
       try {
         setCarregando(true);
         setErro(null);
@@ -510,8 +494,8 @@ export default function PaginaDevocionais() {
         }
       } catch (err) {
         console.error("Erro ao buscar devocional:", err);
-        setErro("Erro ao carregar. Usando dados de exemplo.");
-        setDevocional(DEVOCIONAL_MOCK);
+        setErro("Não foi possível carregar o devocional de hoje.");
+        setDevocional(null);
       } finally {
         setCarregando(false);
       }

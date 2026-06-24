@@ -8,6 +8,8 @@ import {
   Megaphone,
   Wallet,
   LifeBuoy,
+  Heart,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -33,7 +35,9 @@ const acoes: Array<{
   { icon: Users, label: "Membros", path: "/membros", variante: "secondary" },
   { icon: UserPlus, label: "Visitantes", path: "/visitantes", variante: "primary" },
   { icon: Megaphone, label: "Avisos", path: "/avisos", variante: "secondary" },
-  { icon: Wallet, label: "Financeiro", path: "/financeiro", variante: "primary" },
+  { icon: Heart, label: "Oração", path: "/oracao", variante: "primary" },
+  { icon: Calendar, label: "Eventos", path: "/eventos", variante: "secondary" },
+  { icon: Wallet, label: "Financeiro", path: "/financeiro", variante: "secondary" },
   { icon: LifeBuoy, label: "Suporte", path: "/suporte", variante: "secondary", suporteOnly: true },
 ];
 

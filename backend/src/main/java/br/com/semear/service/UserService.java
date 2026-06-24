@@ -385,6 +385,9 @@ public class UserService {
                 user.setActivated(userDTO.isActivated());
                 user.setLangKey(userDTO.getLangKey());
                 user.setBirthDate(userDTO.getBirthDate());
+                user.setDataBatismo(userDTO.getDataBatismo());
+                user.setDataCasamento(userDTO.getDataCasamento());
+                user.setDataMembroSince(userDTO.getDataMembroSince());
                 user.setSexo(userDTO.getSexo());
                 if (userDTO.getPaiId() != null) {
                     user.setPai(userRepository.findById(userDTO.getPaiId()).orElse(null));
@@ -569,7 +572,12 @@ public class UserService {
     public record AvatarResult(byte[] bytes, String contentType) {}
 
     public Optional<AvatarResult> getAvatarByUserId(Long userId) {
-        return userRepository.findById(userId)
+        return userRepository
+            .findById(userId)
+            .map(user -> {
+                tenantService.validarMesmaIgreja(user.getIgreja());
+                return user;
+            })
             .flatMap(this::readAvatar);
     }
 
@@ -650,7 +658,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<UserDTO> getAllPublicUsers(Pageable pageable) {
-        return userRepository.findAllByIdNotNullAndActivatedIsTrue(pageable).map(UserDTO::new);
+        return userRepository.findAllByIgrejaIdAndActivatedIsTrue(tenantService.getIgrejaIdAtual(), pageable).map(UserDTO::new);
     }
 
     @Transactional(readOnly = true)

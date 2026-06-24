@@ -14,6 +14,7 @@ export type PayloadDocumento = {
   categoria: CategoriaDocumentoIgreja;
   descricao?: string;
   dataDocumento?: string;
+  dataValidade?: string;
   arquivo: File;
 };
 
@@ -51,6 +52,7 @@ export async function enviarDocumentoIgreja(dados: PayloadDocumento): Promise<Do
   form.append("categoria", dados.categoria);
   if (dados.descricao) form.append("descricao", dados.descricao);
   if (dados.dataDocumento) form.append("dataDocumento", dados.dataDocumento);
+  if (dados.dataValidade) form.append("dataValidade", dados.dataValidade);
 
   return requisicaoApi<DocumentoIgreja>("/api/igreja/documentos", {
     auth: true,
@@ -77,6 +79,10 @@ export async function excluirDocumentoIgreja(id: number): Promise<void> {
 export function urlDownloadDocumento(id: number, inline = false): string {
   const base = `${URL_BASE_API}/api/igreja/documentos/${id}/download`;
   return inline ? `${base}?inline=true` : base;
+}
+
+export async function listarDocumentosVencendo(dias = 30): Promise<DocumentoIgreja[]> {
+  return requisicaoApi<DocumentoIgreja[]>(`/api/igreja/documentos/vencendo?dias=${dias}`, { auth: true });
 }
 
 export async function baixarDocumentoIgreja(id: number, inline = false): Promise<Blob> {

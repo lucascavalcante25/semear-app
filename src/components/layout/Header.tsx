@@ -139,6 +139,10 @@ export function Cabecalho() {
                   Sem notificações no momento
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/notificacoes")}>
+                Ver central de notificações
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>

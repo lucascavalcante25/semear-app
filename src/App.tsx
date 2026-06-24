@@ -45,6 +45,14 @@ import PreCadastro from "./pages/PreCadastro";
 import AprovarPreCadastros from "./pages/AprovarPreCadastros";
 import AcessoNegado from "./pages/AccessDenied";
 import NaoEncontrado from "./pages/NotFound";
+import PedidosOracao from "./pages/PrayerRequests";
+import Informativos from "./pages/Informativos";
+import Sobre from "./pages/About";
+import NotificacoesPagina from "./pages/Notifications";
+import Departamentos from "./pages/Departamentos";
+import Escalas from "./pages/Escalas";
+import Eventos from "./pages/Eventos";
+import PublicIgreja from "./pages/PublicIgreja";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +77,7 @@ const App = () => (
               <Route path="/solicitar-acesso" element={<SolicitarAcesso />} />
               <Route path="/landing" element={<Landing />} />
               <Route path="/precos" element={<Landing />} />
+              <Route path="/i/:slug" element={<PublicIgreja />} />
               <Route
                 path="/assinatura-bloqueada"
                 element={
@@ -226,6 +235,62 @@ const App = () => (
                 element={
                   <RequerAutenticacao>
                     <Devocionais />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/oracao"
+                element={
+                  <RequerAutenticacao>
+                    <PedidosOracao />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/informativos"
+                element={
+                  <RequerAutenticacao>
+                    <Informativos />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/eventos"
+                element={
+                  <RequerAutenticacao>
+                    <Eventos />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/escalas"
+                element={
+                  <RequerAutenticacao>
+                    <Escalas />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/departamentos"
+                element={
+                  <RequerAutenticacao>
+                    <Departamentos />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/notificacoes"
+                element={
+                  <RequerAutenticacao>
+                    <NotificacoesPagina />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/sobre"
+                element={
+                  <RequerAutenticacao>
+                    <Sobre />
                   </RequerAutenticacao>
                 }
               />

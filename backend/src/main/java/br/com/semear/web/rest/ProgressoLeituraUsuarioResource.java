@@ -2,6 +2,7 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.ProgressoLeituraUsuario;
 import br.com.semear.repository.ProgressoLeituraUsuarioRepository;
+import br.com.semear.service.BibliaUsuarioAccessService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -35,9 +36,14 @@ public class ProgressoLeituraUsuarioResource {
     private String applicationName;
 
     private final ProgressoLeituraUsuarioRepository progressoLeituraUsuarioRepository;
+    private final BibliaUsuarioAccessService bibliaUsuarioAccessService;
 
-    public ProgressoLeituraUsuarioResource(ProgressoLeituraUsuarioRepository progressoLeituraUsuarioRepository) {
+    public ProgressoLeituraUsuarioResource(
+        ProgressoLeituraUsuarioRepository progressoLeituraUsuarioRepository,
+        BibliaUsuarioAccessService bibliaUsuarioAccessService
+    ) {
         this.progressoLeituraUsuarioRepository = progressoLeituraUsuarioRepository;
+        this.bibliaUsuarioAccessService = bibliaUsuarioAccessService;
     }
 
     /**
@@ -55,6 +61,7 @@ public class ProgressoLeituraUsuarioResource {
         if (progressoLeituraUsuario.getId() != null) {
             throw new BadRequestAlertException("A new progressoLeituraUsuario cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        progressoLeituraUsuario.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         progressoLeituraUsuario = progressoLeituraUsuarioRepository.save(progressoLeituraUsuario);
         return ResponseEntity.created(new URI("/api/progresso-leitura-usuarios/" + progressoLeituraUsuario.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, progressoLeituraUsuario.getId().toString()))
@@ -84,10 +91,11 @@ public class ProgressoLeituraUsuarioResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!progressoLeituraUsuarioRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            progressoLeituraUsuarioRepository.findById(id),
+            ProgressoLeituraUsuario::getUsuario
+        );
+        progressoLeituraUsuario.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         progressoLeituraUsuario = progressoLeituraUsuarioRepository.save(progressoLeituraUsuario);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, progressoLeituraUsuario.getId().toString()))
@@ -118,9 +126,10 @@ public class ProgressoLeituraUsuarioResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!progressoLeituraUsuarioRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            progressoLeituraUsuarioRepository.findById(id),
+            ProgressoLeituraUsuario::getUsuario
+        );
 
         Optional<ProgressoLeituraUsuario> result = progressoLeituraUsuarioRepository
             .findById(progressoLeituraUsuario.getId())
@@ -162,11 +171,7 @@ public class ProgressoLeituraUsuarioResource {
         @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload
     ) {
         LOG.debug("REST request to get all ProgressoLeituraUsuarios");
-        if (eagerload) {
-            return progressoLeituraUsuarioRepository.findAllWithEagerRelationships();
-        } else {
-            return progressoLeituraUsuarioRepository.findAll();
-        }
+        return progressoLeituraUsuarioRepository.findByUsuarioIsCurrentUser();
     }
 
     /**
@@ -178,7 +183,10 @@ public class ProgressoLeituraUsuarioResource {
     @GetMapping("/{id}")
     public ResponseEntity<ProgressoLeituraUsuario> getProgressoLeituraUsuario(@PathVariable("id") Long id) {
         LOG.debug("REST request to get ProgressoLeituraUsuario : {}", id);
-        Optional<ProgressoLeituraUsuario> progressoLeituraUsuario = progressoLeituraUsuarioRepository.findOneWithEagerRelationships(id);
+        Optional<ProgressoLeituraUsuario> progressoLeituraUsuario = bibliaUsuarioAccessService.filtrarPropriedade(
+            progressoLeituraUsuarioRepository.findOneWithEagerRelationships(id),
+            ProgressoLeituraUsuario::getUsuario
+        );
         return ResponseUtil.wrapOrNotFound(progressoLeituraUsuario);
     }
 
@@ -191,6 +199,10 @@ public class ProgressoLeituraUsuarioResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProgressoLeituraUsuario(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete ProgressoLeituraUsuario : {}", id);
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            progressoLeituraUsuarioRepository.findById(id),
+            ProgressoLeituraUsuario::getUsuario
+        );
         progressoLeituraUsuarioRepository.deleteById(id);
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))

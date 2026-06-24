@@ -1,5 +1,6 @@
 package br.com.semear.domain;
 
+import br.com.semear.domain.enumeration.EstadoFunilVisitante;
 import br.com.semear.domain.enumeration.FormaChegadaVisitante;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -55,6 +56,14 @@ public class Visitante implements Serializable {
 
     @Column(name = "convidado_por")
     private String convidadoPor;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_funil", nullable = false, length = 30)
+    private EstadoFunilVisitante estadoFunil = EstadoFunilVisitante.CADASTRADO;
+
+    @Column(name = "data_proximo_contato")
+    private LocalDate dataProximoContato;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "igreja_id")
@@ -151,6 +160,22 @@ public class Visitante implements Serializable {
 
     public void setConvidadoPor(String convidadoPor) {
         this.convidadoPor = convidadoPor;
+    }
+
+    public EstadoFunilVisitante getEstadoFunil() {
+        return estadoFunil;
+    }
+
+    public void setEstadoFunil(EstadoFunilVisitante estadoFunil) {
+        this.estadoFunil = estadoFunil;
+    }
+
+    public LocalDate getDataProximoContato() {
+        return dataProximoContato;
+    }
+
+    public void setDataProximoContato(LocalDate dataProximoContato) {
+        this.dataProximoContato = dataProximoContato;
     }
 
     public Igreja getIgreja() {

@@ -1,6 +1,9 @@
 package br.com.semear.web.rest;
 
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.service.LouvorService;
+import br.com.semear.service.ModuleAccessService;
+import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.LouvorDTO;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
@@ -38,14 +41,17 @@ public class LouvorResource {
     private String applicationName;
 
     private final LouvorService louvorService;
+    private final ModuleAccessService moduleAccessService;
 
-    public LouvorResource(LouvorService louvorService) {
+    public LouvorResource(LouvorService louvorService, ModuleAccessService moduleAccessService) {
         this.louvorService = louvorService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     @PostMapping("")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<LouvorDTO> createLouvor(@Valid @RequestBody LouvorDTO louvorDTO) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to create Louvor : {}", louvorDTO);
         if (louvorDTO.getId() != null) {
             throw new BadRequestAlertException("A new louvor cannot already have an ID", ENTITY_NAME, "idexists");
@@ -65,6 +71,7 @@ public class LouvorResource {
         @RequestPart("louvor") @Valid LouvorDTO louvorDTO,
         @RequestPart(value = "cifra", required = false) MultipartFile cifraFile
     ) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to create Louvor with cifra");
         if (louvorDTO.getId() != null) {
             throw new BadRequestAlertException("A new louvor cannot already have an ID", ENTITY_NAME, "idexists");
@@ -81,6 +88,7 @@ public class LouvorResource {
         @PathVariable(value = "id", required = false) final Long id,
         @Valid @RequestBody LouvorDTO louvorDTO
     ) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to update Louvor : {}, {}", id, louvorDTO);
         if (louvorDTO.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
@@ -107,6 +115,7 @@ public class LouvorResource {
         @PathVariable Long id,
         @RequestPart("cifra") MultipartFile cifraFile
     ) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to update cifra for Louvor : {}", id);
         LouvorDTO result = louvorService.updateCifra(id, cifraFile);
         return ResponseEntity.ok()
@@ -119,6 +128,9 @@ public class LouvorResource {
     public ResponseEntity<List<LouvorDTO>> getAllLouvores(
         @RequestParam(required = false) String q
     ) {
+        if (SecurityUtils.isAuthenticated()) {
+            moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
+        }
         log.debug("REST request to get Louvores");
         List<LouvorDTO> list = q != null && !q.isBlank()
             ? louvorService.search(q.trim())
@@ -129,6 +141,9 @@ public class LouvorResource {
     @GetMapping("/{id}")
     @PreAuthorize("permitAll()")
     public ResponseEntity<LouvorDTO> getLouvor(@PathVariable Long id) {
+        if (SecurityUtils.isAuthenticated()) {
+            moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
+        }
         log.debug("REST request to get Louvor : {}", id);
         Optional<LouvorDTO> louvorDTO = louvorService.findOne(id);
         return ResponseUtil.wrapOrNotFound(louvorDTO);
@@ -140,6 +155,7 @@ public class LouvorResource {
     @GetMapping("/{id}/cifra")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<byte[]> getCifra(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
         log.debug("REST request to get cifra for Louvor : {}", id);
         Optional<byte[]> bytes = louvorService.getCifraBytes(id);
         if (bytes.isEmpty()) {
@@ -167,6 +183,7 @@ public class LouvorResource {
     @DeleteMapping("/{id}")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Void> deleteLouvor(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to delete Louvor : {}", id);
         louvorService.delete(id);
         return ResponseEntity.noContent()

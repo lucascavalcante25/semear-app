@@ -91,6 +91,12 @@ public class AdminUserDTO implements Serializable {
 
     private LocalDate birthDate;
 
+    private LocalDate dataBatismo;
+
+    private LocalDate dataCasamento;
+
+    private LocalDate dataMembroSince;
+
     private Sexo sexo;
 
     private Boolean isDependente;
@@ -115,6 +121,9 @@ public class AdminUserDTO implements Serializable {
         this.email = user.getEmail();
         this.activated = user.isActivated();
         this.birthDate = user.getBirthDate();
+        this.dataBatismo = user.getDataBatismo();
+        this.dataCasamento = user.getDataCasamento();
+        this.dataMembroSince = user.getDataMembroSince();
         this.sexo = user.getSexo();
         this.isDependente = user.isDependente();
         this.paiId = user.getPai() != null ? user.getPai().getId() : null;
@@ -360,6 +369,30 @@ public class AdminUserDTO implements Serializable {
 
     public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public LocalDate getDataBatismo() {
+        return dataBatismo;
+    }
+
+    public void setDataBatismo(LocalDate dataBatismo) {
+        this.dataBatismo = dataBatismo;
+    }
+
+    public LocalDate getDataCasamento() {
+        return dataCasamento;
+    }
+
+    public void setDataCasamento(LocalDate dataCasamento) {
+        this.dataCasamento = dataCasamento;
+    }
+
+    public LocalDate getDataMembroSince() {
+        return dataMembroSince;
+    }
+
+    public void setDataMembroSince(LocalDate dataMembroSince) {
+        this.dataMembroSince = dataMembroSince;
     }
 
     public Sexo getSexo() {

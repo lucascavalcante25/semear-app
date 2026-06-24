@@ -74,6 +74,9 @@ public class DocumentoIgreja implements Serializable {
     @Column(name = "data_documento")
     private LocalDate dataDocumento;
 
+    @Column(name = "data_validade")
+    private LocalDate dataValidade;
+
     @NotNull
     @Column(name = "data_upload", nullable = false)
     private Instant dataUpload = Instant.now();
@@ -179,6 +182,14 @@ public class DocumentoIgreja implements Serializable {
 
     public void setDataDocumento(LocalDate dataDocumento) {
         this.dataDocumento = dataDocumento;
+    }
+
+    public LocalDate getDataValidade() {
+        return dataValidade;
+    }
+
+    public void setDataValidade(LocalDate dataValidade) {
+        this.dataValidade = dataValidade;
     }
 
     public Instant getDataUpload() {

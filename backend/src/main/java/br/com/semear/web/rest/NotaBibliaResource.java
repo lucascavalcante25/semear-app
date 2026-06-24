@@ -2,6 +2,7 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.NotaBiblia;
 import br.com.semear.repository.NotaBibliaRepository;
+import br.com.semear.service.BibliaUsuarioAccessService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -40,9 +41,11 @@ public class NotaBibliaResource {
     private String applicationName;
 
     private final NotaBibliaRepository notaBibliaRepository;
+    private final BibliaUsuarioAccessService bibliaUsuarioAccessService;
 
-    public NotaBibliaResource(NotaBibliaRepository notaBibliaRepository) {
+    public NotaBibliaResource(NotaBibliaRepository notaBibliaRepository, BibliaUsuarioAccessService bibliaUsuarioAccessService) {
         this.notaBibliaRepository = notaBibliaRepository;
+        this.bibliaUsuarioAccessService = bibliaUsuarioAccessService;
     }
 
     /**
@@ -58,6 +61,7 @@ public class NotaBibliaResource {
         if (notaBiblia.getId() != null) {
             throw new BadRequestAlertException("A new notaBiblia cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        notaBiblia.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         notaBiblia = notaBibliaRepository.save(notaBiblia);
         return ResponseEntity.created(new URI("/api/nota-biblias/" + notaBiblia.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, notaBiblia.getId().toString()))
@@ -87,11 +91,20 @@ public class NotaBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!notaBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
-        notaBiblia = notaBibliaRepository.save(notaBiblia);
+        NotaBiblia existente = bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            notaBibliaRepository.findById(id),
+            NotaBiblia::getUsuario
+        );
+        existente.setChaveReferencia(notaBiblia.getChaveReferencia());
+        existente.setLivroId(notaBiblia.getLivroId());
+        existente.setLivroNome(notaBiblia.getLivroNome());
+        existente.setCapitulo(notaBiblia.getCapitulo());
+        existente.setVersiculoInicio(notaBiblia.getVersiculoInicio());
+        existente.setVersiculoFim(notaBiblia.getVersiculoFim());
+        existente.setVersao(notaBiblia.getVersao());
+        existente.setConteudo(notaBiblia.getConteudo());
+        existente.setAtualizadoEm(notaBiblia.getAtualizadoEm());
+        notaBiblia = notaBibliaRepository.save(existente);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, notaBiblia.getId().toString()))
             .body(notaBiblia);
@@ -121,9 +134,7 @@ public class NotaBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!notaBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(notaBibliaRepository.findById(id), NotaBiblia::getUsuario);
 
         Optional<NotaBiblia> result = notaBibliaRepository
             .findById(notaBiblia.getId())
@@ -182,14 +193,8 @@ public class NotaBibliaResource {
         @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload
     ) {
         LOG.debug("REST request to get a page of NotaBiblias");
-        Page<NotaBiblia> page;
-        if (eagerload) {
-            page = notaBibliaRepository.findAllWithEagerRelationships(pageable);
-        } else {
-            page = notaBibliaRepository.findAll(pageable);
-        }
-        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        return ResponseEntity.ok().headers(headers).body(page.getContent());
+        List<NotaBiblia> content = notaBibliaRepository.findByUsuarioIsCurrentUser();
+        return ResponseEntity.ok().body(content);
     }
 
     /**
@@ -201,7 +206,10 @@ public class NotaBibliaResource {
     @GetMapping("/{id}")
     public ResponseEntity<NotaBiblia> getNotaBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to get NotaBiblia : {}", id);
-        Optional<NotaBiblia> notaBiblia = notaBibliaRepository.findOneWithEagerRelationships(id);
+        Optional<NotaBiblia> notaBiblia = bibliaUsuarioAccessService.filtrarPropriedade(
+            notaBibliaRepository.findOneWithEagerRelationships(id),
+            NotaBiblia::getUsuario
+        );
         return ResponseUtil.wrapOrNotFound(notaBiblia);
     }
 
@@ -214,6 +222,7 @@ public class NotaBibliaResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNotaBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete NotaBiblia : {}", id);
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(notaBibliaRepository.findById(id), NotaBiblia::getUsuario);
         notaBibliaRepository.deleteById(id);
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))

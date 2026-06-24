@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260626000007-1" author="semear">
+        <createTable tableName="crianca_presenca">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="crianca_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_presenca" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entrada_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="saida_em" type="timestamp"/>
+            <column name="registrado_por_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="crianca_presenca"
+            baseColumnNames="igreja_id"
+            constraintName="fk_crianca_presenca_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="crianca_presenca"
+            baseColumnNames="crianca_id"
+            constraintName="fk_crianca_presenca_crianca"
+            referencedTableName="crianca"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="crianca_presenca"
+            baseColumnNames="registrado_por_id"
+            constraintName="fk_crianca_presenca_user"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint
+            tableName="crianca_presenca"
+            columnNames="crianca_id, data_presenca"
+            constraintName="ux_crianca_presenca_dia"/>
+    </changeSet>
+</databaseChangeLog>

@@ -5,6 +5,10 @@ export type AniversarianteApi = {
   name: string;
   birthDate: string; // yyyy-mm-dd
   imageUrl?: string | null;
+  dataBatismo?: string | null;
+  dataCasamento?: string | null;
+  dataMembroSince?: string | null;
+  membroDesde?: string | null;
 };
 
 export type AniversarianteApp = {
@@ -12,6 +16,9 @@ export type AniversarianteApp = {
   name: string;
   date: Date;
   photoUrl?: string;
+  dataBatismo?: string;
+  dataCasamento?: string;
+  membroDesde?: string;
 };
 
 const toDateLocal = (yyyyMmDd: string) => new Date(`${yyyyMmDd}T00:00:00`);
@@ -21,6 +28,9 @@ const mapAniversariante = (a: AniversarianteApi): AniversarianteApp => ({
   name: a.name,
   date: toDateLocal(a.birthDate),
   photoUrl: a.imageUrl ?? undefined,
+  dataBatismo: a.dataBatismo ?? undefined,
+  dataCasamento: a.dataCasamento ?? undefined,
+  membroDesde: a.dataMembroSince ?? a.membroDesde ?? undefined,
 });
 
 export const listarAniversariantes = async (days = 7): Promise<AniversarianteApp[]> => {

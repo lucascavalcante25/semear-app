@@ -10,6 +10,7 @@ import br.com.semear.service.GrupoLouvorService;
 import br.com.semear.service.TenantService;
 import br.com.semear.service.dto.GrupoLouvorDTO;
 import br.com.semear.service.mapper.GrupoLouvorMapper;
+import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GrupoLouvorServiceImpl implements GrupoLouvorService {
 
     private static final Logger log = LoggerFactory.getLogger(GrupoLouvorServiceImpl.class);
+    private static final String ENTITY = "grupoLouvor";
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -67,8 +69,7 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
     @Override
     public GrupoLouvorDTO update(GrupoLouvorDTO dto) {
         log.debug("Request to update GrupoLouvor : {}", dto);
-        GrupoLouvor grupo = grupoRepository.findById(dto.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Grupo não encontrado: " + dto.getId()));
+        GrupoLouvor grupo = obterGrupoDoTenant(dto.getId());
         grupo.setNome(dto.getNome());
         grupo.setOrdem(dto.getOrdem() != null ? dto.getOrdem() : grupo.getOrdem());
         grupo = grupoRepository.save(grupo);
@@ -86,12 +87,13 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
     @Override
     @Transactional(readOnly = true)
     public Optional<GrupoLouvorDTO> findOne(Long id) {
-        return grupoRepository.findByIdWithItens(id).map(mapper::toDto);
+        return grupoRepository.findByIdAndIgrejaIdWithItens(id, tenantService.getIgrejaIdAtual()).map(mapper::toDto);
     }
 
     @Override
     public void delete(Long id) {
         log.debug("Request to delete GrupoLouvor : {}", id);
+        obterGrupoDoTenant(id);
         itemRepository.deleteByGrupoId(id);
         grupoRepository.deleteById(id);
     }
@@ -99,29 +101,31 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
     @Override
     public GrupoLouvorDTO addLouvor(Long grupoId, Long louvorId) {
         log.debug("Request to add louvor {} to grupo {}", louvorId, grupoId);
-        GrupoLouvor grupo = grupoRepository.findById(grupoId)
-            .orElseThrow(() -> new IllegalArgumentException("Grupo não encontrado: " + grupoId));
+        GrupoLouvor grupo = obterGrupoDoTenant(grupoId);
         Louvor louvor = louvorRepository.findById(louvorId)
             .orElseThrow(() -> new IllegalArgumentException("Louvor não encontrado: " + louvorId));
+        tenantService.validarMesmaIgreja(louvor.getIgreja());
 
         if (itemRepository.findByGrupoIdAndLouvorId(grupoId, louvorId).isPresent()) {
             throw new IllegalArgumentException("Este louvor já está no grupo.");
         }
 
-        int nextOrdem = grupo.getItens().size();
+        int nextOrdem = itemRepository.findByGrupoIdOrderByOrdemAsc(grupoId).size();
         GrupoLouvorItem item = new GrupoLouvorItem();
         item.setGrupo(grupo);
         item.setLouvor(louvor);
         item.setOrdem(nextOrdem);
         itemRepository.save(item);
-        grupo.getItens().add(item);
 
-        return mapper.toDto(grupoRepository.findById(grupoId).orElse(grupo));
+        return mapper.toDto(
+            grupoRepository.findByIdAndIgrejaIdWithItens(grupoId, tenantService.getIgrejaIdAtual()).orElse(grupo)
+        );
     }
 
     @Override
     public void removeLouvor(Long grupoId, Long louvorId) {
         log.debug("Request to remove louvor {} from grupo {}", louvorId, grupoId);
+        obterGrupoDoTenant(grupoId);
         GrupoLouvorItem item = itemRepository.findByGrupoIdAndLouvorId(grupoId, louvorId)
             .orElseThrow(() -> new IllegalArgumentException("Louvor não está no grupo."));
         itemRepository.delete(item);
@@ -130,15 +134,16 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
     @Override
     public GrupoLouvorDTO reorderLouvores(Long grupoId, List<Long> louvorIdsInOrder) {
         log.debug("Request to reorder louvores in grupo {}: {}", grupoId, louvorIdsInOrder);
+        obterGrupoDoTenant(grupoId);
         if (louvorIdsInOrder == null || louvorIdsInOrder.isEmpty()) {
-            return grupoRepository.findByIdWithItens(grupoId)
+            return grupoRepository.findByIdAndIgrejaIdWithItens(grupoId, tenantService.getIgrejaIdAtual())
                 .map(mapper::toDto)
                 .orElseThrow(() -> new IllegalArgumentException("Grupo não encontrado: " + grupoId));
         }
 
         List<GrupoLouvorItem> itens = itemRepository.findByGrupoIdOrderByOrdemAsc(grupoId);
         if (itens.isEmpty()) {
-            return grupoRepository.findByIdWithItens(grupoId)
+            return grupoRepository.findByIdAndIgrejaIdWithItens(grupoId, tenantService.getIgrejaIdAtual())
                 .map(mapper::toDto)
                 .orElseThrow(() -> new IllegalArgumentException("Grupo não encontrado: " + grupoId));
         }
@@ -154,8 +159,14 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
             }
         }
         entityManager.flush();
-        return grupoRepository.findByIdWithItens(grupoId)
+        return grupoRepository.findByIdAndIgrejaIdWithItens(grupoId, tenantService.getIgrejaIdAtual())
             .map(mapper::toDto)
             .orElseThrow(() -> new IllegalArgumentException("Grupo não encontrado: " + grupoId));
+    }
+
+    private GrupoLouvor obterGrupoDoTenant(Long id) {
+        return grupoRepository
+            .findByIdAndIgrejaId(id, tenantService.getIgrejaIdAtual())
+            .orElseThrow(() -> new BadRequestAlertException("Grupo de louvor não encontrado", ENTITY, "naoencontrado"));
     }
 }

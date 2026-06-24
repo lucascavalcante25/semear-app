@@ -59,6 +59,9 @@ public class Lancamento implements Serializable {
     @Column(name = "observacoes", columnDefinition = "text")
     private String observacoes;
 
+    @Column(name = "centro_custo", length = 120)
+    private String centroCusto;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "igreja_id")
     private Igreja igreja;
@@ -147,6 +150,14 @@ public class Lancamento implements Serializable {
 
     public void setObservacoes(String observacoes) {
         this.observacoes = observacoes;
+    }
+
+    public String getCentroCusto() {
+        return centroCusto;
+    }
+
+    public void setCentroCusto(String centroCusto) {
+        this.centroCusto = centroCusto;
     }
 
     public Instant getCriadoEm() {

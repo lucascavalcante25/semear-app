@@ -222,6 +222,9 @@ function FormMembro({
   const [email, setEmail] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [sexo, setSexo] = useState<"MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO">("NAO_INFORMADO");
+  const [dataBatismo, setDataBatismo] = useState("");
+  const [dataCasamento, setDataCasamento] = useState("");
+  const [dataMembroSince, setDataMembroSince] = useState("");
   const [activated, setActivated] = useState(true);
   const [perfil, setPerfil] = useState<Role>("membro");
   const [modulesSelecionados, setModulesSelecionados] = useState<ModuleKey[]>([]);
@@ -235,6 +238,9 @@ function FormMembro({
       setLastName(membroEdicao.lastName);
       setEmail(membroEdicao.email);
       setBirthDate(membroEdicao.birthDate ?? "");
+      setDataBatismo(membroEdicao.dataBatismo ?? "");
+      setDataCasamento(membroEdicao.dataCasamento ?? "");
+      setDataMembroSince(membroEdicao.dataMembroSince ?? "");
       setSexo((membroEdicao.sexo as "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO") ?? "NAO_INFORMADO");
       setActivated(membroEdicao.activated);
       setPerfil(membroEdicao.role);
@@ -249,6 +255,9 @@ function FormMembro({
       setLastName("");
       setEmail("");
       setBirthDate("");
+      setDataBatismo("");
+      setDataCasamento("");
+      setDataMembroSince("");
       setSexo("NAO_INFORMADO");
       setActivated(true);
       setPerfil("membro");
@@ -301,6 +310,9 @@ function FormMembro({
           lastName: lastNameTrim,
           email: emailTrim || undefined,
           birthDate: birthDate.trim() || undefined,
+          dataBatismo: dataBatismo.trim() || null,
+          dataCasamento: dataCasamento.trim() || null,
+          dataMembroSince: dataMembroSince.trim() || null,
           sexo: sexo !== "NAO_INFORMADO" ? sexo : undefined,
           activated,
           authorities: [roleParaAuthority(perfil)],
@@ -393,6 +405,35 @@ function FormMembro({
                   <SelectItem value="NAO_INFORMADO">Não informado</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="dataBatismo">Data de batismo</Label>
+              <DatePicker
+                id="dataBatismo"
+                value={dataBatismo || undefined}
+                onChange={setDataBatismo}
+                rejeitarFuturo
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dataCasamento">Data de casamento</Label>
+              <DatePicker
+                id="dataCasamento"
+                value={dataCasamento || undefined}
+                onChange={setDataCasamento}
+                rejeitarFuturo
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dataMembroSince">Membro desde</Label>
+              <DatePicker
+                id="dataMembroSince"
+                value={dataMembroSince || undefined}
+                onChange={setDataMembroSince}
+                rejeitarFuturo
+              />
             </div>
           </div>
           <div className="space-y-2">

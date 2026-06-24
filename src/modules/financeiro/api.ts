@@ -1,4 +1,4 @@
-import { requisicaoApi } from "@/modules/api/client";
+import { requisicaoApi, URL_BASE_API, obterToken } from "@/modules/api/client";
 
 export type TipoLancamentoApi = "INCOME" | "EXPENSE";
 
@@ -12,6 +12,7 @@ export type LancamentoDTO = {
   metodoPagamento?: string | null;
   referencia?: string | null;
   observacoes?: string | null;
+  centroCusto?: string | null;
   criadoEm?: string;
   criadoPor?: string;
   atualizadoEm?: string | null;
@@ -29,6 +30,7 @@ export type LancamentoApp = {
   paymentMethod?: "cash" | "pix" | "card" | "transfer";
   reference?: string;
   notes?: string;
+  centroCusto?: string;
   createdAt: Date;
   createdBy: string;
 };
@@ -67,6 +69,7 @@ export const mapearLancamento = (dto: LancamentoDTO): LancamentoApp => ({
   paymentMethod: mapMetodo(dto.metodoPagamento),
   reference: dto.referencia ?? undefined,
   notes: dto.observacoes ?? undefined,
+  centroCusto: dto.centroCusto ?? undefined,
   createdAt: dto.criadoEm ? new Date(dto.criadoEm) : new Date(),
   createdBy: dto.criadoPor ?? "Sistema",
 });
@@ -91,6 +94,7 @@ export const criarLancamento = async (
     metodoPagamento: mapMetodoToApi(lancamento.paymentMethod),
     referencia: lancamento.reference ?? null,
     observacoes: lancamento.notes ?? null,
+    centroCusto: lancamento.centroCusto ?? null,
   };
   const created = await requisicaoApi<LancamentoDTO>("/api/lancamentos", {
     method: "POST",
@@ -113,6 +117,7 @@ export const atualizarLancamento = async (lancamento: LancamentoApp) => {
     metodoPagamento: mapMetodoToApi(lancamento.paymentMethod),
     referencia: lancamento.reference ?? null,
     observacoes: lancamento.notes ?? null,
+    centroCusto: lancamento.centroCusto ?? null,
   };
   const updated = await requisicaoApi<LancamentoDTO>(`/api/lancamentos/${id}`, {
     method: "PUT",
@@ -124,4 +129,14 @@ export const atualizarLancamento = async (lancamento: LancamentoApp) => {
 
 export const excluirLancamento = async (id: number) => {
   await requisicaoApi(`/api/lancamentos/${id}`, { method: "DELETE", auth: true });
+};
+
+export const exportarLancamentosCsv = async (): Promise<Blob> => {
+  if (!URL_BASE_API) throw new Error("API não configurada.");
+  const headers = new Headers({ Accept: "text/csv" });
+  const token = obterToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(`${URL_BASE_API}/api/lancamentos/export/csv`, { headers });
+  if (!response.ok) throw new Error("Falha ao exportar CSV.");
+  return response.blob();
 };

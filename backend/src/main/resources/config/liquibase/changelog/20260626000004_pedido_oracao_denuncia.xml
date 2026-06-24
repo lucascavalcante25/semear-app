@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260626000004-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="pedido_oracao" columnName="denunciado"/></not>
+        </preConditions>
+        <addColumn tableName="pedido_oracao">
+            <column name="denunciado" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260626000004-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="pedido_oracao" columnName="denunciado_em"/></not>
+        </preConditions>
+        <addColumn tableName="pedido_oracao">
+            <column name="denunciado_em" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260626000004-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="pedido_oracao" columnName="denunciado_por_id"/></not>
+        </preConditions>
+        <addColumn tableName="pedido_oracao">
+            <column name="denunciado_por_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="pedido_oracao"
+            baseColumnNames="denunciado_por_id"
+            constraintName="fk_pedido_oracao_denunciado_por"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260626000004-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="pedido_oracao" columnName="nome_solicitante"/></not>
+        </preConditions>
+        <addColumn tableName="pedido_oracao">
+            <column name="nome_solicitante" type="varchar(150)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260626000004-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="pedido_oracao" columnName="usuario_id"/>
+        </preConditions>
+        <dropNotNullConstraint tableName="pedido_oracao" columnName="usuario_id" columnDataType="bigint"/>
+    </changeSet>
+</databaseChangeLog>

@@ -110,6 +110,7 @@ public class DocumentoIgrejaService {
         String descricao,
         CategoriaDocumentoIgreja categoria,
         LocalDate dataDocumento,
+        LocalDate dataValidade,
         MultipartFile arquivo
     ) {
         validarMetadadosCriacao(nome, descricao, categoria);
@@ -150,6 +151,7 @@ public class DocumentoIgrejaService {
             documento.setTamanhoArquivo((long) bytes.length);
             documento.setCaminhoArquivo(storedRelative);
             documento.setDataDocumento(dataDocumento);
+            documento.setDataValidade(dataValidade);
             documento.setDataUpload(Instant.now());
             documento.setAtivo(true);
 
@@ -171,9 +173,22 @@ public class DocumentoIgrejaService {
         documento.setDescricao(dto.getDescricao() != null && !dto.getDescricao().isBlank() ? dto.getDescricao().trim() : null);
         documento.setCategoria(dto.getCategoria());
         documento.setDataDocumento(dto.getDataDocumento());
+        documento.setDataValidade(dto.getDataValidade());
         documento.setDataAtualizacao(Instant.now());
 
         return documentoIgrejaMapper.toDto(documentoIgrejaRepository.save(documento));
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentoIgrejaDTO> listarVencendo(int dias) {
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        LocalDate hoje = LocalDate.now();
+        LocalDate limite = hoje.plusDays(Math.max(dias, 1));
+        return documentoIgrejaRepository
+            .findByIgrejaIdAndAtivoTrueAndDataValidadeBetweenOrderByDataValidadeAsc(igrejaId, hoje, limite)
+            .stream()
+            .map(documentoIgrejaMapper::toDto)
+            .toList();
     }
 
     public void excluir(Long id) {

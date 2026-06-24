@@ -27,6 +27,15 @@ function ItemAniversariante({ aniversariante }: ItemAniversarianteProps) {
   const idade = obterIdadeQueCompleta(aniversariante.date);
   const avatarUrl = useAvatarUrlByUserId(aniversariante.id);
 
+  const formatarData = (iso?: string) =>
+    iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("pt-BR") : null;
+
+  const datasExtras = [
+    aniversariante.dataBatismo && { rotulo: "Batismo", data: formatarData(aniversariante.dataBatismo) },
+    aniversariante.dataCasamento && { rotulo: "Casamento", data: formatarData(aniversariante.dataCasamento) },
+    aniversariante.membroDesde && { rotulo: "Membro desde", data: formatarData(aniversariante.membroDesde) },
+  ].filter((d): d is { rotulo: string; data: string } => Boolean(d?.data));
+
   return (
     <div
       className={cn(
@@ -53,6 +62,11 @@ function ItemAniversariante({ aniversariante }: ItemAniversarianteProps) {
           {" · "}
           {ehHoje ? `completa ${idade} anos` : `${idade} anos`}
         </p>
+        {datasExtras.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {datasExtras.map((d) => `${d.rotulo}: ${d.data}`).join(" · ")}
+          </p>
+        )}
       </div>
 
       {ehHoje ? (

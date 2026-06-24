@@ -39,7 +39,7 @@ export function CampoSenha({
         autoComplete={autoComplete}
         required={required}
         aria-label={ariaLabel}
-        className={cn("pr-10", inputClassName)}
+        className={cn("pr-10 password-with-toggle", inputClassName)}
       />
       <button
         type="button"

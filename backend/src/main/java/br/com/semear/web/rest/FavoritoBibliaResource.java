@@ -2,6 +2,7 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.FavoritoBiblia;
 import br.com.semear.repository.FavoritoBibliaRepository;
+import br.com.semear.service.BibliaUsuarioAccessService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -40,9 +41,11 @@ public class FavoritoBibliaResource {
     private String applicationName;
 
     private final FavoritoBibliaRepository favoritoBibliaRepository;
+    private final BibliaUsuarioAccessService bibliaUsuarioAccessService;
 
-    public FavoritoBibliaResource(FavoritoBibliaRepository favoritoBibliaRepository) {
+    public FavoritoBibliaResource(FavoritoBibliaRepository favoritoBibliaRepository, BibliaUsuarioAccessService bibliaUsuarioAccessService) {
         this.favoritoBibliaRepository = favoritoBibliaRepository;
+        this.bibliaUsuarioAccessService = bibliaUsuarioAccessService;
     }
 
     /**
@@ -59,6 +62,7 @@ public class FavoritoBibliaResource {
         if (favoritoBiblia.getId() != null) {
             throw new BadRequestAlertException("A new favoritoBiblia cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        favoritoBiblia.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         favoritoBiblia = favoritoBibliaRepository.save(favoritoBiblia);
         return ResponseEntity.created(new URI("/api/favorito-biblias/" + favoritoBiblia.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, favoritoBiblia.getId().toString()))
@@ -88,10 +92,7 @@ public class FavoritoBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!favoritoBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(favoritoBibliaRepository.findById(id), FavoritoBiblia::getUsuario);
         favoritoBiblia = favoritoBibliaRepository.save(favoritoBiblia);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, favoritoBiblia.getId().toString()))
@@ -122,9 +123,7 @@ public class FavoritoBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!favoritoBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(favoritoBibliaRepository.findById(id), FavoritoBiblia::getUsuario);
 
         Optional<FavoritoBiblia> result = favoritoBibliaRepository
             .findById(favoritoBiblia.getId())
@@ -180,14 +179,7 @@ public class FavoritoBibliaResource {
         @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload
     ) {
         LOG.debug("REST request to get a page of FavoritoBiblias");
-        Page<FavoritoBiblia> page;
-        if (eagerload) {
-            page = favoritoBibliaRepository.findAllWithEagerRelationships(pageable);
-        } else {
-            page = favoritoBibliaRepository.findAll(pageable);
-        }
-        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        return ResponseEntity.ok().headers(headers).body(page.getContent());
+        return ResponseEntity.ok().body(favoritoBibliaRepository.findByUsuarioIsCurrentUser());
     }
 
     /**
@@ -199,7 +191,10 @@ public class FavoritoBibliaResource {
     @GetMapping("/{id}")
     public ResponseEntity<FavoritoBiblia> getFavoritoBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to get FavoritoBiblia : {}", id);
-        Optional<FavoritoBiblia> favoritoBiblia = favoritoBibliaRepository.findOneWithEagerRelationships(id);
+        Optional<FavoritoBiblia> favoritoBiblia = bibliaUsuarioAccessService.filtrarPropriedade(
+            favoritoBibliaRepository.findOneWithEagerRelationships(id),
+            FavoritoBiblia::getUsuario
+        );
         return ResponseUtil.wrapOrNotFound(favoritoBiblia);
     }
 
@@ -212,6 +207,7 @@ public class FavoritoBibliaResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFavoritoBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete FavoritoBiblia : {}", id);
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(favoritoBibliaRepository.findById(id), FavoritoBiblia::getUsuario);
         favoritoBibliaRepository.deleteById(id);
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))

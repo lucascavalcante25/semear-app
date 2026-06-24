@@ -43,7 +43,7 @@ const menuItems = [
 export function MenuMobile({ onClose }: MenuMobileProps) {
   const location = useLocation();
   const { user } = usarAutenticacao();
-  const { notificacoes } = usarNotificacoes();
+  const { notificacoes, pedidosOracaoPendentes } = usarNotificacoes();
   const badgeSuporte = notificacoes.filter((n) => n.tipo === "SUPORTE").length;
   const { nomeExibicao, subtituloExibicao, logoUrl } = useIgrejaConfiguracao();
   const filteredItems = menuItems.filter((item) => {
@@ -82,7 +82,12 @@ export function MenuMobile({ onClose }: MenuMobileProps) {
             const isActive =
               location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
             const Icon = item.icon;
-            const badge = item.path === "/suporte" ? badgeSuporte : 0;
+            const badge =
+              item.path === "/suporte"
+                ? badgeSuporte
+                : item.path === "/oracao"
+                  ? pedidosOracaoPendentes
+                  : 0;
 
             return (
               <li key={item.path}>

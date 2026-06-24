@@ -91,4 +91,30 @@
     <include file="config/liquibase/changelog/20260612000004_atualizar_precificacao.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260612000005_padronizar_cores_igreja.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260618000001_taxa_adesao_promocional.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260624000001_pedido_oracao.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260624000002_informativo.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260624000003_documento_validade.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260624000004_igreja_oracao_config.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000001_informativo_cta.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000002_visitante_funil.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000003_acompanhamento_pastoral.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000004_user_dates.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000005_departamento.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000006_escala.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000007_celula.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000008_evento.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000009_igreja_site_publico.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260625000010_crianca.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260626000001_crianca_sala_alergias.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260626000002_evento_capacidade.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260626000003_celula_relatorio.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260626000004_pedido_oracao_denuncia.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260626000005_informativo_imagem.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260626000006_lancamento_centro_custo.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260626000007_crianca_presenca.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000001_escala_automatica.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000002_departamento_lider.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000003_escala_config_geracao.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000004_escala_dia_limpeza.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000005_escala_modo_limpeza.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

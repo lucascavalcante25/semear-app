@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260627000001-1" author="semear">
+        <addColumn tableName="departamento">
+            <column name="codigo" type="varchar(30)"/>
+            <column name="orientacoes_servico" type="${clobType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260627000001-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="culto_registro"/></not></preConditions>
+        <createTable tableName="culto_registro">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="nome" type="varchar(150)"><constraints nullable="false"/></column>
+            <column name="dia_semana" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="horario" type="varchar(10)"><constraints nullable="false"/></column>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="culto_registro" baseColumnNames="igreja_id" constraintName="fk_culto_registro_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260627000001-3" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="culto_escala_regra"/></not></preConditions>
+        <createTable tableName="culto_escala_regra">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="culto_registro_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="departamento_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="regra_genero" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="culto_escala_regra" baseColumnNames="culto_registro_id" constraintName="fk_culto_escala_regra_culto" referencedTableName="culto_registro" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="culto_escala_regra" baseColumnNames="departamento_id" constraintName="fk_culto_escala_regra_departamento" referencedTableName="departamento" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260627000001-4" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="escala_config_automatica"/></not></preConditions>
+        <createTable tableName="escala_config_automatica">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false" unique="true"/></column>
+            <column name="meses_ciclo" type="int" defaultValueNumeric="3"><constraints nullable="false"/></column>
+            <column name="dias_antecedencia" type="int" defaultValueNumeric="14"><constraints nullable="false"/></column>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="atualizado_em" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="escala_config_automatica" baseColumnNames="igreja_id" constraintName="fk_escala_config_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260627000001-5" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="escala_geracao"/></not></preConditions>
+        <createTable tableName="escala_geracao">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="data_inicio" type="date"><constraints nullable="false"/></column>
+            <column name="data_fim" type="date"><constraints nullable="false"/></column>
+            <column name="status" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="origem" type="varchar(20)"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="publicado_em" type="${datetimeType}"/>
+            <column name="criado_por_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="escala_geracao" baseColumnNames="igreja_id" constraintName="fk_escala_geracao_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="escala_geracao" baseColumnNames="criado_por_id" constraintName="fk_escala_geracao_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260627000001-6" author="semear">
+        <addColumn tableName="escala">
+            <column name="status" type="varchar(20)" defaultValue="PUBLICADA"><constraints nullable="false"/></column>
+            <column name="culto_registro_id" type="bigint"/>
+            <column name="geracao_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="escala" baseColumnNames="culto_registro_id" constraintName="fk_escala_culto_registro" referencedTableName="culto_registro" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="escala" baseColumnNames="geracao_id" constraintName="fk_escala_geracao" referencedTableName="escala_geracao" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260627000001-7" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="escala_login_aviso_visto"/></not></preConditions>
+        <createTable tableName="escala_login_aviso_visto">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="escala_item_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="visto_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="escala_login_aviso_visto" baseColumnNames="user_id" constraintName="fk_escala_aviso_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="escala_login_aviso_visto" baseColumnNames="escala_item_id" constraintName="fk_escala_aviso_item" referencedTableName="escala_item" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="escala_login_aviso_visto" columnNames="user_id, escala_item_id" constraintName="ux_escala_aviso_user_item"/>
+    </changeSet>
+</databaseChangeLog>

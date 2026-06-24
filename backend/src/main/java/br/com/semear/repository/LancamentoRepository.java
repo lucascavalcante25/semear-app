@@ -22,4 +22,9 @@ public interface LancamentoRepository extends JpaRepository<Lancamento, Long> {
 
     @Query("SELECT l FROM Lancamento l WHERE l.dataLancamento >= :inicio AND l.dataLancamento <= :fim ORDER BY l.dataLancamento DESC, l.criadoEm DESC")
     List<Lancamento> findByPeriodo(@Param("inicio") LocalDate inicio, @Param("fim") LocalDate fim);
+
+    @Query(
+        "SELECT l FROM Lancamento l WHERE l.igreja.id = :igrejaId AND l.dataLancamento >= :inicio AND l.dataLancamento <= :fim ORDER BY l.dataLancamento DESC, l.criadoEm DESC"
+    )
+    List<Lancamento> findByIgrejaIdAndPeriodo(@Param("igrejaId") Long igrejaId, @Param("inicio") LocalDate inicio, @Param("fim") LocalDate fim);
 }

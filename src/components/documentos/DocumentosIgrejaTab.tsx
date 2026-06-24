@@ -79,6 +79,7 @@ const FORM_INICIAL: FormDocumento = {
   nome: "",
   categoria: "",
   dataDocumento: "",
+  dataValidade: "",
   descricao: "",
   arquivo: null,
 };
@@ -90,6 +91,16 @@ function formatarData(iso?: string) {
     return `${d}/${m}/${y}`;
   }
   return new Date(iso).toLocaleDateString("pt-BR");
+}
+
+function docVencendoEmBreve(dataValidade?: string): boolean {
+  if (!dataValidade) return false;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const limite = new Date(hoje);
+  limite.setDate(limite.getDate() + 30);
+  const val = new Date(`${dataValidade.slice(0, 10)}T12:00:00`);
+  return val <= limite;
 }
 
 function formatarDataHora(iso?: string) {
@@ -191,6 +202,7 @@ export function DocumentosIgrejaTab() {
         categoria: form.categoria,
         descricao: form.descricao.trim() || undefined,
         dataDocumento: form.dataDocumento || undefined,
+        dataValidade: form.dataValidade || undefined,
         arquivo: form.arquivo,
       });
       toast.success("Documento enviado com sucesso.");
@@ -357,6 +369,15 @@ export function DocumentosIgrejaTab() {
             </div>
 
             <div className="space-y-2">
+              <Label>Validade / vencimento</Label>
+              <DatePicker
+                value={form.dataValidade}
+                onChange={(v) => setForm((f) => ({ ...f, dataValidade: v }))}
+                placeholder="Opcional — alerta antes de vencer"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="doc-descricao">Descrição</Label>
               <Textarea
                 id="doc-descricao"
@@ -514,6 +535,7 @@ export function DocumentosIgrejaTab() {
                       <TableHead>Tipo</TableHead>
                       <TableHead>Tamanho</TableHead>
                       <TableHead>Data do documento</TableHead>
+                      <TableHead>Validade</TableHead>
                       <TableHead>Data de envio</TableHead>
                       <TableHead>Enviado por</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -531,6 +553,21 @@ export function DocumentosIgrejaTab() {
                         <TableCell>{labelTipoArquivo(doc.tipoArquivo)}</TableCell>
                         <TableCell>{formatarTamanhoArquivo(doc.tamanhoArquivo)}</TableCell>
                         <TableCell>{formatarData(doc.dataDocumento)}</TableCell>
+                        <TableCell>
+                          {doc.dataValidade ? (
+                            <span
+                              className={
+                                docVencendoEmBreve(doc.dataValidade)
+                                  ? "text-destructive font-medium"
+                                  : undefined
+                              }
+                            >
+                              {formatarData(doc.dataValidade)}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
                         <TableCell>{formatarDataHora(doc.dataUpload)}</TableCell>
                         <TableCell>{doc.usuarioUploadNome ?? "—"}</TableCell>
                         <TableCell className="text-right">

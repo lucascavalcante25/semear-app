@@ -50,6 +50,7 @@ export type DocumentoIgreja = {
   tamanhoArquivo: number;
   urlDownload?: string;
   dataDocumento?: string;
+  dataValidade?: string;
   dataUpload?: string;
   dataAtualizacao?: string;
   usuarioUploadId?: number;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { BookOpen, Calendar, RefreshCw, Camera, Loader2 } from "lucide-react";
+import { BookOpen, Calendar, RefreshCw, Camera, Loader2, Globe } from "lucide-react";
 import { AvatarCropperModal } from "@/components/avatar/AvatarCropperModal";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -41,7 +42,7 @@ import { DocumentosIgrejaTab } from "@/components/documentos/DocumentosIgrejaTab
 import { Navigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-const ABAS = ["dados", "responsavel", "endereco", "pix", "visual", "textos", "plano", "documentos"] as const;
+const ABAS = ["dados", "responsavel", "endereco", "pix", "visual", "textos", "site", "plano", "documentos"] as const;
 type AbaConfig = (typeof ABAS)[number];
 
 export default function ConfiguracoesIgreja() {
@@ -251,6 +252,7 @@ export default function ConfiguracoesIgreja() {
           <TabsTrigger value="pix">PIX</TabsTrigger>
           <TabsTrigger value="visual">Logo</TabsTrigger>
           <TabsTrigger value="textos">Textos</TabsTrigger>
+          <TabsTrigger value="site">Site público</TabsTrigger>
           <TabsTrigger value="plano">Plano de Leitura</TabsTrigger>
           {podeDocumentos && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
         </TabsList>
@@ -443,7 +445,93 @@ export default function ConfiguracoesIgreja() {
                   Exibido na tela &quot;Mais&quot;, na seção sobre a igreja.
                 </p>
               </div>
-              <Button onClick={salvarVisual} disabled={salvando}>Salvar textos</Button>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label>Exigir aprovação de pedidos públicos de oração</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando ativo, pedidos públicos de oração precisam ser aprovados pela liderança antes de
+                    aparecerem para a igreja.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.requerAprovacaoOracaoPublica ?? true}
+                  onCheckedChange={(v) => set("requerAprovacaoOracaoPublica", v)}
+                />
+              </div>
+              <Button onClick={salvarGeral} disabled={salvando}>Salvar textos</Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="site">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Site público da igreja
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Publique uma página simples da sua igreja para compartilhar com visitantes.
+              </p>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1 pr-4">
+                  <Label>Ativar site público</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando ativo, a página fica acessível pelo link abaixo.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.siteAtivo ?? false}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, siteAtivo: v }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Endereço do site (slug)</Label>
+                <Input
+                  value={form.slug || ""}
+                  onChange={(e) =>
+                    set(
+                      "slug",
+                      e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9-]/g, "-")
+                        .replace(/-+/g, "-"),
+                    )
+                  }
+                  placeholder="minha-igreja"
+                  maxLength={120}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use apenas letras minúsculas, números e hífens.
+                </p>
+              </div>
+              {form.slug && (
+                <p className="text-sm rounded-lg bg-muted/50 p-3 break-all">
+                  Link:{" "}
+                  <a
+                    href={`${window.location.origin}/i/${form.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline"
+                  >
+                    {window.location.origin}/i/{form.slug}
+                  </a>
+                </p>
+              )}
+              <div className="space-y-2">
+                <Label>Horários dos cultos</Label>
+                <Textarea
+                  value={form.horarioCulto || ""}
+                  onChange={(e) => set("horarioCulto", e.target.value)}
+                  placeholder="Ex.: Domingo 19h — Culto de celebração&#10;Quarta 20h — Estudo bíblico"
+                  rows={4}
+                />
+              </div>
+              <Button onClick={salvarGeral} disabled={salvando}>
+                Salvar site público
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

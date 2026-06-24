@@ -14,11 +14,16 @@ import {
   LayoutDashboard,
   Church,
   LifeBuoy,
+  Cake,
+  Bell,
+  Building2,
+  CalendarDays,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
-import { canAccess, podeAcessarSuporte, usuarioEhSuperAdmin } from "@/auth/permissions";
+import { canAccess, canWrite, podeAcessarSuporte, usuarioEhSuperAdmin } from "@/auth/permissions";
 import { PixOfertaBloco } from "@/components/pix/PixOferta";
 import { BadgeNotificacaoMenu } from "@/components/layout/BadgeNotificacaoMenu";
 
@@ -29,6 +34,7 @@ const menuGroups = [
       { icon: Home, label: "Dashboard", path: "/" },
       { icon: BookOpen, label: "Bíblia", path: "/biblia" },
       { icon: BookMarked, label: "Devocionais", path: "/devocionais" },
+      { icon: Heart, label: "Oração", path: "/oracao" },
     ],
   },
   {
@@ -38,11 +44,16 @@ const menuGroups = [
       { icon: Users, label: "Membros", path: "/membros" },
       { icon: UserPlus, label: "Visitantes", path: "/visitantes" },
       { icon: Megaphone, label: "Avisos", path: "/avisos" },
+      { icon: Cake, label: "Aniversariantes", path: "/aniversariantes" },
+      { icon: Building2, label: "Departamentos", path: "/departamentos" },
+      { icon: CalendarDays, label: "Escalas", path: "/escalas" },
+      { icon: Calendar, label: "Eventos", path: "/eventos" },
     ],
   },
   {
     label: "Administração",
     items: [
+      { icon: Bell, label: "Informativos", path: "/informativos", avisosWrite: true },
       { icon: UserCheck, label: "Aprovar pré-cadastros", path: "/aprovar-pre-cadastros" },
       { icon: Wallet, label: "Financeiro", path: "/financeiro" },
       { icon: Church, label: "Config. da Igreja", path: "/configuracoes-igreja" },
@@ -55,7 +66,7 @@ const menuGroups = [
 export function BarraLateral() {
   const location = useLocation();
   const { user } = usarAutenticacao();
-  const { notificacoes } = usarNotificacoes();
+  const { notificacoes, pedidosOracaoPendentes } = usarNotificacoes();
   const badgeSuporte = notificacoes.filter((n) => n.tipo === "SUPORTE").length;
 
   return (
@@ -67,6 +78,9 @@ export function BarraLateral() {
             const items = group.items.filter((item) => {
               if ("suporteOnly" in item && item.suporteOnly) {
                 return podeAcessarSuporte(user);
+              }
+              if ("avisosWrite" in item && item.avisosWrite) {
+                return canWrite(user, "/avisos");
               }
               return canAccess(user, item.path);
             });
@@ -84,7 +98,12 @@ export function BarraLateral() {
                   const isActive =
                     location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
                   const Icon = item.icon;
-                  const badge = item.path === "/suporte" ? badgeSuporte : 0;
+                  const badge =
+                    item.path === "/suporte"
+                      ? badgeSuporte
+                      : item.path === "/oracao"
+                        ? pedidosOracaoPendentes
+                        : 0;
 
                   return (
                     <li key={item.path}>

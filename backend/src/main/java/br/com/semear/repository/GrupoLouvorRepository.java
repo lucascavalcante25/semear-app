@@ -13,8 +13,10 @@ public interface GrupoLouvorRepository extends JpaRepository<GrupoLouvor, Long> 
 
     List<GrupoLouvor> findAllByOrderByOrdemAsc();
 
-    @Query("SELECT DISTINCT g FROM GrupoLouvor g LEFT JOIN FETCH g.itens i LEFT JOIN FETCH i.louvor WHERE g.id = :id")
-    Optional<GrupoLouvor> findByIdWithItens(@Param("id") Long id);
+    @Query("SELECT DISTINCT g FROM GrupoLouvor g LEFT JOIN FETCH g.itens i LEFT JOIN FETCH i.louvor WHERE g.id = :id AND g.igreja.id = :igrejaId")
+    Optional<GrupoLouvor> findByIdAndIgrejaIdWithItens(@Param("id") Long id, @Param("igrejaId") Long igrejaId);
+
+    Optional<GrupoLouvor> findByIdAndIgrejaId(Long id, Long igrejaId);
 
     @Query("SELECT DISTINCT g FROM GrupoLouvor g LEFT JOIN FETCH g.itens i LEFT JOIN FETCH i.louvor ORDER BY g.ordem ASC")
     List<GrupoLouvor> findAllWithItensOrderByOrdemAsc();

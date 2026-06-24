@@ -1,8 +1,10 @@
 package br.com.semear.web.rest;
 
 import br.com.semear.domain.Visitante;
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.repository.VisitanteRepository;
 import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.ModuleAccessService;
 import br.com.semear.service.TenantService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
@@ -39,15 +41,22 @@ public class VisitanteResource {
 
     private final VisitanteRepository visitanteRepository;
     private final TenantService tenantService;
+    private final ModuleAccessService moduleAccessService;
 
-    public VisitanteResource(VisitanteRepository visitanteRepository, TenantService tenantService) {
+    public VisitanteResource(
+        VisitanteRepository visitanteRepository,
+        TenantService tenantService,
+        ModuleAccessService moduleAccessService
+    ) {
         this.visitanteRepository = visitanteRepository;
         this.tenantService = tenantService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     @PostMapping("")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
     public ResponseEntity<Visitante> createVisitante(@RequestBody Visitante visitante) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("visitantes", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to save Visitante : {}", visitante);
         if (visitante.getId() != null) {
             throw new BadRequestAlertException("A new visitante cannot already have an ID", ENTITY_NAME, "idexists");
@@ -77,6 +86,7 @@ public class VisitanteResource {
         @PathVariable("id") final Long id,
         @RequestBody Visitante visitante
     ) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("visitantes", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to update Visitante : {}, {}", id, visitante);
         if (visitante.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
@@ -103,6 +113,10 @@ public class VisitanteResource {
         existente.setAcompanhanteNome(visitante.getAcompanhanteNome());
         existente.setIgrejaOrigem(visitante.getIgrejaOrigem());
         existente.setConvidadoPor(visitante.getConvidadoPor());
+        if (visitante.getEstadoFunil() != null) {
+            existente.setEstadoFunil(visitante.getEstadoFunil());
+        }
+        existente.setDataProximoContato(visitante.getDataProximoContato());
         existente.setDataVisita(visitante.getDataVisita() != null ? visitante.getDataVisita() : existente.getDataVisita());
         existente.setAtualizadoEm(Instant.now());
         existente.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
@@ -115,6 +129,7 @@ public class VisitanteResource {
 
     @GetMapping("")
     public ResponseEntity<java.util.List<Visitante>> getAllVisitantes(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        moduleAccessService.assertModuleAccess("visitantes", NivelAcessoModulo.READ);
         LOG.debug("REST request to get a page of Visitantes");
         Page<Visitante> page = visitanteRepository.findAllByIgrejaId(tenantService.getIgrejaIdAtual(), pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
@@ -123,6 +138,7 @@ public class VisitanteResource {
 
     @GetMapping("/{id}")
     public ResponseEntity<Visitante> getVisitante(@PathVariable("id") final Long id) {
+        moduleAccessService.assertModuleAccess("visitantes", NivelAcessoModulo.READ);
         LOG.debug("REST request to get Visitante : {}", id);
         Optional<Visitante> visitante = visitanteRepository.findById(id);
         visitante.ifPresent(v -> tenantService.validarMesmaIgreja(v.getIgreja()));
@@ -132,8 +148,12 @@ public class VisitanteResource {
     @DeleteMapping("/{id}")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_SECRETARIA", "ROLE_PASTOR", "ROLE_LIDER" })
     public ResponseEntity<Void> deleteVisitante(@PathVariable("id") final Long id) {
+        moduleAccessService.assertModuleAccess("visitantes", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to delete Visitante : {}", id);
-        visitanteRepository.deleteById(id);
+        visitanteRepository.findById(id).ifPresent(v -> {
+            tenantService.validarMesmaIgreja(v.getIgreja());
+            visitanteRepository.delete(v);
+        });
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .build();

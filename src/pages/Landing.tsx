@@ -24,6 +24,7 @@ import { MARCA, PLATAFORMA, PRODUTO } from "@/lib/plataforma";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { cn } from "@/lib/utils";
 import {
+  CalendarDays,
   ArrowRight,
   BookOpen,
   CheckCircle2,
@@ -52,7 +53,7 @@ const HERO_SLIDES = [
     destaque: "Minha Igreja Digital",
     titulo: "Sua igreja organizada em um só lugar",
     subtitulo:
-      "Membros, visitantes, avisos, documentos, louvores, devocionais, financeiro e ofertas via PIX — no computador e no celular.",
+      "Membros, visitantes, escalas de portaria e limpeza, informativos, oração, documentos, louvores, financeiro e PIX — no computador e no celular.",
     imagem: "/landing/dashboard.png",
     imagemAlt: "Painel principal com visão geral da igreja",
   },
@@ -79,6 +80,14 @@ const HERO_SLIDES = [
       "Plataforma criada para pastores e líderes que querem menos papelada e mais tempo com as pessoas.",
     imagem: "/landing/pix.png",
     imagemAlt: "Ofertas via PIX integradas ao sistema",
+  },
+  {
+    destaque: "Escalas automatizadas",
+    titulo: "Portaria, recepção e limpeza sorteadas por ciclo",
+    subtitulo:
+      "Cadastre os cultos, gere o sorteio em rascunho, publique para a igreja e acompanhe tudo em um calendário claro — com limpeza mensal, semanal ou por culto.",
+    imagem: "/landing/dashboard.png",
+    imagemAlt: "Escalas de portaria, recepção e limpeza organizadas por ciclo",
   },
   {
     destaque: "Suporte dentro do próprio sistema",
@@ -115,7 +124,7 @@ const PILARES = [
 
 const DESTAQUES = [
   { valor: "7", label: "dias de teste grátis" },
-  { valor: "12+", label: "módulos integrados" },
+  { valor: "16+", label: "módulos integrados" },
   { valor: "100%", label: "web — sem instalar app" },
   { valor: "Docs", label: "documentos da igreja" },
 ];
@@ -130,6 +139,34 @@ const MODULOS = [
     titulo: "Visitantes",
     descricao: "Acompanhe visitantes e integre novos membros com fluxo organizado.",
     icon: Heart,
+  },
+  {
+    titulo: "Departamentos",
+    descricao: "Portaria, recepção, limpeza e outros — com membros, líderes e orientações de serviço.",
+    icon: Users,
+  },
+  {
+    titulo: "Escalas",
+    descricao:
+      "Sorteio automático de portaria e recepção por culto, limpeza mensal/semanal/por culto, publicação em rascunho e histórico com exclusão por lote.",
+    icon: CalendarDays,
+  },
+  {
+    titulo: "Eventos",
+    descricao: "Cadastre eventos da igreja, controle inscrições e capacidade quando necessário.",
+    icon: Sparkles,
+  },
+  {
+    titulo: "Pedidos de Oração",
+    descricao:
+      "Compartilhe pedidos de oração com a igreja, interceda pelos irmãos e acompanhe respostas de forma organizada.",
+    icon: Heart,
+  },
+  {
+    titulo: "Informativos",
+    descricao:
+      "Comunicados ao entrar no sistema, campanhas e avisos com confirmação de leitura e botões de ação.",
+    icon: Megaphone,
   },
   {
     titulo: "Avisos",
@@ -184,6 +221,11 @@ const SCREENSHOTS = [
 ];
 
 const FAQ = [
+  {
+    pergunta: "Como funcionam as escalas de portaria e limpeza?",
+    resposta:
+      "Você cadastra os cultos, configura portaria/recepção e limpeza em abas separadas, gera o sorteio em rascunho e publica quando estiver satisfeito. A limpeza pode ser mensal, semanal ou por culto. Voluntários veem as escalas no calendário do ciclo e confirmam presença pelo sistema.",
+  },
   {
     pergunta: "Precisa instalar aplicativo?",
     resposta:
@@ -497,6 +539,103 @@ export default function Landing() {
       </section>
 
       {/* Módulos */}
+      {/* Comunicação e oração */}
+      <section className="scroll-mt-20 border-b bg-muted/20 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mb-10 text-center">
+            <h2 className="text-2xl font-bold sm:text-3xl">Comunicação que aproxima a igreja</h2>
+            <p className="mt-2 text-muted-foreground">
+              Recursos pensados para fortalecer a comunhão e manter todos informados.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="border-rose-200/60 bg-gradient-to-br from-rose-50/80 to-background dark:from-rose-950/20">
+              <CardHeader>
+                <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                  <Heart className="h-6 w-6" />
+                </div>
+                <CardTitle>Pedidos de Oração</CardTitle>
+                <CardDescription>
+                  Um espaço seguro para compartilhar necessidades, interceder uns pelos outros e registrar
+                  respostas de oração — com moderação configurável pela liderança.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground space-y-2">
+                <p>• Pedidos públicos ou privados para a equipe pastoral</p>
+                <p>• Intercessão com um toque — a igreja ora junto</p>
+                <p>• Acesso rápido no celular, inclusive com botão flutuante</p>
+              </CardContent>
+            </Card>
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+              <CardHeader>
+                <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Megaphone className="h-6 w-6" />
+                </div>
+                <CardTitle>Informativos comerciais e institucionais</CardTitle>
+                <CardDescription>
+                  Campanhas, avisos urgentes e comunicados ao entrar no sistema — com confirmação de leitura,
+                  banners no dashboard e botões de ação personalizados.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground space-y-2">
+                <p>• Modal ao login para comunicados importantes</p>
+                <p>• Banners não obrigatórios no dashboard</p>
+                <p>• CTA com link interno (eventos, inscrições, páginas)</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Escalas */}
+      <section className="scroll-mt-20 border-b py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mb-10 text-center">
+            <h2 className="text-2xl font-bold sm:text-3xl">Escalas sem planilha e sem grupo de WhatsApp</h2>
+            <p className="mt-2 text-muted-foreground">
+              Portaria, recepção e limpeza organizadas por ciclo — com sorteio, revisão e publicação para os voluntários.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-background dark:from-emerald-950/20">
+              <CardHeader>
+                <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <CalendarDays className="h-6 w-6" />
+                </div>
+                <CardTitle>Portaria e recepção</CardTitle>
+                <CardDescription>
+                  Cadastre os cultos da igreja, defina regras por departamento e gere o próximo ciclo em rascunho antes
+                  de publicar para toda a equipe.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>• Sorteio automático respeitando gênero e regras de cada culto</p>
+                <p>• Calendário do ciclo com destaque “Você” para quem foi escalado</p>
+                <p>• Confirmação de presença pelo próprio voluntário</p>
+                <p>• Histórico do ciclo com exclusão sem afetar a limpeza</p>
+              </CardContent>
+            </Card>
+            <Card className="border-sky-200/60 bg-gradient-to-br from-sky-50/80 to-background dark:from-sky-950/20">
+              <CardHeader>
+                <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <CardTitle>Limpeza flexível</CardTitle>
+                <CardDescription>
+                  Escolha a frequência que faz sentido para sua igreja: mensal, semanal ou em cada culto cadastrado.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>• Três modos: mensal, semanal ou por culto</p>
+                <p>• Dia da limpeza configurável nos modos mensal e semanal</p>
+                <p>• Geração no ciclo vigente com histórico de lotes</p>
+                <p>• Exclusão de lote de limpeza sem remover portaria e recepção</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       <section id="modulos" className="scroll-mt-20 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mb-10 text-center">

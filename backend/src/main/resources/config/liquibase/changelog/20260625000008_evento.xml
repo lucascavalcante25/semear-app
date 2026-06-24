@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260625000008-1" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="evento"/></not></preConditions>
+        <createTable tableName="evento">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="titulo" type="varchar(200)"><constraints nullable="false"/></column>
+            <column name="descricao" type="${clobType}"/>
+            <column name="data_inicio" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="data_fim" type="${datetimeType}"/>
+            <column name="local" type="varchar(300)"/>
+            <column name="publico" type="varchar(20)" defaultValue="INTERNO"><constraints nullable="false"/></column>
+            <column name="inscricoes_abertas" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="evento" baseColumnNames="igreja_id" constraintName="fk_evento_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260625000008-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="evento_inscricao"/></not></preConditions>
+        <createTable tableName="evento_inscricao">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="evento_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="confirmado" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="evento_inscricao" baseColumnNames="evento_id" constraintName="fk_evento_inscricao_evento" referencedTableName="evento" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="evento_inscricao" baseColumnNames="user_id" constraintName="fk_evento_inscricao_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="evento_inscricao" columnNames="evento_id, user_id" constraintName="uk_evento_inscricao"/>
+    </changeSet>
+</databaseChangeLog>

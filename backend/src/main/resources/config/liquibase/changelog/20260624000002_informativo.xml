@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260624000002-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="informativo"/>
+            </not>
+        </preConditions>
+        <createTable tableName="informativo">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="titulo" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="conteudo" type="${clobType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="publico_alvo" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prioridade" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exibir_no_login" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="obrigatorio" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ativo" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_inicio" type="date"/>
+            <column name="data_fim" type="date"/>
+            <column name="criado_por_id" type="bigint"/>
+            <column name="criado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="atualizado_em" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="informativo"
+            baseColumnNames="igreja_id"
+            constraintName="fk_informativo_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="informativo"
+            baseColumnNames="criado_por_id"
+            constraintName="fk_informativo_criado_por"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <createIndex tableName="informativo" indexName="idx_informativo_igreja">
+            <column name="igreja_id"/>
+        </createIndex>
+        <createIndex tableName="informativo" indexName="idx_informativo_ativo">
+            <column name="ativo"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260624000002-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="informativo_leitura"/>
+            </not>
+        </preConditions>
+        <createTable tableName="informativo_leitura">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="informativo_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usuario_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="confirmado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="informativo_leitura"
+            baseColumnNames="informativo_id"
+            constraintName="fk_informativo_leitura_informativo"
+            referencedTableName="informativo"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="informativo_leitura"
+            baseColumnNames="usuario_id"
+            constraintName="fk_informativo_leitura_usuario"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint
+            tableName="informativo_leitura"
+            columnNames="informativo_id, usuario_id"
+            constraintName="uk_informativo_leitura_informativo_usuario"/>
+        <createIndex tableName="informativo_leitura" indexName="idx_informativo_leitura_informativo">
+            <column name="informativo_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

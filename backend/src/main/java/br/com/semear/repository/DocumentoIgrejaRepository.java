@@ -19,4 +19,15 @@ public interface DocumentoIgrejaRepository extends JpaRepository<DocumentoIgreja
     List<DocumentoIgreja> findByIgrejaIdAndNomeContainingIgnoreCaseAndAtivoTrueOrderByDataUploadDesc(Long igrejaId, String nome);
 
     Optional<DocumentoIgreja> findByIdAndIgrejaId(Long id, Long igrejaId);
+
+    List<DocumentoIgreja> findByIgrejaIdAndAtivoTrueAndDataValidadeBetweenOrderByDataValidadeAsc(
+        Long igrejaId,
+        java.time.LocalDate inicio,
+        java.time.LocalDate fim
+    );
+
+    List<DocumentoIgreja> findByIgrejaIdAndAtivoTrueAndDataValidadeLessThanEqualOrderByDataValidadeAsc(
+        Long igrejaId,
+        java.time.LocalDate dataLimite
+    );
 }

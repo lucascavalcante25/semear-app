@@ -31,6 +31,9 @@ export const MODULES = [
   "avisos",
   "financeiro",
   "oracao",
+  "departamentos",
+  "escalas",
+  "eventos",
   "aprovar-pre-cadastros",
   "configuracoes",
 ] as const;
@@ -40,17 +43,27 @@ export type ModuleKey = (typeof MODULES)[number];
 export const ROLE_LABELS: Record<Role, string> = {
   super_admin: "Dono da Plataforma",
   admin: "Administração",
-  admin_igreja: "Administração da Igreja",
+  admin_igreja: "Administrador da Igreja",
   pastor: "Pastor",
   copastor: "Co-pastor",
   secretaria: "Secretaria",
   tesouraria: "Tesouraria",
-  lider: "Liderança",
+  lider: "Líder de ministério",
   membro: "Membro",
   visitante: "Visitante",
 };
 
-export const PUBLIC_ROUTES = ["/login", "/pre-cadastro"];
+export const PUBLIC_ROUTES = [
+  "/login",
+  "/pre-cadastro",
+  "/landing",
+  "/precos",
+  "/solicitar-acesso",
+  "/esqueci-senha",
+];
+
+/** Rotas autenticadas sem módulo específico (acesso liberado a qualquer usuário logado da igreja) */
+const AUTHENTICATED_OPEN_ROUTES = ["/sobre", "/mais", "/acesso-negado"];
 
 export const ROUTE_TO_MODULE: Record<string, ModuleKey> = {
   "/": "dashboard",
@@ -59,12 +72,18 @@ export const ROUTE_TO_MODULE: Record<string, ModuleKey> = {
   "/louvores": "louvores",
   "/membros": "membros",
   "/visitantes": "visitantes",
+  "/aniversariantes": "membros",
   "/avisos": "avisos",
   "/financeiro": "financeiro",
   "/aprovar-pre-cadastros": "aprovar-pre-cadastros",
   "/configuracoes": "configuracoes",
   "/configuracoes-igreja": "configuracoes",
   "/oracao": "oracao",
+  "/informativos": "avisos",
+  "/notificacoes": "dashboard",
+  "/departamentos": "departamentos",
+  "/escalas": "escalas",
+  "/eventos": "eventos",
 };
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
@@ -74,35 +93,85 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   louvores: "Louvores",
   membros: "Membros",
   visitantes: "Visitantes",
-  avisos: "Avisos",
+  avisos: "Avisos e informativos",
   financeiro: "Financeiro",
   "aprovar-pre-cadastros": "Aprovar pré-cadastros",
   configuracoes: "Configurações",
   oracao: "Oração",
+  departamentos: "Departamentos",
+  escalas: "Escalas",
+  eventos: "Eventos",
 };
 
-/** Perfis com acesso total (READ + WRITE em todos módulos) */
-const ROLES_FULL_ACCESS: Role[] = [
-  "admin",
-  "admin_igreja",
-  "pastor",
-  "copastor",
-  "secretaria",
-  "tesouraria",
-  "lider",
-];
+/** Perfis com WRITE em todos os módulos da igreja */
+const ROLES_FULL_ACCESS: Role[] = ["admin", "admin_igreja", "pastor", "copastor"];
 
-/** Módulos que MEMBRO pode acessar (READ only). Configurações limitado ao próprio perfil. */
-const MEMBRO_READ_MODULES_FINAL: ModuleKey[] = [
+const writeAll = (mods: ModuleKey[]): ModulePermission[] =>
+  mods.map((module) => ({ module, access: "WRITE" as AccessLevel }));
+
+const readAll = (mods: ModuleKey[]): ModulePermission[] =>
+  mods.map((module) => ({ module, access: "READ" as AccessLevel }));
+
+const mergePerms = (...groups: ModulePermission[][]): ModulePermission[] => {
+  const map = new Map<ModuleKey, AccessLevel>();
+  for (const group of groups) {
+    for (const p of group) {
+      const atual = map.get(p.module);
+      if (!atual || (atual === "READ" && p.access === "WRITE")) {
+        map.set(p.module, p.access);
+      }
+    }
+  }
+  return Array.from(map.entries()).map(([module, access]) => ({ module, access }));
+};
+
+const SECRETARIA_DEFAULT_PERMISSIONS: ModulePermission[] = writeAll([
   "dashboard",
   "biblia",
   "devocionais",
+  "louvores",
+  "membros",
   "visitantes",
+  "avisos",
+  "oracao",
+  "departamentos",
+  "escalas",
+  "eventos",
+  "aprovar-pre-cadastros",
+  "configuracoes",
+]);
+
+const TESOURARIA_DEFAULT_PERMISSIONS: ModulePermission[] = writeAll([
+  "dashboard",
+  "biblia",
+  "devocionais",
   "avisos",
   "financeiro",
   "oracao",
   "configuracoes",
-];
+]);
+
+const LIDER_DEFAULT_PERMISSIONS: ModulePermission[] = mergePerms(
+  writeAll([
+    "dashboard",
+    "biblia",
+    "devocionais",
+    "louvores",
+    "oracao",
+    "departamentos",
+    "escalas",
+    "eventos",
+    "configuracoes",
+  ]),
+  readAll(["membros", "visitantes", "avisos"]),
+);
+
+const MEMBRO_DEFAULT_PERMISSIONS_INTERNAL: ModulePermission[] = mergePerms(
+  readAll(["dashboard", "biblia", "devocionais", "avisos", "eventos", "configuracoes"]),
+  writeAll(["oracao"]),
+);
+
+const VISITANTE_DEFAULT_PERMISSIONS: ModulePermission[] = readAll(["biblia", "oracao", "configuracoes"]);
 
 export type ModulePermission = {
   module: ModuleKey;
@@ -111,19 +180,17 @@ export type ModulePermission = {
 
 export type UserAccess = {
   role: Role;
-  /** Indica acesso ao painel da plataforma (pode coexistir com role de igreja). */
   isSuperAdmin?: boolean;
   authorities?: string[];
   modules?: (string | string[])[];
   permissions?: ModulePermission[];
 };
 
-/** Central de Suporte — disponível para qualquer usuário autenticado da igreja */
-export const podeAcessarSuporte = (user: UserAccess | null | undefined): boolean => {
-  return user != null;
-};
+export const podeAcessarSuporte = (user: UserAccess | null | undefined): boolean => user != null;
 
-/** Documentos da Igreja — apenas ADMIN_IGREJA e admin da plataforma */
+export const podeAcessarRotaSuporte = (path: string): boolean =>
+  path === "/suporte" || path.startsWith("/suporte/");
+
 export const podeGerenciarDocumentosIgreja = (user: UserAccess | null | undefined): boolean => {
   if (!user) return false;
   if (user.authorities?.includes("ROLE_ADMIN_IGREJA")) return true;
@@ -138,14 +205,9 @@ export const usuarioEhSuperAdmin = (user: UserAccess | null | undefined): boolea
   return user.authorities?.includes("ROLE_SUPER_ADMIN") ?? false;
 };
 
-/**
- * Converte módulos legados (string[] ou "module:ACCESS") para ModulePermission[].
- * Formato legado: "dashboard" = WRITE. Formato novo: "dashboard:READ" ou "dashboard:WRITE".
- */
 const parsePermissoes = (user: UserAccess | null | undefined): ModulePermission[] => {
   if (!user) return [];
 
-  // Se tem permissions explícitas (novo formato), usar
   if (user.permissions && Array.isArray(user.permissions) && user.permissions.length > 0) {
     return user.permissions.filter(
       (p): p is ModulePermission =>
@@ -153,7 +215,6 @@ const parsePermissoes = (user: UserAccess | null | undefined): ModulePermission[
     );
   }
 
-  // Se tem modules (legado), converter: "module" sem colon = WRITE
   const raw = user.modules;
   if (!raw) return [];
 
@@ -169,7 +230,6 @@ const parsePermissoes = (user: UserAccess | null | undefined): ModulePermission[
         result.push({ module, access });
       }
     } else {
-      // Legado: sem colon = WRITE
       const module = item as ModuleKey;
       if (MODULES.includes(module)) {
         result.push({ module, access: "WRITE" });
@@ -180,93 +240,73 @@ const parsePermissoes = (user: UserAccess | null | undefined): ModulePermission[
   return result;
 };
 
-/**
- * Retorna permissões padrão do role (para usuários sem permissions/modules salvos).
- */
-const getDefaultPermissionsForRole = (role: Role): ModulePermission[] => {
+export const getDefaultPermissionsForRole = (role: Role): ModulePermission[] => {
   if (ROLES_FULL_ACCESS.includes(role)) {
     return MODULES.map((m) => ({ module: m, access: "WRITE" as AccessLevel }));
   }
-  if (role === "membro") {
-    return MEMBRO_READ_MODULES_FINAL.map((m) => ({ module: m, access: "READ" as AccessLevel }));
-  }
-  if (role === "visitante") {
-    return [
-      { module: "biblia", access: "READ" },
-      { module: "oracao", access: "READ" },
-      { module: "configuracoes", access: "READ" },
-    ];
-  }
+  if (role === "secretaria") return SECRETARIA_DEFAULT_PERMISSIONS;
+  if (role === "tesouraria") return TESOURARIA_DEFAULT_PERMISSIONS;
+  if (role === "lider") return LIDER_DEFAULT_PERMISSIONS;
+  if (role === "membro") return MEMBRO_DEFAULT_PERMISSIONS_INTERNAL;
+  if (role === "visitante") return VISITANTE_DEFAULT_PERMISSIONS;
   return [];
 };
 
-/**
- * Obtém as permissões efetivas do usuário.
- * Prioridade: permissions salvas > modules legado > padrão do role.
- */
 export const getEffectivePermissions = (user: UserAccess | null | undefined): ModulePermission[] => {
   if (!user) return [];
-
   const parsed = parsePermissoes(user);
-  if (parsed.length > 0) { return parsed; }
-
+  if (parsed.length > 0) return parsed;
   return getDefaultPermissionsForRole(user.role);
 };
 
-/**
- * Verifica se o usuário tem acesso ao módulo com o nível especificado.
- * READ permite visualizar. WRITE permite CRUD.
- *
- * @param user - Usuário logado
- * @param module - Módulo
- * @param action - READ ou WRITE
- */
 export const hasModuleAccess = (
   user: UserAccess | null | undefined,
   module: ModuleKey,
   action: AccessLevel,
 ): boolean => {
   if (!user) return false;
-
+  if (usuarioEhSuperAdmin(user)) return true;
   if (ROLES_FULL_ACCESS.includes(user.role)) return true;
 
   const perms = getEffectivePermissions(user);
   const perm = perms.find((p) => p.module === module);
-  if (!perm) return false;
-
-  if (action === "READ") return perm.access === "READ" || perm.access === "WRITE";
-  if (action === "WRITE") return perm.access === "WRITE";
+  if (perm) {
+    if (action === "READ") return perm.access === "READ" || perm.access === "WRITE";
+    if (action === "WRITE") return perm.access === "WRITE";
+  }
 
   return false;
 };
 
-/**
- * Verifica se o usuário pode ver (READ) a rota.
- * Usado para menu lateral e navegação.
- */
 export const canAccess = (user: UserAccess | null | undefined, path: string): boolean => {
   if (!user) return false;
-  if (PUBLIC_ROUTES.includes(path)) return true;
-  if (path === "/acesso-negado") return true;
 
+  const base = path.split("?")[0].split("#")[0];
+  if (PUBLIC_ROUTES.includes(base)) return true;
+  if (AUTHENTICATED_OPEN_ROUTES.includes(base)) return true;
+  if (podeAcessarRotaSuporte(base)) return podeAcessarSuporte(user);
+  if (base.startsWith("/i/")) return true;
+
+  if (usuarioEhSuperAdmin(user)) return true;
   if (ROLES_FULL_ACCESS.includes(user.role)) return true;
 
-  const moduleKey = getModuleForRoute(path);
-  if (!moduleKey) return true;
+  const moduleKey = getModuleForRoute(base);
+  if (!moduleKey) return false;
 
   return hasModuleAccess(user, moduleKey, "READ");
 };
 
-/**
- * Verifica se o usuário pode executar ações (criar, editar, excluir) no módulo.
- */
 export const canWrite = (user: UserAccess | null | undefined, path: string): boolean => {
   if (!user) return false;
-  if (PUBLIC_ROUTES.includes(path)) return false;
 
+  const base = path.split("?")[0].split("#")[0];
+  if (PUBLIC_ROUTES.includes(base)) return false;
+  if (podeAcessarRotaSuporte(base)) return false;
+
+  if (usuarioEhSuperAdmin(user)) return true;
   if (ROLES_FULL_ACCESS.includes(user.role)) return true;
 
-  const moduleKey = getModuleForRoute(path);
+  const moduleKey = getModuleForRoute(base);
   if (!moduleKey) return false;
 
   return hasModuleAccess(user, moduleKey, "WRITE");
@@ -277,70 +317,89 @@ export const getModuleForRoute = (path: string): ModuleKey | null => {
   return ROUTE_TO_MODULE[base] ?? null;
 };
 
+export const podeVerVisaoGerencial = (user: UserAccess | null | undefined): boolean => {
+  if (!user) return false;
+  if (usuarioEhSuperAdmin(user)) return true;
+  const rolesGerenciais: Role[] = [
+    "admin",
+    "admin_igreja",
+    "pastor",
+    "copastor",
+    "secretaria",
+    "tesouraria",
+    "lider",
+  ];
+  return rolesGerenciais.includes(user.role);
+};
+
+/** Liderança que modera pedidos de oração (badge no menu). */
+export const ehLiderancaOracao = (user: UserAccess | null | undefined): boolean => {
+  if (!user) return false;
+  if (usuarioEhSuperAdmin(user)) return true;
+  const roles: Role[] = ["admin", "admin_igreja", "pastor", "copastor", "secretaria", "lider"];
+  return roles.includes(user.role);
+};
+
 export const getDefaultRouteForRole = (role: Role) => {
   if (role === "super_admin") return "/super-admin/dashboard";
+  if (role === "membro" || role === "visitante") return "/biblia";
   const perms = getDefaultPermissionsForRole(role);
   const first = perms[0];
-  const moduleToRoute: Partial<Record<ModuleKey, string>> = Object.fromEntries(
-    Object.entries(ROUTE_TO_MODULE).map(([route, mod]) => [mod, route]),
-  );
+  // Primeira rota registrada por módulo (evita /notificacoes sobrescrever / no dashboard)
+  const moduleToRoute: Partial<Record<ModuleKey, string>> = {};
+  for (const [route, mod] of Object.entries(ROUTE_TO_MODULE)) {
+    if (!moduleToRoute[mod]) {
+      moduleToRoute[mod] = route;
+    }
+  }
   return (first ? moduleToRoute[first.module] : undefined) ?? "/";
 };
 
-/** Rota inicial após login — super admin vai direto ao Painel da Plataforma. */
 export const getDefaultRouteForUser = (user: UserAccess | null | undefined): string => {
   if (!user) return "/login";
   if (usuarioEhSuperAdmin(user)) return "/super-admin/dashboard";
   return getDefaultRouteForRole(user.role);
 };
 
-// --- Compatibilidade com aprovação ---
+const modulesFromPerms = (perms: ModulePermission[]): ModuleKey[] =>
+  perms.map((p) => p.module);
 
-/** Módulos padrão por role (para UI de edição de membros e aprovação) */
 export const ROLE_DEFAULT_MODULES: Record<Role, ModuleKey[]> = {
   super_admin: [],
   admin: [...MODULES],
   admin_igreja: [...MODULES],
   pastor: [...MODULES],
   copastor: [...MODULES],
-  secretaria: [...MODULES],
-  tesouraria: ["dashboard", "biblia", "devocionais", "louvores", "avisos", "financeiro", "oracao", "configuracoes"],
-  lider: [...MODULES],
-  membro: MEMBRO_READ_MODULES_FINAL,
-  visitante: ["biblia", "oracao", "configuracoes"],
+  secretaria: modulesFromPerms(SECRETARIA_DEFAULT_PERMISSIONS),
+  tesouraria: modulesFromPerms(TESOURARIA_DEFAULT_PERMISSIONS),
+  lider: modulesFromPerms(LIDER_DEFAULT_PERMISSIONS),
+  membro: modulesFromPerms(MEMBRO_DEFAULT_PERMISSIONS_INTERNAL),
+  visitante: modulesFromPerms(VISITANTE_DEFAULT_PERMISSIONS),
 };
 
-/** Módulos permitidos por role (para UI de aprovação - limite superior) */
 export const ROLE_ALLOWED_MODULES: Record<Role, ModuleKey[]> = {
   super_admin: [],
   admin: [...MODULES],
   admin_igreja: [...MODULES],
   pastor: [...MODULES],
   copastor: [...MODULES],
-  secretaria: [...MODULES],
-  tesouraria: ["dashboard", "biblia", "devocionais", "louvores", "avisos", "financeiro", "oracao", "configuracoes"],
+  secretaria: modulesFromPerms(SECRETARIA_DEFAULT_PERMISSIONS),
+  tesouraria: modulesFromPerms(TESOURARIA_DEFAULT_PERMISSIONS),
   lider: [...MODULES],
-  membro: MEMBRO_READ_MODULES_FINAL,
-  visitante: ["biblia", "oracao", "configuracoes"],
+  membro: modulesFromPerms(MEMBRO_DEFAULT_PERMISSIONS_INTERNAL),
+  visitante: modulesFromPerms(VISITANTE_DEFAULT_PERMISSIONS),
 };
 
-/** Permissões padrão para MEMBRO (READ) - usado na aprovação */
-export const MEMBRO_DEFAULT_PERMISSIONS: ModulePermission[] = MEMBRO_READ_MODULES_FINAL.map((m) => ({
-  module: m,
-  access: "READ" as AccessLevel,
-}));
+export const MEMBRO_DEFAULT_PERMISSIONS = MEMBRO_DEFAULT_PERMISSIONS_INTERNAL;
 
-/** Permissões padrão para perfis com acesso total (WRITE) - usado na aprovação */
 export const FULL_ACCESS_PERMISSIONS: ModulePermission[] = MODULES.map((m) => ({
   module: m,
   access: "WRITE" as AccessLevel,
 }));
 
-/** Converte ModulePermission[] para formato de modules (string[]) para API */
 export const permissionsToModules = (perms: ModulePermission[]): string[] =>
   perms.map((p) => `${p.module}:${p.access}`);
 
-/** Extrai apenas os nomes dos módulos de uma lista (suporta "module" ou "module:ACCESS") */
 export const modulesToKeys = (raw: string[]): ModuleKey[] =>
   raw
     .map((s) => {

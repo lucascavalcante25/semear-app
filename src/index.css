@@ -276,4 +276,10 @@
   .safe-top {
     padding-top: env(safe-area-inset-top, 0);
   }
+
+  /* Um único olho: esconde revelar senha nativo do Edge/Chrome */
+  .password-with-toggle::-ms-reveal,
+  .password-with-toggle::-ms-clear {
+    display: none;
+  }
 }

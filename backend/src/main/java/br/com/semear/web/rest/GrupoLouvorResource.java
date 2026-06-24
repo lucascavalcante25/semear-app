@@ -1,6 +1,8 @@
 package br.com.semear.web.rest;
 
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.service.GrupoLouvorService;
+import br.com.semear.service.ModuleAccessService;
 import br.com.semear.service.dto.GrupoLouvorDTO;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
@@ -10,7 +12,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
@@ -28,14 +29,17 @@ public class GrupoLouvorResource {
     private String applicationName;
 
     private final GrupoLouvorService grupoLouvorService;
+    private final ModuleAccessService moduleAccessService;
 
-    public GrupoLouvorResource(GrupoLouvorService grupoLouvorService) {
+    public GrupoLouvorResource(GrupoLouvorService grupoLouvorService, ModuleAccessService moduleAccessService) {
         this.grupoLouvorService = grupoLouvorService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     @PostMapping("")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> createGrupo(@Valid @RequestBody GrupoLouvorDTO dto) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to create GrupoLouvor : {}", dto);
         GrupoLouvorDTO result = grupoLouvorService.save(dto);
         return ResponseEntity.created(new URI("/api/grupos-louvor/" + result.getId()))
@@ -45,10 +49,8 @@ public class GrupoLouvorResource {
 
     @PutMapping("/{id}")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
-    public ResponseEntity<GrupoLouvorDTO> updateGrupo(
-        @PathVariable Long id,
-        @Valid @RequestBody GrupoLouvorDTO dto
-    ) {
+    public ResponseEntity<GrupoLouvorDTO> updateGrupo(@PathVariable Long id, @Valid @RequestBody GrupoLouvorDTO dto) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to update GrupoLouvor : {}", id);
         dto.setId(id);
         GrupoLouvorDTO result = grupoLouvorService.update(dto);
@@ -58,16 +60,18 @@ public class GrupoLouvorResource {
     }
 
     @GetMapping("")
-    @PreAuthorize("permitAll()")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA", "ROLE_MEMBRO"})
     public ResponseEntity<List<GrupoLouvorDTO>> getAllGrupos() {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
         log.debug("REST request to get all GrupoLouvor");
         List<GrupoLouvorDTO> list = grupoLouvorService.findAll();
         return ResponseEntity.ok().body(list);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("permitAll()")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA", "ROLE_MEMBRO"})
     public ResponseEntity<GrupoLouvorDTO> getGrupo(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
         log.debug("REST request to get GrupoLouvor : {}", id);
         return ResponseUtil.wrapOrNotFound(grupoLouvorService.findOne(id));
     }
@@ -75,6 +79,7 @@ public class GrupoLouvorResource {
     @DeleteMapping("/{id}")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Void> deleteGrupo(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to delete GrupoLouvor : {}", id);
         grupoLouvorService.delete(id);
         return ResponseEntity.noContent()
@@ -85,6 +90,7 @@ public class GrupoLouvorResource {
     @PostMapping("/{id}/louvores/{louvorId}")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> addLouvor(@PathVariable Long id, @PathVariable Long louvorId) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to add louvor {} to grupo {}", louvorId, id);
         GrupoLouvorDTO result = grupoLouvorService.addLouvor(id, louvorId);
         return ResponseEntity.ok().body(result);
@@ -93,6 +99,7 @@ public class GrupoLouvorResource {
     @DeleteMapping("/{id}/louvores/{louvorId}")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<GrupoLouvorDTO> removeLouvor(@PathVariable Long id, @PathVariable Long louvorId) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to remove louvor {} from grupo {}", louvorId, id);
         grupoLouvorService.removeLouvor(id, louvorId);
         return ResponseUtil.wrapOrNotFound(grupoLouvorService.findOne(id));
@@ -100,10 +107,8 @@ public class GrupoLouvorResource {
 
     @PutMapping("/{id}/ordem")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
-    public ResponseEntity<GrupoLouvorDTO> reorderLouvores(
-        @PathVariable Long id,
-        @RequestBody List<Long> louvorIdsInOrder
-    ) {
+    public ResponseEntity<GrupoLouvorDTO> reorderLouvores(@PathVariable Long id, @RequestBody List<Long> louvorIdsInOrder) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
         log.debug("REST request to reorder louvores in grupo {}", id);
         GrupoLouvorDTO result = grupoLouvorService.reorderLouvores(id, louvorIdsInOrder);
         return ResponseEntity.ok().body(result);

@@ -46,6 +46,10 @@ public class IgrejaDTO implements Serializable {
     private Instant dataAtualizacao;
     private LocalDate dataInicioPlanoLeitura;
     private Integer cicloPlanoLeitura;
+    private Boolean requerAprovacaoOracaoPublica;
+    private String slug;
+    private String horarioCulto;
+    private Boolean siteAtivo;
 
     public Long getId() {
         return id;
@@ -325,5 +329,37 @@ public class IgrejaDTO implements Serializable {
 
     public void setCicloPlanoLeitura(Integer cicloPlanoLeitura) {
         this.cicloPlanoLeitura = cicloPlanoLeitura;
+    }
+
+    public Boolean getRequerAprovacaoOracaoPublica() {
+        return requerAprovacaoOracaoPublica;
+    }
+
+    public void setRequerAprovacaoOracaoPublica(Boolean requerAprovacaoOracaoPublica) {
+        this.requerAprovacaoOracaoPublica = requerAprovacaoOracaoPublica;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getHorarioCulto() {
+        return horarioCulto;
+    }
+
+    public void setHorarioCulto(String horarioCulto) {
+        this.horarioCulto = horarioCulto;
+    }
+
+    public Boolean getSiteAtivo() {
+        return siteAtivo;
+    }
+
+    public void setSiteAtivo(Boolean siteAtivo) {
+        this.siteAtivo = siteAtivo;
     }
 }

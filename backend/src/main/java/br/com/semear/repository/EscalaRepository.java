@@ -1,0 +1,30 @@
+package br.com.semear.repository;
+
+import br.com.semear.domain.Escala;
+import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface EscalaRepository extends JpaRepository<Escala, Long> {
+    List<Escala> findByIgrejaIdOrderByDataEventoDesc(Long igrejaId);
+    List<Escala> findByIgrejaIdAndStatusOrderByDataEventoDesc(Long igrejaId, StatusEscalaPublicacao status);
+    Optional<Escala> findByIdAndIgrejaId(Long id, Long igrejaId);
+    List<Escala> findByGeracaoId(Long geracaoId);
+
+    @Query(
+        "SELECT COUNT(ei) FROM EscalaItem ei JOIN ei.escala e WHERE e.departamento.id = :departamentoId " +
+        "AND e.status = :status AND e.dataEvento >= :desde AND ei.user.id = :userId"
+    )
+    long countServicosUsuarioDesde(
+        @Param("departamentoId") Long departamentoId,
+        @Param("userId") Long userId,
+        @Param("status") StatusEscalaPublicacao status,
+        @Param("desde") Instant desde
+    );
+}

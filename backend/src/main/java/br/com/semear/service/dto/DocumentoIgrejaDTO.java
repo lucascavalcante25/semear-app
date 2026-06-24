@@ -17,6 +17,7 @@ public class DocumentoIgrejaDTO implements Serializable {
     private Long tamanhoArquivo;
     private String urlDownload;
     private LocalDate dataDocumento;
+    private LocalDate dataValidade;
     private Instant dataUpload;
     private Instant dataAtualizacao;
     private Long usuarioUploadId;
@@ -101,6 +102,14 @@ public class DocumentoIgrejaDTO implements Serializable {
 
     public void setDataDocumento(LocalDate dataDocumento) {
         this.dataDocumento = dataDocumento;
+    }
+
+    public LocalDate getDataValidade() {
+        return dataValidade;
+    }
+
+    public void setDataValidade(LocalDate dataValidade) {
+        this.dataValidade = dataValidade;
     }
 
     public Instant getDataUpload() {

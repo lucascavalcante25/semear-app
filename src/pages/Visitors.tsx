@@ -54,11 +54,20 @@ import {
   excluirVisitante,
   listarVisitantes,
   textoFormaChegada,
+  LABEL_ESTADO_FUNIL,
+  type EstadoFunilVisitante,
   type FormaChegadaVisitante,
   type VisitanteApp,
   type VisitanteDTO,
 } from "@/modules/visitors/api";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function isToday(date: Date): boolean {
   const today = new Date();
@@ -77,6 +86,8 @@ interface CartaoVisitanteProps {
   aoExcluir: (visitante: VisitanteApp) => void;
   podeEditar: boolean;
 }
+
+const ESTADOS_FUNIL = Object.keys(LABEL_ESTADO_FUNIL) as EstadoFunilVisitante[];
 
 function CartaoVisitante({ visitante, aoEditar, aoExcluir, podeEditar }: CartaoVisitanteProps) {
   const visitaHoje = isToday(visitante.visitDate);
@@ -105,6 +116,11 @@ function CartaoVisitante({ visitante, aoEditar, aoExcluir, podeEditar }: CartaoV
                 {visitaHoje && (
                   <Badge className="bg-gold text-gold-foreground border-0">
                     Hoje!
+                  </Badge>
+                )}
+                {visitante.funnelState && (
+                  <Badge variant="outline">
+                    {LABEL_ESTADO_FUNIL[visitante.funnelState]}
                   </Badge>
                 )}
               </div>
@@ -155,6 +171,14 @@ function CartaoVisitante({ visitante, aoEditar, aoExcluir, podeEditar }: CartaoV
                   {visitante.howHeard}
                 </p>
               )}
+
+              {visitante.nextContactDate && (
+                <p className="flex items-center gap-1.5 text-primary/80">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Próximo contato:{" "}
+                  {visitante.nextContactDate.toLocaleDateString("pt-BR")}
+                </p>
+              )}
             </div>
 
             {visitante.notes && (
@@ -188,6 +212,9 @@ export default function Visitantes() {
   const [formAcompanhanteNome, setFormAcompanhanteNome] = useState("");
   const [formIgrejaOrigem, setFormIgrejaOrigem] = useState("");
   const [formConvidadoPor, setFormConvidadoPor] = useState("");
+  const [formEstadoFunil, setFormEstadoFunil] = useState<EstadoFunilVisitante | "">("");
+  const [formDataProximoContato, setFormDataProximoContato] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<EstadoFunilVisitante | "TODOS">("TODOS");
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -211,6 +238,8 @@ export default function Visitantes() {
     setFormAcompanhanteNome("");
     setFormIgrejaOrigem("");
     setFormConvidadoPor("");
+    setFormEstadoFunil("");
+    setFormDataProximoContato("");
   };
 
   const abrirNovo = () => {
@@ -233,6 +262,10 @@ export default function Visitantes() {
     setFormAcompanhanteNome(v.companionName ?? "");
     setFormIgrejaOrigem(v.churchOrigin ?? "");
     setFormConvidadoPor(v.invitedBy ?? "");
+    setFormEstadoFunil(v.funnelState ?? "");
+    setFormDataProximoContato(
+      v.nextContactDate ? v.nextContactDate.toISOString().slice(0, 10) : "",
+    );
     setDialogAberto(true);
   };
 
@@ -267,6 +300,8 @@ export default function Visitantes() {
           comoConheceu: formComoConheceu,
           observacoes: formObservacoes,
           dataVisita: formDataVisita,
+          estadoFunil: formEstadoFunil || undefined,
+          dataProximoContato: formDataProximoContato || undefined,
           ...camposChegada,
         });
         toast.success("Visitante cadastrado.");
@@ -285,6 +320,8 @@ export default function Visitantes() {
             formFormaChegada === "CONVIDADO" ? formIgrejaOrigem.trim() || null : null,
           convidadoPor:
             formFormaChegada === "CONVIDADO" ? formConvidadoPor.trim() || null : null,
+          estadoFunil: formEstadoFunil || null,
+          dataProximoContato: formDataProximoContato || null,
         };
         await atualizarVisitante(dto);
         toast.success("Visitante atualizado.");
@@ -310,13 +347,15 @@ export default function Visitantes() {
     }
   };
 
-  const visitantesFiltrados = useMemo(
-    () =>
-      visitantes.filter((visitante) =>
-        visitante.name.toLowerCase().includes(buscaTexto.toLowerCase()),
-      ),
-    [visitantes, buscaTexto],
-  );
+  const visitantesFiltrados = useMemo(() => {
+    let lista = visitantes.filter((visitante) =>
+      visitante.name.toLowerCase().includes(buscaTexto.toLowerCase()),
+    );
+    if (filtroEstado !== "TODOS") {
+      lista = lista.filter((v) => v.funnelState === filtroEstado);
+    }
+    return lista;
+  }, [visitantes, buscaTexto, filtroEstado]);
 
   const visitantesHoje = visitantesFiltrados.filter((v) => isToday(v.visitDate));
   const visitantesSemana = visitantesFiltrados.filter((v) => isThisWeek(v.visitDate) && !isToday(v.visitDate));
@@ -459,6 +498,32 @@ export default function Visitantes() {
                     onChange={(e) => setFormObservacoes(e.target.value)}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Estado no funil</Label>
+                  <Select
+                    value={formEstadoFunil || "NOVO"}
+                    onValueChange={(v) => setFormEstadoFunil(v as EstadoFunilVisitante)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESTADOS_FUNIL.map((e) => (
+                        <SelectItem key={e} value={e}>
+                          {LABEL_ESTADO_FUNIL[e]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Data do próximo contato</Label>
+                  <DatePicker
+                    value={formDataProximoContato}
+                    onChange={setFormDataProximoContato}
+                    placeholder="Opcional"
+                  />
+                </div>
               </div>
               <DialogFooter className="shrink-0 gap-2 border-t bg-background px-6 py-4 sm:justify-end">
                 <Button variant="outline" onClick={() => setDialogAberto(false)}>
@@ -473,15 +538,33 @@ export default function Visitantes() {
           </Dialog>
         </div>
 
-        {/* Busca */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar visitante..."
-            className="pl-10"
-            value={buscaTexto}
-            onChange={(e) => setBuscaTexto(e.target.value)}
-          />
+        {/* Busca e filtro */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar visitante..."
+              className="pl-10"
+              value={buscaTexto}
+              onChange={(e) => setBuscaTexto(e.target.value)}
+            />
+          </div>
+          <Select
+            value={filtroEstado}
+            onValueChange={(v) => setFiltroEstado(v as EstadoFunilVisitante | "TODOS")}
+          >
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Estado no funil" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TODOS">Todos os estados</SelectItem>
+              {ESTADOS_FUNIL.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {LABEL_ESTADO_FUNIL[e]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {carregando ? (

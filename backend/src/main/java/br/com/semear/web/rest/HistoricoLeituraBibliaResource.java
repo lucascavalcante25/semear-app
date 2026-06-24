@@ -2,6 +2,7 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.HistoricoLeituraBiblia;
 import br.com.semear.repository.HistoricoLeituraBibliaRepository;
+import br.com.semear.service.BibliaUsuarioAccessService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -40,9 +41,14 @@ public class HistoricoLeituraBibliaResource {
     private String applicationName;
 
     private final HistoricoLeituraBibliaRepository historicoLeituraBibliaRepository;
+    private final BibliaUsuarioAccessService bibliaUsuarioAccessService;
 
-    public HistoricoLeituraBibliaResource(HistoricoLeituraBibliaRepository historicoLeituraBibliaRepository) {
+    public HistoricoLeituraBibliaResource(
+        HistoricoLeituraBibliaRepository historicoLeituraBibliaRepository,
+        BibliaUsuarioAccessService bibliaUsuarioAccessService
+    ) {
         this.historicoLeituraBibliaRepository = historicoLeituraBibliaRepository;
+        this.bibliaUsuarioAccessService = bibliaUsuarioAccessService;
     }
 
     /**
@@ -60,6 +66,7 @@ public class HistoricoLeituraBibliaResource {
         if (historicoLeituraBiblia.getId() != null) {
             throw new BadRequestAlertException("A new historicoLeituraBiblia cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        historicoLeituraBiblia.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         historicoLeituraBiblia = historicoLeituraBibliaRepository.save(historicoLeituraBiblia);
         return ResponseEntity.created(new URI("/api/historico-leitura-biblias/" + historicoLeituraBiblia.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, historicoLeituraBiblia.getId().toString()))
@@ -89,10 +96,11 @@ public class HistoricoLeituraBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!historicoLeituraBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            historicoLeituraBibliaRepository.findById(id),
+            HistoricoLeituraBiblia::getUsuario
+        );
+        historicoLeituraBiblia.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         historicoLeituraBiblia = historicoLeituraBibliaRepository.save(historicoLeituraBiblia);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, historicoLeituraBiblia.getId().toString()))
@@ -123,9 +131,10 @@ public class HistoricoLeituraBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!historicoLeituraBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            historicoLeituraBibliaRepository.findById(id),
+            HistoricoLeituraBiblia::getUsuario
+        );
 
         Optional<HistoricoLeituraBiblia> result = historicoLeituraBibliaRepository
             .findById(historicoLeituraBiblia.getId())
@@ -175,14 +184,7 @@ public class HistoricoLeituraBibliaResource {
         @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload
     ) {
         LOG.debug("REST request to get a page of HistoricoLeituraBiblias");
-        Page<HistoricoLeituraBiblia> page;
-        if (eagerload) {
-            page = historicoLeituraBibliaRepository.findAllWithEagerRelationships(pageable);
-        } else {
-            page = historicoLeituraBibliaRepository.findAll(pageable);
-        }
-        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        return ResponseEntity.ok().headers(headers).body(page.getContent());
+        return ResponseEntity.ok().body(historicoLeituraBibliaRepository.findByUsuarioIsCurrentUser());
     }
 
     /**
@@ -194,7 +196,10 @@ public class HistoricoLeituraBibliaResource {
     @GetMapping("/{id}")
     public ResponseEntity<HistoricoLeituraBiblia> getHistoricoLeituraBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to get HistoricoLeituraBiblia : {}", id);
-        Optional<HistoricoLeituraBiblia> historicoLeituraBiblia = historicoLeituraBibliaRepository.findOneWithEagerRelationships(id);
+        Optional<HistoricoLeituraBiblia> historicoLeituraBiblia = bibliaUsuarioAccessService.filtrarPropriedade(
+            historicoLeituraBibliaRepository.findOneWithEagerRelationships(id),
+            HistoricoLeituraBiblia::getUsuario
+        );
         return ResponseUtil.wrapOrNotFound(historicoLeituraBiblia);
     }
 
@@ -207,6 +212,10 @@ public class HistoricoLeituraBibliaResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHistoricoLeituraBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete HistoricoLeituraBiblia : {}", id);
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(
+            historicoLeituraBibliaRepository.findById(id),
+            HistoricoLeituraBiblia::getUsuario
+        );
         historicoLeituraBibliaRepository.deleteById(id);
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))

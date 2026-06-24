@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260625000007-1" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="celula"/></not></preConditions>
+        <createTable tableName="celula">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="nome" type="varchar(150)"><constraints nullable="false"/></column>
+            <column name="lider_id" type="bigint"/>
+            <column name="auxiliar_id" type="bigint"/>
+            <column name="endereco" type="varchar(500)"/>
+            <column name="dia_semana" type="varchar(20)"/>
+            <column name="horario" type="varchar(20)"/>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="celula" baseColumnNames="igreja_id" constraintName="fk_celula_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="celula" baseColumnNames="lider_id" constraintName="fk_celula_lider" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="celula" baseColumnNames="auxiliar_id" constraintName="fk_celula_auxiliar" referencedTableName="jhi_user" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260625000007-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="celula_membro"/></not></preConditions>
+        <createTable tableName="celula_membro">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="celula_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="celula_membro" baseColumnNames="celula_id" constraintName="fk_celula_membro_celula" referencedTableName="celula" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="celula_membro" baseColumnNames="user_id" constraintName="fk_celula_membro_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="celula_membro" columnNames="celula_id, user_id" constraintName="uk_celula_membro"/>
+    </changeSet>
+</databaseChangeLog>

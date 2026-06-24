@@ -2,14 +2,20 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.Lancamento;
 import br.com.semear.domain.enumerations.TipoLancamento;
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.repository.LancamentoRepository;
 import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.ModuleAccessService;
 import br.com.semear.service.TenantService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,15 +41,22 @@ public class LancamentoResource {
 
     private final LancamentoRepository lancamentoRepository;
     private final TenantService tenantService;
+    private final ModuleAccessService moduleAccessService;
 
-    public LancamentoResource(LancamentoRepository lancamentoRepository, TenantService tenantService) {
+    public LancamentoResource(
+        LancamentoRepository lancamentoRepository,
+        TenantService tenantService,
+        ModuleAccessService moduleAccessService
+    ) {
         this.lancamentoRepository = lancamentoRepository;
         this.tenantService = tenantService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     @PostMapping("")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> createLancamento(@RequestBody Lancamento lancamento) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("financeiro", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to save Lancamento : {}", lancamento);
         if (lancamento.getId() != null) {
             throw new BadRequestAlertException("A new lancamento cannot already have an ID", ENTITY_NAME, "idexists");
@@ -66,6 +79,7 @@ public class LancamentoResource {
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> updateLancamento(@PathVariable("id") final Long id, @RequestBody Lancamento lancamento)
         throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("financeiro", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to update Lancamento : {}, {}", id, lancamento);
         if (lancamento.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
@@ -88,6 +102,7 @@ public class LancamentoResource {
         existente.setMetodoPagamento(lancamento.getMetodoPagamento());
         existente.setReferencia(lancamento.getReferencia());
         existente.setObservacoes(lancamento.getObservacoes());
+        existente.setCentroCusto(lancamento.getCentroCusto());
         existente.setAtualizadoEm(Instant.now());
         existente.setAtualizadoPor(SecurityUtils.getCurrentUserLogin().orElse("system"));
 
@@ -102,6 +117,7 @@ public class LancamentoResource {
     public ResponseEntity<List<Lancamento>> getAllLancamentos(
         @RequestParam(name = "tipo", required = false) TipoLancamento tipo
     ) {
+        moduleAccessService.assertModuleAccess("financeiro", NivelAcessoModulo.READ);
         LOG.debug("REST request to get Lancamentos");
         Long igrejaId = tenantService.getIgrejaIdAtual();
         List<Lancamento> lista = tipo != null
@@ -110,9 +126,41 @@ public class LancamentoResource {
         return ResponseEntity.ok(lista);
     }
 
+    @GetMapping("/export/csv")
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
+    public ResponseEntity<byte[]> exportarCsvMesAtual() {
+        moduleAccessService.assertModuleAccess("financeiro", NivelAcessoModulo.READ);
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        YearMonth mesAtual = YearMonth.now();
+        LocalDate inicio = mesAtual.atDay(1);
+        LocalDate fim = mesAtual.atEndOfMonth();
+        List<Lancamento> lancamentos = lancamentoRepository.findByIgrejaIdAndPeriodo(igrejaId, inicio, fim);
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("id,tipo,categoria,descricao,valor,data_lancamento,centro_custo,metodo_pagamento,referencia\n");
+        for (Lancamento l : lancamentos) {
+            csv.append(l.getId()).append(',');
+            csv.append(escapeCsv(l.getTipo() != null ? l.getTipo().name() : "")).append(',');
+            csv.append(escapeCsv(l.getCategoria())).append(',');
+            csv.append(escapeCsv(l.getDescricao())).append(',');
+            csv.append(formatValor(l.getValor())).append(',');
+            csv.append(l.getDataLancamento()).append(',');
+            csv.append(escapeCsv(l.getCentroCusto())).append(',');
+            csv.append(escapeCsv(l.getMetodoPagamento())).append(',');
+            csv.append(escapeCsv(l.getReferencia())).append('\n');
+        }
+
+        byte[] bytes = csv.toString().getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+            .header("Content-Disposition", "attachment; filename=lancamentos-" + mesAtual + ".csv")
+            .header("Content-Type", "text/csv; charset=UTF-8")
+            .body(bytes);
+    }
+
     @GetMapping("/{id}")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_SECRETARIA" })
     public ResponseEntity<Lancamento> getLancamento(@PathVariable("id") final Long id) {
+        moduleAccessService.assertModuleAccess("financeiro", NivelAcessoModulo.READ);
         LOG.debug("REST request to get Lancamento : {}", id);
         Optional<Lancamento> lancamento = lancamentoRepository.findById(id);
         lancamento.ifPresent(l -> tenantService.validarMesmaIgreja(l.getIgreja()));
@@ -122,6 +170,7 @@ public class LancamentoResource {
     @DeleteMapping("/{id}")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_TESOURARIA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_SECRETARIA", "ROLE_LIDER" })
     public ResponseEntity<Void> deleteLancamento(@PathVariable("id") final Long id) {
+        moduleAccessService.assertModuleAccess("financeiro", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to delete Lancamento : {}", id);
         lancamentoRepository.findById(id).ifPresent(l -> {
             tenantService.validarMesmaIgreja(l.getIgreja());
@@ -148,5 +197,20 @@ public class LancamentoResource {
         if (lancamento.getDataLancamento() == null) {
             throw new BadRequestAlertException("Data é obrigatória.", ENTITY_NAME, "dataobrigatoria");
         }
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) {
+            return "";
+        }
+        String escaped = value.replace("\"", "\"\"");
+        if (escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n")) {
+            return "\"" + escaped + "\"";
+        }
+        return escaped;
+    }
+
+    private String formatValor(BigDecimal valor) {
+        return valor != null ? valor.toPlainString() : "0";
     }
 }

@@ -27,6 +27,7 @@ public class DocumentoIgrejaMapper {
             dto.setUrlDownload("/api/igreja/documentos/" + documento.getId() + "/download");
         }
         dto.setDataDocumento(documento.getDataDocumento());
+        dto.setDataValidade(documento.getDataValidade());
         dto.setDataUpload(documento.getDataUpload());
         dto.setDataAtualizacao(documento.getDataAtualizacao());
         if (documento.getUsuarioUpload() != null) {

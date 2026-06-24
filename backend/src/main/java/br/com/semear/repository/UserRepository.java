@@ -28,6 +28,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findAllByIgrejaIdAndBirthDateIsNotNullAndActivatedIsTrue(Long igrejaId);
 
+    List<User> findAllByIgrejaIdAndActivatedIsTrue(Long igrejaId);
+
     @Query("SELECT u FROM User u WHERE u.birthDate IS NOT NULL AND (u.activated = true OR u.isDependente = true)")
     List<User> findAllComBirthDateParaAniversariantes();
 
@@ -41,7 +43,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findAllByIdNotNullAndActivatedIsTrue(Pageable pageable);
 
+    Page<User> findAllByIgrejaIdAndActivatedIsTrue(Long igrejaId, Pageable pageable);
+
     Page<User> findAllByIgrejaId(Long igrejaId, Pageable pageable);
 
     long countByIgrejaId(Long igrejaId);
+
+    long countByIgrejaIdAndActivatedIsTrue(Long igrejaId);
 }

@@ -49,6 +49,10 @@ public class IgrejaMapper {
         dto.setDataAtualizacao(igreja.getDataAtualizacao());
         dto.setDataInicioPlanoLeitura(igreja.getDataInicioPlanoLeitura());
         dto.setCicloPlanoLeitura(igreja.getCicloPlanoLeitura());
+        dto.setRequerAprovacaoOracaoPublica(igreja.getRequerAprovacaoOracaoPublica());
+        dto.setSlug(igreja.getSlug());
+        dto.setHorarioCulto(igreja.getHorarioCulto());
+        dto.setSiteAtivo(igreja.getSiteAtivo());
         return dto;
     }
 
@@ -92,6 +96,10 @@ public class IgrejaMapper {
         igreja.setDataAtualizacao(dto.getDataAtualizacao());
         igreja.setDataInicioPlanoLeitura(dto.getDataInicioPlanoLeitura());
         igreja.setCicloPlanoLeitura(dto.getCicloPlanoLeitura());
+        igreja.setRequerAprovacaoOracaoPublica(dto.getRequerAprovacaoOracaoPublica());
+        igreja.setSlug(dto.getSlug());
+        igreja.setHorarioCulto(dto.getHorarioCulto());
+        igreja.setSiteAtivo(dto.getSiteAtivo());
         return igreja;
     }
 

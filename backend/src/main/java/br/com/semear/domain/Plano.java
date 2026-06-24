@@ -26,8 +26,7 @@ public class Plano implements Serializable {
     @Column(name = "nome", nullable = false, length = 100)
     private String nome;
 
-    @Lob
-    @Column(name = "descricao")
+    @Column(name = "descricao", columnDefinition = "text")
     private String descricao;
 
     @NotNull
@@ -72,20 +71,16 @@ public class Plano implements Serializable {
     @Column(name = "desconto_anual_percentual")
     private Integer descontoAnualPercentual;
 
-    @Lob
-    @Column(name = "mensagem_abordagem")
+    @Column(name = "mensagem_abordagem", columnDefinition = "text")
     private String mensagemAbordagem;
 
-    @Lob
-    @Column(name = "mensagem_preco")
+    @Column(name = "mensagem_preco", columnDefinition = "text")
     private String mensagemPreco;
 
-    @Lob
-    @Column(name = "mensagem_demo")
+    @Column(name = "mensagem_demo", columnDefinition = "text")
     private String mensagemDemo;
 
-    @Lob
-    @Column(name = "mensagem_fim_teste")
+    @Column(name = "mensagem_fim_teste", columnDefinition = "text")
     private String mensagemFimTeste;
 
     @Column(name = "whatsapp_contato", length = 30)

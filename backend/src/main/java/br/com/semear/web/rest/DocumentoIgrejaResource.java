@@ -1,8 +1,10 @@
 package br.com.semear.web.rest;
 
 import br.com.semear.domain.enumeration.CategoriaDocumentoIgreja;
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.DocumentoIgrejaService;
+import br.com.semear.service.ModuleAccessService;
 import br.com.semear.service.dto.DocumentoIgrejaDTO;
 import jakarta.annotation.security.RolesAllowed;
 import java.nio.charset.StandardCharsets;
@@ -27,13 +29,15 @@ public class DocumentoIgrejaResource {
     private static final Logger LOG = LoggerFactory.getLogger(DocumentoIgrejaResource.class);
 
     private final DocumentoIgrejaService documentoIgrejaService;
+    private final ModuleAccessService moduleAccessService;
 
-    public DocumentoIgrejaResource(DocumentoIgrejaService documentoIgrejaService) {
+    public DocumentoIgrejaResource(DocumentoIgrejaService documentoIgrejaService, ModuleAccessService moduleAccessService) {
         this.documentoIgrejaService = documentoIgrejaService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     @GetMapping("")
-    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA, AuthoritiesConstants.SECRETARIA })
     public List<DocumentoIgrejaDTO> listar(
         @RequestParam(required = false) String nome,
         @RequestParam(required = false) CategoriaDocumentoIgreja categoria,
@@ -41,41 +45,55 @@ public class DocumentoIgrejaResource {
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim
     ) {
+        moduleAccessService.assertModuleAccess("configuracoes", NivelAcessoModulo.READ);
         LOG.debug("REST request to list DocumentoIgreja");
         return documentoIgrejaService.listar(nome, categoria, tipoArquivo, dataInicio, dataFim);
     }
 
+    @GetMapping("/vencendo")
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA, AuthoritiesConstants.SECRETARIA })
+    public List<DocumentoIgrejaDTO> listarVencendo(@RequestParam(defaultValue = "30") int dias) {
+        moduleAccessService.assertModuleAccess("configuracoes", NivelAcessoModulo.READ);
+        LOG.debug("REST request to list DocumentoIgreja vencendo em {} dias", dias);
+        return documentoIgrejaService.listarVencendo(dias);
+    }
+
     @GetMapping("/{id}")
-    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA, AuthoritiesConstants.SECRETARIA })
     public ResponseEntity<DocumentoIgrejaDTO> obter(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("configuracoes", NivelAcessoModulo.READ);
         LOG.debug("REST request to get DocumentoIgreja : {}", id);
         return ResponseUtil.wrapOrNotFound(documentoIgrejaService.obter(id));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA, AuthoritiesConstants.SECRETARIA })
     public ResponseEntity<DocumentoIgrejaDTO> criar(
         @RequestParam("arquivo") MultipartFile arquivo,
         @RequestParam("nome") String nome,
         @RequestParam("categoria") CategoriaDocumentoIgreja categoria,
         @RequestParam(value = "descricao", required = false) String descricao,
-        @RequestParam(value = "dataDocumento", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataDocumento
+        @RequestParam(value = "dataDocumento", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataDocumento,
+        @RequestParam(value = "dataValidade", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataValidade
     ) {
+        moduleAccessService.assertModuleAccess("configuracoes", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to create DocumentoIgreja : {}", nome);
-        DocumentoIgrejaDTO result = documentoIgrejaService.criar(nome, descricao, categoria, dataDocumento, arquivo);
+        DocumentoIgrejaDTO result = documentoIgrejaService.criar(nome, descricao, categoria, dataDocumento, dataValidade, arquivo);
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
     @PutMapping("/{id}")
-    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA, AuthoritiesConstants.SECRETARIA })
     public ResponseEntity<DocumentoIgrejaDTO> atualizar(@PathVariable Long id, @RequestBody DocumentoIgrejaDTO dto) {
+        moduleAccessService.assertModuleAccess("configuracoes", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to update DocumentoIgreja : {}", id);
         return ResponseEntity.ok(documentoIgrejaService.atualizarMetadados(id, dto));
     }
 
     @GetMapping("/{id}/download")
-    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA, AuthoritiesConstants.SECRETARIA })
     public ResponseEntity<byte[]> download(@PathVariable Long id, @RequestParam(defaultValue = "false") boolean inline) {
+        moduleAccessService.assertModuleAccess("configuracoes", NivelAcessoModulo.READ);
         LOG.debug("REST request to download DocumentoIgreja : {}", id);
         return documentoIgrejaService
             .obterArquivo(id, inline)
@@ -92,8 +110,9 @@ public class DocumentoIgrejaResource {
     }
 
     @DeleteMapping("/{id}")
-    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA })
+    @RolesAllowed({ AuthoritiesConstants.ADMIN, AuthoritiesConstants.ADMIN_IGREJA, AuthoritiesConstants.SECRETARIA })
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("configuracoes", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to delete DocumentoIgreja : {}", id);
         documentoIgrejaService.excluir(id);
         return ResponseEntity.noContent().build();

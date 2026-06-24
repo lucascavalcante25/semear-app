@@ -1,6 +1,9 @@
 package br.com.semear.web.rest;
 
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.service.DevocionalService;
+import br.com.semear.service.ModuleAccessService;
+import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.DevocionalDTO;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
@@ -48,14 +51,17 @@ public class DevocionalResource {
     private String applicationName;
 
     private final DevocionalService devocionalService;
+    private final ModuleAccessService moduleAccessService;
 
-    public DevocionalResource(DevocionalService devocionalService) {
+    public DevocionalResource(DevocionalService devocionalService, ModuleAccessService moduleAccessService) {
         this.devocionalService = devocionalService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     @PostMapping("")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA" })
     public ResponseEntity<DevocionalDTO> createDevocional(@Valid @RequestBody DevocionalDTO devocionalDTO) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("devocionais", NivelAcessoModulo.WRITE);
         log.debug("REST request to save Devocional : {}", devocionalDTO);
         if (devocionalDTO.getId() != null) {
             throw new BadRequestAlertException("A new devocional cannot already have an ID", ENTITY_NAME, "idexists");
@@ -72,6 +78,7 @@ public class DevocionalResource {
         @PathVariable(value = "id", required = false) final Long id,
         @Valid @RequestBody DevocionalDTO devocionalDTO
     ) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("devocionais", NivelAcessoModulo.WRITE);
         log.debug("REST request to update Devocional : {}, {}", id, devocionalDTO);
         if (devocionalDTO.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
@@ -93,6 +100,9 @@ public class DevocionalResource {
     @GetMapping("")
     @PreAuthorize("permitAll()")
     public ResponseEntity<List<DevocionalDTO>> getAllDevocionais(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        if (SecurityUtils.isAuthenticated()) {
+            moduleAccessService.assertModuleAccess("devocionais", NivelAcessoModulo.READ);
+        }
         log.debug("REST request to get a page of Devocionais");
         Page<DevocionalDTO> page = devocionalService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
@@ -105,6 +115,9 @@ public class DevocionalResource {
     @GetMapping("/hoje")
     @PreAuthorize("permitAll()")
     public ResponseEntity<DevocionalDTO> getDevocionalHoje() {
+        if (SecurityUtils.isAuthenticated()) {
+            moduleAccessService.assertModuleAccess("devocionais", NivelAcessoModulo.READ);
+        }
         log.debug("REST request to get Devocional do dia");
         LocalDate hoje = LocalDate.now();
         return devocionalService.findHoje(hoje)
@@ -115,6 +128,9 @@ public class DevocionalResource {
     @GetMapping("/{id}")
     @PreAuthorize("permitAll()")
     public ResponseEntity<DevocionalDTO> getDevocional(@PathVariable("id") Long id) {
+        if (SecurityUtils.isAuthenticated()) {
+            moduleAccessService.assertModuleAccess("devocionais", NivelAcessoModulo.READ);
+        }
         log.debug("REST request to get Devocional : {}", id);
         Optional<DevocionalDTO> devocionalDTO = devocionalService.findOne(id);
         return ResponseUtil.wrapOrNotFound(devocionalDTO);
@@ -123,6 +139,7 @@ public class DevocionalResource {
     @DeleteMapping("/{id}")
     @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA" })
     public ResponseEntity<Void> deleteDevocional(@PathVariable("id") Long id) {
+        moduleAccessService.assertModuleAccess("devocionais", NivelAcessoModulo.WRITE);
         log.debug("REST request to delete Devocional : {}", id);
         devocionalService.delete(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString())).build();

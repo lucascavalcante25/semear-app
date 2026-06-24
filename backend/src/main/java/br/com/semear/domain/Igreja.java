@@ -115,6 +115,20 @@ public class Igreja implements Serializable {
     @Column(name = "subtitulo_igreja", length = 255)
     private String subtituloIgreja;
 
+    @Column(name = "slug", length = 120)
+    private String slug;
+
+    @Column(name = "horario_culto", length = 255)
+    private String horarioCulto;
+
+    @NotNull
+    @Column(name = "site_ativo", nullable = false)
+    private Boolean siteAtivo = false;
+
+    @NotNull
+    @Column(name = "exibir_avisos_publicos", nullable = false)
+    private Boolean exibirAvisosPublicos = true;
+
     @Column(name = "texto_agradecimento_oferta", columnDefinition = "text")
     private String textoAgradecimentoOferta;
 
@@ -135,6 +149,10 @@ public class Igreja implements Serializable {
 
     @Column(name = "ciclo_plano_leitura", nullable = false)
     private Integer cicloPlanoLeitura = 1;
+
+    @NotNull
+    @Column(name = "requer_aprovacao_oracao_publica", nullable = false)
+    private Boolean requerAprovacaoOracaoPublica = true;
 
     public Long getId() {
         return id;
@@ -368,6 +386,38 @@ public class Igreja implements Serializable {
         this.subtituloIgreja = subtituloIgreja;
     }
 
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getHorarioCulto() {
+        return horarioCulto;
+    }
+
+    public void setHorarioCulto(String horarioCulto) {
+        this.horarioCulto = horarioCulto;
+    }
+
+    public Boolean getSiteAtivo() {
+        return siteAtivo;
+    }
+
+    public void setSiteAtivo(Boolean siteAtivo) {
+        this.siteAtivo = siteAtivo;
+    }
+
+    public Boolean getExibirAvisosPublicos() {
+        return exibirAvisosPublicos;
+    }
+
+    public void setExibirAvisosPublicos(Boolean exibirAvisosPublicos) {
+        this.exibirAvisosPublicos = exibirAvisosPublicos;
+    }
+
     public String getTextoAgradecimentoOferta() {
         return textoAgradecimentoOferta;
     }
@@ -414,5 +464,13 @@ public class Igreja implements Serializable {
 
     public void setCicloPlanoLeitura(Integer cicloPlanoLeitura) {
         this.cicloPlanoLeitura = cicloPlanoLeitura;
+    }
+
+    public Boolean getRequerAprovacaoOracaoPublica() {
+        return requerAprovacaoOracaoPublica;
+    }
+
+    public void setRequerAprovacaoOracaoPublica(Boolean requerAprovacaoOracaoPublica) {
+        this.requerAprovacaoOracaoPublica = requerAprovacaoOracaoPublica;
     }
 }

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260625000005-1" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="departamento"/></not></preConditions>
+        <createTable tableName="departamento">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="nome" type="varchar(150)"><constraints nullable="false"/></column>
+            <column name="descricao" type="${clobType}"/>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="departamento" baseColumnNames="igreja_id" constraintName="fk_departamento_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260625000005-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="departamento_membro"/></not></preConditions>
+        <createTable tableName="departamento_membro">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="departamento_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="funcao" type="varchar(100)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="departamento_membro" baseColumnNames="departamento_id" constraintName="fk_dep_membro_departamento" referencedTableName="departamento" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="departamento_membro" baseColumnNames="user_id" constraintName="fk_dep_membro_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="departamento_membro" columnNames="departamento_id, user_id" constraintName="uk_departamento_membro"/>
+    </changeSet>
+</databaseChangeLog>

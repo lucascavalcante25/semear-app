@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260625000002-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="visitante" columnName="estado_funil"/></not>
+        </preConditions>
+        <addColumn tableName="visitante">
+            <column name="estado_funil" type="varchar(30)" defaultValue="CADASTRADO">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_proximo_contato" type="date"/>
+        </addColumn>
+        <createIndex tableName="visitante" indexName="idx_visitante_estado_funil">
+            <column name="igreja_id"/>
+            <column name="estado_funil"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

@@ -9,6 +9,7 @@ export type FormDocumento = {
   nome: string;
   categoria: CategoriaDocumentoIgreja | "";
   dataDocumento: string;
+  dataValidade: string;
   descricao: string;
   arquivo: File | null;
 };

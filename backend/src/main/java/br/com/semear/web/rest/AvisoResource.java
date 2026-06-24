@@ -2,8 +2,10 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.Aviso;
 import br.com.semear.domain.User;
+import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.repository.AvisoRepository;
 import br.com.semear.repository.UserRepository;
+import br.com.semear.service.ModuleAccessService;
 import br.com.semear.service.TenantService;
 import br.com.semear.service.UserService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
@@ -44,17 +46,20 @@ public class AvisoResource {
     private final UserService userService;
     private final UserRepository userRepository;
     private final TenantService tenantService;
+    private final ModuleAccessService moduleAccessService;
 
     public AvisoResource(
         AvisoRepository avisoRepository,
         UserService userService,
         UserRepository userRepository,
-        TenantService tenantService
+        TenantService tenantService,
+        ModuleAccessService moduleAccessService
     ) {
         this.avisoRepository = avisoRepository;
         this.userService = userService;
         this.userRepository = userRepository;
         this.tenantService = tenantService;
+        this.moduleAccessService = moduleAccessService;
     }
 
     private static String obterNomeCompleto(User user) {
@@ -88,6 +93,7 @@ public class AvisoResource {
     @PostMapping("")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<AvisoResponseDTO> createAviso(@RequestBody Aviso aviso) throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("avisos", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to save Aviso : {}", aviso);
         if (aviso.getId() != null) {
             throw new BadRequestAlertException("A new aviso cannot already have an ID", ENTITY_NAME, "idexists");
@@ -121,6 +127,7 @@ public class AvisoResource {
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<AvisoResponseDTO> updateAviso(@PathVariable("id") final Long id, @RequestBody Aviso aviso)
         throws URISyntaxException {
+        moduleAccessService.assertModuleAccess("avisos", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to update Aviso : {}, {}", id, aviso);
         if (aviso.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
@@ -167,6 +174,7 @@ public class AvisoResource {
         @RequestParam(name = "ativos", required = false, defaultValue = "true") boolean ativos,
         @org.springdoc.core.annotations.ParameterObject Pageable pageable
     ) {
+        moduleAccessService.assertModuleAccess("avisos", NivelAcessoModulo.READ);
         LOG.debug("REST request to get a page of Avisos");
         Long igrejaId = tenantService.getIgrejaIdAtual();
         Page<Aviso> page = ativos
@@ -179,6 +187,7 @@ public class AvisoResource {
 
     @GetMapping("/{id}")
     public ResponseEntity<AvisoResponseDTO> getAviso(@PathVariable("id") final Long id) {
+        moduleAccessService.assertModuleAccess("avisos", NivelAcessoModulo.READ);
         LOG.debug("REST request to get Aviso : {}", id);
         Optional<Aviso> aviso = avisoRepository.findById(id);
         aviso.ifPresent(a -> tenantService.validarMesmaIgreja(a.getIgreja()));
@@ -188,6 +197,7 @@ public class AvisoResource {
     @DeleteMapping("/{id}")
     @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
     public ResponseEntity<Void> deleteAviso(@PathVariable("id") final Long id) {
+        moduleAccessService.assertModuleAccess("avisos", NivelAcessoModulo.WRITE);
         LOG.debug("REST request to delete Aviso : {}", id);
         avisoRepository.findById(id).ifPresent(a -> {
             tenantService.validarMesmaIgreja(a.getIgreja());

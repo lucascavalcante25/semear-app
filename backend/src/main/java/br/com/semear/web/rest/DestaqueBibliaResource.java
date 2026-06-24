@@ -2,6 +2,7 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.DestaqueBiblia;
 import br.com.semear.repository.DestaqueBibliaRepository;
+import br.com.semear.service.BibliaUsuarioAccessService;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -40,9 +41,11 @@ public class DestaqueBibliaResource {
     private String applicationName;
 
     private final DestaqueBibliaRepository destaqueBibliaRepository;
+    private final BibliaUsuarioAccessService bibliaUsuarioAccessService;
 
-    public DestaqueBibliaResource(DestaqueBibliaRepository destaqueBibliaRepository) {
+    public DestaqueBibliaResource(DestaqueBibliaRepository destaqueBibliaRepository, BibliaUsuarioAccessService bibliaUsuarioAccessService) {
         this.destaqueBibliaRepository = destaqueBibliaRepository;
+        this.bibliaUsuarioAccessService = bibliaUsuarioAccessService;
     }
 
     /**
@@ -59,6 +62,7 @@ public class DestaqueBibliaResource {
         if (destaqueBiblia.getId() != null) {
             throw new BadRequestAlertException("A new destaqueBiblia cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        destaqueBiblia.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         destaqueBiblia = destaqueBibliaRepository.save(destaqueBiblia);
         return ResponseEntity.created(new URI("/api/destaque-biblias/" + destaqueBiblia.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, destaqueBiblia.getId().toString()))
@@ -88,10 +92,8 @@ public class DestaqueBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!destaqueBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
-
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(destaqueBibliaRepository.findById(id), DestaqueBiblia::getUsuario);
+        destaqueBiblia.setUsuario(bibliaUsuarioAccessService.getUsuarioAtual());
         destaqueBiblia = destaqueBibliaRepository.save(destaqueBiblia);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, destaqueBiblia.getId().toString()))
@@ -122,9 +124,7 @@ public class DestaqueBibliaResource {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
 
-        if (!destaqueBibliaRepository.existsById(id)) {
-            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
-        }
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(destaqueBibliaRepository.findById(id), DestaqueBiblia::getUsuario);
 
         Optional<DestaqueBiblia> result = destaqueBibliaRepository
             .findById(destaqueBiblia.getId())
@@ -183,14 +183,7 @@ public class DestaqueBibliaResource {
         @RequestParam(name = "eagerload", required = false, defaultValue = "true") boolean eagerload
     ) {
         LOG.debug("REST request to get a page of DestaqueBiblias");
-        Page<DestaqueBiblia> page;
-        if (eagerload) {
-            page = destaqueBibliaRepository.findAllWithEagerRelationships(pageable);
-        } else {
-            page = destaqueBibliaRepository.findAll(pageable);
-        }
-        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
-        return ResponseEntity.ok().headers(headers).body(page.getContent());
+        return ResponseEntity.ok().body(destaqueBibliaRepository.findByUsuarioIsCurrentUser());
     }
 
     /**
@@ -202,7 +195,10 @@ public class DestaqueBibliaResource {
     @GetMapping("/{id}")
     public ResponseEntity<DestaqueBiblia> getDestaqueBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to get DestaqueBiblia : {}", id);
-        Optional<DestaqueBiblia> destaqueBiblia = destaqueBibliaRepository.findOneWithEagerRelationships(id);
+        Optional<DestaqueBiblia> destaqueBiblia = bibliaUsuarioAccessService.filtrarPropriedade(
+            destaqueBibliaRepository.findOneWithEagerRelationships(id),
+            DestaqueBiblia::getUsuario
+        );
         return ResponseUtil.wrapOrNotFound(destaqueBiblia);
     }
 
@@ -215,6 +211,7 @@ public class DestaqueBibliaResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteDestaqueBiblia(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete DestaqueBiblia : {}", id);
+        bibliaUsuarioAccessService.validarPropriedadeOuFalhar(destaqueBibliaRepository.findById(id), DestaqueBiblia::getUsuario);
         destaqueBibliaRepository.deleteById(id);
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))

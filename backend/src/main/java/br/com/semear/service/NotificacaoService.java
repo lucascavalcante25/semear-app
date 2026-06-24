@@ -2,16 +2,27 @@ package br.com.semear.service;
 
 import br.com.semear.domain.AssinaturaIgreja;
 import br.com.semear.domain.Aviso;
+import br.com.semear.domain.DocumentoIgreja;
+import br.com.semear.domain.Evento;
 import br.com.semear.domain.Igreja;
+import br.com.semear.domain.Escala;
+import br.com.semear.domain.EscalaItem;
+import br.com.semear.domain.PedidoOracao;
 import br.com.semear.domain.SolicitacaoSuporte;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.StatusAssinatura;
+import br.com.semear.domain.enumeration.StatusPedidoOracao;
 import br.com.semear.domain.enumeration.TipoPagamentoPlataforma;
+import br.com.semear.domain.enumeration.VisibilidadePedidoOracao;
 import br.com.semear.domain.UsuarioNotificacaoVista;
 import br.com.semear.config.Constants;
 import br.com.semear.domain.enumeration.StatusSolicitacaoSuporte;
 import br.com.semear.repository.AssinaturaIgrejaRepository;
 import br.com.semear.repository.AvisoRepository;
+import br.com.semear.repository.DocumentoIgrejaRepository;
+import br.com.semear.repository.EscalaItemRepository;
+import br.com.semear.repository.EventoRepository;
+import br.com.semear.repository.PedidoOracaoRepository;
 import br.com.semear.repository.SolicitacaoSuporteRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.UsuarioNotificacaoVistaRepository;
@@ -36,6 +47,10 @@ public class NotificacaoService {
     public static final String TIPO_SUPORTE = "SUPORTE";
     public static final String TIPO_ASSINATURA = "ASSINATURA";
     public static final String TIPO_SAAS = "SAAS";
+    public static final String TIPO_PEDIDO_ORACAO = "PEDIDO_ORACAO";
+    public static final String TIPO_DOCUMENTO_VENCENDO = "DOCUMENTO_VENCENDO";
+    public static final String TIPO_ESCALA = "ESCALA";
+    public static final String TIPO_EVENTO = "EVENTO";
 
     private final AvisoRepository avisoRepository;
     private final UserRepository userRepository;
@@ -43,6 +58,10 @@ public class NotificacaoService {
     private final TenantService tenantService;
     private final SolicitacaoSuporteRepository solicitacaoSuporteRepository;
     private final AssinaturaIgrejaRepository assinaturaIgrejaRepository;
+    private final PedidoOracaoRepository pedidoOracaoRepository;
+    private final DocumentoIgrejaRepository documentoIgrejaRepository;
+    private final EscalaItemRepository escalaItemRepository;
+    private final EventoRepository eventoRepository;
 
     public NotificacaoService(
         AvisoRepository avisoRepository,
@@ -50,7 +69,11 @@ public class NotificacaoService {
         UsuarioNotificacaoVistaRepository vistaRepository,
         TenantService tenantService,
         SolicitacaoSuporteRepository solicitacaoSuporteRepository,
-        AssinaturaIgrejaRepository assinaturaIgrejaRepository
+        AssinaturaIgrejaRepository assinaturaIgrejaRepository,
+        PedidoOracaoRepository pedidoOracaoRepository,
+        DocumentoIgrejaRepository documentoIgrejaRepository,
+        EscalaItemRepository escalaItemRepository,
+        EventoRepository eventoRepository
     ) {
         this.avisoRepository = avisoRepository;
         this.userRepository = userRepository;
@@ -58,6 +81,10 @@ public class NotificacaoService {
         this.tenantService = tenantService;
         this.solicitacaoSuporteRepository = solicitacaoSuporteRepository;
         this.assinaturaIgrejaRepository = assinaturaIgrejaRepository;
+        this.pedidoOracaoRepository = pedidoOracaoRepository;
+        this.documentoIgrejaRepository = documentoIgrejaRepository;
+        this.escalaItemRepository = escalaItemRepository;
+        this.eventoRepository = eventoRepository;
     }
 
     public record NotificacaoItem(String tipo, Long referenciaId, String titulo, String descricao, String link) {}
@@ -135,6 +162,29 @@ public class NotificacaoService {
             }
         }
 
+        if (usuarioEhLideranca(user)) {
+            Set<Long> pedidosVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_PEDIDO_ORACAO);
+            List<PedidoOracao> pedidosLideranca = pedidoOracaoRepository.findByIgrejaIdAndDeletedAtIsNullOrderByCriadoEmDesc(igrejaId);
+            for (PedidoOracao p : pedidosLideranca) {
+                if (pedidosVistos.contains(p.getId())) {
+                    continue;
+                }
+                boolean privado = p.getVisibilidade() == VisibilidadePedidoOracao.PRIVADA;
+                boolean aguardando = p.getStatus() == StatusPedidoOracao.AGUARDANDO_APROVACAO;
+                if (!privado && !aguardando) {
+                    continue;
+                }
+                String titulo = privado ? "Novo pedido de oração privado" : "Pedido público aguardando aprovação";
+                itens.add(new NotificacaoItem(
+                    TIPO_PEDIDO_ORACAO,
+                    p.getId(),
+                    titulo,
+                    p.getTitulo(),
+                    "/oracao"
+                ));
+            }
+        }
+
         Set<Long> assinaturaVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_ASSINATURA);
         Set<Long> saasVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_SAAS);
 
@@ -194,6 +244,60 @@ public class NotificacaoService {
             });
         }
 
+        if (usuarioEhLideranca(user)) {
+            Set<Long> docsVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_DOCUMENTO_VENCENDO);
+            List<DocumentoIgreja> docsVencendo = documentoIgrejaRepository.findByIgrejaIdAndAtivoTrueAndDataValidadeBetweenOrderByDataValidadeAsc(
+                igrejaId,
+                hoje,
+                hoje.plusDays(30)
+            );
+            for (DocumentoIgreja doc : docsVencendo) {
+                if (!docsVistos.contains(doc.getId())) {
+                    itens.add(new NotificacaoItem(
+                        TIPO_DOCUMENTO_VENCENDO,
+                        doc.getId(),
+                        "Documento vencendo",
+                        doc.getNome() + " vence em " + doc.getDataValidade(),
+                        "/configuracoes-igreja"
+                    ));
+                }
+            }
+        }
+
+        Set<Long> escalasVistas = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_ESCALA);
+        for (EscalaItem item : escalaItemRepository.findByUserIdAndConfirmadoFalse(user.getId())) {
+            if (escalasVistas.contains(item.getId())) {
+                continue;
+            }
+            String tituloEscala = item.getEscala() != null ? item.getEscala().getTitulo() : "Nova escala";
+            itens.add(new NotificacaoItem(
+                TIPO_ESCALA,
+                item.getId(),
+                "Nova atribuição de escala",
+                tituloEscala,
+                "/escalas"
+            ));
+        }
+
+        Set<Long> eventosVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_EVENTO);
+        Instant agora = Instant.now();
+        Instant limite = agora.plusSeconds(7L * 24 * 3600);
+        for (Evento evento : eventoRepository.findByIgrejaIdOrderByDataInicioDesc(igrejaId)) {
+            if (eventosVistos.contains(evento.getId())) {
+                continue;
+            }
+            if (evento.getDataInicio() == null || evento.getDataInicio().isBefore(agora) || evento.getDataInicio().isAfter(limite)) {
+                continue;
+            }
+            itens.add(new NotificacaoItem(
+                TIPO_EVENTO,
+                evento.getId(),
+                "Evento próximo",
+                evento.getTitulo(),
+                "/eventos"
+            ));
+        }
+
         return itens;
     }
 
@@ -211,6 +315,27 @@ public class NotificacaoService {
 
     public void notificarAssinaturaAtivada(Igreja igreja) {
         LOG.info("Assinatura ativada para igreja {}", igreja != null ? igreja.getNome() : "?");
+    }
+
+    public void notificarPedidoOracaoPrivado(PedidoOracao pedido) {
+        LOG.info("Novo pedido de oração privado {} na igreja {}", pedido.getId(), pedido.getIgreja() != null ? pedido.getIgreja().getId() : "?");
+    }
+
+    public void notificarPedidoOracaoAguardandoAprovacao(PedidoOracao pedido) {
+        LOG.info(
+            "Pedido de oração {} aguardando aprovação na igreja {}",
+            pedido.getId(),
+            pedido.getIgreja() != null ? pedido.getIgreja().getId() : "?"
+        );
+    }
+
+    public void notificarEscalaItemAtribuido(Escala escala, EscalaItem item) {
+        LOG.info(
+            "Item de escala {} atribuído na escala {} para usuário {}",
+            item != null ? item.getId() : "?",
+            escala != null ? escala.getId() : "?",
+            item != null && item.getUser() != null ? item.getUser().getId() : "?"
+        );
     }
 
     public void notificarPagamentoRecebido(Igreja igreja, TipoPagamentoPlataforma tipo) {
@@ -246,6 +371,20 @@ public class NotificacaoService {
             .getAuthorities()
             .stream()
             .anyMatch(a -> AuthoritiesConstants.ADMIN_IGREJA.equals(a.getName()));
+    }
+
+    private boolean usuarioEhLideranca(User user) {
+        return user
+            .getAuthorities()
+            .stream()
+            .anyMatch(a ->
+                AuthoritiesConstants.ADMIN.equals(a.getName()) ||
+                AuthoritiesConstants.ADMIN_IGREJA.equals(a.getName()) ||
+                AuthoritiesConstants.PASTOR.equals(a.getName()) ||
+                AuthoritiesConstants.COPASTOR.equals(a.getName()) ||
+                AuthoritiesConstants.LIDER.equals(a.getName()) ||
+                AuthoritiesConstants.SECRETARIA.equals(a.getName())
+            );
     }
 
     @Transactional

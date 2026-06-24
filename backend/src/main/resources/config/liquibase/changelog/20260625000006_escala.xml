@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260625000006-1" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="escala"/></not></preConditions>
+        <createTable tableName="escala">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="departamento_id" type="bigint"/>
+            <column name="titulo" type="varchar(200)"><constraints nullable="false"/></column>
+            <column name="data_evento" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="observacao" type="${clobType}"/>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="escala" baseColumnNames="igreja_id" constraintName="fk_escala_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="escala" baseColumnNames="departamento_id" constraintName="fk_escala_departamento" referencedTableName="departamento" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260625000006-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="escala_item"/></not></preConditions>
+        <createTable tableName="escala_item">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="escala_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="funcao" type="varchar(100)"/>
+            <column name="confirmado" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="confirmado_em" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="escala_item" baseColumnNames="escala_id" constraintName="fk_escala_item_escala" referencedTableName="escala" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="escala_item" baseColumnNames="user_id" constraintName="fk_escala_item_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+    </changeSet>
+</databaseChangeLog>

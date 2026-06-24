@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260625000003-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="acompanhamento_pastoral"/></not>
+        </preConditions>
+        <createTable tableName="acompanhamento_pastoral">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="membro_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="responsavel_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="tipo" type="varchar(30)"><constraints nullable="false"/></column>
+            <column name="observacao" type="${clobType}"/>
+            <column name="data_contato" type="date"><constraints nullable="false"/></column>
+            <column name="data_retorno" type="date"/>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="criado_por_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="acompanhamento_pastoral" baseColumnNames="igreja_id" constraintName="fk_acomp_pastoral_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="acompanhamento_pastoral" baseColumnNames="membro_id" constraintName="fk_acomp_pastoral_membro" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="acompanhamento_pastoral" baseColumnNames="responsavel_id" constraintName="fk_acomp_pastoral_responsavel" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="acompanhamento_pastoral" baseColumnNames="criado_por_id" constraintName="fk_acomp_pastoral_criado_por" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <createIndex tableName="acompanhamento_pastoral" indexName="idx_acomp_pastoral_igreja"><column name="igreja_id"/></createIndex>
+    </changeSet>
+</databaseChangeLog>

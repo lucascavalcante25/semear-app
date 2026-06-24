@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260624000001-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="pedido_oracao"/>
+            </not>
+        </preConditions>
+        <createTable tableName="pedido_oracao">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usuario_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="titulo" type="varchar(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="${clobType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="categoria" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="visibilidade" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="anonimo" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requer_aprovacao" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="aprovado" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="aprovado_por_id" type="bigint"/>
+            <column name="aprovado_em" type="${datetimeType}"/>
+            <column name="resposta_texto" type="${clobType}"/>
+            <column name="respondido_em" type="${datetimeType}"/>
+            <column name="criado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="atualizado_em" type="${datetimeType}"/>
+            <column name="deleted_at" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="pedido_oracao"
+            baseColumnNames="igreja_id"
+            constraintName="fk_pedido_oracao_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="pedido_oracao"
+            baseColumnNames="usuario_id"
+            constraintName="fk_pedido_oracao_usuario"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="pedido_oracao"
+            baseColumnNames="aprovado_por_id"
+            constraintName="fk_pedido_oracao_aprovado_por"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <createIndex tableName="pedido_oracao" indexName="idx_pedido_oracao_igreja">
+            <column name="igreja_id"/>
+        </createIndex>
+        <createIndex tableName="pedido_oracao" indexName="idx_pedido_oracao_usuario">
+            <column name="usuario_id"/>
+        </createIndex>
+        <createIndex tableName="pedido_oracao" indexName="idx_pedido_oracao_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="pedido_oracao" indexName="idx_pedido_oracao_visibilidade">
+            <column name="visibilidade"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260624000001-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="pedido_oracao_intercessao"/>
+            </not>
+        </preConditions>
+        <createTable tableName="pedido_oracao_intercessao">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="pedido_oracao_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="usuario_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="pedido_oracao_intercessao"
+            baseColumnNames="pedido_oracao_id"
+            constraintName="fk_pedido_oracao_intercessao_pedido"
+            referencedTableName="pedido_oracao"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="pedido_oracao_intercessao"
+            baseColumnNames="usuario_id"
+            constraintName="fk_pedido_oracao_intercessao_usuario"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint
+            tableName="pedido_oracao_intercessao"
+            columnNames="pedido_oracao_id, usuario_id"
+            constraintName="uk_pedido_oracao_intercessao_pedido_usuario"/>
+        <createIndex tableName="pedido_oracao_intercessao" indexName="idx_pedido_oracao_intercessao_pedido">
+            <column name="pedido_oracao_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

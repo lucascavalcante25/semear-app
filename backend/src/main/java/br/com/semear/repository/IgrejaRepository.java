@@ -17,4 +17,8 @@ public interface IgrejaRepository extends JpaRepository<Igreja, Long>, JpaSpecif
     List<Igreja> findByStatusIn(List<StatusIgreja> statuses, Sort sort);
 
     long countByStatus(StatusIgreja status);
+
+    Optional<Igreja> findBySlugAndSiteAtivoTrue(String slug);
+
+    Optional<Igreja> findBySlug(String slug);
 }

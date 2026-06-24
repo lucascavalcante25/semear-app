@@ -200,12 +200,14 @@ export default function Mais() {
           </h2>
           <Card>
             <CardContent className="p-0">
-              <MenuItem
-                icon={Heart}
-                label="Pedidos de Oração"
-                description="Compartilhe suas necessidades"
-                path="/oracao"
-              />
+              {canShow("/oracao") && (
+                <MenuItem
+                  icon={Heart}
+                  label="Pedidos de Oração"
+                  description="Compartilhe suas necessidades"
+                  path="/oracao"
+                />
+              )}
               <MenuItem
                 icon={Share2}
                 label="Compartilhar App"

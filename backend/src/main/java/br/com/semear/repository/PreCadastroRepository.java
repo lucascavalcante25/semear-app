@@ -27,6 +27,8 @@ public interface PreCadastroRepository extends JpaRepository<PreCadastro, Long> 
 
     List<PreCadastro> findByIgrejaIdAndStatusIn(Long igrejaId, List<StatusCadastro> statuses);
 
+    long countByIgrejaIdAndStatusIn(Long igrejaId, List<StatusCadastro> statuses);
+
     @Query("SELECT p FROM PreCadastro p LEFT JOIN FETCH p.endereco WHERE p.id = :id")
     Optional<PreCadastro> findByIdWithEndereco(@Param("id") Long id);
 }

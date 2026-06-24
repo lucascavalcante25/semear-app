@@ -25,6 +25,9 @@ export type AdminUserDTO = {
   maeId?: number;
   paiNome?: string;
   maeNome?: string;
+  dataBatismo?: string | null;
+  dataCasamento?: string | null;
+  dataMembroSince?: string | null;
 };
 
 /** Payload para criar dependente (criança/jovem sem login) */
@@ -92,6 +95,9 @@ export const mapearParaMembro = (dto: AdminUserDTO) => {
     maeId: dto.maeId,
     paiNome: dto.paiNome,
     maeNome: dto.maeNome,
+    dataBatismo: dto.dataBatismo ?? undefined,
+    dataCasamento: dto.dataCasamento ?? undefined,
+    dataMembroSince: dto.dataMembroSince ?? undefined,
   };
 };
 
@@ -110,6 +116,9 @@ export type AtualizarMembroPayload = {
   modules: string[];
   paiId?: number | null;
   maeId?: number | null;
+  dataBatismo?: string | null;
+  dataCasamento?: string | null;
+  dataMembroSince?: string | null;
 };
 
 export const listarMembros = async (): Promise<MembroApi[]> => {
@@ -148,6 +157,9 @@ export const atualizarMembro = async (
     modules: payload.modules,
     paiId: payload.paiId ?? undefined,
     maeId: payload.maeId ?? undefined,
+    dataBatismo: payload.dataBatismo || undefined,
+    dataCasamento: payload.dataCasamento || undefined,
+    dataMembroSince: payload.dataMembroSince || undefined,
   };
   const updated = await requisicaoApi<AdminUserDTO>("/api/membros", {
     method: "PUT",
