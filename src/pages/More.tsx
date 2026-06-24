@@ -15,6 +15,12 @@ import {
   ChevronRight,
   Church,
   LayoutDashboard,
+  Building2,
+  CalendarDays,
+  Calendar,
+  Cake,
+  Bell,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -100,6 +106,25 @@ export default function Mais() {
           </p>
         </div>
 
+        {/* Principal */}
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+            Principal
+          </h2>
+          <Card>
+            <CardContent className="p-0">
+              {canShow("/oracao") && (
+                <MenuItem
+                  icon={Heart}
+                  label="Pedidos de Oração"
+                  description="Compartilhe e interceda"
+                  path="/oracao"
+                />
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Ministérios */}
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
@@ -131,6 +156,38 @@ export default function Mais() {
                   path="/avisos"
                 />
               )}
+              {canShow("/aniversariantes") && (
+                <MenuItem
+                  icon={Cake}
+                  label="Aniversariantes"
+                  description="Calendário de aniversários"
+                  path="/aniversariantes"
+                />
+              )}
+              {canShow("/departamentos") && (
+                <MenuItem
+                  icon={Building2}
+                  label="Departamentos"
+                  description="Portaria, recepção, limpeza e mais"
+                  path="/departamentos"
+                />
+              )}
+              {canShow("/escalas") && (
+                <MenuItem
+                  icon={CalendarDays}
+                  label="Escalas"
+                  description="Portaria, recepção e limpeza"
+                  path="/escalas"
+                />
+              )}
+              {canShow("/eventos") && (
+                <MenuItem
+                  icon={Calendar}
+                  label="Eventos"
+                  description="Inscrições e programação"
+                  path="/eventos"
+                />
+              )}
               {canShow("/financeiro") && (
                 <MenuItem
                   icon={Wallet}
@@ -142,6 +199,35 @@ export default function Mais() {
             </CardContent>
           </Card>
         </section>
+
+        {/* Administração */}
+        {(canWrite(user, "/avisos") || canShow("/aprovar-pre-cadastros")) && (
+          <section>
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+              Administração
+            </h2>
+            <Card>
+              <CardContent className="p-0">
+                {canWrite(user, "/avisos") && (
+                  <MenuItem
+                    icon={Bell}
+                    label="Informativos"
+                    description="Campanhas e comunicados ao login"
+                    path="/informativos"
+                  />
+                )}
+                {canShow("/aprovar-pre-cadastros") && (
+                  <MenuItem
+                    icon={UserCheck}
+                    label="Aprovar pré-cadastros"
+                    description="Novos membros aguardando"
+                    path="/aprovar-pre-cadastros"
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* Configurações */}
         <section>
@@ -200,14 +286,6 @@ export default function Mais() {
           </h2>
           <Card>
             <CardContent className="p-0">
-              {canShow("/oracao") && (
-                <MenuItem
-                  icon={Heart}
-                  label="Pedidos de Oração"
-                  description="Compartilhe suas necessidades"
-                  path="/oracao"
-                />
-              )}
               <MenuItem
                 icon={Share2}
                 label="Compartilhar App"

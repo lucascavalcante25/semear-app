@@ -37,7 +37,7 @@ export function LayoutApp({ children }: LayoutAppProps) {
         {!isMobile && <BarraLateral />}
         
         {/* Main Content */}
-        <main className="flex-1 min-w-0 pb-20 md:pb-6 md:ml-64">
+        <main className="flex-1 min-w-0 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 md:ml-64">
           <div className="w-full max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6">
             <BannerTesteGratis />
             {children}
@@ -52,15 +52,15 @@ export function LayoutApp({ children }: LayoutAppProps) {
         <Link
           to="/oracao"
           className={cn(
-            "fixed z-40 flex h-14 w-14 items-center justify-center rounded-full",
+            "fab-mobile fixed z-40 flex h-12 w-12 items-center justify-center rounded-full md:bottom-6",
             "bg-rose-600 text-white shadow-lg ring-2 ring-background",
             "transition-transform hover:scale-105 active:scale-95",
-            "bottom-20 left-4",
+            "right-4 md:right-6",
           )}
           aria-label="Pedidos de oração"
           title="Oração"
         >
-          <Heart className="h-6 w-6" />
+          <Heart className="h-5 w-5" />
         </Link>
       )}
 

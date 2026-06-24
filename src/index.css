@@ -273,6 +273,11 @@
     padding-bottom: env(safe-area-inset-bottom, 1rem);
   }
 
+  /* Botões flutuantes acima da navegação inferior no celular (h-16 + safe area) */
+  .fab-mobile {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .safe-top {
     padding-top: env(safe-area-inset-top, 0);
   }
