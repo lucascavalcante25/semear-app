@@ -11,7 +11,6 @@ import {
   DestaqueMinhasEscalas,
 } from "@/components/dashboard";
 import { BannerInformativoDashboard } from "@/components/dashboard/BannerInformativoDashboard";
-import { AtivarPushCard } from "@/components/notificacoes/AtivarPushCard";
 import { AlertasSecretariaEscalas } from "@/components/escalas/AlertasSecretariaEscalas";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
@@ -74,8 +73,6 @@ const Inicio = () => {
         {visaoGerencial && <AlertasSecretariaEscalas />}
 
         <BannerInformativoDashboard />
-
-        <AtivarPushCard />
 
         {visaoGerencial && <DestaqueVisitantesHoje />}
         {visaoGerencial && <DestaqueAniversariantesSemana />}

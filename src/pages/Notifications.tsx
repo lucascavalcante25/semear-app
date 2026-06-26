@@ -3,11 +3,14 @@ import { Link } from "react-router-dom";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Cake, CalendarDays, CheckCircle2, Heart, LifeBuoy, Loader2, Megaphone } from "lucide-react";
+import { Bell, BellRing, Cake, CalendarDays, CheckCircle2, Heart, LifeBuoy, Loader2, Megaphone, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import { confirmarItemEscala } from "@/modules/escalas/api";
 import { cn } from "@/lib/utils";
+import { usePushLembretePendente } from "@/hooks/use-push-lembrete-pendente";
+import { usarAutenticacao } from "@/contexts/AuthContext";
+import { canAccess } from "@/auth/permissions";
 
 const ICONE_POR_TIPO: Record<string, React.ElementType> = {
   AVISO: Megaphone,
@@ -45,8 +48,11 @@ const parseEscalaDaNotificacao = (link?: string) => {
 };
 
 export default function Notificacoes() {
+  const { user } = usarAutenticacao();
   const { notificacoes, refreshNotificacoes, removerNotificacaoLocal } = usarNotificacoes();
+  const { mostrarLembrete: pushPendente, bloqueado: pushBloqueado } = usePushLembretePendente();
   const [confirmando, setConfirmando] = useState<string | null>(null);
+  const rotaConfig = canAccess(user, "/configuracoes") ? "/configuracoes" : "/mais";
 
   const confirmarEscala = async (escalaId: number, itemId: number, chave: string) => {
     setConfirmando(chave);
@@ -78,6 +84,32 @@ export default function Notificacoes() {
             Atualizar
           </Button>
         </div>
+
+        {(pushPendente || pushBloqueado) && (
+          <Card className="border-dashed border-olive/40 bg-olive-light/20">
+            <CardContent className="p-4 flex items-start gap-3">
+              <BellRing className="h-5 w-5 text-olive-dark shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">
+                  {pushBloqueado ? "Notificações bloqueadas no navegador" : "Ative lembretes no celular"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {pushBloqueado
+                    ? "Permita notificações nas configurações do site e recarregue a página."
+                    : "Receba o versículo do dia, leitura bíblica coletiva, eventos e escalas."}
+                </p>
+                {!pushBloqueado && (
+                  <Button variant="outline" size="sm" className="mt-3 h-8" asChild>
+                    <Link to={rotaConfig}>
+                      <Settings2 className="h-4 w-4 mr-2" />
+                      Ir para configurações
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {notificacoes.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">

@@ -1,5 +1,7 @@
 import { Bell, Menu, LogOut, User, Moon, Sun } from "lucide-react";
 import { PixOfertaCompacto } from "@/components/pix/PixOferta";
+import { LembretePushSininho } from "@/components/notificacoes/LembretePushSininho";
+import { usePushLembretePendente } from "@/hooks/use-push-lembrete-pendente";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -35,6 +37,7 @@ export function Cabecalho() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
   const { nomeExibicao, subtituloExibicao, logoUrl } = useIgrejaConfiguracao();
+  const { mostrarLembrete: pushPendente } = usePushLembretePendente();
   const userInitials = user?.name
     ?.split(" ")
     .map((part) => part.charAt(0))
@@ -90,6 +93,9 @@ export function Cabecalho() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon-sm" className="relative">
                 <Bell className="h-5 w-5" />
+                {pushPendente && (
+                  <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-olive ring-2 ring-background" />
+                )}
                 {((user?.role === "admin" && pendentesCount > 0) || notificacoes.length > 0) && (
                   <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
                     {user?.role === "admin" ? pendentesCount + notificacoes.length : notificacoes.length}
@@ -100,6 +106,7 @@ export function Cabecalho() {
             <DropdownMenuContent align="end" className="w-72 max-h-80 overflow-y-auto">
               <DropdownMenuLabel>Notificações</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <LembretePushSininho />
               {user?.role === "admin" && pendentesCount > 0 && (
                 <DropdownMenuItem
                   className="flex flex-col items-start gap-1 cursor-pointer"

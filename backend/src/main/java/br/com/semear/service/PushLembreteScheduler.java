@@ -13,6 +13,8 @@ import br.com.semear.repository.EventoRepository;
 import br.com.semear.repository.IgrejaRepository;
 import br.com.semear.repository.UsuarioPreferenciaNotificacaoRepository;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
+import br.com.semear.service.util.PlanoLeituraColetivoUtils;
+import br.com.semear.service.util.PlanoLeituraColetivoUtils.LeituraDoDia;
 import br.com.semear.service.util.VersiculoDoDiaUtils;
 import br.com.semear.service.util.VersiculoDoDiaUtils.Versiculo;
 import java.time.Instant;
@@ -129,15 +131,16 @@ public class PushLembreteScheduler {
         LOG.debug("Job devocional executado para {}", hoje);
     }
 
-    /** Versículo do dia — 17:00 BRT (mesmo texto do dashboard). Envia para quem ativou push. */
-    @Scheduled(cron = "0 0 17 * * ?", zone = "America/Sao_Paulo")
+    /** Versículo do dia + leitura coletiva — 07:00 BRT. */
+    @Scheduled(cron = "0 0 7 * * ?", zone = "America/Sao_Paulo")
     @Transactional
     public void lembreteVersiculoDoDia() {
         if (!pushProperties.isEnabled()) {
-            LOG.debug("Job versículo do dia ignorado — push desabilitado");
+            LOG.debug("Job matinal ignorado — push desabilitado");
             return;
         }
         executarDisparoVersiculoDoDia();
+        executarDisparoLeituraColetiva();
     }
 
     /** Disparo manual (dev/teste) — mesmo fluxo do job agendado. */
@@ -191,6 +194,70 @@ public class PushLembreteScheduler {
             totalIgrejas,
             totalUsuarios,
             versiculo.referencia()
+        );
+    }
+
+    /** Leitura coletiva da igreja — somente quando {@code dataInicioPlanoLeitura} está configurada e já iniciou. */
+    @Transactional
+    public void executarDisparoLeituraColetiva() {
+        LocalDate hoje = LocalDate.now(ZONE_BR);
+        int totalIgrejas = 0;
+        int totalUsuarios = 0;
+
+        for (Igreja igreja : igrejaRepository.findAll()) {
+            if (igreja.getDataInicioPlanoLeitura() == null) {
+                continue;
+            }
+            var leituraOpt = PlanoLeituraColetivoUtils.obterLeituraDoDia(igreja.getDataInicioPlanoLeitura(), hoje);
+            if (leituraOpt.isEmpty()) {
+                continue;
+            }
+            LeituraDoDia leitura = leituraOpt.get();
+            List<br.com.semear.domain.UsuarioPreferenciaNotificacao> prefs =
+                preferenciaRepository.findByIgrejaIdAndPushAtivoTrue(igreja.getId());
+            if (prefs.isEmpty()) {
+                continue;
+            }
+
+            List<Long> usuarioIds = new ArrayList<>();
+            for (var pref : prefs) {
+                if (pref.getUser() != null && pref.getUser().getId() != null) {
+                    usuarioIds.add(pref.getUser().getId());
+                }
+            }
+            if (usuarioIds.isEmpty()) {
+                continue;
+            }
+
+            String mensagem = PlanoLeituraColetivoUtils.formatarMensagem(leitura);
+            NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+            payload.setIgrejaId(igreja.getId());
+            payload.setTipo("LEITURA_COLETIVA");
+            payload.setEntidadeTipo("PLANO_LEITURA");
+            payload.setTitulo("Leitura bíblica de hoje");
+            payload.setMensagem(mensagem);
+            payload.setRotaDestino("/");
+            payload.setRegistrarDeduplicacao(true);
+            payload.setContextoDestinatarios(
+                "plano coletivo — dia " + leitura.numeroDia() + " (" + usuarioIds.size() + " usuário(s))"
+            );
+            notificacaoEnvioService.enviarParaUsuarios(usuarioIds, payload);
+
+            totalIgrejas++;
+            totalUsuarios += usuarioIds.size();
+            LOG.info(
+                "Leitura coletiva enviada — igreja {} | dia {} | {}",
+                igreja.getId(),
+                leitura.numeroDia(),
+                mensagem
+            );
+        }
+
+        LOG.info(
+            "Job leitura coletiva concluído ({}) | {} igreja(s) | {} usuário(s)",
+            hoje,
+            totalIgrejas,
+            totalUsuarios
         );
     }
 

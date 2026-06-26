@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Loader2, Settings2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Bell, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -66,21 +65,7 @@ export function AtivarPushCard() {
   }
 
   if (jaAtivou) {
-    return (
-      <Card className="border-dashed border-muted">
-        <CardContent className="py-4 flex items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            Lembretes no celular já estão ativos neste dispositivo.
-          </p>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/configuracoes">
-              <Settings2 className="h-4 w-4 mr-2" />
-              Configurações
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   const handleAtivar = async () => {
