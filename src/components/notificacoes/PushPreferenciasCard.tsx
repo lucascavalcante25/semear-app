@@ -12,6 +12,7 @@ import {
   obterPreferenciasNotificacao,
   type PreferenciasNotificacao,
 } from "@/modules/notificacoes/api";
+import { ErroRequisicaoApi } from "@/modules/api/client";
 import {
   ativarPushCompleto,
   desativarPushLocal,
@@ -77,20 +78,25 @@ export function PushPreferenciasCard() {
     try {
       if (campo === "pushAtivo") {
         if (valor) {
-          const ok = await ativarPushCompleto();
-          if (!ok) {
-            toast.error("Permissão negada ou erro ao registrar dispositivo.");
-            return;
-          }
-        } else {
-          await desativarPushLocal();
+          await ativarPushCompleto();
+          const dados = await obterPreferenciasNotificacao();
+          setPrefs(dados);
+          toast.success("Notificações push ativadas neste dispositivo.");
+          return;
         }
+        await desativarPushLocal();
       }
       const atualizado = await atualizarPreferenciasNotificacao({ [campo]: valor });
       setPrefs(atualizado);
       toast.success("Preferências atualizadas.");
-    } catch {
-      toast.error("Erro ao salvar preferências.");
+    } catch (erro) {
+      const msg =
+        erro instanceof ErroRequisicaoApi
+          ? erro.message
+          : erro instanceof Error
+            ? erro.message
+            : "Erro ao salvar preferências.";
+      toast.error(msg);
     } finally {
       setSalvando(false);
     }

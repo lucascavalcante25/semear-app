@@ -11,12 +11,16 @@ import br.com.semear.service.dto.UsuarioPreferenciaNotificacaoDTO;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/notificacoes")
 public class NotificacaoPushResource {
+
+    private static final Logger LOG = LoggerFactory.getLogger(NotificacaoPushResource.class);
 
     private final PushNotificationService pushNotificationService;
     private final NotificacaoUsuarioRepository notificacaoUsuarioRepository;
@@ -39,7 +43,14 @@ public class NotificacaoPushResource {
 
     @PostMapping("/push/dispositivos")
     public ResponseEntity<Void> registrarDispositivo(@RequestBody PushDispositivoRegistroDTO dto) {
+        LOG.info(
+            "Registrando dispositivo push — plataforma={}, navegador={}, tokenLen={}",
+            dto.getPlataforma(),
+            dto.getNavegador(),
+            dto.getToken() != null ? dto.getToken().length() : 0
+        );
         pushNotificationService.registrarDispositivo(dto);
+        LOG.info("Dispositivo push registrado com sucesso");
         return ResponseEntity.ok().build();
     }
 

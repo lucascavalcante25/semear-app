@@ -86,15 +86,12 @@ export function AtivarPushCard() {
   const handleAtivar = async () => {
     setAtivando(true);
     try {
-      const ok = await ativarPushCompleto();
-      if (ok) {
-        setJaAtivou(true);
-        toast.success("Lembretes no celular ativados!");
-      } else {
-        toast.error("Não foi possível ativar. Verifique as permissões do navegador.");
-      }
-    } catch {
-      toast.error("Erro ao ativar lembretes.");
+      await ativarPushCompleto();
+      setJaAtivou(true);
+      toast.success("Lembretes no celular ativados!");
+    } catch (erro) {
+      const msg = erro instanceof Error ? erro.message : "Erro ao ativar lembretes.";
+      toast.error(msg);
     } finally {
       setAtivando(false);
     }

@@ -15,6 +15,15 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID as string,
 };
 
+function firebaseConfigValida(): boolean {
+  return Boolean(
+    firebaseConfig.apiKey &&
+      firebaseConfig.projectId &&
+      firebaseConfig.messagingSenderId &&
+      firebaseConfig.appId
+  );
+}
+
 let app: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 let configBackend: PushConfigPublica | null = null;
@@ -23,11 +32,14 @@ export async function verificarSuportePush(): Promise<boolean> {
   if (!("serviceWorker" in navigator) || !("Notification" in window)) {
     return false;
   }
+  if (!firebaseConfigValida()) {
+    return false;
+  }
   try {
     const suportado = await isSupported();
     if (!suportado) return false;
     configBackend = await obterConfigPush();
-    return configBackend.disponivel === true;
+    return configBackend.disponivel === true && Boolean(configBackend.vapidPublicKey);
   } catch {
     return false;
   }
@@ -86,34 +98,49 @@ export async function solicitarPermissaoPush(): Promise<NotificationPermission> 
   return Notification.requestPermission();
 }
 
-export async function obterTokenFCM(): Promise<string | null> {
+export async function obterTokenFCM(): Promise<string> {
   const config = await obterConfigPushCache();
   if (!config?.disponivel || !config.vapidPublicKey) {
-    return null;
+    throw new Error("Push indisponível no servidor (config ou VAPID ausente).");
   }
-  const firebaseApp = obterAppFirebase();
-  messaging = getMessaging(firebaseApp);
-  const swRegistration = await registrarServiceWorker();
-  const token = await getToken(messaging, {
-    vapidKey: config.vapidPublicKey,
-    serviceWorkerRegistration: swRegistration,
-  });
-  return token || null;
+  if (!firebaseConfigValida()) {
+    throw new Error(
+      "Firebase não configurado no frontend. Confira VITE_FIREBASE_* na Vercel e faça redeploy."
+    );
+  }
+
+  try {
+    const firebaseApp = obterAppFirebase();
+    messaging = getMessaging(firebaseApp);
+    const swRegistration = await registrarServiceWorker();
+    const token = await getToken(messaging, {
+      vapidKey: config.vapidPublicKey,
+      serviceWorkerRegistration: swRegistration,
+    });
+    if (!token) {
+      throw new Error("Token FCM vazio após registro.");
+    }
+    return token;
+  } catch (erro) {
+    const detalhe = erro instanceof Error ? erro.message : String(erro);
+    throw new Error(`Não foi possível obter token push: ${detalhe}`);
+  }
 }
 
-export async function ativarPushCompleto(): Promise<boolean> {
+export async function ativarPushCompleto(): Promise<void> {
   const suportado = await verificarSuportePush();
-  if (!suportado) return false;
+  if (!suportado) {
+    throw new Error("Push não suportado neste dispositivo ou ambiente.");
+  }
 
   const permissao = await solicitarPermissaoPush();
-  if (permissao !== "granted") return false;
+  if (permissao !== "granted") {
+    throw new Error("Permissão de notificação negada.");
+  }
 
   const token = await obterTokenFCM();
-  if (!token) return false;
-
   await registrarTokenNoBackend(token);
   configurarListenerForeground();
-  return true;
 }
 
 export async function registrarTokenNoBackend(token: string): Promise<void> {
