@@ -1,6 +1,8 @@
 package br.com.semear.domain;
 
+import br.com.semear.domain.enumeration.CategoriaEvento;
 import br.com.semear.domain.enumeration.PublicoEvento;
+import br.com.semear.domain.enumeration.StatusEvento;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -54,6 +56,25 @@ public class Evento implements Serializable {
     private Integer capacidade;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "categoria", nullable = false, length = 30)
+    private CategoriaEvento categoria = CategoriaEvento.OUTRO;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private StatusEvento status = StatusEvento.PUBLICADO;
+
+    @Column(name = "imagem_url", length = 500)
+    private String imagemUrl;
+
+    @Column(name = "link_externo", length = 500)
+    private String linkExterno;
+
+    @Column(name = "prazo_cancelamento_inscricao")
+    private Instant prazoCancelamentoInscricao;
+
+    @NotNull
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm = Instant.now();
 
@@ -77,6 +98,16 @@ public class Evento implements Serializable {
     public void setInscricoesAbertas(Boolean inscricoesAbertas) { this.inscricoesAbertas = inscricoesAbertas; }
     public Integer getCapacidade() { return capacidade; }
     public void setCapacidade(Integer capacidade) { this.capacidade = capacidade; }
+    public CategoriaEvento getCategoria() { return categoria; }
+    public void setCategoria(CategoriaEvento categoria) { this.categoria = categoria; }
+    public StatusEvento getStatus() { return status; }
+    public void setStatus(StatusEvento status) { this.status = status; }
+    public String getImagemUrl() { return imagemUrl; }
+    public void setImagemUrl(String imagemUrl) { this.imagemUrl = imagemUrl; }
+    public String getLinkExterno() { return linkExterno; }
+    public void setLinkExterno(String linkExterno) { this.linkExterno = linkExterno; }
+    public Instant getPrazoCancelamentoInscricao() { return prazoCancelamentoInscricao; }
+    public void setPrazoCancelamentoInscricao(Instant prazoCancelamentoInscricao) { this.prazoCancelamentoInscricao = prazoCancelamentoInscricao; }
     public Instant getCriadoEm() { return criadoEm; }
     public void setCriadoEm(Instant criadoEm) { this.criadoEm = criadoEm; }
 }

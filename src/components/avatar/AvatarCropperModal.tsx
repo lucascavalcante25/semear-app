@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, ZoomIn } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { getCroppedImg, type FormatoRecorte } from "@/lib/crop-image";
 
 interface AvatarCropperModalProps {
@@ -25,6 +26,7 @@ interface AvatarCropperModalProps {
   hint?: string;
   showAppPreview?: boolean;
   formatoRecorte?: FormatoRecorte;
+  aspectRatio?: number;
 }
 
 export function AvatarCropperModal({
@@ -39,8 +41,10 @@ export function AvatarCropperModal({
   hint = "Arraste para posicionar e use o controle para dar zoom. O recorte será circular.",
   showAppPreview = false,
   formatoRecorte = "round",
+  aspectRatio = 1,
 }: AvatarCropperModalProps) {
   const recorteQuadrado = formatoRecorte === "rect";
+  const recorteBanner = formatoRecorte === "banner";
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -126,104 +130,125 @@ export function AvatarCropperModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-md p-0 gap-0 overflow-hidden"
+        className="flex max-h-[90dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg"
         onPointerDownOutside={handleCancel}
         onEscapeKeyDown={handleCancel}
       >
-        <DialogHeader className="p-4 pb-0">
+        <DialogHeader className="shrink-0 space-y-1 p-4 pb-2">
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
 
-        <div className="relative w-full aspect-square bg-muted">
-          {imageSrc && (
-            <Cropper
-              image={imageSrc}
-              crop={crop}
-              zoom={zoom}
-              aspect={1}
-              cropShape={recorteQuadrado ? "rect" : "round"}
-              showGrid={false}
-              onCropChange={setCrop}
-              onCropComplete={onCropComplete}
-              onZoomChange={setZoom}
-              style={{
-                containerStyle: {
-                  backgroundColor: "hsl(var(--muted))",
-                },
-                cropAreaStyle: {
-                  border: "2px solid hsl(var(--primary))",
-                  boxShadow: "0 0 0 9999px rgba(0,0,0,0.4)",
-                },
-              }}
-            />
-          )}
-        </div>
-
-        <div className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <ZoomIn className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Slider
-              value={[zoom]}
-              min={1}
-              max={3}
-              step={0.1}
-              onValueChange={([v]) => setZoom(v ?? 1)}
-              className="flex-1"
-            />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div
+            className={cn(
+              "relative w-full shrink-0 bg-muted",
+              recorteBanner
+                ? "h-[clamp(140px,28dvh,220px)] sm:h-[clamp(170px,34dvh,300px)]"
+                : "aspect-square max-h-[min(42dvh,320px)] w-full",
+            )}
+          >
+            {imageSrc && (
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={aspectRatio}
+                cropShape={recorteQuadrado || recorteBanner ? "rect" : "round"}
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+                style={{
+                  containerStyle: {
+                    backgroundColor: "hsl(var(--muted))",
+                  },
+                  cropAreaStyle: {
+                    border: "2px solid hsl(var(--primary))",
+                    boxShadow: "0 0 0 9999px rgba(0,0,0,0.4)",
+                  },
+                }}
+              />
+            )}
           </div>
-          <p className="text-xs text-muted-foreground">{hint}</p>
 
-          {showAppPreview && previewUrl && (
-            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-              <p className="text-xs font-medium text-foreground">Como vai aparecer no app</p>
-              <div className="flex items-center justify-center gap-6">
-                {recorteQuadrado ? (
-                  <div className="text-center space-y-1.5">
-                    <div className="mx-auto h-14 w-14 overflow-hidden rounded-lg ring-1 ring-primary/25">
-                      <img
-                        src={previewUrl}
-                        alt="Prévia no menu"
-                        className="h-full w-full object-cover"
-                      />
+          <div className="space-y-3 p-4">
+            <div className="flex items-center gap-3">
+              <ZoomIn className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <Slider
+                value={[zoom]}
+                min={1}
+                max={3}
+                step={0.1}
+                onValueChange={([v]) => setZoom(v ?? 1)}
+                className="flex-1"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{hint}</p>
+
+            {showAppPreview && previewUrl && (
+              <div
+                className={cn(
+                  "rounded-lg border border-border bg-muted/30 p-3 space-y-2",
+                  recorteBanner && "hidden sm:block",
+                )}
+              >
+                <p className="text-xs font-medium text-foreground">Como vai aparecer no app</p>
+                <div className="flex items-center justify-center gap-6">
+                  {recorteBanner ? (
+                    <div className="w-full max-w-sm space-y-1.5">
+                      <div className="aspect-[16/7] w-full overflow-hidden rounded-lg ring-1 ring-primary/25">
+                        <img src={previewUrl} alt="Prévia do banner" className="h-full w-full object-cover" />
+                      </div>
+                      <p className="text-center text-[10px] text-muted-foreground">Banner do evento</p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground">Menu / cabeçalho</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="text-center space-y-1.5">
-                      <img
-                        src={previewUrl}
-                        alt="Prévia circular"
-                        className="h-14 w-14 rounded-full border-2 border-primary object-cover mx-auto bg-background"
-                      />
-                      <p className="text-[10px] text-muted-foreground">Avatar</p>
-                    </div>
-                    <div className="text-center space-y-1.5">
+                  ) : recorteQuadrado ? (
+                    <div className="space-y-1.5 text-center">
                       <div className="mx-auto h-14 w-14 overflow-hidden rounded-lg ring-1 ring-primary/25">
                         <img
                           src={previewUrl}
-                          alt="Prévia cabeçalho"
+                          alt="Prévia no menu"
                           className="h-full w-full object-cover"
                         />
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Cabeçalho</p>
+                      <p className="text-[10px] text-muted-foreground">Menu / cabeçalho</p>
                     </div>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <div className="space-y-1.5 text-center">
+                        <img
+                          src={previewUrl}
+                          alt="Prévia circular"
+                          className="mx-auto h-14 w-14 rounded-full border-2 border-primary bg-background object-cover"
+                        />
+                        <p className="text-[10px] text-muted-foreground">Avatar</p>
+                      </div>
+                      <div className="space-y-1.5 text-center">
+                        <div className="mx-auto h-14 w-14 overflow-hidden rounded-lg ring-1 ring-primary/25">
+                          <img
+                            src={previewUrl}
+                            alt="Prévia cabeçalho"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Cabeçalho</p>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        <DialogFooter className="p-4 pt-0 gap-2 sm:gap-0">
+        <DialogFooter className="shrink-0 gap-2 border-t bg-background p-4 sm:gap-0">
           <Button variant="outline" onClick={handleCancel} disabled={saving}>
             Cancelar
           </Button>
           <Button onClick={handleConfirm} disabled={saving || !croppedAreaPixels}>
             {saving ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Salvando...
               </>
             ) : (

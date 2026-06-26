@@ -531,7 +531,7 @@ export default function PaginaDevocionais() {
                   Novo
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
+              <DialogContent>
                 <FormularioNovoDevocional
                   onSucesso={() => {
                     setDialogAberto(false);

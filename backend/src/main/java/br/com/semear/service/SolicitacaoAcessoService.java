@@ -231,7 +231,7 @@ public class SolicitacaoAcessoService {
                     "louvores:WRITE",
                     "membros:WRITE",
                     "visitantes:WRITE",
-                    "avisos:WRITE",
+                    "comunicados:WRITE",
                     "financeiro:WRITE",
                     "oracao:WRITE",
                     "aprovar-pre-cadastros:WRITE",

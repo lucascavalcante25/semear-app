@@ -26,6 +26,15 @@ function normalizarUrlBaseApi(raw?: string): string | undefined {
 export const URL_BASE_API = normalizarUrlBaseApi(urlBaseBruta);
 export const API_ATIVA = Boolean(URL_BASE_API);
 
+/** Converte caminhos relativos da API (/api/...) para URL absoluta do backend. */
+export function resolverUrlApi(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (path.startsWith("/api/") && URL_BASE_API) {
+    return `${URL_BASE_API}${path}`;
+  }
+  return path;
+}
+
 const CHAVE_TOKEN = "semear.token";
 
 export const obterToken = () => {

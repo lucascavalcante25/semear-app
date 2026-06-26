@@ -7,8 +7,8 @@ import java.io.Serializable;
 import java.time.Instant;
 
 @Entity
-@Table(name = "informativo_leitura")
-public class InformativoLeitura implements Serializable {
+@Table(name = "comunicado_leitura")
+public class ComunicadoLeitura implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -19,9 +19,9 @@ public class InformativoLeitura implements Serializable {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "informativo_id", nullable = false)
+    @JoinColumn(name = "comunicado_id", nullable = false)
     @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" }, allowSetters = true)
-    private Informativo informativo;
+    private Comunicado comunicado;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,12 +41,12 @@ public class InformativoLeitura implements Serializable {
         this.id = id;
     }
 
-    public Informativo getInformativo() {
-        return informativo;
+    public Comunicado getComunicado() {
+        return comunicado;
     }
 
-    public void setInformativo(Informativo informativo) {
-        this.informativo = informativo;
+    public void setComunicado(Comunicado comunicado) {
+        this.comunicado = comunicado;
     }
 
     public User getUsuario() {
@@ -63,21 +63,5 @@ public class InformativoLeitura implements Serializable {
 
     public void setConfirmadoEm(Instant confirmadoEm) {
         this.confirmadoEm = confirmadoEm;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof InformativoLeitura)) {
-            return false;
-        }
-        return getId() != null && getId().equals(((InformativoLeitura) o).getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
     }
 }

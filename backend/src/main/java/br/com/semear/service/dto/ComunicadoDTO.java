@@ -2,33 +2,35 @@ package br.com.semear.service.dto;
 
 import br.com.semear.domain.enumeration.PrioridadeInformativo;
 import br.com.semear.domain.enumeration.PublicoAlvoInformativo;
-import br.com.semear.domain.enumeration.TipoInformativo;
+import br.com.semear.domain.enumeration.TipoComunicado;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 
-public class InformativoDTO implements Serializable {
+public class ComunicadoDTO implements Serializable {
 
     private Long id;
     private Long igrejaId;
     private String titulo;
     private String conteudo;
-    private TipoInformativo tipo;
+    private TipoComunicado tipo;
     private PublicoAlvoInformativo publicoAlvo;
     private PrioridadeInformativo prioridade;
     private Boolean exibirNoLogin;
     private Boolean obrigatorio;
+    private Boolean exibirNoSitePublico;
     private Boolean ativo;
     private LocalDate dataInicio;
     private LocalDate dataFim;
     private String ctaRotulo;
     private String ctaRota;
     private String imagemUrl;
-    private Long criadoPorId;
-    private String criadoPorNome;
+    private String criadoPor;
     private Instant criadoEm;
     private Instant atualizadoEm;
+    private String atualizadoPor;
     private Boolean lido;
+    private Long totalLeituras;
 
     public Long getId() {
         return id;
@@ -62,11 +64,11 @@ public class InformativoDTO implements Serializable {
         this.conteudo = conteudo;
     }
 
-    public TipoInformativo getTipo() {
+    public TipoComunicado getTipo() {
         return tipo;
     }
 
-    public void setTipo(TipoInformativo tipo) {
+    public void setTipo(TipoComunicado tipo) {
         this.tipo = tipo;
     }
 
@@ -100,6 +102,14 @@ public class InformativoDTO implements Serializable {
 
     public void setObrigatorio(Boolean obrigatorio) {
         this.obrigatorio = obrigatorio;
+    }
+
+    public Boolean getExibirNoSitePublico() {
+        return exibirNoSitePublico;
+    }
+
+    public void setExibirNoSitePublico(Boolean exibirNoSitePublico) {
+        this.exibirNoSitePublico = exibirNoSitePublico;
     }
 
     public Boolean getAtivo() {
@@ -150,20 +160,12 @@ public class InformativoDTO implements Serializable {
         this.imagemUrl = imagemUrl;
     }
 
-    public Long getCriadoPorId() {
-        return criadoPorId;
+    public String getCriadoPor() {
+        return criadoPor;
     }
 
-    public void setCriadoPorId(Long criadoPorId) {
-        this.criadoPorId = criadoPorId;
-    }
-
-    public String getCriadoPorNome() {
-        return criadoPorNome;
-    }
-
-    public void setCriadoPorNome(String criadoPorNome) {
-        this.criadoPorNome = criadoPorNome;
+    public void setCriadoPor(String criadoPor) {
+        this.criadoPor = criadoPor;
     }
 
     public Instant getCriadoEm() {
@@ -182,11 +184,27 @@ public class InformativoDTO implements Serializable {
         this.atualizadoEm = atualizadoEm;
     }
 
+    public String getAtualizadoPor() {
+        return atualizadoPor;
+    }
+
+    public void setAtualizadoPor(String atualizadoPor) {
+        this.atualizadoPor = atualizadoPor;
+    }
+
     public Boolean getLido() {
         return lido;
     }
 
     public void setLido(Boolean lido) {
         this.lido = lido;
+    }
+
+    public Long getTotalLeituras() {
+        return totalLeituras;
+    }
+
+    public void setTotalLeituras(Long totalLeituras) {
+        this.totalLeituras = totalLeituras;
     }
 }

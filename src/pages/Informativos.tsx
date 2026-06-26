@@ -187,7 +187,7 @@ export default function Informativos() {
                 Novo informativo
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editandoId ? "Editar informativo" : "Novo informativo"}
@@ -424,7 +424,7 @@ export default function Informativos() {
       </AlertDialog>
 
       <Dialog open={leiturasId != null} onOpenChange={() => setLeiturasId(null)}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Leituras confirmadas</DialogTitle>
           </DialogHeader>

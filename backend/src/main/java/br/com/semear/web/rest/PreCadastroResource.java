@@ -12,6 +12,7 @@ import br.com.semear.repository.PreCadastroRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.PreCadastroService;
+import br.com.semear.service.util.NomePessoaUtils;
 import br.com.semear.web.rest.vm.AprovarPreCadastroVM;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -95,6 +96,7 @@ public class PreCadastroResource {
         if (StringUtils.isNotBlank(preCadastro.getLogin())) {
             preCadastro.setLogin(preCadastro.getLogin().trim());
         }
+        normalizarNomesPreCadastro(preCadastro);
 
         // Se já existe usuário (já aprovado em algum momento), não faz sentido criar pré-cadastro de novo.
         if (preCadastro.getLogin() != null && userRepository.findOneByLogin(preCadastro.getLogin()).isPresent()) {
@@ -120,12 +122,12 @@ public class PreCadastroResource {
             PreCadastro atual = preCadastroRepository.findByIdWithEndereco(existente.get().getId()).orElse(existente.get());
             if (atual.getStatus() == StatusCadastro.REJEITADO) {
                 // Reenvio: atualiza o registro rejeitado e volta para PRIMEIROACESSO.
-                atual.setNomeCompleto(preCadastro.getNomeCompleto());
+                atual.setNomeCompleto(NomePessoaUtils.formatarNome(preCadastro.getNomeCompleto()));
                 atual.setEmail(preCadastro.getEmail());
                 atual.setTelefone(preCadastro.getTelefone());
                 atual.setTelefoneSecundario(preCadastro.getTelefoneSecundario());
                 atual.setTelefoneEmergencia(preCadastro.getTelefoneEmergencia());
-                atual.setNomeContatoEmergencia(preCadastro.getNomeContatoEmergencia());
+                atual.setNomeContatoEmergencia(NomePessoaUtils.formatarNome(preCadastro.getNomeContatoEmergencia()));
                 atual.setCpf(preCadastro.getCpf());
                 atual.setSexo(preCadastro.getSexo());
                 atual.setDataNascimento(preCadastro.getDataNascimento());
@@ -223,6 +225,7 @@ public class PreCadastroResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        normalizarNomesPreCadastro(preCadastro);
         preCadastro = preCadastroRepository.save(preCadastro);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, preCadastro.getId().toString()))
@@ -261,7 +264,7 @@ public class PreCadastroResource {
             .findById(preCadastro.getId())
             .map(existingPreCadastro -> {
                 if (preCadastro.getNomeCompleto() != null) {
-                    existingPreCadastro.setNomeCompleto(preCadastro.getNomeCompleto());
+                    existingPreCadastro.setNomeCompleto(NomePessoaUtils.formatarNome(preCadastro.getNomeCompleto()));
                 }
                 if (preCadastro.getEmail() != null) {
                     existingPreCadastro.setEmail(preCadastro.getEmail());
@@ -276,7 +279,7 @@ public class PreCadastroResource {
                     existingPreCadastro.setTelefoneEmergencia(preCadastro.getTelefoneEmergencia());
                 }
                 if (preCadastro.getNomeContatoEmergencia() != null) {
-                    existingPreCadastro.setNomeContatoEmergencia(preCadastro.getNomeContatoEmergencia());
+                    existingPreCadastro.setNomeContatoEmergencia(NomePessoaUtils.formatarNome(preCadastro.getNomeContatoEmergencia()));
                 }
                 if (preCadastro.getCpf() != null) {
                     existingPreCadastro.setCpf(preCadastro.getCpf());
@@ -395,5 +398,14 @@ public class PreCadastroResource {
         return igrejaRepository
             .findFirstByStatusOrderByIdAsc(StatusIgreja.ATIVA)
             .orElseThrow(() -> new BadRequestAlertException("Igreja padrão não encontrada", ENTITY_NAME, "semigreja"));
+    }
+
+    private void normalizarNomesPreCadastro(PreCadastro preCadastro) {
+        if (preCadastro.getNomeCompleto() != null) {
+            preCadastro.setNomeCompleto(NomePessoaUtils.formatarNome(preCadastro.getNomeCompleto()));
+        }
+        if (preCadastro.getNomeContatoEmergencia() != null) {
+            preCadastro.setNomeContatoEmergencia(NomePessoaUtils.formatarNome(preCadastro.getNomeContatoEmergencia()));
+        }
     }
 }

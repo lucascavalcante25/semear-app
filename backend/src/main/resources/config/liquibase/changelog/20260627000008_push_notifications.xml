@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260627000008-1" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="usuario_dispositivo_push"/></not></preConditions>
+        <createTable tableName="usuario_dispositivo_push">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="token" type="varchar(500)"><constraints nullable="false"/></column>
+            <column name="plataforma" type="varchar(20)" defaultValue="DESCONHECIDO"><constraints nullable="false"/></column>
+            <column name="navegador" type="varchar(80)"/>
+            <column name="user_agent" type="varchar(500)"/>
+            <column name="ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="atualizado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="ultimo_uso" type="${datetimeType}"/>
+            <column name="desativado_em" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="usuario_dispositivo_push" baseColumnNames="igreja_id"
+            constraintName="fk_dispositivo_push_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="usuario_dispositivo_push" baseColumnNames="user_id"
+            constraintName="fk_dispositivo_push_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="usuario_dispositivo_push" columnNames="user_id, token" constraintName="uk_dispositivo_push_user_token"/>
+        <createIndex tableName="usuario_dispositivo_push" indexName="idx_dispositivo_push_user_ativo">
+            <column name="user_id"/>
+            <column name="igreja_id"/>
+            <column name="ativo"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260627000008-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="usuario_preferencia_notificacao"/></not></preConditions>
+        <createTable tableName="usuario_preferencia_notificacao">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="push_ativo" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="eventos_ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="escalas_ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="devocional_ativo" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="avisos_gerais_ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="departamentos_ativo" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column>
+            <column name="horario_silencioso_inicio" type="${timeType}"/>
+            <column name="horario_silencioso_fim" type="${timeType}"/>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="atualizado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="usuario_preferencia_notificacao" baseColumnNames="igreja_id"
+            constraintName="fk_pref_notif_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="usuario_preferencia_notificacao" baseColumnNames="user_id"
+            constraintName="fk_pref_notif_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="usuario_preferencia_notificacao" columnNames="user_id, igreja_id" constraintName="uk_pref_notif_user_igreja"/>
+    </changeSet>
+
+    <changeSet id="20260627000008-3" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="notificacao_envio_log"/></not></preConditions>
+        <createTable tableName="notificacao_envio_log">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="chave_deduplicacao" type="varchar(200)"><constraints nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="tipo" type="varchar(50)"><constraints nullable="false"/></column>
+            <column name="entidade_tipo" type="varchar(50)"/>
+            <column name="entidade_id" type="bigint"/>
+            <column name="data_referencia" type="date"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="notificacao_envio_log" baseColumnNames="igreja_id"
+            constraintName="fk_notif_envio_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="notificacao_envio_log" baseColumnNames="user_id"
+            constraintName="fk_notif_envio_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="notificacao_envio_log" columnNames="chave_deduplicacao" constraintName="uk_notif_envio_chave"/>
+        <createIndex tableName="notificacao_envio_log" indexName="idx_notif_envio_user_data">
+            <column name="user_id"/>
+            <column name="data_referencia"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260627000008-4" author="semear">
+        <preConditions onFail="MARK_RAN"><not><columnExists tableName="notificacao_usuario" columnName="entidade_tipo"/></not></preConditions>
+        <addColumn tableName="notificacao_usuario">
+            <column name="entidade_tipo" type="varchar(50)"/>
+            <column name="entidade_id" type="bigint"/>
+            <column name="enviada_push" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="data_envio_push" type="${datetimeType}"/>
+            <column name="erro_push" type="varchar(300)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

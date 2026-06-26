@@ -13,6 +13,7 @@ import br.com.semear.web.rest.errors.BadRequestAlertException;
 import br.com.semear.web.rest.errors.EmailAlreadyUsedException;
 import br.com.semear.web.rest.errors.LoginAlreadyUsedException;
 import br.com.semear.service.dto.UserDTO;
+import br.com.semear.service.util.NomePessoaUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -138,8 +139,8 @@ public class UserService {
         newUser.setLogin(userDTO.getLogin().toLowerCase());
         // new user gets initially a generated password
         newUser.setPassword(encryptedPassword);
-        newUser.setFirstName(userDTO.getFirstName());
-        newUser.setLastName(userDTO.getLastName());
+        newUser.setFirstName(normalizarNome(userDTO.getFirstName()));
+        newUser.setLastName(normalizarNome(userDTO.getLastName()));
         if (userDTO.getEmail() != null) {
             newUser.setEmail(userDTO.getEmail().toLowerCase());
         }
@@ -171,8 +172,8 @@ public class UserService {
     public User createUser(AdminUserDTO userDTO) {
         User user = new User();
         user.setLogin(userDTO.getLogin().toLowerCase());
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
+        user.setFirstName(normalizarNome(userDTO.getFirstName()));
+        user.setLastName(normalizarNome(userDTO.getLastName()));
         if (userDTO.getEmail() != null) {
             user.setEmail(userDTO.getEmail().toLowerCase());
         }
@@ -234,14 +235,13 @@ public class UserService {
             }
         } while (true);
 
-        String[] partes = nome.split("\\s+", 2);
-        String firstName = partes[0];
-        String lastName = partes.length > 1 ? partes[1] : "";
+        String nomeFormatado = NomePessoaUtils.formatarNome(dto.getNome());
+        String[] partes = NomePessoaUtils.dividirNomeCompleto(nomeFormatado);
 
         User user = new User();
         user.setLogin(login);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
+        user.setFirstName(partes[0]);
+        user.setLastName(partes[1]);
         user.setBirthDate(dto.getBirthDate());
         user.setPassword(passwordEncoder.encode(RandomUtil.generatePassword()));
         user.setActivated(false);
@@ -283,8 +283,8 @@ public class UserService {
         }
         User user = new User();
         user.setLogin(userDTO.getLogin().toLowerCase());
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
+        user.setFirstName(normalizarNome(userDTO.getFirstName()));
+        user.setLastName(normalizarNome(userDTO.getLastName()));
         user.setEmail(userDTO.getEmail().toLowerCase());
         user.setPassword(passwordEncoder.encode(plainPassword));
         user.setLangKey(Constants.DEFAULT_LANGUAGE);
@@ -292,7 +292,7 @@ public class UserService {
         user.setPhone(userDTO.getPhone());
         user.setPhoneSecondary(userDTO.getPhoneSecondary());
         user.setPhoneEmergency(userDTO.getPhoneEmergency());
-        user.setNomeContatoEmergencia(userDTO.getNomeContatoEmergencia());
+        user.setNomeContatoEmergencia(normalizarNome(userDTO.getNomeContatoEmergencia()));
         user.setLogradouro(userDTO.getLogradouro());
         user.setNumero(userDTO.getNumero());
         user.setComplemento(userDTO.getComplemento());
@@ -376,8 +376,8 @@ public class UserService {
             .map(user -> {
                 this.clearUserCaches(user);
                 user.setLogin(userDTO.getLogin().toLowerCase());
-                user.setFirstName(userDTO.getFirstName());
-                user.setLastName(userDTO.getLastName());
+                user.setFirstName(normalizarNome(userDTO.getFirstName()));
+                user.setLastName(normalizarNome(userDTO.getLastName()));
                 if (userDTO.getEmail() != null) {
                     user.setEmail(userDTO.getEmail().toLowerCase());
                 }
@@ -462,8 +462,8 @@ public class UserService {
         SecurityUtils.getCurrentUserLogin()
             .flatMap(userRepository::findOneByLogin)
             .ifPresent(user -> {
-                user.setFirstName(firstName);
-                user.setLastName(lastName);
+                user.setFirstName(normalizarNome(firstName));
+                user.setLastName(normalizarNome(lastName));
                 if (email != null) {
                     user.setEmail(email.toLowerCase());
                 }
@@ -472,7 +472,7 @@ public class UserService {
                 user.setPhone(phone);
                 user.setPhoneSecondary(phoneSecondary);
                 user.setPhoneEmergency(phoneEmergency);
-                user.setNomeContatoEmergencia(nomeContatoEmergencia);
+                user.setNomeContatoEmergencia(normalizarNome(nomeContatoEmergencia));
                 user.setLogradouro(logradouro);
                 user.setNumero(numero);
                 user.setComplemento(complemento);
@@ -703,4 +703,7 @@ public class UserService {
         }
     }
 
+    private String normalizarNome(String nome) {
+        return NomePessoaUtils.formatarNome(nome);
+    }
 }

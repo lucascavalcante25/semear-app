@@ -1,5 +1,6 @@
 package br.com.semear.domain;
 
+import br.com.semear.domain.enumeration.StatusInscricaoEvento;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -34,6 +35,14 @@ public class EventoInscricao implements Serializable {
     private Boolean confirmado = false;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private StatusInscricaoEvento status = StatusInscricaoEvento.ATIVA;
+
+    @Column(name = "cancelado_em")
+    private Instant canceladoEm;
+
+    @NotNull
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm = Instant.now();
 
@@ -45,6 +54,10 @@ public class EventoInscricao implements Serializable {
     public void setUser(User user) { this.user = user; }
     public Boolean getConfirmado() { return confirmado; }
     public void setConfirmado(Boolean confirmado) { this.confirmado = confirmado; }
+    public StatusInscricaoEvento getStatus() { return status; }
+    public void setStatus(StatusInscricaoEvento status) { this.status = status; }
+    public Instant getCanceladoEm() { return canceladoEm; }
+    public void setCanceladoEm(Instant canceladoEm) { this.canceladoEm = canceladoEm; }
     public Instant getCriadoEm() { return criadoEm; }
     public void setCriadoEm(Instant criadoEm) { this.criadoEm = criadoEm; }
 }

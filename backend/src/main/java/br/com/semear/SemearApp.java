@@ -1,6 +1,7 @@
 package br.com.semear;
 
 import br.com.semear.config.ApplicationProperties;
+import br.com.semear.config.PushNotificationProperties;
 import br.com.semear.config.CRLFLogConverter;
 import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
@@ -28,7 +29,7 @@ import tech.jhipster.config.JHipsterConstants;
         pattern = "br\\.com\\.semear\\.service\\.mapper\\.(Devocional|Louvor)MapperImpl"
     )
 )
-@EnableConfigurationProperties({ LiquibaseProperties.class, ApplicationProperties.class })
+@EnableConfigurationProperties({ LiquibaseProperties.class, ApplicationProperties.class, PushNotificationProperties.class })
 public class SemearApp {
 
     private static final Logger LOG = LoggerFactory.getLogger(SemearApp.class);

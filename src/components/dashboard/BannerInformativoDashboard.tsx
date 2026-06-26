@@ -6,21 +6,21 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import {
-  confirmarInformativo,
-  listarInformativosBanner,
+  confirmarComunicado,
+  listarComunicadosBanner,
   LABEL_TIPO,
-  type InformativoDTO,
-} from "@/modules/informativos/api";
+  type ComunicadoDTO,
+} from "@/modules/comunicados/api";
 
 export function BannerInformativoDashboard() {
   const { user } = usarAutenticacao();
-  const [lista, setLista] = useState<InformativoDTO[]>([]);
+  const [lista, setLista] = useState<ComunicadoDTO[]>([]);
   const [fechados, setFechados] = useState<Set<number>>(new Set());
 
   const carregar = useCallback(async () => {
     if (!user) return;
     try {
-      const dados = await listarInformativosBanner();
+      const dados = await listarComunicadosBanner();
       setLista((dados ?? []).filter((i) => !i.obrigatorio && i.ativo !== false));
     } catch {
       setLista([]);
@@ -35,11 +35,11 @@ export function BannerInformativoDashboard() {
 
   if (visiveis.length === 0) return null;
 
-  const fechar = async (item: InformativoDTO) => {
+  const fechar = async (item: ComunicadoDTO) => {
     if (item.id) {
       setFechados((prev) => new Set(prev).add(item.id!));
       try {
-        await confirmarInformativo(item.id);
+        await confirmarComunicado(item.id);
       } catch {
         // dispensar silenciosamente
       }
@@ -49,7 +49,7 @@ export function BannerInformativoDashboard() {
   return (
     <div className="space-y-2">
       {visiveis.map((item) => {
-        const tipoLabel = item.tipo ? LABEL_TIPO[item.tipo] : "Informativo";
+        const tipoLabel = item.tipo ? LABEL_TIPO[item.tipo] : "Comunicado";
         return (
           <div
             key={item.id}

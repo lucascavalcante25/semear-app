@@ -1,12 +1,12 @@
 package br.com.semear.service;
 
-import br.com.semear.domain.Aviso;
+import br.com.semear.domain.Comunicado;
 import br.com.semear.domain.Lancamento;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.StatusCadastro;
 import br.com.semear.domain.enumeration.StatusPedidoOracao;
 import br.com.semear.domain.enumerations.TipoLancamento;
-import br.com.semear.repository.AvisoRepository;
+import br.com.semear.repository.ComunicadoRepository;
 import br.com.semear.repository.DocumentoIgrejaRepository;
 import br.com.semear.repository.LancamentoRepository;
 import br.com.semear.repository.PedidoOracaoRepository;
@@ -43,7 +43,7 @@ public class DashboardService {
     private final PedidoOracaoRepository pedidoOracaoRepository;
     private final PreCadastroRepository preCadastroRepository;
     private final LancamentoRepository lancamentoRepository;
-    private final AvisoRepository avisoRepository;
+    private final ComunicadoRepository comunicadoRepository;
     private final DocumentoIgrejaRepository documentoIgrejaRepository;
     private final TenantService tenantService;
 
@@ -53,7 +53,7 @@ public class DashboardService {
         PedidoOracaoRepository pedidoOracaoRepository,
         PreCadastroRepository preCadastroRepository,
         LancamentoRepository lancamentoRepository,
-        AvisoRepository avisoRepository,
+        ComunicadoRepository comunicadoRepository,
         DocumentoIgrejaRepository documentoIgrejaRepository,
         TenantService tenantService
     ) {
@@ -62,7 +62,7 @@ public class DashboardService {
         this.pedidoOracaoRepository = pedidoOracaoRepository;
         this.preCadastroRepository = preCadastroRepository;
         this.lancamentoRepository = lancamentoRepository;
-        this.avisoRepository = avisoRepository;
+        this.comunicadoRepository = comunicadoRepository;
         this.documentoIgrejaRepository = documentoIgrejaRepository;
         this.tenantService = tenantService;
     }
@@ -108,7 +108,7 @@ public class DashboardService {
         dto.setAniversariantesHoje(aniversariantes.size());
         dto.setAniversariantes(aniversariantes.stream().limit(10).toList());
 
-        dto.setAvisosAtivos(contarAvisosAtivos(igrejaId, hoje));
+        dto.setComunicadosAtivos(contarComunicadosAtivos(igrejaId, hoje));
         dto.setDocumentosVencendo(
             documentoIgrejaRepository
                 .findByIgrejaIdAndAtivoTrueAndDataValidadeBetweenOrderByDataValidadeAsc(igrejaId, hoje, hoje.plusDays(30))
@@ -118,20 +118,20 @@ public class DashboardService {
         return dto;
     }
 
-    private long contarAvisosAtivos(Long igrejaId, LocalDate hoje) {
-        return avisoRepository
+    private long contarComunicadosAtivos(Long igrejaId, LocalDate hoje) {
+        return comunicadoRepository
             .findAllByIgrejaIdAndAtivoIsTrue(PageRequest.of(0, 500), igrejaId)
             .getContent()
             .stream()
-            .filter(a -> avisoVigente(a, hoje))
+            .filter(c -> comunicadoVigente(c, hoje))
             .count();
     }
 
-    private boolean avisoVigente(Aviso aviso, LocalDate referencia) {
-        if (aviso.getDataInicio() != null && referencia.isBefore(aviso.getDataInicio())) {
+    private boolean comunicadoVigente(Comunicado comunicado, LocalDate referencia) {
+        if (comunicado.getDataInicio() != null && referencia.isBefore(comunicado.getDataInicio())) {
             return false;
         }
-        if (aviso.getDataFim() != null && referencia.isAfter(aviso.getDataFim())) {
+        if (comunicado.getDataFim() != null && referencia.isAfter(comunicado.getDataFim())) {
             return false;
         }
         return true;

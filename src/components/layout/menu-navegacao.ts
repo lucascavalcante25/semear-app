@@ -49,7 +49,7 @@ export const gruposMenuNavegacao: GrupoMenuNavegacao[] = [
       { icon: Music, label: "Louvores", path: "/louvores" },
       { icon: Users, label: "Membros", path: "/membros" },
       { icon: UserPlus, label: "Visitantes", path: "/visitantes" },
-      { icon: Megaphone, label: "Avisos", path: "/avisos" },
+      { icon: Megaphone, label: "Comunicados", path: "/comunicados" },
       { icon: Cake, label: "Aniversariantes", path: "/aniversariantes" },
       { icon: Building2, label: "Departamentos", path: "/departamentos" },
       { icon: CalendarDays, label: "Escalas", path: "/escalas" },
@@ -59,7 +59,6 @@ export const gruposMenuNavegacao: GrupoMenuNavegacao[] = [
   {
     label: "Administração",
     items: [
-      { icon: Bell, label: "Informativos", path: "/informativos", avisosWrite: true },
       { icon: UserCheck, label: "Aprovar pré-cadastros", path: "/aprovar-pre-cadastros" },
       { icon: Wallet, label: "Financeiro", path: "/financeiro" },
       { icon: Church, label: "Config. da Igreja", path: "/configuracoes-igreja" },

@@ -352,7 +352,7 @@ export default function Escalas() {
           <TabsContent value="lista" className="space-y-4 mt-4">
             {podeEditar && (
               <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-                <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Editar escala</DialogTitle>
                   </DialogHeader>

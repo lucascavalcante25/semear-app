@@ -12,16 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import {
-  confirmarInformativo,
-  listarInformativosPendentesLogin,
+  confirmarComunicado,
+  listarComunicadosPendentesLogin,
   LABEL_TIPO,
-  type InformativoDTO,
-} from "@/modules/informativos/api";
+  type ComunicadoDTO,
+} from "@/modules/comunicados/api";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 
 export function ModalInformativoLogin() {
   const { user } = usarAutenticacao();
-  const [fila, setFila] = useState<InformativoDTO[]>([]);
+  const [fila, setFila] = useState<ComunicadoDTO[]>([]);
   const [indice, setIndice] = useState(0);
   const [carregando, setCarregando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
@@ -30,7 +30,7 @@ export function ModalInformativoLogin() {
     if (!user) return;
     setCarregando(true);
     try {
-      const lista = await listarInformativosPendentesLogin();
+      const lista = await listarComunicadosPendentesLogin();
       setFila(lista ?? []);
       setIndice(0);
     } catch {
@@ -60,7 +60,7 @@ export function ModalInformativoLogin() {
     if (!atual?.id) return;
     setConfirmando(true);
     try {
-      await confirmarInformativo(atual.id);
+      await confirmarComunicado(atual.id);
       avancar();
     } catch {
       avancar();
@@ -71,12 +71,11 @@ export function ModalInformativoLogin() {
 
   if (!aberto || !atual) return null;
 
-  const tipoLabel = atual.tipo ? LABEL_TIPO[atual.tipo] : "Informativo";
+  const tipoLabel = atual.tipo ? LABEL_TIPO[atual.tipo] : "Comunicado";
 
   return (
     <Dialog open={aberto} onOpenChange={() => {}}>
       <DialogContent
-        className="sm:max-w-lg"
         onPointerDownOutside={(e) => atual.obrigatorio && e.preventDefault()}
         onEscapeKeyDown={(e) => atual.obrigatorio && e.preventDefault()}
       >

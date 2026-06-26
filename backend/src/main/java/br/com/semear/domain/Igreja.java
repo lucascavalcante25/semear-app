@@ -126,8 +126,8 @@ public class Igreja implements Serializable {
     private Boolean siteAtivo = false;
 
     @NotNull
-    @Column(name = "exibir_avisos_publicos", nullable = false)
-    private Boolean exibirAvisosPublicos = true;
+    @Column(name = "exibir_comunicados_publicos", nullable = false)
+    private Boolean exibirComunicadosPublicos = true;
 
     @Column(name = "texto_agradecimento_oferta", columnDefinition = "text")
     private String textoAgradecimentoOferta;
@@ -410,12 +410,12 @@ public class Igreja implements Serializable {
         this.siteAtivo = siteAtivo;
     }
 
-    public Boolean getExibirAvisosPublicos() {
-        return exibirAvisosPublicos;
+    public Boolean getExibirComunicadosPublicos() {
+        return exibirComunicadosPublicos;
     }
 
-    public void setExibirAvisosPublicos(Boolean exibirAvisosPublicos) {
-        this.exibirAvisosPublicos = exibirAvisosPublicos;
+    public void setExibirComunicadosPublicos(Boolean exibirComunicadosPublicos) {
+        this.exibirComunicadosPublicos = exibirComunicadosPublicos;
     }
 
     public String getTextoAgradecimentoOferta() {

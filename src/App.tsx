@@ -2,7 +2,7 @@ import { Notificador } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ProvedorAutenticacao } from "@/contexts/AuthContext";
 import { ProvedorNotificacoes } from "@/contexts/NotificationsContext";
 import { RequerAutenticacao } from "@/components/auth/RequireAuth";
@@ -35,7 +35,7 @@ import AniversariantesPagina from "./pages/Birthdays";
 import Louvores from "./pages/Praise";
 import Financeiro from "./pages/Financial";
 import Visitantes from "./pages/Visitors";
-import Avisos from "./pages/Announcements";
+import Comunicados from "./pages/Comunicados";
 import Devocionais from "./pages/Devotionals";
 import Mais from "./pages/More";
 import Configuracoes from "./pages/Settings";
@@ -46,7 +46,6 @@ import AprovarPreCadastros from "./pages/AprovarPreCadastros";
 import AcessoNegado from "./pages/AccessDenied";
 import NaoEncontrado from "./pages/NotFound";
 import PedidosOracao from "./pages/PrayerRequests";
-import Informativos from "./pages/Informativos";
 import Sobre from "./pages/About";
 import NotificacoesPagina from "./pages/Notifications";
 import Departamentos from "./pages/Departamentos";
@@ -223,13 +222,15 @@ const App = () => (
                 }
               />
               <Route
-                path="/avisos"
+                path="/comunicados"
                 element={
                   <RequerAutenticacao>
-                    <Avisos />
+                    <Comunicados />
                   </RequerAutenticacao>
                 }
               />
+              <Route path="/avisos" element={<Navigate to="/comunicados" replace />} />
+              <Route path="/informativos" element={<Navigate to="/comunicados" replace />} />
               <Route
                 path="/devocionais"
                 element={
@@ -243,14 +244,6 @@ const App = () => (
                 element={
                   <RequerAutenticacao>
                     <PedidosOracao />
-                  </RequerAutenticacao>
-                }
-              />
-              <Route
-                path="/informativos"
-                element={
-                  <RequerAutenticacao>
-                    <Informativos />
                   </RequerAutenticacao>
                 }
               />

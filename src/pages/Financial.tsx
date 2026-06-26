@@ -461,7 +461,7 @@ function ModalRelatorioMensal({
 
   return (
     <Dialog open={aberto} onOpenChange={(o) => !o && onFechar()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Relatório - {nomeMes} {ano}</DialogTitle>
           <DialogDescription>
@@ -580,7 +580,7 @@ function ModalDetalheLancamento({
 
   return (
     <Dialog open={aberto} onOpenChange={(o) => !o && onFechar()}>
-      <DialogContent className="max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div
@@ -1141,7 +1141,7 @@ export default function Financeiro() {
               }
             }}
           >
-            <DialogContent className="max-w-md">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>
                   {lancamentoEditando ? "Editar Lançamento" : "Novo Lançamento"}

@@ -29,15 +29,14 @@ public class ModuleAccessService {
         "louvores",
         "membros",
         "visitantes",
-        "avisos",
+        "comunicados",
         "financeiro",
         "oracao",
         "aprovar-pre-cadastros",
         "configuracoes",
         "departamentos",
         "escalas",
-        "eventos",
-        "informativos"
+        "eventos"
     );
 
     private static final Set<String> ROLES_FULL_ACCESS = Set.of(
@@ -54,25 +53,23 @@ public class ModuleAccessService {
         "louvores",
         "membros",
         "visitantes",
-        "avisos",
+        "comunicados",
         "oracao",
         "departamentos",
         "escalas",
         "eventos",
         "aprovar-pre-cadastros",
-        "configuracoes",
-        "informativos"
+        "configuracoes"
     );
 
     private static final List<String> TESOURARIA_MODULES = List.of(
         "dashboard",
         "biblia",
         "devocionais",
-        "avisos",
+        "comunicados",
         "financeiro",
         "oracao",
-        "configuracoes",
-        "informativos"
+        "configuracoes"
     );
 
     private static final List<String> LIDER_WRITE_MODULES = List.of(
@@ -85,19 +82,18 @@ public class ModuleAccessService {
         "escalas",
         "eventos",
         "configuracoes",
-        "informativos"
+        "comunicados"
     );
 
-    private static final List<String> LIDER_READ_MODULES = List.of("membros", "visitantes", "avisos");
+    private static final List<String> LIDER_READ_MODULES = List.of("membros", "visitantes", "comunicados");
 
     private static final List<String> MEMBRO_READ_MODULES = List.of(
         "dashboard",
         "biblia",
         "devocionais",
-        "avisos",
+        "comunicados",
         "eventos",
-        "configuracoes",
-        "informativos"
+        "configuracoes"
     );
 
     private static final List<String> MEMBRO_WRITE_MODULES = List.of("oracao");
@@ -124,10 +120,12 @@ public class ModuleAccessService {
         if (temAcessoModulo(user, module, nivel)) {
             return true;
         }
-        if ("informativos".equals(module) && temAcessoModulo(user, "avisos", nivel)) {
-            return true;
+        if ("comunicados".equals(module)) {
+            if (temAcessoModulo(user, "avisos", nivel) || temAcessoModulo(user, "informativos", nivel)) {
+                return true;
+            }
         }
-        if ("avisos".equals(module) && temAcessoModulo(user, "informativos", nivel)) {
+        if (("avisos".equals(module) || "informativos".equals(module)) && temAcessoModulo(user, "comunicados", nivel)) {
             return true;
         }
         return false;
@@ -183,6 +181,8 @@ public class ModuleAccessService {
                 String access = trimmed.substring(colonIdx + 1).trim().toUpperCase();
                 if (MODULOS.contains(module) && ("READ".equals(access) || "WRITE".equals(access))) {
                     result.put(module, NivelAcessoModulo.valueOf(access));
+                } else if (("avisos".equals(module) || "informativos".equals(module)) && ("READ".equals(access) || "WRITE".equals(access))) {
+                    result.put("comunicados", NivelAcessoModulo.valueOf(access));
                 }
             } else if (MODULOS.contains(trimmed)) {
                 result.put(trimmed, NivelAcessoModulo.WRITE);

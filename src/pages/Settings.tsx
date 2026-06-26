@@ -20,6 +20,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { formatarTelefone, telefoneApenasDigitos, formatarCep, cepApenasDigitos } from "@/lib/masks";
 import { buscarCep } from "@/modules/viacep/api";
 import { toast } from "sonner";
+import { PushPreferenciasCard } from "@/components/notificacoes/PushPreferenciasCard";
 
 export default function Settings() {
   const { pathname } = useLocation();
@@ -259,6 +260,8 @@ export default function Settings() {
           imageSrc={imageToCrop}
           onConfirm={handleCropConfirm}
         />
+
+        <PushPreferenciasCard />
 
         <Card>
           <CardHeader>

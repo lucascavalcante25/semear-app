@@ -1,10 +1,10 @@
 package br.com.semear.service;
 
-import br.com.semear.domain.Aviso;
+import br.com.semear.domain.Comunicado;
 import br.com.semear.domain.Evento;
 import br.com.semear.domain.Igreja;
 import br.com.semear.domain.enumeration.PublicoEvento;
-import br.com.semear.repository.AvisoRepository;
+import br.com.semear.repository.ComunicadoRepository;
 import br.com.semear.repository.EventoRepository;
 import br.com.semear.repository.IgrejaRepository;
 import br.com.semear.service.dto.EventoDTO;
@@ -24,16 +24,16 @@ public class PublicIgrejaSiteService {
 
     private final IgrejaRepository igrejaRepository;
     private final EventoRepository eventoRepository;
-    private final AvisoRepository avisoRepository;
+    private final ComunicadoRepository comunicadoRepository;
 
     public PublicIgrejaSiteService(
         IgrejaRepository igrejaRepository,
         EventoRepository eventoRepository,
-        AvisoRepository avisoRepository
+        ComunicadoRepository comunicadoRepository
     ) {
         this.igrejaRepository = igrejaRepository;
         this.eventoRepository = eventoRepository;
-        this.avisoRepository = avisoRepository;
+        this.comunicadoRepository = comunicadoRepository;
     }
 
     public IgrejaSitePublicoDTO obterPorSlug(String slug) {
@@ -55,7 +55,7 @@ public class PublicIgrejaSiteService {
         dto.setCorSecundaria(igreja.getCorSecundaria());
         dto.setTextoBoasVindas(igreja.getTextoBoasVindas());
         dto.setHorarioCulto(igreja.getHorarioCulto());
-        dto.setExibirAvisosPublicos(igreja.getExibirAvisosPublicos());
+        dto.setExibirComunicadosPublicos(igreja.getExibirComunicadosPublicos());
         dto.setEmail(igreja.getEmail());
         dto.setTelefone(igreja.getTelefone());
         dto.setEndereco(formatarEndereco(igreja));
@@ -66,21 +66,27 @@ public class PublicIgrejaSiteService {
         Instant agora = Instant.now();
         dto.setEventosPublicos(
             eventoRepository
-                .findByIgrejaIdAndPublicoAndDataInicioAfterOrderByDataInicioAsc(igreja.getId(), PublicoEvento.PUBLICO, agora)
+                .findByIgrejaIdAndPublicoAndStatusAndDataInicioAfterOrderByDataInicioAsc(
+                    igreja.getId(),
+                    PublicoEvento.PUBLICO,
+                    br.com.semear.domain.enumeration.StatusEvento.PUBLICADO,
+                    agora
+                )
                 .stream()
                 .map(this::toEventoDto)
                 .toList()
         );
 
-        if (Boolean.TRUE.equals(igreja.getExibirAvisosPublicos())) {
+        if (Boolean.TRUE.equals(igreja.getExibirComunicadosPublicos())) {
             LocalDate hoje = LocalDate.now();
-            dto.setAvisosPublicos(
-                avisoRepository
+            dto.setComunicadosPublicos(
+                comunicadoRepository
                     .findAllByIgrejaIdAndAtivoIsTrue(PageRequest.of(0, 10), igreja.getId())
                     .getContent()
                     .stream()
-                    .filter(a -> avisoVigente(a, hoje))
-                    .map(this::toAvisoDto)
+                    .filter(c -> Boolean.TRUE.equals(c.getExibirNoSitePublico()))
+                    .filter(c -> comunicadoVigente(c, hoje))
+                    .map(this::toComunicadoDto)
                     .toList()
             );
         }
@@ -98,22 +104,26 @@ public class PublicIgrejaSiteService {
         dto.setLocal(evento.getLocal());
         dto.setPublico(evento.getPublico());
         dto.setInscricoesAbertas(evento.getInscricoesAbertas());
+        dto.setCategoria(evento.getCategoria());
+        dto.setStatus(evento.getStatus());
+        dto.setLinkExterno(evento.getLinkExterno());
+        dto.setImagemUrl(evento.getImagemUrl());
         return dto;
     }
 
-    private IgrejaSitePublicoDTO.AvisoPublicoDTO toAvisoDto(Aviso aviso) {
-        IgrejaSitePublicoDTO.AvisoPublicoDTO dto = new IgrejaSitePublicoDTO.AvisoPublicoDTO();
-        dto.setId(aviso.getId());
-        dto.setTitulo(aviso.getTitulo());
-        dto.setConteudo(aviso.getConteudo());
+    private IgrejaSitePublicoDTO.ComunicadoPublicoDTO toComunicadoDto(Comunicado comunicado) {
+        IgrejaSitePublicoDTO.ComunicadoPublicoDTO dto = new IgrejaSitePublicoDTO.ComunicadoPublicoDTO();
+        dto.setId(comunicado.getId());
+        dto.setTitulo(comunicado.getTitulo());
+        dto.setConteudo(comunicado.getConteudo());
         return dto;
     }
 
-    private boolean avisoVigente(Aviso aviso, LocalDate referencia) {
-        if (aviso.getDataInicio() != null && referencia.isBefore(aviso.getDataInicio())) {
+    private boolean comunicadoVigente(Comunicado comunicado, LocalDate referencia) {
+        if (comunicado.getDataInicio() != null && referencia.isBefore(comunicado.getDataInicio())) {
             return false;
         }
-        if (aviso.getDataFim() != null && referencia.isAfter(aviso.getDataFim())) {
+        if (comunicado.getDataFim() != null && referencia.isAfter(comunicado.getDataFim())) {
             return false;
         }
         return true;

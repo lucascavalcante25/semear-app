@@ -9,18 +9,18 @@ import br.com.semear.domain.Igreja;
 import br.com.semear.domain.PedidoOracao;
 import br.com.semear.domain.User;
 import br.com.semear.domain.Visitante;
-import br.com.semear.domain.Aviso;
+import br.com.semear.domain.Comunicado;
 import br.com.semear.domain.enumeration.CategoriaPedidoOracao;
 import br.com.semear.domain.enumeration.StatusIgreja;
 import br.com.semear.domain.enumeration.StatusPedidoOracao;
-import br.com.semear.domain.enumeration.TipoAviso;
+import br.com.semear.domain.enumeration.TipoComunicado;
 import br.com.semear.domain.enumeration.VisibilidadePedidoOracao;
 import br.com.semear.repository.AuthorityRepository;
 import br.com.semear.repository.IgrejaRepository;
 import br.com.semear.repository.PedidoOracaoRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.VisitanteRepository;
-import br.com.semear.repository.AvisoRepository;
+import br.com.semear.repository.ComunicadoRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -64,14 +64,14 @@ class TenantIsolationIT {
     private VisitanteRepository visitanteRepository;
 
     @Autowired
-    private AvisoRepository avisoRepository;
+    private ComunicadoRepository comunicadoRepository;
 
     private Igreja igrejaA;
     private Igreja igrejaB;
     private User usuarioA;
     private PedidoOracao pedidoB;
     private Visitante visitanteB;
-    private Aviso avisoB;
+    private Comunicado comunicadoB;
 
     @BeforeEach
     void setUp() {
@@ -102,16 +102,16 @@ class TenantIsolationIT {
         visitanteB.setCriadoPor("system");
         visitanteB = visitanteRepository.save(visitanteB);
 
-        avisoB = new Aviso();
-        avisoB.setIgreja(igrejaB);
-        avisoB.setTitulo("Aviso B");
-        avisoB.setConteudo("Conteudo B");
-        avisoB.setTipo(TipoAviso.NORMAL);
-        avisoB.setDataInicio(LocalDate.now());
-        avisoB.setAtivo(true);
-        avisoB.setCriadoEm(Instant.now());
-        avisoB.setCriadoPor("system");
-        avisoB = avisoRepository.save(avisoB);
+        comunicadoB = new Comunicado();
+        comunicadoB.setIgreja(igrejaB);
+        comunicadoB.setTitulo("Comunicado B");
+        comunicadoB.setConteudo("Conteudo B");
+        comunicadoB.setTipo(TipoComunicado.NORMAL);
+        comunicadoB.setDataInicio(LocalDate.now());
+        comunicadoB.setAtivo(true);
+        comunicadoB.setCriadoEm(Instant.now());
+        comunicadoB.setCriadoPor("system");
+        comunicadoB = comunicadoRepository.save(comunicadoB);
 
         em.flush();
         em.clear();
@@ -131,8 +131,8 @@ class TenantIsolationIT {
 
     @Test
     @WithMockUser(username = "tenantusera", authorities = AuthoritiesConstants.MEMBRO)
-    void avisoCrossTenantNegado() throws Exception {
-        mockMvc.perform(get("/api/avisos/{id}", avisoB.getId())).andExpect(status().isBadRequest());
+    void comunicadoCrossTenantNegado() throws Exception {
+        mockMvc.perform(get("/api/comunicados/{id}", comunicadoB.getId())).andExpect(status().isBadRequest());
     }
 
     @Test

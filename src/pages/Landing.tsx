@@ -53,7 +53,7 @@ const HERO_SLIDES = [
     destaque: "Minha Igreja Digital",
     titulo: "Sua igreja organizada em um só lugar",
     subtitulo:
-      "Membros, visitantes, escalas de portaria e limpeza, informativos, oração, documentos, louvores, financeiro e PIX — no computador e no celular.",
+      "Membros, visitantes, escalas de portaria e limpeza, eventos com inscrições, informativos, oração, documentos, louvores, financeiro e PIX — no computador e no celular.",
     imagem: "/landing/dashboard.png",
     imagemAlt: "Painel principal com visão geral da igreja",
   },
@@ -124,7 +124,7 @@ const PILARES = [
 
 const DESTAQUES = [
   { valor: "7", label: "dias de teste grátis" },
-  { valor: "16+", label: "módulos integrados" },
+  { valor: "15+", label: "módulos integrados" },
   { valor: "100%", label: "web — sem instalar app" },
   { valor: "Docs", label: "documentos da igreja" },
 ];
@@ -153,7 +153,8 @@ const MODULOS = [
   },
   {
     titulo: "Eventos",
-    descricao: "Cadastre eventos da igreja, controle inscrições e capacidade quando necessário.",
+    descricao:
+      "Cadastre eventos com banner, inscrições, check-in e lembretes. Eventos públicos podem aparecer no site da igreja.",
     icon: Sparkles,
   },
   {
@@ -209,6 +210,12 @@ const MODULOS = [
     descricao: "Central de suporte integrada para dúvidas, erros e sugestões de melhoria.",
     icon: Headphones,
   },
+  {
+    titulo: "Site público",
+    descricao:
+      "Página da igreja com cultos, eventos públicos, avisos e pedido de oração — compartilhável por link.",
+    icon: Church,
+  },
 ];
 
 const SCREENSHOTS = [
@@ -224,7 +231,12 @@ const FAQ = [
   {
     pergunta: "Como funcionam as escalas de portaria e limpeza?",
     resposta:
-      "Você cadastra os cultos, configura portaria/recepção e limpeza em abas separadas, gera o sorteio em rascunho e publica quando estiver satisfeito. A limpeza pode ser mensal, semanal ou por culto. Voluntários veem as escalas no calendário do ciclo e confirmam presença pelo sistema.",
+      "Você cadastra os cultos, configura portaria/recepção e limpeza em abas separadas, gera o sorteio em rascunho e publica quando estiver satisfeito. A limpeza pode ser mensal, semanal ou por culto. Voluntários veem as escalas no calendário do ciclo, confirmam presença pelo sistema e recebem avisos no login e na central de notificações.",
+  },
+  {
+    pergunta: "A igreja tem uma página pública na internet?",
+    resposta:
+      "Sim. Cada igreja pode ativar um site público com link próprio para divulgar cultos, eventos abertos ao público, avisos e receber pedidos de oração de visitantes.",
   },
   {
     pergunta: "Precisa instalar aplicativo?",

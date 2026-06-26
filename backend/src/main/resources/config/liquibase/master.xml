@@ -117,4 +117,7 @@
     <include file="config/liquibase/changelog/20260627000003_escala_config_geracao.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260627000004_escala_dia_limpeza.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260627000005_escala_modo_limpeza.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000006_evento_evolution.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000007_unificar_comunicados.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000008_push_notifications.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

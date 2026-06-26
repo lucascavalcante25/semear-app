@@ -43,15 +43,14 @@ public class DevSeedService {
             "louvores:WRITE",
             "membros:WRITE",
             "visitantes:WRITE",
-            "avisos:WRITE",
+            "comunicados:WRITE",
             "financeiro:WRITE",
             "oracao:WRITE",
             "aprovar-pre-cadastros:WRITE",
             "configuracoes:WRITE",
             "departamentos:WRITE",
             "escalas:WRITE",
-            "eventos:WRITE",
-            "informativos:WRITE"
+            "eventos:WRITE"
         )
     );
 
@@ -61,8 +60,7 @@ public class DevSeedService {
     private final AssinaturaIgrejaService assinaturaIgrejaService;
     private final PreCadastroRepository preCadastroRepository;
     private final VisitanteRepository visitanteRepository;
-    private final AvisoRepository avisoRepository;
-    private final InformativoRepository informativoRepository;
+    private final ComunicadoRepository comunicadoRepository;
     private final PedidoOracaoRepository pedidoOracaoRepository;
     private final DepartamentoRepository departamentoRepository;
     private final DepartamentoMembroRepository departamentoMembroRepository;
@@ -92,8 +90,7 @@ public class DevSeedService {
         AssinaturaIgrejaService assinaturaIgrejaService,
         PreCadastroRepository preCadastroRepository,
         VisitanteRepository visitanteRepository,
-        AvisoRepository avisoRepository,
-        InformativoRepository informativoRepository,
+        ComunicadoRepository comunicadoRepository,
         PedidoOracaoRepository pedidoOracaoRepository,
         DepartamentoRepository departamentoRepository,
         DepartamentoMembroRepository departamentoMembroRepository,
@@ -122,8 +119,7 @@ public class DevSeedService {
         this.assinaturaIgrejaService = assinaturaIgrejaService;
         this.preCadastroRepository = preCadastroRepository;
         this.visitanteRepository = visitanteRepository;
-        this.avisoRepository = avisoRepository;
-        this.informativoRepository = informativoRepository;
+        this.comunicadoRepository = comunicadoRepository;
         this.pedidoOracaoRepository = pedidoOracaoRepository;
         this.departamentoRepository = departamentoRepository;
         this.departamentoMembroRepository = departamentoMembroRepository;
@@ -318,7 +314,7 @@ public class DevSeedService {
         igreja.setDescricaoIgreja("Igreja de teste — dados mock gerados em dev.");
         igreja.setHorarioCulto("Domingo 9h e 18h | Quarta 19h30");
         igreja.setSiteAtivo(true);
-        igreja.setExibirAvisosPublicos(true);
+        igreja.setExibirComunicadosPublicos(true);
         igreja.setStatus(StatusIgreja.ATIVA);
         igreja.setDataCadastro(Instant.now());
         return igrejaRepository.save(igreja);
@@ -412,12 +408,12 @@ public class DevSeedService {
 
         seedPreCadastrosPendentes(igreja, 3);
         seedVisitantes(igreja, conteudo, pastor, membroH);
-        seedAvisos(igreja, conteudo, pastor);
-        seedInformativos(igreja, conteudo, pastor);
+        seedComunicados(igreja, conteudo, pastor);
         seedPedidosOracao(igreja, pastor, membroH, membroM, 5);
         Map<String, Departamento> deptos = seedDepartamentosEscalas(igreja, usuarios, pack);
         seedEscalaAutomacao(igreja, deptos, pack);
         seedEventos(igreja, conteudo, membroH, membroM);
+        seedEventosModuloCompleto(igreja, usuarios, pack);
         seedFinanceiro(igreja, conteudo, tesoureiro != null ? tesoureiro.getLogin() : pack.adminCpf());
         seedLouvores(igreja, pack);
         seedDevocionais(igreja, pack);
@@ -512,47 +508,51 @@ public class DevSeedService {
         }
     }
 
-    private void seedAvisos(Igreja igreja, ConteudoIgreja conteudo, User autor) {
-        if (avisoRepository.findAll().stream().anyMatch(a -> a.getIgreja() != null && igreja.getId().equals(a.getIgreja().getId()) && a.getTitulo().startsWith("[" + conteudo.nomeFantasia()))) {
+    private void seedComunicados(Igreja igreja, ConteudoIgreja conteudo, User autor) {
+        if (comunicadoRepository.findAll().stream().anyMatch(c -> c.getIgreja() != null && igreja.getId().equals(c.getIgreja().getId()) && c.getTitulo().contains(conteudo.nomeFantasia()))) {
             return;
         }
         LocalDate hoje = LocalDate.now();
         for (String[] av : conteudo.avisos()) {
-            Aviso aviso = new Aviso();
-            aviso.setTitulo("[" + conteudo.nomeFantasia() + "] " + av[0]);
-            aviso.setConteudo(av[1]);
-            aviso.setTipo(TipoAviso.valueOf(av[2]));
-            aviso.setDataInicio(hoje.minusDays(2));
-            aviso.setDataFim(hoje.plusMonths(1));
-            aviso.setAtivo(true);
-            aviso.setIgreja(igreja);
-            aviso.setCriadoEm(Instant.now());
-            aviso.setCriadoPor(autor.getLogin());
-            avisoRepository.save(aviso);
+            Comunicado comunicado = new Comunicado();
+            comunicado.setTitulo("[" + conteudo.nomeFantasia() + "] " + av[0]);
+            comunicado.setConteudo(av[1]);
+            comunicado.setTipo(TipoComunicado.valueOf(av[2]));
+            comunicado.setDataInicio(hoje.minusDays(2));
+            comunicado.setDataFim(hoje.plusMonths(1));
+            comunicado.setAtivo(true);
+            comunicado.setExibirNoSitePublico(true);
+            comunicado.setIgreja(igreja);
+            comunicado.setCriadoEm(Instant.now());
+            comunicado.setCriadoPor(autor.getLogin());
+            comunicadoRepository.save(comunicado);
+        }
+        for (String[] inf : conteudo.informativos()) {
+            Comunicado comunicado = new Comunicado();
+            comunicado.setTitulo(inf[0] + " — " + conteudo.nomeFantasia());
+            comunicado.setConteudo(inf[1]);
+            comunicado.setTipo(mapearTipoInformativo(inf[2]));
+            comunicado.setPublicoAlvo(PublicoAlvoInformativo.valueOf(inf[3]));
+            comunicado.setPrioridade(PrioridadeInformativo.valueOf(inf[4]));
+            comunicado.setExibirNoLogin(true);
+            comunicado.setObrigatorio(Boolean.parseBoolean(inf[5]));
+            comunicado.setExibirNoSitePublico(false);
+            comunicado.setAtivo(true);
+            comunicado.setDataInicio(hoje);
+            comunicado.setDataFim(hoje.plusMonths(2));
+            comunicado.setIgreja(igreja);
+            comunicado.setCriadoEm(Instant.now());
+            comunicado.setCriadoPor(autor.getLogin());
+            comunicadoRepository.save(comunicado);
         }
     }
 
-    private void seedInformativos(Igreja igreja, ConteudoIgreja conteudo, User pastor) {
-        if (informativoRepository.findAll().stream().anyMatch(i -> i.getIgreja() != null && igreja.getId().equals(i.getIgreja().getId()) && i.getTitulo().contains(conteudo.nomeFantasia()))) {
-            return;
-        }
-        LocalDate hoje = LocalDate.now();
-        for (String[] inf : conteudo.informativos()) {
-            Informativo info = new Informativo();
-            info.setTitulo(inf[0] + " — " + conteudo.nomeFantasia());
-            info.setConteudo(inf[1]);
-            info.setTipo(TipoInformativo.valueOf(inf[2]));
-            info.setPublicoAlvo(PublicoAlvoInformativo.valueOf(inf[3]));
-            info.setPrioridade(PrioridadeInformativo.valueOf(inf[4]));
-            info.setExibirNoLogin(true);
-            info.setObrigatorio(Boolean.parseBoolean(inf[5]));
-            info.setAtivo(true);
-            info.setDataInicio(hoje);
-            info.setDataFim(hoje.plusMonths(2));
-            info.setIgreja(igreja);
-            info.setCriadoPor(pastor);
-            informativoRepository.save(info);
-        }
+    private TipoComunicado mapearTipoInformativo(String tipo) {
+        return switch (tipo) {
+            case "ALERTA" -> TipoComunicado.URGENTE;
+            case "BOAS_VINDAS" -> TipoComunicado.BOAS_VINDAS;
+            default -> TipoComunicado.NORMAL;
+        };
     }
 
     private void seedPedidosOracao(Igreja igreja, User pastor, User membroH, User membroM, int qtd) {
@@ -888,13 +888,208 @@ public class DevSeedService {
         for (String[] ev : conteudo.eventos()) {
             int dias = Integer.parseInt(ev[3]);
             Instant inicio = LocalDate.now().plusDays(dias).atTime(Integer.parseInt(ev[4]), 0).atZone(ZoneId.systemDefault()).toInstant();
-            Evento e = criarEvento(igreja, ev[0], ev[1], inicio, ev[2], true, 80);
-            inscreverEvento(e, membroH);
-            inscreverEvento(e, membroM);
+            Evento e = criarEvento(
+                igreja,
+                ev[0],
+                ev[1],
+                inicio,
+                ev[2],
+                true,
+                80,
+                CategoriaEvento.OUTRO,
+                StatusEvento.PUBLICADO,
+                PublicoEvento.INTERNO,
+                null,
+                null
+            );
+            inscreverEvento(e, membroH, true);
+            inscreverEvento(e, membroM, true);
         }
     }
 
-    private Evento criarEvento(Igreja igreja, String titulo, String descricao, Instant inicio, String local, boolean inscricoes, Integer capacidade) {
+    /** Eventos ricos para testar o módulo evoluído (categorias, status, inscrições, check-in). */
+    private void seedEventosModuloCompleto(Igreja igreja, Map<String, User> usuarios, IgrejaPack pack) {
+        String marcador = "[EVT] " + pack.conteudo().nomeFantasia();
+        if (
+            eventoRepository
+                .findAll()
+                .stream()
+                .anyMatch(e -> e.getIgreja() != null && igreja.getId().equals(e.getIgreja().getId()) && e.getTitulo() != null && e.getTitulo().startsWith(marcador))
+        ) {
+            return;
+        }
+        User pedro = usuarios.get(pack.cpfMembroH());
+        User ana = usuarios.get(pack.cpfMembroM());
+        User ricardo = membroCpfDerivado(usuarios, pack.cpfMembroH(), "61");
+        User beatriz = membroCpfDerivado(usuarios, pack.cpfMembroM(), "71");
+        User lider = usuarios.get(pack.cpfLider());
+
+        ZoneId zone = ZoneId.of("America/Sao_Paulo");
+        Instant cultoDomingo = LocalDate.now().plusDays(3).atTime(9, 30).atZone(zone).toInstant();
+        Instant ebdSabado = LocalDate.now().plusDays(5).atTime(8, 0).atZone(zone).toInstant();
+        Instant jovensSexta = LocalDate.now().plusDays(7).atTime(19, 30).atZone(zone).toInstant();
+        Instant casaisSabado = LocalDate.now().plusDays(10).atTime(18, 0).atZone(zone).toInstant();
+        Instant eventoPublico = LocalDate.now().plusDays(14).atTime(19, 0).atZone(zone).toInstant();
+        Instant eventoPassado = LocalDate.now().minusDays(5).atTime(19, 0).atZone(zone).toInstant();
+        Instant eventoAmanha = LocalDate.now().plusDays(1).atTime(19, 0).atZone(zone).toInstant();
+
+        Evento culto = criarEvento(
+            igreja,
+            marcador + " — Culto dominical",
+            "Culto de adoração e pregação da palavra.",
+            cultoDomingo,
+            "Templo principal",
+            true,
+            200,
+            CategoriaEvento.CULTO,
+            StatusEvento.PUBLICADO,
+            PublicoEvento.INTERNO,
+            "https://images.unsplash.com/photo-1438232992991-995b7058bbb3?w=800",
+            null
+        );
+        Evento ebd = criarEvento(
+            igreja,
+            marcador + " — EBD",
+            "Escola Bíblica Dominical — todas as classes.",
+            ebdSabado,
+            "Salão de aulas",
+            true,
+            60,
+            CategoriaEvento.EBD,
+            StatusEvento.PUBLICADO,
+            PublicoEvento.INTERNO,
+            null,
+            null
+        );
+        Evento jovens = criarEvento(
+            igreja,
+            marcador + " — Encontro de jovens",
+            "Louvor, palavra e comunhão para jovens.",
+            jovensSexta,
+            "Salão jovens",
+            true,
+            40,
+            CategoriaEvento.JOVENS,
+            StatusEvento.PUBLICADO,
+            PublicoEvento.INTERNO,
+            null,
+            "https://forms.gle/exemplo-inscricao-jovens"
+        );
+        Evento casais = criarEvento(
+            igreja,
+            marcador + " — Encontro de casais",
+            "Noite especial para casais — inscrições limitadas.",
+            casaisSabado,
+            "Salão social",
+            true,
+            30,
+            CategoriaEvento.CASAIS,
+            StatusEvento.PUBLICADO,
+            PublicoEvento.INTERNO,
+            null,
+            null
+        );
+        casais.setPrazoCancelamentoInscricao(LocalDate.now().plusDays(8).atTime(23, 59).atZone(zone).toInstant());
+        eventoRepository.save(casais);
+
+        Evento publico = criarEvento(
+            igreja,
+            marcador + " — Conferência aberta",
+            "Evento público divulgado no site da igreja.",
+            eventoPublico,
+            "Auditório",
+            false,
+            null,
+            CategoriaEvento.TREINAMENTO,
+            StatusEvento.PUBLICADO,
+            PublicoEvento.PUBLICO,
+            "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800",
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        );
+
+        criarEvento(
+            igreja,
+            marcador + " — Rascunho interno",
+            "Evento ainda não publicado — visível na gestão.",
+            LocalDate.now().plusDays(20).atTime(10, 0).atZone(zone).toInstant(),
+            "Sala de reuniões",
+            false,
+            20,
+            CategoriaEvento.OUTRO,
+            StatusEvento.RASCUNHO,
+            PublicoEvento.INTERNO,
+            null,
+            null
+        );
+
+        Evento encerrado = criarEvento(
+            igreja,
+            marcador + " — Retiro (encerrado)",
+            "Evento passado para testar aba Passados.",
+            eventoPassado,
+            "Chácara",
+            false,
+            50,
+            CategoriaEvento.TREINAMENTO,
+            StatusEvento.ENCERRADO,
+            PublicoEvento.INTERNO,
+            null,
+            null
+        );
+
+        Evento amanha = criarEvento(
+            igreja,
+            marcador + " — Vigília de oração",
+            "Vigília para testar lembrete de evento amanhã.",
+            eventoAmanha,
+            "Templo",
+            true,
+            100,
+            CategoriaEvento.CULTO,
+            StatusEvento.PUBLICADO,
+            PublicoEvento.INTERNO,
+            null,
+            null
+        );
+
+        inscreverEvento(culto, pedro, false);
+        inscreverEvento(culto, ana, true);
+        inscreverEvento(culto, ricardo, false);
+        inscreverEvento(ebd, pedro, false);
+        inscreverEvento(ebd, beatriz, false);
+        inscreverEvento(jovens, ana, false);
+        inscreverEvento(jovens, beatriz, false);
+        inscreverEvento(jovens, lider, false);
+        inscreverEvento(casais, pedro, false);
+        inscreverEvento(casais, ana, false);
+        inscreverEvento(amanha, pedro, false);
+        inscreverEvento(amanha, ana, false);
+        inscreverEvento(encerrado, pedro, true);
+        inscreverEvento(encerrado, ana, true);
+    }
+
+    private User membroCpfDerivado(Map<String, User> usuarios, String cpfBase, String sufixo) {
+        if (cpfBase == null || cpfBase.length() < 3) {
+            return null;
+        }
+        String cpf = cpfBase.substring(0, cpfBase.length() - 2) + sufixo;
+        return usuarios.get(cpf);
+    }
+
+    private Evento criarEvento(
+        Igreja igreja,
+        String titulo,
+        String descricao,
+        Instant inicio,
+        String local,
+        boolean inscricoes,
+        Integer capacidade,
+        CategoriaEvento categoria,
+        StatusEvento status,
+        PublicoEvento publico,
+        String imagemUrl,
+        String linkExterno
+    ) {
         Evento evento = new Evento();
         evento.setIgreja(igreja);
         evento.setTitulo(titulo);
@@ -902,21 +1097,36 @@ public class DevSeedService {
         evento.setDataInicio(inicio);
         evento.setDataFim(inicio.plus(2, ChronoUnit.HOURS));
         evento.setLocal(local);
-        evento.setPublico(PublicoEvento.INTERNO);
+        evento.setPublico(publico);
         evento.setInscricoesAbertas(inscricoes);
         evento.setCapacidade(capacidade);
+        evento.setCategoria(categoria);
+        evento.setStatus(status);
+        evento.setImagemUrl(imagemUrl);
+        evento.setLinkExterno(linkExterno);
+        evento.setCriadoEm(Instant.now());
         return eventoRepository.save(evento);
     }
 
-    private void inscreverEvento(Evento evento, User user) {
-        if (user == null) {
+    private void inscreverEvento(Evento evento, User user, boolean checkIn) {
+        if (user == null || evento == null) {
+            return;
+        }
+        Optional<EventoInscricao> existente = eventoInscricaoRepository.findByEventoIdAndUserId(evento.getId(), user.getId());
+        if (existente.isPresent()) {
+            EventoInscricao inscricao = existente.get();
+            inscricao.setStatus(StatusInscricaoEvento.ATIVA);
+            inscricao.setConfirmado(checkIn);
+            inscricao.setCanceladoEm(null);
+            eventoInscricaoRepository.save(inscricao);
             return;
         }
         EventoInscricao inscricao = new EventoInscricao();
         inscricao.setEvento(evento);
         inscricao.setUser(user);
-        inscricao.setConfirmado(true);
-        inscricao.setCriadoEm(Instant.now());
+        inscricao.setConfirmado(checkIn);
+        inscricao.setStatus(StatusInscricaoEvento.ATIVA);
+        inscricao.setCriadoEm(Instant.now().minus(checkIn ? 2 : 0, ChronoUnit.DAYS));
         eventoInscricaoRepository.save(inscricao);
     }
 

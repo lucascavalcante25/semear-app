@@ -385,7 +385,7 @@ export default function Visitantes() {
                 Novo
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90dvh] flex flex-col gap-0 overflow-hidden p-0">
+            <DialogContent className="max-h-[90dvh] flex flex-col gap-0 overflow-hidden p-0">
               <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
                 <DialogTitle>{visitanteEmEdicao ? "Editar Visitante" : "Novo Visitante"}</DialogTitle>
                 <DialogDescription>

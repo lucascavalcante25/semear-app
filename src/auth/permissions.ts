@@ -28,7 +28,7 @@ export const MODULES = [
   "louvores",
   "membros",
   "visitantes",
-  "avisos",
+  "comunicados",
   "financeiro",
   "oracao",
   "departamentos",
@@ -73,13 +73,14 @@ export const ROUTE_TO_MODULE: Record<string, ModuleKey> = {
   "/membros": "membros",
   "/visitantes": "visitantes",
   "/aniversariantes": "membros",
-  "/avisos": "avisos",
+  "/comunicados": "comunicados",
+  "/avisos": "comunicados",
   "/financeiro": "financeiro",
   "/aprovar-pre-cadastros": "aprovar-pre-cadastros",
   "/configuracoes": "configuracoes",
   "/configuracoes-igreja": "configuracoes",
   "/oracao": "oracao",
-  "/informativos": "avisos",
+  "/informativos": "comunicados",
   "/notificacoes": "dashboard",
   "/departamentos": "departamentos",
   "/escalas": "escalas",
@@ -93,7 +94,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   louvores: "Louvores",
   membros: "Membros",
   visitantes: "Visitantes",
-  avisos: "Avisos e informativos",
+  comunicados: "Comunicados",
   financeiro: "Financeiro",
   "aprovar-pre-cadastros": "Aprovar pré-cadastros",
   configuracoes: "Configurações",
@@ -132,7 +133,7 @@ const SECRETARIA_DEFAULT_PERMISSIONS: ModulePermission[] = writeAll([
   "louvores",
   "membros",
   "visitantes",
-  "avisos",
+  "comunicados",
   "oracao",
   "departamentos",
   "escalas",
@@ -145,7 +146,7 @@ const TESOURARIA_DEFAULT_PERMISSIONS: ModulePermission[] = writeAll([
   "dashboard",
   "biblia",
   "devocionais",
-  "avisos",
+  "comunicados",
   "financeiro",
   "oracao",
   "configuracoes",
@@ -162,12 +163,13 @@ const LIDER_DEFAULT_PERMISSIONS: ModulePermission[] = mergePerms(
     "escalas",
     "eventos",
     "configuracoes",
+    "comunicados",
   ]),
-  readAll(["membros", "visitantes", "avisos"]),
+  readAll(["membros", "visitantes", "comunicados"]),
 );
 
 const MEMBRO_DEFAULT_PERMISSIONS_INTERNAL: ModulePermission[] = mergePerms(
-  readAll(["dashboard", "biblia", "devocionais", "avisos", "eventos", "configuracoes"]),
+  readAll(["dashboard", "biblia", "devocionais", "comunicados", "eventos", "configuracoes"]),
   writeAll(["oracao"]),
 );
 
@@ -228,6 +230,8 @@ const parsePermissoes = (user: UserAccess | null | undefined): ModulePermission[
       const access = item.slice(colonIdx + 1).toUpperCase() as AccessLevel;
       if (MODULES.includes(module) && (access === "READ" || access === "WRITE")) {
         result.push({ module, access });
+      } else if ((module === "avisos" || module === "informativos") && (access === "READ" || access === "WRITE")) {
+        result.push({ module: "comunicados", access });
       }
     } else {
       const module = item as ModuleKey;

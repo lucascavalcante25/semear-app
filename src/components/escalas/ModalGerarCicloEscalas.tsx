@@ -22,6 +22,8 @@ type Props = {
   gerando: boolean;
   bloqueado?: boolean;
   motivoBloqueio?: string | null;
+  substituirLimpezaExistente?: boolean;
+  onSubstituirLimpezaChange?: (valor: boolean) => void;
 };
 
 export function ModalGerarCicloEscalas({
@@ -34,20 +36,22 @@ export function ModalGerarCicloEscalas({
   gerando,
   bloqueado,
   motivoBloqueio,
+  substituirLimpezaExistente,
+  onSubstituirLimpezaChange,
 }: Props) {
   const titulo =
-    escopo === "LIMPEZA" ? "Gerar escalas de limpeza" : "Gerar ciclo de portaria e recepção";
+    escopo === "LIMPEZA" ? "Gerar rascunho de limpeza" : "Gerar ciclo de portaria e recepção";
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <p className="text-sm text-muted-foreground">
             {escopo === "LIMPEZA"
-              ? "As escalas de limpeza serão adicionadas ao ciclo vigente (publicado ou rascunho)."
+              ? "Um rascunho será criado no ciclo vigente. Revise as escalas em Lotes de limpeza e publique quando estiver tudo certo."
               : "Defina o período do ciclo e como as escalas serão sorteadas antes de gerar o rascunho."}
           </p>
 
@@ -86,6 +90,21 @@ export function ModalGerarCicloEscalas({
               onCheckedChange={(v) => onConfigChange({ ...config, ativo: v })}
             />
           </div>
+
+          {escopo === "LIMPEZA" && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <div>
+                <Label>Substituir escalas existentes</Label>
+                <p className="text-xs text-muted-foreground">
+                  Remove as escalas de limpeza do ciclo vigente e gera um novo sorteio.
+                </p>
+              </div>
+              <Switch
+                checked={substituirLimpezaExistente ?? false}
+                onCheckedChange={(v) => onSubstituirLimpezaChange?.(v)}
+              />
+            </div>
+          )}
 
           {escopo === "PORTARIA_RECEPCAO" && (
             <div className="space-y-3 rounded-lg border p-3">

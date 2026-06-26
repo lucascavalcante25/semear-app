@@ -52,6 +52,7 @@ export function EscalasLimpezaPanel() {
   const [salvando, setSalvando] = useState(false);
   const [gerando, setGerando] = useState(false);
   const [modalGerarAberto, setModalGerarAberto] = useState(false);
+  const [substituirLimpeza, setSubstituirLimpeza] = useState(false);
   const [historicoKey, setHistoricoKey] = useState(0);
 
   const modoAtual = normalizarModoLimpeza(config);
@@ -125,9 +126,13 @@ export function EscalasLimpezaPanel() {
         gerarPortaria: false,
         gerarRecepcao: false,
       });
-      await gerarProximoCicloEscalas({ escopo: "LIMPEZA" });
+      await gerarProximoCicloEscalas({
+        escopo: "LIMPEZA",
+        substituirLimpezaExistente: substituirLimpeza,
+      });
       setModalGerarAberto(false);
-      toast.success("Escalas de limpeza geradas.");
+      setSubstituirLimpeza(false);
+      toast.success("Rascunho de limpeza gerado. Revise as escalas e publique quando estiver pronto.");
       recarregarHistorico();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar escalas de limpeza.");
@@ -152,7 +157,7 @@ export function EscalasLimpezaPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Configure quando a limpeza será sorteada. Ao gerar, as escalas entram no ciclo vigente e aparecem em Escalas do ciclo.
+            Configure quando a limpeza será sorteada. Ao gerar, cria um rascunho para você revisar e publicar.
           </p>
 
           <div className="space-y-2">
@@ -212,7 +217,7 @@ export function EscalasLimpezaPanel() {
             </Button>
             <Button variant="secondary" onClick={() => setModalGerarAberto(true)}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Gerar escalas de limpeza
+              Gerar rascunho de limpeza
             </Button>
           </div>
         </CardContent>
@@ -228,6 +233,8 @@ export function EscalasLimpezaPanel() {
         onConfigChange={setConfig}
         onConfirmar={confirmarGerar}
         gerando={gerando}
+        substituirLimpezaExistente={substituirLimpeza}
+        onSubstituirLimpezaChange={setSubstituirLimpeza}
       />
     </div>
   );

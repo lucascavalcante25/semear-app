@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Download, Eye, FileText, Loader2, Paperclip, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, dialogContentSizeWide, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   baixarAnexo,
   baixarTodosAnexos,
@@ -171,7 +172,7 @@ export function PainelAnexosSuporte({ solicitacaoId, anexos, visao = "cliente", 
       </div>
 
       <Dialog open={!!visualizando} onOpenChange={(open) => !open && fecharPreview()}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className={cn("max-h-[90vh] overflow-hidden flex flex-col", dialogContentSizeWide)}>
           <DialogHeader>
             <DialogTitle className="truncate pr-8">{visualizando?.nomeArquivo}</DialogTitle>
           </DialogHeader>

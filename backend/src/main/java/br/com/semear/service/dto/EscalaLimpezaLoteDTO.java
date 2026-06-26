@@ -10,6 +10,7 @@ public class EscalaLimpezaLoteDTO implements Serializable {
     private String modo;
     private Integer totalEscalas;
     private String cicloPeriodo;
+    private String status;
 
     public String getChave() {
         return chave;
@@ -57,5 +58,13 @@ public class EscalaLimpezaLoteDTO implements Serializable {
 
     public void setCicloPeriodo(String cicloPeriodo) {
         this.cicloPeriodo = cicloPeriodo;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

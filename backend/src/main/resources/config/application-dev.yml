@@ -15,14 +15,16 @@
 
 logging:
   level:
-    ROOT: DEBUG
-    tech.jhipster: DEBUG
-    org.hibernate.SQL: DEBUG
-    br.com.semear: DEBUG
+    ROOT: INFO
+    tech.jhipster: INFO
+    br.com.semear: INFO
+    org.hibernate.SQL: WARN
+    jdk.internal.httpclient: WARN
+    jdk.internal.httpclient.debug: OFF
 
 spring:
   config:
-    import: optional:file:../.env[.properties]
+    import: optional:file:../../../../.env[.properties]
   devtools:
     restart:
       enabled: true
@@ -45,7 +47,7 @@ spring:
       ddl-auto: none
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         javax:
           cache:
             missing_cache_strategy: create
@@ -135,6 +137,12 @@ semear:
     sender: ${SEMEAR_SMS_SENDER:Semear}
   brevo:
     api-key: ${SEMEAR_BREVO_API_KEY:}
+  push:
+    enabled: ${SEMEAR_PUSH_ENABLED:false}
+    firebase-project-id: ${SEMEAR_FIREBASE_PROJECT_ID:}
+    firebase-service-account: ${SEMEAR_FIREBASE_SERVICE_ACCOUNT:}
+    vapid-public-key: ${SEMEAR_FIREBASE_VAPID_PUBLIC_KEY:}
+    teste-endpoint-enabled: ${SEMEAR_PUSH_TESTE_ENABLED:true}
 
 # application:
 application:

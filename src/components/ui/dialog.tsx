@@ -4,6 +4,15 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+/** Largura padrão responsiva: estreito no mobile, mais largo em telas maiores. */
+export const dialogContentSizeDefault = "sm:max-w-xl md:max-w-2xl lg:max-w-3xl";
+
+/** Modais compactos (avisos rápidos, confirmações simples). */
+export const dialogContentSizeCompact = "sm:max-w-md md:max-w-lg";
+
+/** Modais com muito conteúdo (listas, tabelas, visualizações). */
+export const dialogContentSizeWide = "sm:max-w-2xl md:max-w-3xl lg:max-w-4xl";
+
 const Dialog = DialogPrimitive.Root;
 
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -36,7 +45,8 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg max-h-[90dvh] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg sm:w-full",
+        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-h-[90dvh] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overscroll-contain border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:w-full sm:rounded-lg",
+        dialogContentSizeDefault,
         className,
       )}
       {...props}

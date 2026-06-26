@@ -84,7 +84,7 @@ export function ModalNovoPedidoOracao({ aberto, onAbertoChange, onCriado }: Prop
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Como podemos orar por você?</DialogTitle>
           <DialogDescription>

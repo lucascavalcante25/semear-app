@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260627000007-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="aviso"/>
+            <not>
+                <tableExists tableName="comunicado"/>
+            </not>
+        </preConditions>
+        <renameTable oldTableName="aviso" newTableName="comunicado"/>
+    </changeSet>
+
+    <changeSet id="20260627000007-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="comunicado"/>
+            <not>
+                <columnExists tableName="comunicado" columnName="publico_alvo"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="comunicado">
+            <column name="publico_alvo" type="varchar(30)" defaultValue="TODOS">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prioridade" type="varchar(20)" defaultValue="NORMAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exibir_no_login" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="obrigatorio" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exibir_no_site_publico" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cta_rotulo" type="varchar(100)"/>
+            <column name="cta_rota" type="varchar(255)"/>
+            <column name="imagem_url" type="varchar(500)"/>
+            <column name="legado_informativo_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260627000007-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="informativo"/>
+            <tableExists tableName="comunicado"/>
+        </preConditions>
+        <sql>
+            INSERT INTO comunicado (
+                id, titulo, conteudo, tipo, data_inicio, data_fim, ativo, igreja_id,
+                criado_em, criado_por, atualizado_em,
+                publico_alvo, prioridade, exibir_no_login, obrigatorio, exibir_no_site_publico,
+                cta_rotulo, cta_rota, imagem_url, legado_informativo_id
+            )
+            SELECT
+                nextval('sequence_generator'),
+                i.titulo,
+                i.conteudo,
+                CASE i.tipo
+                    WHEN 'ALERTA' THEN 'URGENTE'
+                    WHEN 'BOAS_VINDAS' THEN 'BOAS_VINDAS'
+                    ELSE 'NORMAL'
+                END,
+                COALESCE(i.data_inicio, CURRENT_DATE),
+                i.data_fim,
+                i.ativo,
+                i.igreja_id,
+                i.criado_em,
+                COALESCE((SELECT u.login FROM jhi_user u WHERE u.id = i.criado_por_id), 'Sistema'),
+                i.atualizado_em,
+                i.publico_alvo,
+                i.prioridade,
+                i.exibir_no_login,
+                i.obrigatorio,
+                false,
+                i.cta_rotulo,
+                i.cta_rota,
+                i.imagem_url,
+                i.id
+            FROM informativo i;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260627000007-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="informativo_leitura"/>
+            <not>
+                <tableExists tableName="comunicado_leitura"/>
+            </not>
+        </preConditions>
+        <renameTable oldTableName="informativo_leitura" newTableName="comunicado_leitura"/>
+    </changeSet>
+
+    <changeSet id="20260627000007-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="comunicado_leitura"/>
+            <columnExists tableName="comunicado_leitura" columnName="informativo_id"/>
+            <not>
+                <columnExists tableName="comunicado_leitura" columnName="comunicado_id"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="comunicado_leitura">
+            <column name="comunicado_id" type="bigint"/>
+        </addColumn>
+        <sql>
+            UPDATE comunicado_leitura cl
+            SET comunicado_id = (
+                SELECT c.id FROM comunicado c WHERE c.legado_informativo_id = cl.informativo_id LIMIT 1
+            )
+            WHERE cl.comunicado_id IS NULL;
+        </sql>
+        <dropForeignKeyConstraint baseTableName="comunicado_leitura" constraintName="fk_informativo_leitura_informativo"/>
+        <dropColumn tableName="comunicado_leitura" columnName="informativo_id"/>
+        <addNotNullConstraint tableName="comunicado_leitura" columnName="comunicado_id" columnDataType="bigint"/>
+        <addForeignKeyConstraint
+            baseTableName="comunicado_leitura"
+            baseColumnNames="comunicado_id"
+            constraintName="fk_comunicado_leitura_comunicado"
+            referencedTableName="comunicado"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260627000007-6" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="comunicado" columnName="legado_informativo_id"/>
+        </preConditions>
+        <dropColumn tableName="comunicado" columnName="legado_informativo_id"/>
+    </changeSet>
+
+    <changeSet id="20260627000007-7" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="informativo"/>
+        </preConditions>
+        <dropTable tableName="informativo"/>
+    </changeSet>
+
+    <changeSet id="20260627000007-8" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="igreja" columnName="exibir_avisos_publicos"/>
+            <not>
+                <columnExists tableName="igreja" columnName="exibir_comunicados_publicos"/>
+            </not>
+        </preConditions>
+        <renameColumn tableName="igreja" oldColumnName="exibir_avisos_publicos" newColumnName="exibir_comunicados_publicos" columnDataType="boolean"/>
+    </changeSet>
+
+    <changeSet id="20260627000007-9" author="semear">
+        <sql>
+            UPDATE jhi_user
+            SET modules = REPLACE(REPLACE(modules, 'avisos:', 'comunicados:'), 'informativos:', 'comunicados:')
+            WHERE modules IS NOT NULL AND (modules LIKE '%avisos%' OR modules LIKE '%informativos%');
+        </sql>
+        <sql>
+            UPDATE usuario_notificacao_vista SET tipo = 'COMUNICADO' WHERE tipo = 'AVISO';
+        </sql>
+    </changeSet>
+</databaseChangeLog>

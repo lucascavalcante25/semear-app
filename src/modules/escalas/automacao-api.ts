@@ -76,6 +76,7 @@ export type EscopoGeracaoEscala = "PORTARIA_RECEPCAO" | "LIMPEZA";
 
 export type GerarCicloEscalasDTO = {
   escopo?: EscopoGeracaoEscala;
+  substituirLimpezaExistente?: boolean;
 };
 
 export type EscalaGeracaoDTO = {
@@ -166,10 +167,23 @@ export type EscalaLimpezaLoteDTO = {
   modo?: ModoLimpezaEscala | string;
   totalEscalas?: number;
   cicloPeriodo?: string;
+  status?: "RASCUNHO" | "PUBLICADA";
 };
 
 export const listarLotesLimpeza = () =>
   requisicaoApi<EscalaLimpezaLoteDTO[]>("/api/escalas/automacao/limpeza/lotes", { auth: true });
+
+export const listarEscalasDoLoteLimpeza = (chave: string) =>
+  requisicaoApi<EscalaDTO[]>(
+    `/api/escalas/automacao/limpeza/lotes/${encodeURIComponent(chave)}/escalas`,
+    { auth: true },
+  );
+
+export const publicarLoteLimpeza = (chave: string) =>
+  requisicaoApi<EscalaLimpezaLoteDTO>(
+    `/api/escalas/automacao/limpeza/lotes/${encodeURIComponent(chave)}/publicar`,
+    { method: "POST", auth: true },
+  );
 
 export const excluirLoteLimpeza = (chave: string) =>
   requisicaoApi<void>(`/api/escalas/automacao/limpeza/lotes/${encodeURIComponent(chave)}`, {

@@ -2,31 +2,28 @@ package br.com.semear.domain;
 
 import br.com.semear.domain.enumeration.PrioridadeInformativo;
 import br.com.semear.domain.enumeration.PublicoAlvoInformativo;
-import br.com.semear.domain.enumeration.TipoInformativo;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import br.com.semear.domain.enumeration.TipoComunicado;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 @Entity
-@Table(name = "informativo")
-public class Informativo implements Serializable {
+@Table(name = "comunicado")
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+public class Comunicado implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
     @SequenceGenerator(name = "sequenceGenerator")
+    @Column(name = "id")
     private Long id;
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "igreja_id", nullable = false)
-    @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler" }, allowSetters = true)
-    private Igreja igreja;
 
     @NotNull
     @Size(max = 200)
@@ -40,12 +37,12 @@ public class Informativo implements Serializable {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo", nullable = false, length = 30)
-    private TipoInformativo tipo;
+    private TipoComunicado tipo = TipoComunicado.NORMAL;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "publico_alvo", nullable = false, length = 30)
-    private PublicoAlvoInformativo publicoAlvo;
+    private PublicoAlvoInformativo publicoAlvo = PublicoAlvoInformativo.TODOS;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -54,21 +51,26 @@ public class Informativo implements Serializable {
 
     @NotNull
     @Column(name = "exibir_no_login", nullable = false)
-    private Boolean exibirNoLogin = true;
+    private Boolean exibirNoLogin = false;
 
     @NotNull
     @Column(name = "obrigatorio", nullable = false)
     private Boolean obrigatorio = false;
 
     @NotNull
-    @Column(name = "ativo", nullable = false)
-    private Boolean ativo = true;
+    @Column(name = "exibir_no_site_publico", nullable = false)
+    private Boolean exibirNoSitePublico = true;
 
-    @Column(name = "data_inicio")
+    @NotNull
+    @Column(name = "data_inicio", nullable = false)
     private LocalDate dataInicio;
 
     @Column(name = "data_fim")
     private LocalDate dataFim;
+
+    @NotNull
+    @Column(name = "ativo", nullable = false)
+    private Boolean ativo = true;
 
     @Size(max = 100)
     @Column(name = "cta_rotulo", length = 100)
@@ -83,16 +85,22 @@ public class Informativo implements Serializable {
     private String imagemUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "criado_por_id")
-    @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler", "password", "authorities" }, allowSetters = true)
-    private User criadoPor;
+    @JoinColumn(name = "igreja_id")
+    private Igreja igreja;
 
     @NotNull
     @Column(name = "criado_em", nullable = false)
-    private Instant criadoEm = Instant.now();
+    private Instant criadoEm;
+
+    @NotNull
+    @Column(name = "criado_por", nullable = false)
+    private String criadoPor;
 
     @Column(name = "atualizado_em")
     private Instant atualizadoEm;
+
+    @Column(name = "atualizado_por")
+    private String atualizadoPor;
 
     public Long getId() {
         return id;
@@ -100,14 +108,6 @@ public class Informativo implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public Igreja getIgreja() {
-        return igreja;
-    }
-
-    public void setIgreja(Igreja igreja) {
-        this.igreja = igreja;
     }
 
     public String getTitulo() {
@@ -126,11 +126,11 @@ public class Informativo implements Serializable {
         this.conteudo = conteudo;
     }
 
-    public TipoInformativo getTipo() {
+    public TipoComunicado getTipo() {
         return tipo;
     }
 
-    public void setTipo(TipoInformativo tipo) {
+    public void setTipo(TipoComunicado tipo) {
         this.tipo = tipo;
     }
 
@@ -166,12 +166,12 @@ public class Informativo implements Serializable {
         this.obrigatorio = obrigatorio;
     }
 
-    public Boolean getAtivo() {
-        return ativo;
+    public Boolean getExibirNoSitePublico() {
+        return exibirNoSitePublico;
     }
 
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
+    public void setExibirNoSitePublico(Boolean exibirNoSitePublico) {
+        this.exibirNoSitePublico = exibirNoSitePublico;
     }
 
     public LocalDate getDataInicio() {
@@ -188,6 +188,14 @@ public class Informativo implements Serializable {
 
     public void setDataFim(LocalDate dataFim) {
         this.dataFim = dataFim;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public String getCtaRotulo() {
@@ -214,12 +222,12 @@ public class Informativo implements Serializable {
         this.imagemUrl = imagemUrl;
     }
 
-    public User getCriadoPor() {
-        return criadoPor;
+    public Igreja getIgreja() {
+        return igreja;
     }
 
-    public void setCriadoPor(User criadoPor) {
-        this.criadoPor = criadoPor;
+    public void setIgreja(Igreja igreja) {
+        this.igreja = igreja;
     }
 
     public Instant getCriadoEm() {
@@ -230,6 +238,14 @@ public class Informativo implements Serializable {
         this.criadoEm = criadoEm;
     }
 
+    public String getCriadoPor() {
+        return criadoPor;
+    }
+
+    public void setCriadoPor(String criadoPor) {
+        this.criadoPor = criadoPor;
+    }
+
     public Instant getAtualizadoEm() {
         return atualizadoEm;
     }
@@ -238,19 +254,11 @@ public class Informativo implements Serializable {
         this.atualizadoEm = atualizadoEm;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Informativo)) {
-            return false;
-        }
-        return getId() != null && getId().equals(((Informativo) o).getId());
+    public String getAtualizadoPor() {
+        return atualizadoPor;
     }
 
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
+    public void setAtualizadoPor(String atualizadoPor) {
+        this.atualizadoPor = atualizadoPor;
     }
 }

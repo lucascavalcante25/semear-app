@@ -26,4 +26,15 @@ public interface EscalaItemRepository extends JpaRepository<EscalaItem, Long> {
         @Param("desde") Instant desde,
         @Param("ate") Instant ate
     );
+
+    @Query(
+        "SELECT ei FROM EscalaItem ei JOIN FETCH ei.escala e LEFT JOIN FETCH e.departamento d LEFT JOIN FETCH e.cultoRegistro " +
+        "WHERE ei.user.id = :userId AND e.status = :status AND (ei.confirmado IS NULL OR ei.confirmado = false) AND e.dataEvento >= :desde " +
+        "ORDER BY e.dataEvento ASC"
+    )
+    List<EscalaItem> findItensUsuarioAguardandoConfirmacao(
+        @Param("userId") Long userId,
+        @Param("status") StatusEscalaPublicacao status,
+        @Param("desde") Instant desde
+    );
 }

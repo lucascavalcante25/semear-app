@@ -1,7 +1,9 @@
-export type FormatoRecorte = "round" | "rect";
+export type FormatoRecorte = "round" | "rect" | "banner";
+
+const LARGURA_MAXIMA_BANNER = 1280;
 
 /**
- * Cria uma imagem recortada (circular ou quadrada) a partir da área de crop.
+ * Cria uma imagem recortada a partir da área de crop.
  */
 export async function getCroppedImg(
   imageSrc: string,
@@ -16,32 +18,54 @@ export async function getCroppedImg(
     throw new Error("Canvas 2d não disponível");
   }
 
-  const size = Math.min(pixelCrop.width, pixelCrop.height);
-  canvas.width = size;
-  canvas.height = size;
+  if (formato === "banner") {
+    let largura = pixelCrop.width;
+    let altura = pixelCrop.height;
+    if (largura > LARGURA_MAXIMA_BANNER) {
+      altura = Math.round(altura * (LARGURA_MAXIMA_BANNER / largura));
+      largura = LARGURA_MAXIMA_BANNER;
+    }
+    canvas.width = largura;
+    canvas.height = altura;
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      largura,
+      altura,
+    );
+  } else {
+    const size = Math.min(pixelCrop.width, pixelCrop.height);
+    canvas.width = size;
+    canvas.height = size;
 
-  if (formato === "round") {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-  }
+    if (formato === "round") {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+    }
 
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    size,
-    size
-  );
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      size,
+      size,
+    );
 
-  if (formato === "round") {
-    ctx.restore();
+    if (formato === "round") {
+      ctx.restore();
+    }
   }
 
   return new Promise((resolve, reject) => {

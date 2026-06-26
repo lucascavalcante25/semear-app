@@ -10,6 +10,7 @@ import {
   LifeBuoy,
   Heart,
   Calendar,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -34,9 +35,10 @@ const acoes: Array<{
   { icon: Music, label: "Louvores", path: "/louvores", variante: "primary" },
   { icon: Users, label: "Membros", path: "/membros", variante: "secondary" },
   { icon: UserPlus, label: "Visitantes", path: "/visitantes", variante: "primary" },
-  { icon: Megaphone, label: "Avisos", path: "/avisos", variante: "secondary" },
+  { icon: Megaphone, label: "Comunicados", path: "/comunicados", variante: "secondary" },
   { icon: Heart, label: "Oração", path: "/oracao", variante: "primary" },
   { icon: Calendar, label: "Eventos", path: "/eventos", variante: "secondary" },
+  { icon: CalendarDays, label: "Escalas", path: "/escalas", variante: "primary" },
   { icon: Wallet, label: "Financeiro", path: "/financeiro", variante: "secondary" },
   { icon: LifeBuoy, label: "Suporte", path: "/suporte", variante: "secondary", suporteOnly: true },
 ];

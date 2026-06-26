@@ -12,8 +12,12 @@ export type EventoPublicoDTO = {
   titulo: string;
   descricao?: string;
   dataInicio?: string;
+  dataFim?: string;
   local?: string;
   publico?: string;
+  categoria?: string;
+  linkExterno?: string;
+  imagemUrl?: string;
 };
 
 export type AvisoPublicoDTO = {
@@ -40,10 +44,12 @@ export type IgrejaPublicaSiteDTO = {
   cep?: string;
   telefone?: string;
   email?: string;
+  exibirComunicadosPublicos?: boolean;
   exibirAvisosPublicos?: boolean;
   cultos?: CultoPublicoDTO[];
   eventos?: EventoPublicoDTO[];
   eventosPublicos?: EventoPublicoDTO[];
+  comunicadosPublicos?: AvisoPublicoDTO[];
   avisosPublicos?: AvisoPublicoDTO[];
 };
 
@@ -67,7 +73,25 @@ export const formatarDataEventoPublico = (dataInicio?: string): string => {
   if (!dataInicio) return "";
   const d = new Date(dataInicio);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  return d.toLocaleString("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+export const LABEL_CATEGORIA_PUBLICA: Record<string, string> = {
+  CULTO: "Culto",
+  EBD: "EBD",
+  JOVENS: "Jovens",
+  CASAIS: "Casais",
+  MULHERES: "Mulheres",
+  HOMENS: "Homens",
+  LOUVOR: "Louvor",
+  TREINAMENTO: "Treinamento",
+  OUTRO: "Outro",
 };
 
 export const LABEL_DIA_SEMANA: Record<string, string> = {

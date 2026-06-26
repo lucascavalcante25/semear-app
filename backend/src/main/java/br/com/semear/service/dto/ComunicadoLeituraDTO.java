@@ -3,7 +3,7 @@ package br.com.semear.service.dto;
 import java.io.Serializable;
 import java.time.Instant;
 
-public class InformativoLeituraDTO implements Serializable {
+public class ComunicadoLeituraDTO implements Serializable {
 
     private Long id;
     private Long usuarioId;

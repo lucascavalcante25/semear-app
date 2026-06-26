@@ -8,7 +8,7 @@ export type DashboardResumoDTO = {
   preCadastrosPendentes: number;
   saldoMes?: number | null;
   aniversariantesHoje: number;
-  avisosAtivos: number;
+  comunicadosAtivos: number;
   documentosVencendo: number;
   aniversariantes?: Array<{ id: number; nome: string }>;
 };

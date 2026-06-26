@@ -121,12 +121,12 @@ export function KpisResumo() {
       path: "/aniversariantes",
     });
   }
-  if (canAccess(user, "/avisos")) {
+  if (canAccess(user, "/comunicados")) {
     kpis.push({
-      label: "Avisos ativos",
-      valor: resumo.avisosAtivos,
+      label: "Comunicados ativos",
+      valor: resumo.comunicadosAtivos,
       icon: Megaphone,
-      path: "/avisos",
+      path: "/comunicados",
     });
   }
   if (canWrite(user, "/configuracoes-igreja") && resumo.documentosVencendo > 0) {

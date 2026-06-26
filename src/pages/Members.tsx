@@ -335,7 +335,7 @@ function FormMembro({
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>
           <DialogDescription>{descricao}</DialogDescription>
@@ -569,7 +569,7 @@ function FormDependente({
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Cadastrar criança/adolescente</DialogTitle>
           <DialogDescription>
@@ -721,7 +721,7 @@ function FormDependenteEdicao({
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar criança/adolescente</DialogTitle>
           <DialogDescription>

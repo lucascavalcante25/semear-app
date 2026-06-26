@@ -7,5 +7,7 @@ export { VisitantesDoDia } from "./VisitantesDoDia";
 export { DestaqueVisitantesHoje } from "./DestaqueVisitantesHoje";
 export { DestaqueAniversariantesSemana } from "./DestaqueAniversariantesSemana";
 export { DestaqueAvisos } from "./DestaqueAvisos";
+export { DestaqueEventosProximos } from "./DestaqueEventosProximos";
+export { DestaqueMinhasEscalas } from "./DestaqueMinhasEscalas";
 export { ProgressoEspiritual } from "./SpiritualProgress";
 export { BannerInformativoDashboard } from "./BannerInformativoDashboard";

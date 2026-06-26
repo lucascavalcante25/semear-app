@@ -14,12 +14,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Calendar, Church, Heart, Loader2, MapPin, Phone, Mail, UserPlus } from "lucide-react";
+import { Calendar, Church, ExternalLink, Heart, Loader2, MapPin, Phone, Mail, UserPlus } from "lucide-react";
 import { MARCA } from "@/lib/plataforma";
 import { resolverUrlLogo } from "@/modules/igreja/api";
+import { resolverUrlApi } from "@/modules/api/client";
 import {
   criarPedidoOracaoPublico,
   formatarDataEventoPublico,
+  LABEL_CATEGORIA_PUBLICA,
   LABEL_DIA_SEMANA,
   obterIgrejaPublicaPorSlug,
   type IgrejaPublicaSiteDTO,
@@ -112,7 +114,7 @@ export default function PublicIgreja() {
     .filter(Boolean)
     .join(", ");
   const eventos = igreja.eventosPublicos ?? igreja.eventos ?? [];
-  const avisos = igreja.avisosPublicos ?? [];
+  const comunicados = igreja.comunicadosPublicos ?? igreja.avisosPublicos ?? [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background">
@@ -222,17 +224,17 @@ export default function PublicIgreja() {
           </Card>
         )}
 
-        {avisos.length > 0 && (
+        {comunicados.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Avisos</CardTitle>
+              <CardTitle className="text-base">Comunicados</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {avisos.map((aviso) => (
-                <div key={aviso.id ?? aviso.titulo} className="rounded-lg border p-3">
-                  <p className="font-medium">{aviso.titulo}</p>
-                  {aviso.conteudo && (
-                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{aviso.conteudo}</p>
+              {comunicados.map((item) => (
+                <div key={item.id ?? item.titulo} className="rounded-lg border p-3">
+                  <p className="font-medium">{item.titulo}</p>
+                  {item.conteudo && (
+                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{item.conteudo}</p>
                   )}
                 </div>
               ))}
@@ -250,20 +252,45 @@ export default function PublicIgreja() {
             </CardHeader>
             <CardContent className="space-y-3">
               {eventos.map((evento) => (
-                <div key={evento.id ?? evento.titulo} className="rounded-lg border p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium">{evento.titulo}</p>
-                    <Badge variant="outline">Público</Badge>
+                <div key={evento.id ?? evento.titulo} className="rounded-lg border overflow-hidden">
+                  {evento.imagemUrl && (
+                    <img src={resolverUrlApi(evento.imagemUrl)} alt="" className="w-full h-32 object-cover" />
+                  )}
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-medium">{evento.titulo}</p>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {evento.categoria && (
+                          <Badge variant="secondary">
+                            {LABEL_CATEGORIA_PUBLICA[evento.categoria] ?? evento.categoria}
+                          </Badge>
+                        )}
+                        <Badge variant="outline">Público</Badge>
+                      </div>
+                    </div>
+                    {evento.dataInicio && (
+                      <p className="text-sm text-muted-foreground">
+                        {formatarDataEventoPublico(evento.dataInicio)}
+                      </p>
+                    )}
+                    {evento.local && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" />
+                        {evento.local}
+                      </p>
+                    )}
+                    {evento.descricao && (
+                      <p className="text-sm text-muted-foreground line-clamp-3">{evento.descricao}</p>
+                    )}
+                    {evento.linkExterno && (
+                      <Button size="sm" variant="outline" className="gap-1" asChild>
+                        <a href={evento.linkExterno} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          Saiba mais
+                        </a>
+                      </Button>
+                    )}
                   </div>
-                  {evento.dataInicio && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {formatarDataEventoPublico(evento.dataInicio)}
-                    </p>
-                  )}
-                  {evento.local && <p className="text-sm text-muted-foreground">{evento.local}</p>}
-                  {evento.descricao && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{evento.descricao}</p>
-                  )}
                 </div>
               ))}
             </CardContent>
@@ -279,7 +306,7 @@ export default function PublicIgreja() {
       </main>
 
       <Dialog open={dialogOracao} onOpenChange={setDialogOracao}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Pedido de oração</DialogTitle>
           </DialogHeader>

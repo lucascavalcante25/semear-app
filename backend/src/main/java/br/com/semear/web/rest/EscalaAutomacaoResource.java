@@ -159,6 +159,33 @@ public class EscalaAutomacaoResource {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/limpeza/lotes/{chave}/publicar")
+    @RolesAllowed({
+        AuthoritiesConstants.ADMIN,
+        AuthoritiesConstants.ADMIN_IGREJA,
+        AuthoritiesConstants.PASTOR,
+        AuthoritiesConstants.COPASTOR,
+        AuthoritiesConstants.SECRETARIA,
+    })
+    public ResponseEntity<EscalaLimpezaLoteDTO> publicarLoteLimpeza(@PathVariable String chave) {
+        moduleAccessService.assertModuleAccess("escalas", NivelAcessoModulo.WRITE);
+        return ResponseEntity.ok(escalaAutomacaoService.publicarLoteLimpeza(chave));
+    }
+
+    @GetMapping("/limpeza/lotes/{chave}/escalas")
+    @RolesAllowed({
+        AuthoritiesConstants.ADMIN,
+        AuthoritiesConstants.ADMIN_IGREJA,
+        AuthoritiesConstants.PASTOR,
+        AuthoritiesConstants.COPASTOR,
+        AuthoritiesConstants.SECRETARIA,
+        AuthoritiesConstants.LIDER,
+    })
+    public List<EscalaDTO> listarEscalasDoLoteLimpeza(@PathVariable String chave) {
+        moduleAccessService.assertModuleAccess("escalas", NivelAcessoModulo.READ);
+        return escalaAutomacaoService.listarEscalasDoLoteLimpeza(chave);
+    }
+
     @DeleteMapping("/limpeza/lotes/{chave}")
     @RolesAllowed({
         AuthoritiesConstants.ADMIN,

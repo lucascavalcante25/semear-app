@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260627000006-1" author="semear">
+        <preConditions onFail="MARK_RAN"><not><columnExists tableName="evento" columnName="categoria"/></not></preConditions>
+        <addColumn tableName="evento">
+            <column name="categoria" type="varchar(30)" defaultValue="OUTRO"><constraints nullable="false"/></column>
+            <column name="status" type="varchar(20)" defaultValue="PUBLICADO"><constraints nullable="false"/></column>
+            <column name="imagem_url" type="varchar(500)"/>
+            <column name="link_externo" type="varchar(500)"/>
+            <column name="prazo_cancelamento_inscricao" type="${datetimeType}"/>
+        </addColumn>
+        <createIndex tableName="evento" indexName="idx_evento_igreja_status">
+            <column name="igreja_id"/>
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="evento" indexName="idx_evento_igreja_data_inicio">
+            <column name="igreja_id"/>
+            <column name="data_inicio"/>
+        </createIndex>
+        <createIndex tableName="evento" indexName="idx_evento_igreja_categoria">
+            <column name="igreja_id"/>
+            <column name="categoria"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260627000006-2" author="semear">
+        <preConditions onFail="MARK_RAN"><not><columnExists tableName="evento_inscricao" columnName="status"/></not></preConditions>
+        <addColumn tableName="evento_inscricao">
+            <column name="status" type="varchar(20)" defaultValue="ATIVA"><constraints nullable="false"/></column>
+            <column name="cancelado_em" type="${datetimeType}"/>
+        </addColumn>
+        <createIndex tableName="evento_inscricao" indexName="idx_evento_inscricao_evento_status">
+            <column name="evento_id"/>
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260627000006-3" author="semear">
+        <preConditions onFail="MARK_RAN"><not><tableExists tableName="notificacao_usuario"/></not></preConditions>
+        <createTable tableName="notificacao_usuario">
+            <column name="id" type="bigint"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="igreja_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="user_id" type="bigint"><constraints nullable="false"/></column>
+            <column name="titulo" type="varchar(200)"><constraints nullable="false"/></column>
+            <column name="mensagem" type="varchar(500)"/>
+            <column name="tipo" type="varchar(50)"><constraints nullable="false"/></column>
+            <column name="lida" type="boolean" defaultValueBoolean="false"><constraints nullable="false"/></column>
+            <column name="criado_em" type="${datetimeType}"><constraints nullable="false"/></column>
+            <column name="link" type="varchar(300)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="notificacao_usuario" baseColumnNames="igreja_id" constraintName="fk_notificacao_usuario_igreja" referencedTableName="igreja" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="notificacao_usuario" baseColumnNames="user_id" constraintName="fk_notificacao_usuario_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <createIndex tableName="notificacao_usuario" indexName="idx_notificacao_usuario_user_lida">
+            <column name="user_id"/>
+            <column name="lida"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

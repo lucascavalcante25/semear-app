@@ -1,7 +1,7 @@
 package br.com.semear.service;
 
 import br.com.semear.domain.AssinaturaIgreja;
-import br.com.semear.domain.Aviso;
+import br.com.semear.domain.Comunicado;
 import br.com.semear.domain.DocumentoIgreja;
 import br.com.semear.domain.Evento;
 import br.com.semear.domain.Igreja;
@@ -9,8 +9,12 @@ import br.com.semear.domain.Escala;
 import br.com.semear.domain.EscalaItem;
 import br.com.semear.domain.PedidoOracao;
 import br.com.semear.domain.SolicitacaoSuporte;
+import br.com.semear.domain.NotificacaoUsuario;
 import br.com.semear.domain.User;
+import br.com.semear.domain.enumeration.StatusEvento;
+import br.com.semear.domain.enumeration.StatusInscricaoEvento;
 import br.com.semear.domain.enumeration.StatusAssinatura;
+import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
 import br.com.semear.domain.enumeration.StatusPedidoOracao;
 import br.com.semear.domain.enumeration.TipoPagamentoPlataforma;
 import br.com.semear.domain.enumeration.VisibilidadePedidoOracao;
@@ -18,10 +22,12 @@ import br.com.semear.domain.UsuarioNotificacaoVista;
 import br.com.semear.config.Constants;
 import br.com.semear.domain.enumeration.StatusSolicitacaoSuporte;
 import br.com.semear.repository.AssinaturaIgrejaRepository;
-import br.com.semear.repository.AvisoRepository;
+import br.com.semear.repository.ComunicadoRepository;
 import br.com.semear.repository.DocumentoIgrejaRepository;
 import br.com.semear.repository.EscalaItemRepository;
+import br.com.semear.repository.EventoInscricaoRepository;
 import br.com.semear.repository.EventoRepository;
+import br.com.semear.repository.NotificacaoUsuarioRepository;
 import br.com.semear.repository.PedidoOracaoRepository;
 import br.com.semear.repository.SolicitacaoSuporteRepository;
 import br.com.semear.repository.UserRepository;
@@ -30,6 +36,7 @@ import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -42,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificacaoService {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotificacaoService.class);
-    private static final String TIPO_AVISO = "AVISO";
+    private static final String TIPO_COMUNICADO = "COMUNICADO";
     private static final String TIPO_ANIVERSARIANTE = "ANIVERSARIANTE";
     public static final String TIPO_SUPORTE = "SUPORTE";
     public static final String TIPO_ASSINATURA = "ASSINATURA";
@@ -52,7 +59,7 @@ public class NotificacaoService {
     public static final String TIPO_ESCALA = "ESCALA";
     public static final String TIPO_EVENTO = "EVENTO";
 
-    private final AvisoRepository avisoRepository;
+    private final ComunicadoRepository comunicadoRepository;
     private final UserRepository userRepository;
     private final UsuarioNotificacaoVistaRepository vistaRepository;
     private final TenantService tenantService;
@@ -62,9 +69,12 @@ public class NotificacaoService {
     private final DocumentoIgrejaRepository documentoIgrejaRepository;
     private final EscalaItemRepository escalaItemRepository;
     private final EventoRepository eventoRepository;
+    private final EventoInscricaoRepository eventoInscricaoRepository;
+    private final NotificacaoUsuarioRepository notificacaoUsuarioRepository;
+    private final EventoNotificacaoService eventoNotificacaoService;
 
     public NotificacaoService(
-        AvisoRepository avisoRepository,
+        ComunicadoRepository comunicadoRepository,
         UserRepository userRepository,
         UsuarioNotificacaoVistaRepository vistaRepository,
         TenantService tenantService,
@@ -73,9 +83,12 @@ public class NotificacaoService {
         PedidoOracaoRepository pedidoOracaoRepository,
         DocumentoIgrejaRepository documentoIgrejaRepository,
         EscalaItemRepository escalaItemRepository,
-        EventoRepository eventoRepository
+        EventoRepository eventoRepository,
+        EventoInscricaoRepository eventoInscricaoRepository,
+        NotificacaoUsuarioRepository notificacaoUsuarioRepository,
+        EventoNotificacaoService eventoNotificacaoService
     ) {
-        this.avisoRepository = avisoRepository;
+        this.comunicadoRepository = comunicadoRepository;
         this.userRepository = userRepository;
         this.vistaRepository = vistaRepository;
         this.tenantService = tenantService;
@@ -85,6 +98,9 @@ public class NotificacaoService {
         this.documentoIgrejaRepository = documentoIgrejaRepository;
         this.escalaItemRepository = escalaItemRepository;
         this.eventoRepository = eventoRepository;
+        this.eventoInscricaoRepository = eventoInscricaoRepository;
+        this.notificacaoUsuarioRepository = notificacaoUsuarioRepository;
+        this.eventoNotificacaoService = eventoNotificacaoService;
     }
 
     public record NotificacaoItem(String tipo, Long referenciaId, String titulo, String descricao, String link) {}
@@ -97,30 +113,31 @@ public class NotificacaoService {
         }
         User user = userOpt.get();
 
-        Set<Long> avisosVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_AVISO);
+        Set<Long> comunicadosVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_COMUNICADO);
+        Set<Long> avisosLegadoVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, "AVISO");
         Set<Long> aniversariantesVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_ANIVERSARIANTE);
 
         List<NotificacaoItem> itens = new ArrayList<>();
         LocalDate hoje = LocalDate.now();
 
         Long igrejaId = tenantService.getIgrejaIdAtual();
-        List<Aviso> avisos = avisoRepository
+        List<Comunicado> comunicados = comunicadoRepository
             .findAllByIgrejaIdAndAtivoIsTrue(PageRequest.of(0, 20), igrejaId)
             .getContent();
-        for (Aviso a : avisos) {
-            if (!avisoEstaVigente(a, hoje)) {
+        for (Comunicado c : comunicados) {
+            if (!comunicadoEstaVigente(c, hoje)) {
                 continue;
             }
-            if (!avisosVistos.contains(a.getId())) {
-                String desc = a.getConteudo() != null && a.getConteudo().length() > 80
-                    ? a.getConteudo().substring(0, 80) + "..."
-                    : a.getConteudo();
+            if (!comunicadosVistos.contains(c.getId()) && !avisosLegadoVistos.contains(c.getId())) {
+                String desc = c.getConteudo() != null && c.getConteudo().length() > 80
+                    ? c.getConteudo().substring(0, 80) + "..."
+                    : c.getConteudo();
                 itens.add(new NotificacaoItem(
-                    TIPO_AVISO,
-                    a.getId(),
-                    a.getTitulo(),
+                    TIPO_COMUNICADO,
+                    c.getId(),
+                    c.getTitulo(),
                     desc,
-                    "/avisos"
+                    "/comunicados"
                 ));
             }
         }
@@ -264,18 +281,37 @@ public class NotificacaoService {
             }
         }
 
-        Set<Long> escalasVistas = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_ESCALA);
-        for (EscalaItem item : escalaItemRepository.findByUserIdAndConfirmadoFalse(user.getId())) {
-            if (escalasVistas.contains(item.getId())) {
+        Instant inicioHoje = hoje.atStartOfDay(ZoneId.of("America/Sao_Paulo")).toInstant();
+        for (EscalaItem item : escalaItemRepository.findItensUsuarioAguardandoConfirmacao(
+            user.getId(),
+            StatusEscalaPublicacao.PUBLICADA,
+            inicioHoje
+        )) {
+            Escala escala = item.getEscala();
+            if (escala == null) {
                 continue;
             }
-            String tituloEscala = item.getEscala() != null ? item.getEscala().getTitulo() : "Nova escala";
+            String tituloEscala = escala.getTitulo() != null ? escala.getTitulo() : "Escala";
+            String departamento = escala.getDepartamento() != null ? escala.getDepartamento().getNome() : null;
+            String descricao = departamento != null ? departamento + " — " + tituloEscala : tituloEscala;
             itens.add(new NotificacaoItem(
                 TIPO_ESCALA,
                 item.getId(),
-                "Nova atribuição de escala",
-                tituloEscala,
-                "/escalas"
+                "Você está escalado para servir",
+                descricao,
+                "/escalas?escalaId=" + escala.getId() + "&itemId=" + item.getId()
+            ));
+        }
+
+        gerarLembretesEventosInscritos(user, igrejaId);
+
+        for (NotificacaoUsuario notificacao : notificacaoUsuarioRepository.findByUserAndLidaFalseOrderByCriadoEmDesc(user)) {
+            itens.add(new NotificacaoItem(
+                notificacao.getTipo(),
+                notificacao.getId(),
+                notificacao.getTitulo(),
+                notificacao.getMensagem(),
+                notificacao.getLink() != null ? notificacao.getLink() : "/eventos"
             ));
         }
 
@@ -286,7 +322,17 @@ public class NotificacaoService {
             if (eventosVistos.contains(evento.getId())) {
                 continue;
             }
+            if (evento.getStatus() != StatusEvento.PUBLICADO) {
+                continue;
+            }
             if (evento.getDataInicio() == null || evento.getDataInicio().isBefore(agora) || evento.getDataInicio().isAfter(limite)) {
+                continue;
+            }
+            boolean inscrito = eventoInscricaoRepository
+                .findByEventoIdAndUserId(evento.getId(), user.getId())
+                .filter(i -> i.getStatus() == StatusInscricaoEvento.ATIVA)
+                .isPresent();
+            if (inscrito) {
                 continue;
             }
             itens.add(new NotificacaoItem(
@@ -389,30 +435,59 @@ public class NotificacaoService {
 
     @Transactional
     public void marcarComoVista(String tipo, Long referenciaId) {
+        if (TIPO_ESCALA.equals(tipo)) {
+            return;
+        }
         Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneByLogin);
         if (userOpt.isEmpty()) return;
+        User user = userOpt.get();
 
-        if (vistaRepository.findByUserAndTipoAndReferenciaId(userOpt.get(), tipo, referenciaId).isPresent()) {
+        if (tipo != null && tipo.startsWith("EVENTO_")) {
+            notificacaoUsuarioRepository.findByIdAndUserId(referenciaId, user.getId()).ifPresent(notificacao -> {
+                notificacao.setLida(true);
+                notificacaoUsuarioRepository.save(notificacao);
+            });
+            return;
+        }
+
+        if (vistaRepository.findByUserAndTipoAndReferenciaId(user, tipo, referenciaId).isPresent()) {
             return;
         }
 
         UsuarioNotificacaoVista vista = new UsuarioNotificacaoVista();
-        vista.setUser(userOpt.get());
+        vista.setUser(user);
         vista.setTipo(tipo);
         vista.setReferenciaId(referenciaId);
         vista.setVistoEm(Instant.now());
         vistaRepository.save(vista);
-        LOG.debug("Notificação marcada como vista: {} {} para user {}", tipo, referenciaId, userOpt.get().getLogin());
+        LOG.debug("Notificação marcada como vista: {} {} para user {}", tipo, referenciaId, user.getLogin());
     }
 
-    private static boolean avisoEstaVigente(Aviso aviso, LocalDate referencia) {
-        if (aviso.getDataInicio() == null) {
+    private void gerarLembretesEventosInscritos(User user, Long igrejaId) {
+        Instant agora = Instant.now();
+        for (Evento evento : eventoRepository.findByIgrejaIdAndDataInicioAfterOrderByDataInicioAsc(igrejaId, agora)) {
+            if (evento.getStatus() != StatusEvento.PUBLICADO) {
+                continue;
+            }
+            boolean inscrito = eventoInscricaoRepository
+                .findByEventoIdAndUserId(evento.getId(), user.getId())
+                .filter(i -> i.getStatus() == StatusInscricaoEvento.ATIVA)
+                .isPresent();
+            if (!inscrito) {
+                continue;
+            }
+            eventoNotificacaoService.gerarLembretesInscritos(evento, List.of(user));
+        }
+    }
+
+    private static boolean comunicadoEstaVigente(Comunicado comunicado, LocalDate referencia) {
+        if (comunicado.getDataInicio() == null) {
             return false;
         }
-        if (referencia.isBefore(aviso.getDataInicio())) {
+        if (referencia.isBefore(comunicado.getDataInicio())) {
             return false;
         }
-        if (aviso.getDataFim() != null && referencia.isAfter(aviso.getDataFim())) {
+        if (comunicado.getDataFim() != null && referencia.isAfter(comunicado.getDataFim())) {
             return false;
         }
         return true;

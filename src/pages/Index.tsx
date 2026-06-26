@@ -7,16 +7,21 @@ import {
   DestaqueVisitantesHoje,
   DestaqueAniversariantesSemana,
   DestaqueAvisos,
+  DestaqueEventosProximos,
+  DestaqueMinhasEscalas,
 } from "@/components/dashboard";
 import { BannerInformativoDashboard } from "@/components/dashboard/BannerInformativoDashboard";
+import { AtivarPushCard } from "@/components/notificacoes/AtivarPushCard";
 import { AlertasSecretariaEscalas } from "@/components/escalas/AlertasSecretariaEscalas";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
-import { podeVerVisaoGerencial } from "@/auth/permissions";
+import { canAccess, podeVerVisaoGerencial } from "@/auth/permissions";
 const Inicio = () => {
   const { user } = usarAutenticacao();
   const { configuracao, publica } = useIgrejaConfiguracao();
   const visaoGerencial = podeVerVisaoGerencial(user);
+  const mostrarEventos = canAccess(user, "/eventos");
+  const mostrarEscalas = canAccess(user, "/escalas");
   const textoBoasVindas =
     configuracao?.textoBoasVindas?.trim() || publica.textoBoasVindas?.trim() || "";
 
@@ -70,6 +75,8 @@ const Inicio = () => {
 
         <BannerInformativoDashboard />
 
+        <AtivarPushCard />
+
         {visaoGerencial && <DestaqueVisitantesHoje />}
         {visaoGerencial && <DestaqueAniversariantesSemana />}
         <DestaqueAvisos />
@@ -88,9 +95,13 @@ const Inicio = () => {
           <AcoesRapidas />
         </section>
 
-        {/* Aniversariantes */}
+        {/* Eventos, escalas e aniversariantes */}
         <div className="grid gap-4 md:grid-cols-2">
-          <Aniversariantes />
+          {mostrarEventos && <DestaqueEventosProximos />}
+          {mostrarEscalas && <DestaqueMinhasEscalas />}
+          <div className={!mostrarEventos && !mostrarEscalas ? "md:col-span-2" : undefined}>
+            <Aniversariantes />
+          </div>
         </div>
       </div>
     </LayoutApp>

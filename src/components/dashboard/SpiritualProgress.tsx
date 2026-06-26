@@ -511,7 +511,7 @@ export function ProgressoEspiritual() {
       </CardContent>
 
       <Dialog open={modalAtrasadosAberto} onOpenChange={setModalAtrasadosAberto}>
-        <DialogContent className="max-h-[85vh] flex flex-col gap-0 p-0 sm:max-w-md">
+        <DialogContent className="max-h-[85vh] flex flex-col gap-0 p-0">
           <DialogHeader className="p-6 pb-2 shrink-0">
             <DialogTitle>Dias em atraso</DialogTitle>
             <DialogDescription>

@@ -147,5 +147,12 @@ semear:
     sender: ${SEMEAR_SMS_SENDER:Semear}
   brevo:
     api-key: ${SEMEAR_BREVO_API_KEY:}
+  push:
+    # Desabilitado por padrão em produção — ative via SEMEAR_PUSH_ENABLED=true
+    enabled: ${SEMEAR_PUSH_ENABLED:false}
+    firebase-project-id: ${SEMEAR_FIREBASE_PROJECT_ID:}
+    firebase-service-account: ${SEMEAR_FIREBASE_SERVICE_ACCOUNT:}
+    vapid-public-key: ${SEMEAR_FIREBASE_VAPID_PUBLIC_KEY:}
+    teste-endpoint-enabled: ${SEMEAR_PUSH_TESTE_ENABLED:false}
 
 # application:

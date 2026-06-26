@@ -4,12 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { listarAvisos, type AvisoApp } from "@/modules/announcements/api";
-import { filtrarAvisosVigentes, ordenarAvisosPorDestaque } from "@/lib/aviso-vigencia";
+import { listarComunicados, type ComunicadoApp } from "@/modules/comunicados/api";
+import { filtrarComunicadosVigentes, ordenarComunicadosPorDestaque } from "@/lib/comunicado-vigencia";
 import { Link } from "react-router-dom";
 
 interface ItemAvisoProps {
-  aviso: AvisoApp;
+  aviso: ComunicadoApp;
 }
 
 function ItemAviso({ aviso }: ItemAvisoProps) {
@@ -64,15 +64,15 @@ function ItemAviso({ aviso }: ItemAvisoProps) {
 }
 
 export function Avisos() {
-  const [lista, setLista] = useState<AvisoApp[]>([]);
+  const [lista, setLista] = useState<ComunicadoApp[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     const carregar = async () => {
       setCarregando(true);
       try {
-        const dados = await listarAvisos(true, 50);
-        const vigentes = ordenarAvisosPorDestaque(filtrarAvisosVigentes(dados));
+        const dados = await listarComunicados(true, 50);
+        const vigentes = ordenarComunicadosPorDestaque(filtrarComunicadosVigentes(dados));
         setLista(vigentes.slice(0, 3));
       } catch {
         setLista([]);
@@ -91,10 +91,10 @@ export function Avisos() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10 text-gold-dark">
               <Megaphone className="h-4 w-4" />
             </div>
-            <CardTitle className="text-base">Avisos</CardTitle>
+            <CardTitle className="text-base">Comunicados</CardTitle>
           </div>
           <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground">
-            <Link to="/avisos">
+            <Link to="/comunicados">
               Ver todos
               <ChevronRight className="h-3 w-3 ml-1" />
             </Link>
@@ -111,7 +111,7 @@ export function Avisos() {
           lista.map((aviso) => <ItemAviso key={aviso.id} aviso={aviso} />)
         ) : (
           <div className="text-sm text-muted-foreground py-4">
-            Nenhum aviso em exibição hoje.
+            Nenhum comunicado em exibição hoje.
           </div>
         )}
       </CardContent>

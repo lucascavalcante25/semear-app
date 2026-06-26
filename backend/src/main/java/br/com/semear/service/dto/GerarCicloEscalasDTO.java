@@ -6,6 +6,7 @@ import java.io.Serializable;
 public class GerarCicloEscalasDTO implements Serializable {
 
     private EscopoGeracaoEscala escopo;
+    private Boolean substituirLimpezaExistente;
 
     public EscopoGeracaoEscala getEscopo() {
         return escopo;
@@ -13,5 +14,13 @@ public class GerarCicloEscalasDTO implements Serializable {
 
     public void setEscopo(EscopoGeracaoEscala escopo) {
         this.escopo = escopo;
+    }
+
+    public Boolean getSubstituirLimpezaExistente() {
+        return substituirLimpezaExistente;
+    }
+
+    public void setSubstituirLimpezaExistente(Boolean substituirLimpezaExistente) {
+        this.substituirLimpezaExistente = substituirLimpezaExistente;
     }
 }

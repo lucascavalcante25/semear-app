@@ -565,7 +565,7 @@ export default function PaginaLouvores() {
                   Novo
               </Button>
             </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editando ? "Editar Louvor" : "Novo Louvor"}</DialogTitle>
                   <DialogDescription>
@@ -709,7 +709,7 @@ export default function PaginaLouvores() {
                 <Plus className="h-4 w-4" />
                 Criar Novo Grupo
               </Button>
-              <DialogContent className="max-w-sm">
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Novo Grupo</DialogTitle>
                   <DialogDescription>Informe o nome do grupo de louvores.</DialogDescription>
@@ -770,7 +770,7 @@ export default function PaginaLouvores() {
                                   <Plus className="h-4 w-4" />
                                   Adicionar
                                 </Button>
-                                <DialogContent className="max-w-md max-h-[85vh]">
+                                <DialogContent className="max-h-[85vh]">
                                   <DialogHeader>
                                     <DialogTitle>Adicionar louvor ao grupo</DialogTitle>
                                     <DialogDescription>

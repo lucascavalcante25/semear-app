@@ -283,7 +283,7 @@ public class EscalaAutomacaoService {
                 throw new BadRequestAlertException(msg, ENTITY, "geracaobloqueada");
             }
         }
-        return toGeracaoDto(executarGeracaoParaIgreja(igrejaId, origem, escopo));
+        return toGeracaoDto(executarGeracaoParaIgreja(igrejaId, origem, escopo, req));
     }
 
     public EscalaGeracaoDTO publicarGeracao(Long id) {
@@ -370,19 +370,59 @@ public class EscalaAutomacaoService {
         if (chave == null || chave.isBlank()) {
             throw new BadRequestAlertException("Lote inválido", ENTITY, "loteinvalido");
         }
+        List<Escala> alvo = buscarEscalasDoLoteLimpeza(chave);
+        if (alvo.isEmpty()) {
+            throw new BadRequestAlertException("Lote de limpeza não encontrado", ENTITY, "lotenaoencontrado");
+        }
+        removerEscalas(alvo);
+    }
+
+    public EscalaLimpezaLoteDTO publicarLoteLimpeza(String chave) {
+        if (chave == null || chave.isBlank()) {
+            throw new BadRequestAlertException("Lote inválido", ENTITY, "loteinvalido");
+        }
+        List<Escala> alvo = buscarEscalasDoLoteLimpeza(chave);
+        if (alvo.isEmpty()) {
+            throw new BadRequestAlertException("Lote de limpeza não encontrado", ENTITY, "lotenaoencontrado");
+        }
+        boolean temRascunho = alvo.stream().anyMatch(e -> e.getStatus() == StatusEscalaPublicacao.RASCUNHO);
+        if (!temRascunho) {
+            throw new BadRequestAlertException("Este lote já foi publicado", ENTITY, "statusinvalido");
+        }
+        for (Escala escala : alvo) {
+            escala.setStatus(StatusEscalaPublicacao.PUBLICADA);
+            escalaRepository.save(escala);
+            for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
+                notificacaoService.notificarEscalaItemAtribuido(escala, item);
+            }
+        }
+        return toLoteLimpezaDto(chave, alvo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EscalaDTO> listarEscalasDoLoteLimpeza(String chave) {
+        if (chave == null || chave.isBlank()) {
+            throw new BadRequestAlertException("Lote inválido", ENTITY, "loteinvalido");
+        }
+        return buscarEscalasDoLoteLimpeza(chave)
+            .stream()
+            .sorted(Comparator.comparing(Escala::getDataEvento, Comparator.nullsLast(Comparator.naturalOrder())))
+            .map(this::toEscalaDtoComItens)
+            .toList();
+    }
+
+    private List<Escala> buscarEscalasDoLoteLimpeza(String chave) {
         Long igrejaId = tenantService.getIgrejaIdAtual();
-        List<Escala> alvo = escalaRepository
+        return escalaRepository
             .findByIgrejaIdOrderByDataEventoDesc(igrejaId)
             .stream()
             .filter(this::escalaEhLimpeza)
             .filter(e -> chave.equals(extrairChaveLoteLimpeza(e)))
             .toList();
+    }
 
-        if (alvo.isEmpty()) {
-            throw new BadRequestAlertException("Lote de limpeza não encontrado", ENTITY, "lotenaoencontrado");
-        }
-
-        for (Escala escala : alvo) {
+    private void removerEscalas(List<Escala> escalas) {
+        for (Escala escala : escalas) {
             for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
                 escalaItemRepository.delete(item);
             }
@@ -449,15 +489,12 @@ public class EscalaAutomacaoService {
     public List<EscalaLoginAvisoDTO> avisosLoginUsuario() {
         User user = tenantService.getUsuarioAtual();
         LocalDate hoje = LocalDate.now(FUSO);
-        LocalDate fimSemana = hoje.plusDays(7);
         Instant desde = hoje.atStartOfDay(FUSO).toInstant();
-        Instant ate = fimSemana.atTime(23, 59).atZone(FUSO).toInstant();
 
         return escalaItemRepository
-            .findItensUsuarioNoPeriodo(user.getId(), StatusEscalaPublicacao.PUBLICADA, desde, ate)
+            .findItensUsuarioAguardandoConfirmacao(user.getId(), StatusEscalaPublicacao.PUBLICADA, desde)
             .stream()
-            .filter(item -> !avisoVistoRepository.existsByUserIdAndEscalaItemId(user.getId(), item.getId()))
-            .map(item -> toLoginAviso(item))
+            .map(this::toLoginAviso)
             .toList();
     }
 
@@ -502,13 +539,18 @@ public class EscalaAutomacaoService {
         }
         LOG.info("Gerando ciclo de escalas automaticamente para igreja {}", igrejaId);
         try {
-            executarGeracaoParaIgreja(igrejaId, OrigemEscalaGeracao.AGENDADO, null);
+            executarGeracaoParaIgreja(igrejaId, OrigemEscalaGeracao.AGENDADO, null, null);
         } catch (BadRequestAlertException e) {
             LOG.debug("Rotina agendada ignorada para igreja {}: {}", igrejaId, e.getMessage());
         }
     }
 
-    private EscalaGeracao executarGeracaoParaIgreja(Long igrejaId, OrigemEscalaGeracao origem, EscopoGeracaoEscala escopo) {
+    private EscalaGeracao executarGeracaoParaIgreja(
+        Long igrejaId,
+        OrigemEscalaGeracao origem,
+        EscopoGeracaoEscala escopo,
+        GerarCicloEscalasDTO req
+    ) {
         EscalaConfigAutomatica config = resolverConfig(igrejaId);
         boolean somenteLimpeza = escopo == EscopoGeracaoEscala.LIMPEZA;
         boolean somentePortariaRecepcao = escopo == EscopoGeracaoEscala.PORTARIA_RECEPCAO;
@@ -572,6 +614,11 @@ public class EscalaAutomacaoService {
             .filter(g -> g.getStatus() == StatusEscalaPublicacao.PUBLICADA)
             .filter(g -> g.getDataInicio().equals(inicio) && g.getDataFim().equals(fim))
             .findFirst();
+
+        if (somenteLimpeza && Boolean.TRUE.equals(req != null ? req.getSubstituirLimpezaExistente() : null)) {
+            rascunhoMesmoPeriodo.ifPresent(this::removerEscalasLimpezaDaGeracao);
+            publicadaMesmoPeriodo.ifPresent(this::removerEscalasLimpezaDaGeracao);
+        }
 
         if (somenteLimpeza && rascunhoMesmoPeriodo.isPresent()) {
             EscalaGeracao geracao = rascunhoMesmoPeriodo.get();
@@ -1047,7 +1094,11 @@ public class EscalaAutomacaoService {
             escala.setCultoRegistro(culto);
         }
         escala.setGeracao(geracao);
-        escala.setStatus(geracao.getStatus() != null ? geracao.getStatus() : StatusEscalaPublicacao.RASCUNHO);
+        if (loteLimpezaChave != null) {
+            escala.setStatus(StatusEscalaPublicacao.RASCUNHO);
+        } else {
+            escala.setStatus(geracao.getStatus() != null ? geracao.getStatus() : StatusEscalaPublicacao.RASCUNHO);
+        }
         escala.setTitulo(departamento.getNome() + " — " + culto.getNome() + " " + data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         escala.setDataEvento(combinarDataHorario(data, culto.getHorario()));
         if (loteLimpezaChave != null) {
@@ -1328,6 +1379,18 @@ public class EscalaAutomacaoService {
         }
     }
 
+    private void removerEscalasLimpezaDaGeracao(EscalaGeracao geracao) {
+        for (Escala escala : escalaRepository.findByGeracaoId(geracao.getId())) {
+            if (!escalaEhLimpeza(escala)) {
+                continue;
+            }
+            for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
+                escalaItemRepository.delete(item);
+            }
+            escalaRepository.delete(escala);
+        }
+    }
+
     private boolean escalaEhLimpeza(Escala escala) {
         return escala.getDepartamento() != null && departamentoEhCodigo(escala.getDepartamento(), CodigoDepartamento.LIMPEZA);
     }
@@ -1394,6 +1457,9 @@ public class EscalaAutomacaoService {
                 g.getDataFim().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
             );
         }
+
+        boolean temRascunho = escalas.stream().anyMatch(e -> e.getStatus() == StatusEscalaPublicacao.RASCUNHO);
+        dto.setStatus(temRascunho ? StatusEscalaPublicacao.RASCUNHO.name() : StatusEscalaPublicacao.PUBLICADA.name());
         return dto;
     }
 

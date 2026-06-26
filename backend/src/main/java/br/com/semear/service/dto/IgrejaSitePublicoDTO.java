@@ -16,7 +16,7 @@ public class IgrejaSitePublicoDTO implements Serializable {
     private String corSecundaria;
     private String textoBoasVindas;
     private String horarioCulto;
-    private Boolean exibirAvisosPublicos;
+    private Boolean exibirComunicadosPublicos;
     private String email;
     private String telefone;
     private String endereco;
@@ -24,9 +24,9 @@ public class IgrejaSitePublicoDTO implements Serializable {
     private String estado;
     private String cep;
     private List<EventoDTO> eventosPublicos = new ArrayList<>();
-    private List<AvisoPublicoDTO> avisosPublicos = new ArrayList<>();
+    private List<ComunicadoPublicoDTO> comunicadosPublicos = new ArrayList<>();
 
-    public static class AvisoPublicoDTO implements Serializable {
+    public static class ComunicadoPublicoDTO implements Serializable {
         private Long id;
         private String titulo;
         private String conteudo;
@@ -59,8 +59,8 @@ public class IgrejaSitePublicoDTO implements Serializable {
     public void setTextoBoasVindas(String textoBoasVindas) { this.textoBoasVindas = textoBoasVindas; }
     public String getHorarioCulto() { return horarioCulto; }
     public void setHorarioCulto(String horarioCulto) { this.horarioCulto = horarioCulto; }
-    public Boolean getExibirAvisosPublicos() { return exibirAvisosPublicos; }
-    public void setExibirAvisosPublicos(Boolean exibirAvisosPublicos) { this.exibirAvisosPublicos = exibirAvisosPublicos; }
+    public Boolean getExibirComunicadosPublicos() { return exibirComunicadosPublicos; }
+    public void setExibirComunicadosPublicos(Boolean exibirComunicadosPublicos) { this.exibirComunicadosPublicos = exibirComunicadosPublicos; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getTelefone() { return telefone; }
@@ -75,6 +75,6 @@ public class IgrejaSitePublicoDTO implements Serializable {
     public void setCep(String cep) { this.cep = cep; }
     public List<EventoDTO> getEventosPublicos() { return eventosPublicos; }
     public void setEventosPublicos(List<EventoDTO> eventosPublicos) { this.eventosPublicos = eventosPublicos; }
-    public List<AvisoPublicoDTO> getAvisosPublicos() { return avisosPublicos; }
-    public void setAvisosPublicos(List<AvisoPublicoDTO> avisosPublicos) { this.avisosPublicos = avisosPublicos; }
+    public List<ComunicadoPublicoDTO> getComunicadosPublicos() { return comunicadosPublicos; }
+    public void setComunicadosPublicos(List<ComunicadoPublicoDTO> comunicadosPublicos) { this.comunicadosPublicos = comunicadosPublicos; }
 }

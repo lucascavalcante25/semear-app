@@ -148,12 +148,12 @@ export default function Mais() {
                   path="/visitantes"
                 />
               )}
-              {canShow("/avisos") && (
+              {canShow("/comunicados") && (
                 <MenuItem
                   icon={Megaphone}
                   label="Avisos"
                   description="Comunicados da igreja"
-                  path="/avisos"
+                  path="/comunicados"
                 />
               )}
               {canShow("/aniversariantes") && (
@@ -201,21 +201,13 @@ export default function Mais() {
         </section>
 
         {/* Administração */}
-        {(canWrite(user, "/avisos") || canShow("/aprovar-pre-cadastros")) && (
+        {(canWrite(user, "/comunicados") || canShow("/aprovar-pre-cadastros")) && (
           <section>
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
               Administração
             </h2>
             <Card>
               <CardContent className="p-0">
-                {canWrite(user, "/avisos") && (
-                  <MenuItem
-                    icon={Bell}
-                    label="Informativos"
-                    description="Campanhas e comunicados ao login"
-                    path="/informativos"
-                  />
-                )}
                 {canShow("/aprovar-pre-cadastros") && (
                   <MenuItem
                     icon={UserCheck}

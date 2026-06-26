@@ -14,7 +14,7 @@ public class DashboardResumoDTO implements Serializable {
     private long preCadastrosPendentes;
     private BigDecimal saldoMes;
     private long aniversariantesHoje;
-    private long avisosAtivos;
+    private long comunicadosAtivos;
     private long documentosVencendo;
     private List<AniversarianteResumoDTO> aniversariantes = new ArrayList<>();
 
@@ -74,12 +74,12 @@ public class DashboardResumoDTO implements Serializable {
         this.aniversariantesHoje = aniversariantesHoje;
     }
 
-    public long getAvisosAtivos() {
-        return avisosAtivos;
+    public long getComunicadosAtivos() {
+        return comunicadosAtivos;
     }
 
-    public void setAvisosAtivos(long avisosAtivos) {
-        this.avisosAtivos = avisosAtivos;
+    public void setComunicadosAtivos(long comunicadosAtivos) {
+        this.comunicadosAtivos = comunicadosAtivos;
     }
 
     public long getDocumentosVencendo() {

@@ -327,7 +327,7 @@ export default function PaginaAvisos() {
                 Novo
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>{avisoEmEdicao ? "Editar Aviso" : "Novo Aviso"}</DialogTitle>
                 <DialogDescription>

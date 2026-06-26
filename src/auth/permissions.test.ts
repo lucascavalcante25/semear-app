@@ -40,8 +40,8 @@ describe("permissions — matriz por perfil", () => {
     expect(hasModuleAccess(sec, "membros", "WRITE")).toBe(true);
     expect(hasModuleAccess(sec, "visitantes", "WRITE")).toBe(true);
     expect(hasModuleAccess(sec, "financeiro", "WRITE")).toBe(false);
-    expect(canAccess(sec, "/informativos")).toBe(true);
-    expect(canWrite(sec, "/informativos")).toBe(true);
+    expect(canAccess(sec, "/comunicados")).toBe(true);
+    expect(canWrite(sec, "/comunicados")).toBe(true);
     expect(canAccess(sec, "/financeiro")).toBe(false);
   });
 

@@ -654,7 +654,7 @@ export function DocumentosIgrejaTab() {
       </Card>
 
       <Dialog open={editando != null} onOpenChange={(open) => !open && setEditando(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar informações</DialogTitle>
           </DialogHeader>

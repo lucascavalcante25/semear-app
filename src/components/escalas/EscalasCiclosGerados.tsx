@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  dialogContentSizeWide,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -185,7 +186,7 @@ export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
       </Card>
 
       <Dialog open={verGeracaoId != null} onOpenChange={(open) => !open && setVerGeracaoId(null)}>
-        <DialogContent className="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:w-full">
+        <DialogContent className={cn("flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0", dialogContentSizeWide)}>
           <DialogHeader className="shrink-0 border-b px-6 pb-4 pt-6">
             <DialogTitle>Escalas do ciclo</DialogTitle>
           </DialogHeader>
@@ -197,7 +198,7 @@ export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
             ) : escalasGeracao.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhuma escala neste ciclo.</p>
             ) : (
-              <div className="flex w-full flex-col gap-3">
+              <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
                 {agruparEscalasPorCulto(escalasGeracao).map((grupo) => {
                   const meuDia = usuarioEstaNoGrupo(grupo, user?.name);
                   return (
@@ -223,7 +224,12 @@ export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
                           </Badge>
                         )}
                       </div>
-                      <div className="mt-3 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div
+                        className={cn(
+                          "mt-3 grid w-full gap-2",
+                          grupo.funcoes.length > 1 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1",
+                        )}
+                      >
                         {grupo.funcoes.map((item, idx) => {
                           const souEu = nomesCoincidem(item.nome, user?.name);
                           return (
