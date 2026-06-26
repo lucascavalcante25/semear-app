@@ -37,6 +37,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { AvatarCropperModal } from "@/components/avatar/AvatarCropperModal";
+import { ConfigNotificacaoForm } from "@/components/notificacoes/ConfigNotificacaoForm";
+import { configNotificacaoPadrao } from "@/modules/notificacoes/config-types";
 import { ModalRelatorioInscritosEvento } from "@/components/eventos/ModalRelatorioInscritosEvento";
 import {
   Calendar,
@@ -103,6 +105,7 @@ const vazio = (): FormEvento => ({
   inscricoesAbertas: true,
   categoria: "OUTRO",
   status: "PUBLICADO",
+  configNotificacao: configNotificacaoPadrao(),
 });
 
 const badgeStatusVariant = (status?: StatusEvento) => {
@@ -838,6 +841,12 @@ export default function Eventos() {
                       onCheckedChange={(v) => setForm({ ...form, inscricoesAbertas: v })}
                     />
                   </div>
+
+                  <ConfigNotificacaoForm
+                    modo="evento"
+                    value={form.configNotificacao ?? configNotificacaoPadrao()}
+                    onChange={(configNotificacao) => setForm({ ...form, configNotificacao })}
+                  />
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setDialogAberto(false)}>

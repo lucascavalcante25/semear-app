@@ -5,6 +5,7 @@ import br.com.semear.domain.ComunicadoLeitura;
 import br.com.semear.domain.User;
 import br.com.semear.service.dto.ComunicadoDTO;
 import br.com.semear.service.dto.ComunicadoLeituraDTO;
+import br.com.semear.service.util.ConfigNotificacaoJsonUtil;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,6 +43,7 @@ public class ComunicadoMapper {
         dto.setAtualizadoEm(comunicado.getAtualizadoEm());
         dto.setAtualizadoPor(comunicado.getAtualizadoPor());
         dto.setLido(lido);
+        dto.setConfigNotificacao(ConfigNotificacaoJsonUtil.parse(comunicado.getConfigNotificacao()));
         return dto;
     }
 

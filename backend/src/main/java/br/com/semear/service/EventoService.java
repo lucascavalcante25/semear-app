@@ -10,9 +10,11 @@ import br.com.semear.domain.enumeration.StatusInscricaoEvento;
 import br.com.semear.repository.EventoInscricaoRepository;
 import br.com.semear.repository.EventoRepository;
 import br.com.semear.security.AuthoritiesConstants;
+import br.com.semear.service.dto.ConfigNotificacaoDTO;
 import br.com.semear.service.dto.EventoDTO;
 import br.com.semear.service.dto.EventoFiltroDTO;
 import br.com.semear.service.dto.EventoInscricaoDTO;
+import br.com.semear.service.util.ConfigNotificacaoJsonUtil;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,17 +49,20 @@ public class EventoService {
     private final EventoInscricaoRepository eventoInscricaoRepository;
     private final TenantService tenantService;
     private final EventoNotificacaoService eventoNotificacaoService;
+    private final NotificacaoProgramadaService notificacaoProgramadaService;
 
     public EventoService(
         EventoRepository eventoRepository,
         EventoInscricaoRepository eventoInscricaoRepository,
         TenantService tenantService,
-        EventoNotificacaoService eventoNotificacaoService
+        EventoNotificacaoService eventoNotificacaoService,
+        NotificacaoProgramadaService notificacaoProgramadaService
     ) {
         this.eventoRepository = eventoRepository;
         this.eventoInscricaoRepository = eventoInscricaoRepository;
         this.tenantService = tenantService;
         this.eventoNotificacaoService = eventoNotificacaoService;
+        this.notificacaoProgramadaService = notificacaoProgramadaService;
     }
 
     @Transactional(readOnly = true)
@@ -127,7 +132,10 @@ public class EventoService {
         if (entity.getCategoria() == null) {
             entity.setCategoria(CategoriaEvento.OUTRO);
         }
-        return toDtoComInscricoes(eventoRepository.save(entity), tenantService.getUsuarioAtual(), null, null);
+        Evento salvo = eventoRepository.save(entity);
+        ConfigNotificacaoDTO config = dto.getConfigNotificacao();
+        notificacaoProgramadaService.sincronizarEvento(salvo, config, true);
+        return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
     }
 
     public EventoDTO atualizar(Long id, EventoDTO dto) {
@@ -142,11 +150,13 @@ public class EventoService {
         }
         Evento salvo = eventoRepository.save(entity);
         notificarAlteracoesImportantes(antes, salvo);
+        notificacaoProgramadaService.sincronizarEvento(salvo, dto.getConfigNotificacao(), false);
         return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
     }
 
     public void excluir(Long id) {
         Evento entity = obterEntidade(id).orElseThrow(this::naoEncontrado);
+        notificacaoProgramadaService.cancelarEntidade("EVENTO", entity.getId());
         eventoInscricaoRepository.findByEventoId(entity.getId()).forEach(eventoInscricaoRepository::delete);
         removerArquivoBanner(entity.getId());
         eventoRepository.delete(entity);
@@ -411,6 +421,15 @@ public class EventoService {
             return;
         }
         String detalhe = alteracoes.stream().collect(Collectors.joining(", "));
+        ConfigNotificacaoDTO config = notificacaoProgramadaService.lerConfig(depois.getConfigNotificacao());
+        if (config.isEfetivamenteAtivo() && Boolean.TRUE.equals(config.getEnviarNaAlteracao())) {
+            if (depois.getStatus() == StatusEvento.CANCELADO) {
+                notificacaoProgramadaService.notificarCancelamentoEvento(depois, config);
+            } else {
+                notificacaoProgramadaService.notificarAlteracaoEvento(depois, config, detalhe);
+            }
+            return;
+        }
         List<EventoInscricao> inscritos = eventoInscricaoRepository.findByEventoIdAndStatus(
             depois.getId(),
             StatusInscricaoEvento.ATIVA
@@ -441,6 +460,7 @@ public class EventoService {
         entity.setImagemUrl(dto.getImagemUrl());
         entity.setLinkExterno(dto.getLinkExterno());
         entity.setPrazoCancelamentoInscricao(dto.getPrazoCancelamentoInscricao());
+        entity.setConfigNotificacao(ConfigNotificacaoJsonUtil.serializar(dto.getConfigNotificacao()));
     }
 
     private void validarDados(EventoDTO dto) {
@@ -523,6 +543,7 @@ public class EventoService {
         dto.setLinkExterno(entity.getLinkExterno());
         dto.setPrazoCancelamentoInscricao(entity.getPrazoCancelamentoInscricao());
         dto.setCriadoEm(entity.getCriadoEm());
+        dto.setConfigNotificacao(notificacaoProgramadaService.lerConfig(entity.getConfigNotificacao()));
         return dto;
     }
 

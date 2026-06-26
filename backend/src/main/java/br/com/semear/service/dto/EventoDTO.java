@@ -3,6 +3,7 @@ package br.com.semear.service.dto;
 import br.com.semear.domain.enumeration.CategoriaEvento;
 import br.com.semear.domain.enumeration.PublicoEvento;
 import br.com.semear.domain.enumeration.StatusEvento;
+import br.com.semear.service.dto.ConfigNotificacaoDTO;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ public class EventoDTO implements Serializable {
     private Integer vagasDisponiveis;
     private Instant criadoEm;
     private List<EventoInscricaoDTO> inscricoes = new ArrayList<>();
+    private ConfigNotificacaoDTO configNotificacao;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -80,4 +82,6 @@ public class EventoDTO implements Serializable {
     public void setCriadoEm(Instant criadoEm) { this.criadoEm = criadoEm; }
     public List<EventoInscricaoDTO> getInscricoes() { return inscricoes; }
     public void setInscricoes(List<EventoInscricaoDTO> inscricoes) { this.inscricoes = inscricoes; }
+    public ConfigNotificacaoDTO getConfigNotificacao() { return configNotificacao; }
+    public void setConfigNotificacao(ConfigNotificacaoDTO configNotificacao) { this.configNotificacao = configNotificacao; }
 }

@@ -11,7 +11,9 @@ import br.com.semear.repository.EscalaItemRepository;
 import br.com.semear.repository.EscalaRepository;
 import br.com.semear.repository.EventoRepository;
 import br.com.semear.repository.IgrejaRepository;
+import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.UsuarioPreferenciaNotificacaoRepository;
+import br.com.semear.domain.User;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
 import br.com.semear.service.util.PlanoLeituraColetivoUtils;
 import br.com.semear.service.util.PlanoLeituraColetivoUtils.LeituraDoDia;
@@ -45,6 +47,8 @@ public class PushLembreteScheduler {
     private final EscalaItemRepository escalaItemRepository;
     private final IgrejaRepository igrejaRepository;
     private final UsuarioPreferenciaNotificacaoRepository preferenciaRepository;
+    private final NotificacaoProgramadaService notificacaoProgramadaService;
+    private final UserRepository userRepository;
 
     public PushLembreteScheduler(
         PushNotificationProperties pushProperties,
@@ -53,7 +57,9 @@ public class PushLembreteScheduler {
         EscalaRepository escalaRepository,
         EscalaItemRepository escalaItemRepository,
         IgrejaRepository igrejaRepository,
-        UsuarioPreferenciaNotificacaoRepository preferenciaRepository
+        UsuarioPreferenciaNotificacaoRepository preferenciaRepository,
+        NotificacaoProgramadaService notificacaoProgramadaService,
+        UserRepository userRepository
     ) {
         this.pushProperties = pushProperties;
         this.notificacaoEnvioService = notificacaoEnvioService;
@@ -62,6 +68,63 @@ public class PushLembreteScheduler {
         this.escalaItemRepository = escalaItemRepository;
         this.igrejaRepository = igrejaRepository;
         this.preferenciaRepository = preferenciaRepository;
+        this.notificacaoProgramadaService = notificacaoProgramadaService;
+        this.userRepository = userRepository;
+    }
+
+    /** Lembretes configurados por evento — a cada hora. */
+    @Scheduled(cron = "0 0 * * * ?", zone = "America/Sao_Paulo")
+    @Transactional
+    public void processarNotificacoesAgendadas() {
+        if (!pushProperties.isEnabled()) {
+            return;
+        }
+        notificacaoProgramadaService.processarAgendamentosPendentes();
+    }
+
+    /** Parabéns personalizado no dia do aniversário — 08:30. */
+    @Scheduled(cron = "0 30 8 * * ?", zone = "America/Sao_Paulo")
+    @Transactional
+    public void lembreteAniversarios() {
+        if (!pushProperties.isEnabled()) {
+            return;
+        }
+        LocalDate hoje = LocalDate.now(ZONE_BR);
+        int enviados = 0;
+        for (Igreja igreja : igrejaRepository.findAll()) {
+            List<User> membros = userRepository.findAllByIgrejaIdAndBirthDateIsNotNullAndActivatedIsTrue(igreja.getId());
+            for (User user : membros) {
+                if (user.getBirthDate() == null) {
+                    continue;
+                }
+                if (
+                    user.getBirthDate().getMonthValue() != hoje.getMonthValue() ||
+                    user.getBirthDate().getDayOfMonth() != hoje.getDayOfMonth()
+                ) {
+                    continue;
+                }
+                String nome = montarPrimeiroNome(user);
+                NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+                payload.setIgrejaId(igreja.getId());
+                payload.setTipo("ANIVERSARIO");
+                payload.setEntidadeTipo("USUARIO");
+                payload.setEntidadeId(user.getId());
+                payload.setTitulo("Feliz aniversário! 🎉");
+                payload.setMensagem("Parabéns, " + nome + "! Que Deus abençoe ricamente este novo ano de vida.");
+                payload.setRotaDestino("/aniversariantes");
+                payload.setRegistrarDeduplicacao(true);
+                notificacaoEnvioService.enviarParaUsuario(user.getId(), payload);
+                enviados++;
+            }
+        }
+        LOG.info("Job aniversários concluído ({}) | {} notificação(ões)", hoje, enviados);
+    }
+
+    private static String montarPrimeiroNome(User user) {
+        if (user.getFirstName() != null && !user.getFirstName().isBlank()) {
+            return user.getFirstName().trim();
+        }
+        return "irmão(ã)";
     }
 
     /** Eventos de amanhã — 08:00 */
@@ -276,6 +339,9 @@ public class PushLembreteScheduler {
             );
             for (Evento evento : eventos) {
                 if (evento.getDataInicio() == null) continue;
+                if (notificacaoProgramadaService.possuiConfigAtiva(evento.getConfigNotificacao())) {
+                    continue;
+                }
                 String hora = HORA_FMT.format(evento.getDataInicio().atZone(ZONE_BR));
                 NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
                 payload.setIgrejaId(igreja.getId());

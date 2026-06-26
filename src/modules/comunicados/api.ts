@@ -1,4 +1,5 @@
 import { requisicaoApi } from "@/modules/api/client";
+import type { ConfigNotificacao } from "@/modules/notificacoes/config-types";
 
 export type TipoComunicadoApi =
   | "NORMAL"
@@ -33,6 +34,7 @@ export type ComunicadoDTO = {
   atualizadoPor?: string | null;
   lido?: boolean;
   totalLeituras?: number;
+  configNotificacao?: ConfigNotificacao;
 };
 
 export type ComunicadoLeituraDTO = {
@@ -60,6 +62,7 @@ export type ComunicadoApp = {
   createdBy: string;
   ctaRotulo?: string | null;
   ctaRota?: string | null;
+  configNotificacao?: ConfigNotificacao;
 };
 
 export const LABEL_PUBLICO: Record<PublicoAlvoComunicadoApi, string> = {
@@ -116,6 +119,7 @@ export const mapearComunicado = (dto: ComunicadoDTO): ComunicadoApp => ({
   createdBy: dto.criadoPor ?? "Sistema",
   ctaRotulo: dto.ctaRotulo,
   ctaRota: dto.ctaRota,
+  configNotificacao: dto.configNotificacao,
 });
 
 export const dtoFromApp = (
@@ -137,6 +141,7 @@ export const dtoFromApp = (
     ativo: item.isActive,
     ctaRotulo: item.ctaRotulo ?? null,
     ctaRota: item.ctaRota ?? null,
+    configNotificacao: item.configNotificacao,
   };
 };
 

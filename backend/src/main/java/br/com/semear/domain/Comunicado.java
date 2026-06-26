@@ -102,6 +102,10 @@ public class Comunicado implements Serializable {
     @Column(name = "atualizado_por")
     private String atualizadoPor;
 
+    @Lob
+    @Column(name = "config_notificacao")
+    private String configNotificacao;
+
     public Long getId() {
         return id;
     }
@@ -260,5 +264,13 @@ public class Comunicado implements Serializable {
 
     public void setAtualizadoPor(String atualizadoPor) {
         this.atualizadoPor = atualizadoPor;
+    }
+
+    public String getConfigNotificacao() {
+        return configNotificacao;
+    }
+
+    public void setConfigNotificacao(String configNotificacao) {
+        this.configNotificacao = configNotificacao;
     }
 }

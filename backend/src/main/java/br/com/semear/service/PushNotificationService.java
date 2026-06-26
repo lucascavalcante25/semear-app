@@ -359,6 +359,12 @@ public class PushNotificationService {
         if ("PUSH_TESTE".equals(tipo)) {
             return true;
         }
+        if (tipo.startsWith("ANIVERSARIO")) {
+            return true;
+        }
+        if (tipo.startsWith("LEITURA_COLETIVA")) {
+            return Boolean.TRUE.equals(pref.getDevocionalAtivo()) || Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
+        }
         return Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
     }
 

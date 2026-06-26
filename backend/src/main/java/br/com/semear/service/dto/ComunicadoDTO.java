@@ -31,6 +31,7 @@ public class ComunicadoDTO implements Serializable {
     private String atualizadoPor;
     private Boolean lido;
     private Long totalLeituras;
+    private ConfigNotificacaoDTO configNotificacao;
 
     public Long getId() {
         return id;
@@ -206,5 +207,13 @@ public class ComunicadoDTO implements Serializable {
 
     public void setTotalLeituras(Long totalLeituras) {
         this.totalLeituras = totalLeituras;
+    }
+
+    public ConfigNotificacaoDTO getConfigNotificacao() {
+        return configNotificacao;
+    }
+
+    public void setConfigNotificacao(ConfigNotificacaoDTO configNotificacao) {
+        this.configNotificacao = configNotificacao;
     }
 }

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260627000009-1" author="semear">
+        <addColumn tableName="evento">
+            <column name="config_notificacao" type="${clobType}"/>
+        </addColumn>
+        <addColumn tableName="comunicado">
+            <column name="config_notificacao" type="${clobType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260627000009-2" author="semear">
+        <createTable tableName="notificacao_agendamento">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entidade_tipo" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entidade_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_notificacao" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="agendado_para" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="titulo" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mensagem" type="${clobType}"/>
+            <column name="rota_destino" type="varchar(255)"/>
+            <column name="config_json" type="${clobType}"/>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="chave_unica" type="varchar(200)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="criado_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enviado_em" type="timestamp"/>
+        </createTable>
+        <createIndex indexName="idx_notif_agend_status_data" tableName="notificacao_agendamento">
+            <column name="status"/>
+            <column name="agendado_para"/>
+        </createIndex>
+        <createIndex indexName="idx_notif_agend_entidade" tableName="notificacao_agendamento">
+            <column name="entidade_tipo"/>
+            <column name="entidade_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

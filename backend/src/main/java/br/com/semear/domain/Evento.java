@@ -78,6 +78,10 @@ public class Evento implements Serializable {
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm = Instant.now();
 
+    @Lob
+    @Column(name = "config_notificacao")
+    private String configNotificacao;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Igreja getIgreja() { return igreja; }
@@ -110,4 +114,6 @@ public class Evento implements Serializable {
     public void setPrazoCancelamentoInscricao(Instant prazoCancelamentoInscricao) { this.prazoCancelamentoInscricao = prazoCancelamentoInscricao; }
     public Instant getCriadoEm() { return criadoEm; }
     public void setCriadoEm(Instant criadoEm) { this.criadoEm = criadoEm; }
+    public String getConfigNotificacao() { return configNotificacao; }
+    public void setConfigNotificacao(String configNotificacao) { this.configNotificacao = configNotificacao; }
 }

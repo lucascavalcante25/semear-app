@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutApp } from "@/components/layout";
+import { ConfigNotificacaoForm } from "@/components/notificacoes/ConfigNotificacaoForm";
+import { configNotificacaoPadrao } from "@/modules/notificacoes/config-types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,6 +215,7 @@ const comunicadoVazio = (): Omit<ComunicadoApp, "id" | "idNum" | "createdAt" | "
   exibirNoSitePublico: true,
   startDate: new Date(),
   isActive: true,
+  configNotificacao: configNotificacaoPadrao(),
 });
 
 export default function Comunicados() {
@@ -284,6 +287,7 @@ export default function Comunicados() {
       isActive: item.isActive,
       ctaRotulo: item.ctaRotulo,
       ctaRota: item.ctaRota,
+      configNotificacao: item.configNotificacao ?? configNotificacaoPadrao(),
     });
     setDialogAberto(true);
   };
@@ -492,6 +496,13 @@ export default function Comunicados() {
                     onCheckedChange={(v) => setForm({ ...form, isActive: v })}
                   />
                 </div>
+
+                <ConfigNotificacaoForm
+                  modo="comunicado"
+                  value={form.configNotificacao ?? configNotificacaoPadrao()}
+                  onChange={(configNotificacao) => setForm({ ...form, configNotificacao })}
+                />
+
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" onClick={() => setDialogAberto(false)}>
                     Cancelar

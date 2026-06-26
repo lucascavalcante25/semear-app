@@ -120,4 +120,5 @@
     <include file="config/liquibase/changelog/20260627000006_evento_evolution.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260627000007_unificar_comunicados.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260627000008_push_notifications.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260627000009_notificacao_config.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

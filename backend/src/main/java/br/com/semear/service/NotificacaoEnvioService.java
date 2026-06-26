@@ -164,6 +164,11 @@ public class NotificacaoEnvioService {
     }
 
     /** Cria notificação interna e tenta push — usado por jobs e integrações. */
+    public void enviarParaUsuariosResolvidosPublico(List<User> usuarios, NotificacaoPayloadDTO payload) {
+        enviarParaUsuariosResolvidos(usuarios, payload);
+    }
+
+    /** Cria notificação interna e tenta push — usado por jobs e integrações. */
     private void enviarParaUsuariosResolvidos(List<User> usuarios, NotificacaoPayloadDTO payload) {
         if (usuarios == null || usuarios.isEmpty() || payload == null) {
             return;

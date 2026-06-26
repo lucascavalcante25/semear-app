@@ -12,6 +12,7 @@ import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.dto.ComunicadoDTO;
 import br.com.semear.service.dto.ComunicadoLeituraDTO;
 import br.com.semear.service.mapper.ComunicadoMapper;
+import br.com.semear.service.util.ConfigNotificacaoJsonUtil;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -33,19 +34,22 @@ public class ComunicadoService {
     private final TenantService tenantService;
     private final ComunicadoMapper comunicadoMapper;
     private final UserRepository userRepository;
+    private final NotificacaoProgramadaService notificacaoProgramadaService;
 
     public ComunicadoService(
         ComunicadoRepository comunicadoRepository,
         ComunicadoLeituraRepository comunicadoLeituraRepository,
         TenantService tenantService,
         ComunicadoMapper comunicadoMapper,
-        UserRepository userRepository
+        UserRepository userRepository,
+        NotificacaoProgramadaService notificacaoProgramadaService
     ) {
         this.comunicadoRepository = comunicadoRepository;
         this.comunicadoLeituraRepository = comunicadoLeituraRepository;
         this.tenantService = tenantService;
         this.comunicadoMapper = comunicadoMapper;
         this.userRepository = userRepository;
+        this.notificacaoProgramadaService = notificacaoProgramadaService;
     }
 
     @Transactional(readOnly = true)
@@ -118,7 +122,9 @@ public class ComunicadoService {
         comunicado.setCriadoPor(obterNomeCompleto(usuario));
         comunicado.setCriadoEm(Instant.now());
 
-        return comunicadoMapper.toDto(comunicadoRepository.save(comunicado));
+        Comunicado salvo = comunicadoRepository.save(comunicado);
+        notificacaoProgramadaService.sincronizarComunicado(salvo, dto.getConfigNotificacao(), true);
+        return comunicadoMapper.toDto(salvo);
     }
 
     public ComunicadoDTO atualizar(Long id, ComunicadoDTO dto) {
@@ -128,12 +134,15 @@ public class ComunicadoService {
         aplicarDados(comunicado, dto);
         comunicado.setAtualizadoEm(Instant.now());
         comunicado.setAtualizadoPor(obterNomeCompleto(tenantService.getUsuarioAtual()));
-        return comunicadoMapper.toDto(comunicadoRepository.save(comunicado));
+        Comunicado salvo = comunicadoRepository.save(comunicado);
+        notificacaoProgramadaService.sincronizarComunicado(salvo, dto.getConfigNotificacao(), false);
+        return comunicadoMapper.toDto(salvo);
     }
 
     public void excluir(Long id) {
         validarLideranca();
         Comunicado comunicado = obterDaIgreja(id).orElseThrow(this::naoEncontrado);
+        notificacaoProgramadaService.cancelarEntidade("COMUNICADO", comunicado.getId());
         comunicadoRepository.delete(comunicado);
     }
 
@@ -191,6 +200,7 @@ public class ComunicadoService {
         comunicado.setCtaRotulo(dto.getCtaRotulo());
         comunicado.setCtaRota(dto.getCtaRota());
         comunicado.setImagemUrl(dto.getImagemUrl());
+        comunicado.setConfigNotificacao(ConfigNotificacaoJsonUtil.serializar(dto.getConfigNotificacao()));
     }
 
     private void validarDados(ComunicadoDTO dto) {

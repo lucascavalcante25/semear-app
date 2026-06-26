@@ -1,4 +1,5 @@
 import { requisicaoApi } from "@/modules/api/client";
+import type { ConfigNotificacao } from "@/modules/notificacoes/config-types";
 
 export type PublicoEvento = "INTERNO" | "PUBLICO";
 
@@ -53,6 +54,7 @@ export type EventoDTO = {
   vagasDisponiveis?: number | null;
   totalInscritos?: number;
   criadoEm?: string;
+  configNotificacao?: ConfigNotificacao;
 };
 
 export type EventoFiltro = {
