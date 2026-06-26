@@ -42,7 +42,12 @@ public class PushNotificationProperties {
     }
 
     public void setVapidPublicKey(String vapidPublicKey) {
-        this.vapidPublicKey = vapidPublicKey;
+        if (vapidPublicKey == null) {
+            this.vapidPublicKey = null;
+            return;
+        }
+        // Render/env às vezes incluem aspas ou espaços — quebram o getToken no iOS
+        this.vapidPublicKey = vapidPublicKey.trim().replace("\"", "").replace("'", "");
     }
 
     public boolean isTesteEndpointEnabled() {
