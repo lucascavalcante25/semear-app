@@ -77,6 +77,21 @@ Write-Host "Iniciando backend Semear (perfil dev)..." -ForegroundColor Cyan
 $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 Set-Location $scriptDir
 
+# Carrega .env da raiz do projeto (semear-app/.env)
+$envFile = Join-Path (Split-Path $scriptDir -Parent) ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+            $name = $matches[1].Trim()
+            $value = $matches[2].Trim().Trim('"')
+            [Environment]::SetEnvironmentVariable($name, $value, "Process")
+        }
+    }
+    Write-Host "Variaveis carregadas de $envFile" -ForegroundColor DarkGray
+} else {
+    Write-Host "AVISO: .env nao encontrado em $envFile — push pode ficar desabilitado" -ForegroundColor Yellow
+}
+
 $mavenArgs = @("spring-boot:run", "-Dspring-boot.run.profiles=dev")
 $mvnCmd = Resolve-MavenCmd
 
