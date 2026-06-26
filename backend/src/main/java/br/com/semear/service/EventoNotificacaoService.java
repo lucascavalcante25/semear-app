@@ -63,6 +63,17 @@ public class EventoNotificacaoService {
         );
     }
 
+    public void notificarExclusaoEvento(Evento evento, User user) {
+        criar(
+            evento,
+            user,
+            TIPO_EVENTO_CANCELAMENTO,
+            "Evento excluído",
+            "O evento \"" + evento.getTitulo() + "\" foi removido da programação.",
+            "/eventos"
+        );
+    }
+
     public void gerarLembretesInscritos(Evento evento, List<User> inscritos) {
         if (evento.getDataInicio() == null) {
             return;

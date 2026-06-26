@@ -59,6 +59,8 @@ public class NotificacaoService {
     public static final String TIPO_PEDIDO_ORACAO = "PEDIDO_ORACAO";
     public static final String TIPO_DOCUMENTO_VENCENDO = "DOCUMENTO_VENCENDO";
     public static final String TIPO_ESCALA = "ESCALA";
+    public static final String TIPO_ESCALA_ALTERACAO = "ESCALA_ALTERACAO";
+    public static final String TIPO_ESCALA_CANCELAMENTO = "ESCALA_CANCELAMENTO";
     public static final String TIPO_EVENTO = "EVENTO";
 
     private final ComunicadoRepository comunicadoRepository;
@@ -409,6 +411,123 @@ public class NotificacaoService {
             escala.getId(),
             user.getId()
         );
+    }
+
+    /** Compara estado anterior/depois da edição e notifica escalados pertinentes. */
+    public void processarAlteracoesEscala(
+        Escala escala,
+        String tituloAntes,
+        Instant dataAntes,
+        List<EscalaItem> itensAntes,
+        List<EscalaItem> itensDepois
+    ) {
+        if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
+            return;
+        }
+        String detalhe = montarDetalheAlteracaoEscala(tituloAntes, dataAntes, escala);
+        Set<Long> usersAntes = extrairUserIds(itensAntes);
+        Set<Long> usersDepois = extrairUserIds(itensDepois);
+
+        for (EscalaItem item : itensAntes) {
+            if (item.getUser() == null || item.getUser().getId() == null) {
+                continue;
+            }
+            if (!usersDepois.contains(item.getUser().getId())) {
+                notificarEscalaRemovida(escala, item.getUser());
+            }
+        }
+
+        for (EscalaItem item : itensDepois) {
+            if (item.getUser() == null || item.getUser().getId() == null) {
+                continue;
+            }
+            if (!usersAntes.contains(item.getUser().getId())) {
+                notificarEscalaItemAtribuido(escala, item);
+            } else if (detalhe != null) {
+                notificarEscalaAlterada(escala, item, detalhe);
+            }
+        }
+    }
+
+    public void notificarEscalaAlterada(Escala escala, EscalaItem item, String detalhe) {
+        if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala) || item == null || item.getUser() == null) {
+            return;
+        }
+        User user = item.getUser();
+        if (!user.isActivated() || escala.getIgreja() == null) {
+            return;
+        }
+        NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+        payload.setIgrejaId(escala.getIgreja().getId());
+        payload.setTipo(TIPO_ESCALA_ALTERACAO);
+        payload.setEntidadeTipo("ESCALA");
+        payload.setEntidadeId(escala.getId());
+        payload.setTitulo("Escala atualizada");
+        payload.setMensagem("Sua escala foi alterada (" + detalhe + "): " + EscalaNotificacaoUtils.montarDescricao(escala));
+        payload.setRotaDestino(EscalaNotificacaoUtils.montarRota(escala, item));
+        payload.setRegistrarDeduplicacao(true);
+        payload.setChaveDeduplicacao(
+            String.format("ESCALA_ALTERACAO:%s:%s:%s", escala.getId(), user.getId(), detalhe.replace(" ", "_"))
+        );
+        notificacaoEnvioService.enviarParaUsuario(user.getId(), payload);
+    }
+
+    public void notificarEscalaRemovida(Escala escala, User user) {
+        if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala) || user == null || !user.isActivated()) {
+            return;
+        }
+        if (escala.getIgreja() == null || escala.getIgreja().getId() == null) {
+            return;
+        }
+        NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+        payload.setIgrejaId(escala.getIgreja().getId());
+        payload.setTipo(TIPO_ESCALA_CANCELAMENTO);
+        payload.setEntidadeTipo("ESCALA");
+        payload.setEntidadeId(escala.getId());
+        payload.setTitulo("Escala cancelada");
+        payload.setMensagem("Sua escala em " + EscalaNotificacaoUtils.montarDescricao(escala) + " foi removida.");
+        payload.setRotaDestino("/escalas");
+        payload.setRegistrarDeduplicacao(true);
+        payload.setChaveDeduplicacao(String.format("ESCALA_CANCELAMENTO:%s:%s", escala.getId(), user.getId()));
+        notificacaoEnvioService.enviarParaUsuario(user.getId(), payload);
+    }
+
+    public void notificarEscalasExcluidas(Escala escala) {
+        if (escala == null || escala.getId() == null) {
+            return;
+        }
+        for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
+            if (item.getUser() != null) {
+                notificarEscalaRemovida(escala, item.getUser());
+            }
+        }
+    }
+
+    private static Set<Long> extrairUserIds(List<EscalaItem> itens) {
+        Set<Long> ids = new HashSet<>();
+        if (itens == null) {
+            return ids;
+        }
+        for (EscalaItem item : itens) {
+            if (item.getUser() != null && item.getUser().getId() != null) {
+                ids.add(item.getUser().getId());
+            }
+        }
+        return ids;
+    }
+
+    private static String montarDetalheAlteracaoEscala(String tituloAntes, Instant dataAntes, Escala escala) {
+        List<String> partes = new ArrayList<>();
+        if (!Objects.equals(tituloAntes, escala.getTitulo())) {
+            partes.add("título");
+        }
+        if (!Objects.equals(dataAntes, escala.getDataEvento())) {
+            partes.add("data/horário");
+        }
+        if (partes.isEmpty()) {
+            return null;
+        }
+        return String.join(", ", partes);
     }
 
     public void notificarPagamentoRecebido(Igreja igreja, TipoPagamentoPlataforma tipo) {

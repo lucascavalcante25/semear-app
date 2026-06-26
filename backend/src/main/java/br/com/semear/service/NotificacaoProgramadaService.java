@@ -109,6 +109,26 @@ public class NotificacaoProgramadaService {
         );
     }
 
+    public void notificarExclusaoEvento(Evento evento, ConfigNotificacaoDTO config) {
+        if (evento == null || config == null || !config.isEfetivamenteAtivo()) {
+            return;
+        }
+        boolean avisar =
+            config.getEnviarNoCancelamento() != null
+                ? Boolean.TRUE.equals(config.getEnviarNoCancelamento())
+                : Boolean.TRUE.equals(config.getEnviarNaAlteracao());
+        if (!avisar) {
+            return;
+        }
+        enviarImediatoEvento(
+            evento,
+            config,
+            "EVENTO_CANCELAMENTO",
+            "Evento excluído",
+            "O evento \"" + evento.getTitulo() + "\" foi removido da programação."
+        );
+    }
+
     public void sincronizarComunicado(Comunicado comunicado, ConfigNotificacaoDTO config, boolean enviarPublicacaoAgora) {
         if (comunicado == null || comunicado.getId() == null) {
             return;

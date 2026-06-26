@@ -127,14 +127,24 @@ public class EscalaService {
     public EscalaDTO atualizar(Long id, EscalaDTO dto) {
         validarDados(dto);
         Escala escala = obterEntidade(id).orElseThrow(this::naoEncontrado);
+        String tituloAntes = escala.getTitulo();
+        Instant dataAntes = escala.getDataEvento();
+        List<EscalaItem> itensAntes = escalaItemRepository.findByEscalaId(escala.getId());
         aplicarDados(escala, dto);
         Escala salva = escalaRepository.save(escala);
         sincronizarItens(salva, dto.getItens(), false);
+        if (salva.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
+            List<EscalaItem> itensDepois = escalaItemRepository.findByEscalaId(salva.getId());
+            notificacaoService.processarAlteracoesEscala(salva, tituloAntes, dataAntes, itensAntes, itensDepois);
+        }
         return toDtoComItens(salva);
     }
 
     public void excluir(Long id) {
         Escala escala = obterEntidade(id).orElseThrow(this::naoEncontrado);
+        if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
+            notificacaoService.notificarEscalasExcluidas(escala);
+        }
         escalaItemRepository.findByEscalaId(escala.getId()).forEach(escalaItemRepository::delete);
         escalaRepository.delete(escala);
     }

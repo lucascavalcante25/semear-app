@@ -156,10 +156,28 @@ public class EventoService {
 
     public void excluir(Long id) {
         Evento entity = obterEntidade(id).orElseThrow(this::naoEncontrado);
+        notificarExclusaoEvento(entity);
         notificacaoProgramadaService.cancelarEntidade("EVENTO", entity.getId());
         eventoInscricaoRepository.findByEventoId(entity.getId()).forEach(eventoInscricaoRepository::delete);
         removerArquivoBanner(entity.getId());
         eventoRepository.delete(entity);
+    }
+
+    private void notificarExclusaoEvento(Evento evento) {
+        ConfigNotificacaoDTO config = notificacaoProgramadaService.lerConfig(evento.getConfigNotificacao());
+        if (config.isEfetivamenteAtivo()) {
+            notificacaoProgramadaService.notificarExclusaoEvento(evento, config);
+            return;
+        }
+        List<EventoInscricao> inscritos = eventoInscricaoRepository.findByEventoIdAndStatus(
+            evento.getId(),
+            StatusInscricaoEvento.ATIVA
+        );
+        for (EventoInscricao inscricao : inscritos) {
+            if (inscricao.getUser() != null) {
+                eventoNotificacaoService.notificarExclusaoEvento(evento, inscricao.getUser());
+            }
+        }
     }
 
     public EventoDTO uploadBanner(Long id, MultipartFile file) {

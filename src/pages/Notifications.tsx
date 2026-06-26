@@ -33,6 +33,8 @@ const ICONE_POR_TIPO: Record<string, React.ElementType> = {
   SAAS: Bell,
   PEDIDO_ORACAO: Heart,
   ESCALA: CalendarDays,
+  ESCALA_ALTERACAO: CalendarDays,
+  ESCALA_CANCELAMENTO: CalendarDays,
   ESCALA_LEMBRETE_AMANHA: CalendarDays,
   ESCALA_LEMBRETE_SEMANA: CalendarDays,
   EVENTO: CalendarDays,

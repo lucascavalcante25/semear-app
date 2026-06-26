@@ -334,6 +334,9 @@ public class EscalaAutomacaoService {
         }
 
         for (Escala escala : alvo) {
+            if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
+                notificacaoService.notificarEscalasExcluidas(escala);
+            }
             for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
                 escalaItemRepository.delete(item);
             }
@@ -424,6 +427,9 @@ public class EscalaAutomacaoService {
 
     private void removerEscalas(List<Escala> escalas) {
         for (Escala escala : escalas) {
+            if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
+                notificacaoService.notificarEscalasExcluidas(escala);
+            }
             for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
                 escalaItemRepository.delete(item);
             }
