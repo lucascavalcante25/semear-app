@@ -15,6 +15,7 @@ import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.UsuarioPreferenciaNotificacaoRepository;
 import br.com.semear.domain.User;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
+import br.com.semear.service.util.EscalaNotificacaoUtils;
 import br.com.semear.service.util.PlanoLeituraColetivoUtils;
 import br.com.semear.service.util.PlanoLeituraColetivoUtils.LeituraDoDia;
 import br.com.semear.service.util.VersiculoDoDiaUtils;
@@ -364,6 +365,9 @@ public class PushLembreteScheduler {
         for (Igreja igreja : igrejaRepository.findAll()) {
             List<Escala> escalas = escalaRepository.findByIgrejaIdAndStatusOrderByDataEventoDesc(igreja.getId(), StatusEscalaPublicacao.PUBLICADA);
             for (Escala escala : escalas) {
+                if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
+                    continue;
+                }
                 if (escala.getDataEvento() == null) continue;
                 Instant dataEscala = escala.getDataEvento();
                 if (dataEscala.isBefore(instanteInicio) || !dataEscala.isBefore(instanteFim)) {
@@ -371,15 +375,15 @@ public class PushLembreteScheduler {
                 }
                 List<EscalaItem> itens = escalaItemRepository.findByEscalaId(escala.getId());
                 for (EscalaItem item : itens) {
-                    if (item.getUser() == null) continue;
+                    if (item.getUser() == null || !item.getUser().isActivated()) continue;
                     NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
                     payload.setIgrejaId(igreja.getId());
                     payload.setTipo(tipo);
                     payload.setEntidadeTipo("ESCALA");
                     payload.setEntidadeId(escala.getId());
                     payload.setTitulo(titulo);
-                    payload.setMensagem("Você está escalado em \"" + escala.getTitulo() + "\".");
-                    payload.setRotaDestino("/escalas");
+                    payload.setMensagem(EscalaNotificacaoUtils.montarDescricao(escala));
+                    payload.setRotaDestino(EscalaNotificacaoUtils.montarRota(escala, item));
                     payload.setRegistrarDeduplicacao(true);
                     payload.setChaveDeduplicacao(
                         NotificacaoEnvioService.montarChaveDeduplicacao(tipo, "ESCALA", escala.getId(), item.getUser().getId(), inicio)

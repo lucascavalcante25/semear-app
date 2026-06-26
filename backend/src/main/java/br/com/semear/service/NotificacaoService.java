@@ -34,6 +34,8 @@ import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.UsuarioNotificacaoVistaRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.dto.NotificacaoPayloadDTO;
+import br.com.semear.service.util.EscalaNotificacaoUtils;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -72,6 +74,7 @@ public class NotificacaoService {
     private final EventoInscricaoRepository eventoInscricaoRepository;
     private final NotificacaoUsuarioRepository notificacaoUsuarioRepository;
     private final EventoNotificacaoService eventoNotificacaoService;
+    private final NotificacaoEnvioService notificacaoEnvioService;
 
     public NotificacaoService(
         ComunicadoRepository comunicadoRepository,
@@ -86,7 +89,8 @@ public class NotificacaoService {
         EventoRepository eventoRepository,
         EventoInscricaoRepository eventoInscricaoRepository,
         NotificacaoUsuarioRepository notificacaoUsuarioRepository,
-        EventoNotificacaoService eventoNotificacaoService
+        EventoNotificacaoService eventoNotificacaoService,
+        NotificacaoEnvioService notificacaoEnvioService
     ) {
         this.comunicadoRepository = comunicadoRepository;
         this.userRepository = userRepository;
@@ -101,6 +105,7 @@ public class NotificacaoService {
         this.eventoInscricaoRepository = eventoInscricaoRepository;
         this.notificacaoUsuarioRepository = notificacaoUsuarioRepository;
         this.eventoNotificacaoService = eventoNotificacaoService;
+        this.notificacaoEnvioService = notificacaoEnvioService;
     }
 
     public record NotificacaoItem(String tipo, Long referenciaId, String titulo, String descricao, String link) {}
@@ -288,7 +293,7 @@ public class NotificacaoService {
             inicioHoje
         )) {
             Escala escala = item.getEscala();
-            if (escala == null) {
+            if (escala == null || !EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
                 continue;
             }
             String tituloEscala = escala.getTitulo() != null ? escala.getTitulo() : "Escala";
@@ -376,11 +381,41 @@ public class NotificacaoService {
     }
 
     public void notificarEscalaItemAtribuido(Escala escala, EscalaItem item) {
+        if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
+            return;
+        }
+        if (item == null || item.getUser() == null || !item.getUser().isActivated()) {
+            return;
+        }
+        if (escala.getIgreja() == null || escala.getIgreja().getId() == null) {
+            return;
+        }
+
+        User user = item.getUser();
+        NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+        payload.setIgrejaId(escala.getIgreja().getId());
+        payload.setTipo(TIPO_ESCALA);
+        payload.setEntidadeTipo("ESCALA");
+        payload.setEntidadeId(escala.getId());
+        payload.setTitulo("Você está escalado para servir");
+        payload.setMensagem(EscalaNotificacaoUtils.montarDescricao(escala));
+        payload.setRotaDestino(EscalaNotificacaoUtils.montarRota(escala, item));
+        payload.setRegistrarDeduplicacao(true);
+        payload.setChaveDeduplicacao(
+            NotificacaoEnvioService.montarChaveDeduplicacao(
+                "ESCALA_ATRIBUIDA",
+                "ESCALA_ITEM",
+                item.getId(),
+                user.getId(),
+                LocalDate.now(ZoneId.of("America/Sao_Paulo"))
+            )
+        );
+        notificacaoEnvioService.enviarParaUsuario(user.getId(), payload);
         LOG.info(
-            "Item de escala {} atribuído na escala {} para usuário {}",
-            item != null ? item.getId() : "?",
-            escala != null ? escala.getId() : "?",
-            item != null && item.getUser() != null ? item.getUser().getId() : "?"
+            "Notificação de escala enviada — item {} escala {} usuário {}",
+            item.getId(),
+            escala.getId(),
+            user.getId()
         );
     }
 

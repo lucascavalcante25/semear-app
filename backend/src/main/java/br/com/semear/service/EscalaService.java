@@ -120,7 +120,7 @@ public class EscalaService {
         escala.setCriadoEm(Instant.now());
         escala.setStatus(StatusEscalaPublicacao.PUBLICADA);
         Escala salva = escalaRepository.save(escala);
-        sincronizarItens(salva, dto.getItens());
+        sincronizarItens(salva, dto.getItens(), true);
         return toDtoComItens(salva);
     }
 
@@ -129,7 +129,7 @@ public class EscalaService {
         Escala escala = obterEntidade(id).orElseThrow(this::naoEncontrado);
         aplicarDados(escala, dto);
         Escala salva = escalaRepository.save(escala);
-        sincronizarItens(salva, dto.getItens());
+        sincronizarItens(salva, dto.getItens(), false);
         return toDtoComItens(salva);
     }
 
@@ -154,7 +154,7 @@ public class EscalaService {
         return toItemDto(escalaItemRepository.save(item));
     }
 
-    private void sincronizarItens(Escala escala, List<EscalaItemDTO> itens) {
+    private void sincronizarItens(Escala escala, List<EscalaItemDTO> itens, boolean notificarAtribuicao) {
         escalaItemRepository.findByEscalaId(escala.getId()).forEach(escalaItemRepository::delete);
         if (itens == null || itens.isEmpty()) {
             return;
@@ -173,7 +173,9 @@ public class EscalaService {
             item.setConfirmado(Boolean.TRUE.equals(itemDto.getConfirmado()));
             item.setConfirmadoEm(Boolean.TRUE.equals(itemDto.getConfirmado()) ? Instant.now() : null);
             EscalaItem salvo = escalaItemRepository.save(item);
-            notificacaoService.notificarEscalaItemAtribuido(escala, salvo);
+            if (notificarAtribuicao) {
+                notificacaoService.notificarEscalaItemAtribuido(escala, salvo);
+            }
         }
     }
 

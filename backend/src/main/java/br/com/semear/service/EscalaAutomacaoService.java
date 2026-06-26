@@ -5,6 +5,7 @@ import br.com.semear.domain.enumeration.*;
 import br.com.semear.repository.*;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.dto.*;
+import br.com.semear.service.util.EscalaNotificacaoUtils;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -494,6 +495,7 @@ public class EscalaAutomacaoService {
         return escalaItemRepository
             .findItensUsuarioAguardandoConfirmacao(user.getId(), StatusEscalaPublicacao.PUBLICADA, desde)
             .stream()
+            .filter(item -> item.getEscala() != null && EscalaNotificacaoUtils.escalaElegivelParaNotificacao(item.getEscala()))
             .map(this::toLoginAviso)
             .toList();
     }
