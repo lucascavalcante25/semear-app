@@ -13,11 +13,14 @@ import br.com.semear.repository.EventoRepository;
 import br.com.semear.repository.IgrejaRepository;
 import br.com.semear.repository.UsuarioPreferenciaNotificacaoRepository;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
+import br.com.semear.service.util.VersiculoDoDiaUtils;
+import br.com.semear.service.util.VersiculoDoDiaUtils.Versiculo;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -124,6 +127,65 @@ public class PushLembreteScheduler {
             }
         }
         LOG.debug("Job devocional executado para {}", hoje);
+    }
+
+    /** Versículo do dia — 14:05 (mesmo texto do dashboard). Envia para quem ativou push. */
+    @Scheduled(cron = "0 5 14 * * ?", zone = "America/Sao_Paulo")
+    @Transactional
+    public void lembreteVersiculoDoDia() {
+        if (!pushProperties.isEnabled()) {
+            LOG.debug("Job versículo do dia ignorado — push desabilitado");
+            return;
+        }
+        LocalDate hoje = LocalDate.now(ZONE_BR);
+        Versiculo versiculo = VersiculoDoDiaUtils.obterVersiculoDoDia(hoje);
+        String titulo = "Versículo do dia — " + versiculo.referencia();
+        String mensagem = VersiculoDoDiaUtils.truncarTexto(versiculo.texto(), 200);
+
+        LOG.info("Iniciando job versículo do dia ({}) — \"{}\"", hoje, versiculo.referencia());
+
+        int totalIgrejas = 0;
+        int totalUsuarios = 0;
+        for (Igreja igreja : igrejaRepository.findAll()) {
+            List<br.com.semear.domain.UsuarioPreferenciaNotificacao> prefs =
+                preferenciaRepository.findByIgrejaIdAndPushAtivoTrue(igreja.getId());
+            if (prefs.isEmpty()) {
+                continue;
+            }
+            List<Long> usuarioIds = new ArrayList<>();
+            for (var pref : prefs) {
+                if (pref.getUser() != null && pref.getUser().getId() != null) {
+                    usuarioIds.add(pref.getUser().getId());
+                }
+            }
+            if (usuarioIds.isEmpty()) {
+                continue;
+            }
+
+            NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+            payload.setIgrejaId(igreja.getId());
+            payload.setTipo("VERSICULO_DIA");
+            payload.setEntidadeTipo("VERSICULO");
+            payload.setTitulo(titulo);
+            payload.setMensagem(mensagem);
+            payload.setRotaDestino("/");
+            payload.setRegistrarDeduplicacao(true);
+            payload.setContextoDestinatarios(
+                "usuários com push ativo — versículo do dia (" + usuarioIds.size() + " usuário(s))"
+            );
+            notificacaoEnvioService.enviarParaUsuarios(usuarioIds, payload);
+
+            totalIgrejas++;
+            totalUsuarios += usuarioIds.size();
+        }
+
+        LOG.info(
+            "Job versículo do dia concluído ({}) | {} igreja(s) | {} usuário(s) elegível(eis) | referência: {}",
+            hoje,
+            totalIgrejas,
+            totalUsuarios,
+            versiculo.referencia()
+        );
     }
 
     private void executarLembreteEventos(LocalDate data, String tipo, String tituloPrefixo) {

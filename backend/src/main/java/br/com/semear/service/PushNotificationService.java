@@ -167,27 +167,33 @@ public class PushNotificationService {
 
     /**
      * Tenta enviar push para um usuário com base em notificação interna já persistida.
-     * Falhas não propagam — a notificação interna permanece.
+     * Retorna {@code true} se pelo menos um dispositivo recebeu. Falhas não propagam.
      */
-    public void tentarEnviarPush(NotificacaoUsuario notificacao, User user) {
+    public boolean tentarEnviarPush(NotificacaoUsuario notificacao, User user) {
         if (!pushProperties.isOperational() || notificacao == null || user == null) {
-            return;
+            return false;
         }
         if (Boolean.TRUE.equals(notificacao.getEnviadaPush())) {
-            return;
+            return false;
         }
         UsuarioPreferenciaNotificacao pref = preferenciaRepository
             .findByUserIdAndIgrejaId(user.getId(), notificacao.getIgreja().getId())
             .orElse(null);
         if (!podeEnviarPush(pref, notificacao.getTipo(), true)) {
-            return;
+            LOG.debug(
+                "Push não enviado para usuário {} (tipo={}): preferência ou horário silencioso",
+                user.getId(),
+                notificacao.getTipo()
+            );
+            return false;
         }
         List<UsuarioDispositivoPush> dispositivos = dispositivoRepository.findByUserIdAndIgrejaIdAndAtivoTrue(
             user.getId(),
             notificacao.getIgreja().getId()
         );
         if (dispositivos.isEmpty()) {
-            return;
+            LOG.debug("Push não enviado para usuário {} (tipo={}): sem dispositivo registrado", user.getId(), notificacao.getTipo());
+            return false;
         }
         boolean algumEnviado = false;
         String ultimoErro = null;
@@ -213,10 +219,18 @@ public class PushNotificationService {
             notificacao.setEnviadaPush(true);
             notificacao.setDataEnvioPush(Instant.now());
             notificacao.setErroPush(null);
+            LOG.info(
+                "Push FCM enviado para usuário {} (id={}) | tipo={} | titulo=\"{}\"",
+                user.getFirstName() != null ? user.getFirstName() : user.getLogin(),
+                user.getId(),
+                notificacao.getTipo(),
+                notificacao.getTitulo()
+            );
         } else if (ultimoErro != null) {
             notificacao.setErroPush(truncar(ultimoErro, 300));
         }
         notificacaoUsuarioRepository.save(notificacao);
+        return algumEnviado;
     }
 
     public void enviarTesteParaUsuarioAtual() {
@@ -271,6 +285,9 @@ public class PushNotificationService {
         }
         if (tipo.startsWith("DEVOCIONAL")) {
             return Boolean.TRUE.equals(pref.getDevocionalAtivo());
+        }
+        if (tipo.startsWith("VERSICULO")) {
+            return Boolean.TRUE.equals(pref.getDevocionalAtivo()) || Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
         }
         if (tipo.startsWith("COMUNICADO") || tipo.startsWith("AVISO")) {
             return Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());

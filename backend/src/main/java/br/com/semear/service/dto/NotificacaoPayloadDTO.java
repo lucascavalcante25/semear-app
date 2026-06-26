@@ -15,6 +15,8 @@ public class NotificacaoPayloadDTO implements Serializable {
     private boolean respeitarHorarioSilencioso = true;
     private boolean registrarDeduplicacao = false;
     private String chaveDeduplicacao;
+    /** Descrição legível do público-alvo — usada nos logs (ex.: "TODOS os membros ativos"). */
+    private String contextoDestinatarios;
 
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
@@ -36,4 +38,6 @@ public class NotificacaoPayloadDTO implements Serializable {
     public void setRegistrarDeduplicacao(boolean registrarDeduplicacao) { this.registrarDeduplicacao = registrarDeduplicacao; }
     public String getChaveDeduplicacao() { return chaveDeduplicacao; }
     public void setChaveDeduplicacao(String chaveDeduplicacao) { this.chaveDeduplicacao = chaveDeduplicacao; }
+    public String getContextoDestinatarios() { return contextoDestinatarios; }
+    public void setContextoDestinatarios(String contextoDestinatarios) { this.contextoDestinatarios = contextoDestinatarios; }
 }

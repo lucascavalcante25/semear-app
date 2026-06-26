@@ -70,6 +70,9 @@ public class NotificacaoEnvioService {
     public void enviarParaUsuario(Long usuarioId, NotificacaoPayloadDTO payload) {
         User user = userRepository.findById(usuarioId).orElseThrow(() -> new BadRequestAlertException("Usuário não encontrado", "user", "naoencontrado"));
         validarUsuarioIgreja(user, payload.getIgrejaId());
+        if (payload.getContextoDestinatarios() == null) {
+            payload.setContextoDestinatarios(descricaoUsuario(user));
+        }
         enviarParaUsuariosResolvidos(List.of(user), payload);
     }
 
@@ -84,6 +87,13 @@ public class NotificacaoEnvioService {
         enviarParaUsuariosResolvidos(users, payload);
     }
 
+    public void enviarParaUsuarios(List<Long> usuarioIds, NotificacaoPayloadDTO payload, String contextoDestinatarios) {
+        if (payload.getContextoDestinatarios() == null) {
+            payload.setContextoDestinatarios(contextoDestinatarios);
+        }
+        enviarParaUsuarios(usuarioIds, payload);
+    }
+
     public void enviarParaDepartamento(Long departamentoId, NotificacaoPayloadDTO payload) {
         Departamento departamento = departamentoRepository
             .findById(departamentoId)
@@ -96,6 +106,9 @@ public class NotificacaoEnvioService {
             .map(DepartamentoMembro::getUser)
             .filter(User::isActivated)
             .toList();
+        if (payload.getContextoDestinatarios() == null) {
+            payload.setContextoDestinatarios("membros do departamento \"" + departamento.getNome() + "\" (" + membros.size() + " usuário(s))");
+        }
         enviarParaUsuariosResolvidos(membros, payload);
     }
 
@@ -111,6 +124,9 @@ public class NotificacaoEnvioService {
             .map(EscalaItem::getUser)
             .filter(User::isActivated)
             .toList();
+        if (payload.getContextoDestinatarios() == null) {
+            payload.setContextoDestinatarios("escalados em \"" + escala.getTitulo() + "\" (" + escalados.size() + " usuário(s))");
+        }
         enviarParaUsuariosResolvidos(escalados, payload);
     }
 
@@ -130,6 +146,9 @@ public class NotificacaoEnvioService {
             .map(EventoInscricao::getUser)
             .filter(User::isActivated)
             .toList();
+        if (payload.getContextoDestinatarios() == null) {
+            payload.setContextoDestinatarios("inscritos no evento \"" + evento.getTitulo() + "\" (" + inscritos.size() + " usuário(s))");
+        }
         enviarParaUsuariosResolvidos(inscritos, payload);
     }
 
@@ -138,6 +157,9 @@ public class NotificacaoEnvioService {
         payload.setIgrejaId(igrejaId);
         Igreja igreja = igrejaRepository.findById(igrejaId).orElseThrow(() -> new BadRequestAlertException("Igreja não encontrada", "igreja", "naoencontrada"));
         List<User> membros = userRepository.findAllByIgrejaIdAndActivatedIsTrue(igrejaId);
+        if (payload.getContextoDestinatarios() == null) {
+            payload.setContextoDestinatarios("TODOS os membros ativos da igreja \"" + igreja.getNome() + "\" (" + membros.size() + " usuário(s))");
+        }
         enviarParaUsuariosResolvidos(membros, payload);
     }
 
@@ -151,6 +173,9 @@ public class NotificacaoEnvioService {
             .orElseThrow(() -> new BadRequestAlertException("Igreja não encontrada", "igreja", "naoencontrada"));
         LocalDate hoje = LocalDate.now(ZONE_BR);
         Set<Long> enviados = new LinkedHashSet<>();
+        int internas = 0;
+        int pushEnviados = 0;
+        int ignoradosDedup = 0;
 
         for (User user : usuarios) {
             if (user == null || user.getId() == null || !enviados.add(user.getId())) {
@@ -164,17 +189,34 @@ public class NotificacaoEnvioService {
                     ? payload.getChaveDeduplicacao()
                     : montarChaveDeduplicacao(payload.getTipo(), payload.getEntidadeTipo(), payload.getEntidadeId(), user.getId(), hoje);
                 if (envioLogRepository.existsByChaveDeduplicacao(chave)) {
+                    ignoradosDedup++;
                     continue;
                 }
                 registrarDeduplicacao(chave, igreja, user, payload, hoje);
             }
             NotificacaoUsuario notificacao = criarNotificacaoInterna(igreja, user, payload);
+            internas++;
             try {
-                pushNotificationService.tentarEnviarPush(notificacao, user);
+                if (pushNotificationService.tentarEnviarPush(notificacao, user)) {
+                    pushEnviados++;
+                }
             } catch (Exception e) {
                 LOG.debug("Push falhou para usuário {} — notificação interna mantida: {}", user.getId(), e.getMessage());
             }
         }
+
+        String destino = payload.getContextoDestinatarios() != null ? payload.getContextoDestinatarios() : usuarios.size() + " usuário(s)";
+        LOG.info(
+            "[NOTIFICAÇÃO] tipo={} titulo=\"{}\" | igreja={} (id={}) | destino: {} | internas={} push={} ignorados_dedup={}",
+            payload.getTipo(),
+            payload.getTitulo(),
+            igreja.getNome(),
+            igreja.getId(),
+            destino,
+            internas,
+            pushEnviados,
+            ignoradosDedup
+        );
     }
 
     /** Após criar notificação em outro serviço, delega o push. */
@@ -233,5 +275,13 @@ public class NotificacaoEnvioService {
 
     private boolean pertenceIgreja(User user, Long igrejaId) {
         return user.getIgreja() != null && igrejaId.equals(user.getIgreja().getId());
+    }
+
+    private static String descricaoUsuario(User user) {
+        String nome = user.getFirstName() != null ? user.getFirstName().trim() : "";
+        if (nome.isBlank()) {
+            nome = user.getLogin() != null ? user.getLogin() : "sem nome";
+        }
+        return "usuário \"" + nome + "\" (id=" + user.getId() + ")";
     }
 }
