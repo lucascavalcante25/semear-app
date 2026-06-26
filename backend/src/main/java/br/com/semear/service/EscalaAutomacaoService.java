@@ -496,7 +496,6 @@ public class EscalaAutomacaoService {
             .findItensUsuarioAguardandoConfirmacao(user.getId(), StatusEscalaPublicacao.PUBLICADA, desde)
             .stream()
             .filter(item -> item.getEscala() != null && EscalaNotificacaoUtils.escalaElegivelParaNotificacao(item.getEscala()))
-            .filter(item -> EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(item.getEscala(), hoje))
             .map(this::toLoginAviso)
             .toList();
     }

@@ -35,16 +35,16 @@ class EscalaNotificacaoUtilsTest {
     }
 
     @Test
-    void janelaPrimeiraNotificacaoLimitaAntecedencia() {
+    void janelaLembretesPeriodicosLimitaAntecedencia() {
         LocalDate hoje = LocalDate.of(2026, 6, 26);
         Escala escala = escalaComData(hoje.plusDays(30));
-        assertThat(EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(escala, hoje)).isFalse();
+        assertThat(EscalaNotificacaoUtils.escalaDentroDaJanelaLembretesPeriodicos(escala, hoje)).isFalse();
 
         escala = escalaComData(hoje.plusDays(15));
-        assertThat(EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(escala, hoje)).isTrue();
+        assertThat(EscalaNotificacaoUtils.escalaDentroDaJanelaLembretesPeriodicos(escala, hoje)).isTrue();
 
         escala = escalaComData(hoje.plusDays(3));
-        assertThat(EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(escala, hoje)).isTrue();
+        assertThat(EscalaNotificacaoUtils.escalaDentroDaJanelaLembretesPeriodicos(escala, hoje)).isTrue();
     }
 
     private static Escala escalaComData(LocalDate data) {

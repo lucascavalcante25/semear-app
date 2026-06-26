@@ -50,7 +50,6 @@ public class PushLembreteScheduler {
     private final UsuarioPreferenciaNotificacaoRepository preferenciaRepository;
     private final NotificacaoProgramadaService notificacaoProgramadaService;
     private final UserRepository userRepository;
-    private final NotificacaoService notificacaoService;
 
     public PushLembreteScheduler(
         PushNotificationProperties pushProperties,
@@ -61,8 +60,7 @@ public class PushLembreteScheduler {
         IgrejaRepository igrejaRepository,
         UsuarioPreferenciaNotificacaoRepository preferenciaRepository,
         NotificacaoProgramadaService notificacaoProgramadaService,
-        UserRepository userRepository,
-        NotificacaoService notificacaoService
+        UserRepository userRepository
     ) {
         this.pushProperties = pushProperties;
         this.notificacaoEnvioService = notificacaoEnvioService;
@@ -73,7 +71,6 @@ public class PushLembreteScheduler {
         this.preferenciaRepository = preferenciaRepository;
         this.notificacaoProgramadaService = notificacaoProgramadaService;
         this.userRepository = userRepository;
-        this.notificacaoService = notificacaoService;
     }
 
     /** Lembretes configurados por evento — a cada hora (independente do flag push). */
@@ -146,37 +143,7 @@ public class PushLembreteScheduler {
         executarLembreteEventos(hoje, "EVENTO_LEMBRETE_HOJE", "Evento hoje");
     }
 
-    /**
-     * Primeiro aviso de escala — 08:00 diário.
-     * Escalas publicadas com antecedência só notificam quando entram na janela de 15 dias.
-     */
-    @Scheduled(cron = "0 5 8 * * ?", zone = "America/Sao_Paulo")
-    @Transactional
-    public void notificarEscalasEntrandoNaJanela() {
-        LocalDate hoje = LocalDate.now(ZONE_BR);
-        int enviados = 0;
-        for (Igreja igreja : igrejaRepository.findAll()) {
-            List<Escala> escalas = escalaRepository.findByIgrejaIdAndStatusOrderByDataEventoDesc(
-                igreja.getId(),
-                StatusEscalaPublicacao.PUBLICADA
-            );
-            for (Escala escala : escalas) {
-                if (!EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(escala, hoje)) {
-                    continue;
-                }
-                for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
-                    if (item.getUser() == null || !item.getUser().isActivated()) {
-                        continue;
-                    }
-                    notificacaoService.notificarEscalaItemAtribuido(escala, item);
-                    enviados++;
-                }
-            }
-        }
-        LOG.debug("Job escalas na janela ({}) | {} tentativa(s) de aviso", hoje, enviados);
-    }
-
-    /** Escala semanal — domingo 18:00 */
+    /** Escala semanal — domingo 18:00 (somente dentro da janela de 15 dias) */
     @Scheduled(cron = "0 0 18 * * SUN", zone = "America/Sao_Paulo")
     @Transactional
     public void lembreteEscalaSemanal() {
@@ -392,10 +359,14 @@ public class PushLembreteScheduler {
     private void executarLembreteEscalasPeriodo(LocalDate inicio, LocalDate fim, String tipo, String titulo) {
         Instant instanteInicio = inicio.atStartOfDay(ZONE_BR).toInstant();
         Instant instanteFim = fim.plusDays(1).atStartOfDay(ZONE_BR).toInstant();
+        LocalDate hoje = LocalDate.now(ZONE_BR);
         for (Igreja igreja : igrejaRepository.findAll()) {
             List<Escala> escalas = escalaRepository.findByIgrejaIdAndStatusOrderByDataEventoDesc(igreja.getId(), StatusEscalaPublicacao.PUBLICADA);
             for (Escala escala : escalas) {
                 if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
+                    continue;
+                }
+                if (!EscalaNotificacaoUtils.escalaDentroDaJanelaLembretesPeriodicos(escala, hoje)) {
                     continue;
                 }
                 if (escala.getDataEvento() == null) continue;

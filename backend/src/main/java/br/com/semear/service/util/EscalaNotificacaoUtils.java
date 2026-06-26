@@ -17,8 +17,8 @@ public final class EscalaNotificacaoUtils {
     private static final ZoneId ZONE_BR = ZoneId.of("America/Sao_Paulo");
     private static final DateTimeFormatter DATA_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm", Locale.forLanguageTag("pt-BR"));
 
-    /** Primeiro aviso (push/sininho) só quando faltam no máximo estes dias para servir. */
-    public static final int DIAS_JANELA_PRIMEIRA_NOTIFICACAO = 15;
+    /** Lembretes periódicos (domingo/véspera) só quando faltam no máximo estes dias para servir. */
+    public static final int DIAS_JANELA_LEMBRETES_PERIODICOS = 15;
 
     private EscalaNotificacaoUtils() {}
 
@@ -50,14 +50,14 @@ public final class EscalaNotificacaoUtils {
         return escala.getDataEvento().atZone(ZONE_BR).toLocalDate();
     }
 
-    /** Escala futura (hoje inclusive) dentro da janela de aviso inicial. */
-    public static boolean escalaDentroDaJanelaPrimeiraNotificacao(Escala escala, LocalDate hoje) {
+    /** Escala futura (hoje inclusive) dentro da janela de lembretes periódicos. */
+    public static boolean escalaDentroDaJanelaLembretesPeriodicos(Escala escala, LocalDate hoje) {
         LocalDate data = dataLocalDaEscala(escala);
         if (data == null || hoje == null) {
             return false;
         }
         long dias = ChronoUnit.DAYS.between(hoje, data);
-        return dias >= 0 && dias <= DIAS_JANELA_PRIMEIRA_NOTIFICACAO;
+        return dias >= 0 && dias <= DIAS_JANELA_LEMBRETES_PERIODICOS;
     }
 
     public static String montarChavePrimeiraNotificacao(Long escalaItemId, Long userId) {

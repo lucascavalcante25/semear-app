@@ -295,9 +295,6 @@ public class NotificacaoService {
             if (escala == null || !EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
                 continue;
             }
-            if (!EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(escala, hoje)) {
-                continue;
-            }
             String tituloEscala = escala.getTitulo() != null ? escala.getTitulo() : "Escala";
             String departamento = escala.getDepartamento() != null ? escala.getDepartamento().getNome() : null;
             String descricao = departamento != null ? departamento + " — " + tituloEscala : tituloEscala;
@@ -387,15 +384,6 @@ public class NotificacaoService {
         if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
             return;
         }
-        LocalDate hoje = LocalDate.now(ZONE_BR);
-        if (!EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(escala, hoje)) {
-            LOG.debug(
-                "Escala {} fora da janela de aviso ({} dias) — notificação adiada",
-                escala.getId(),
-                EscalaNotificacaoUtils.DIAS_JANELA_PRIMEIRA_NOTIFICACAO
-            );
-            return;
-        }
         if (item == null || item.getUser() == null || !item.getUser().isActivated()) {
             return;
         }
@@ -409,8 +397,8 @@ public class NotificacaoService {
         payload.setTipo(TIPO_ESCALA);
         payload.setEntidadeTipo("ESCALA");
         payload.setEntidadeId(escala.getId());
-        payload.setTitulo("Você está escalado para servir");
-        payload.setMensagem(EscalaNotificacaoUtils.montarDescricao(escala));
+        payload.setTitulo("Nova escala atribuída");
+        payload.setMensagem("Você foi escalado para " + EscalaNotificacaoUtils.montarDescricao(escala));
         payload.setRotaDestino(EscalaNotificacaoUtils.montarRota(escala, item));
         payload.setRegistrarDeduplicacao(true);
         payload.setChaveDeduplicacao(EscalaNotificacaoUtils.montarChavePrimeiraNotificacao(item.getId(), user.getId()));
