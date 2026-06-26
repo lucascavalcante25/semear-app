@@ -9,6 +9,7 @@ export type ConfigNotificacao = {
   ativo?: boolean;
   enviarNaPublicacao?: boolean;
   enviarNaAlteracao?: boolean;
+  enviarNoCancelamento?: boolean;
   audiencia?: TipoAudienciaNotificacao;
   departamentoIds?: number[];
   diasAntesInicio?: number;
@@ -22,6 +23,7 @@ export const configNotificacaoPadrao = (): ConfigNotificacao => ({
   ativo: false,
   enviarNaPublicacao: true,
   enviarNaAlteracao: false,
+  enviarNoCancelamento: true,
   audiencia: "TODOS",
   departamentoIds: [],
   diasAntesInicio: 3,

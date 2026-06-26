@@ -6,6 +6,7 @@ import br.com.semear.domain.enumeration.Sexo;
 import br.com.semear.domain.enumeration.StatusInscricaoEvento;
 import br.com.semear.domain.enumeration.TipoAudienciaNotificacao;
 import br.com.semear.repository.DepartamentoMembroRepository;
+import br.com.semear.repository.DepartamentoRepository;
 import br.com.semear.repository.EventoInscricaoRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.service.dto.ConfigNotificacaoDTO;
@@ -22,15 +23,18 @@ public class NotificacaoAudienciaService {
 
     private final UserRepository userRepository;
     private final DepartamentoMembroRepository departamentoMembroRepository;
+    private final DepartamentoRepository departamentoRepository;
     private final EventoInscricaoRepository eventoInscricaoRepository;
 
     public NotificacaoAudienciaService(
         UserRepository userRepository,
         DepartamentoMembroRepository departamentoMembroRepository,
+        DepartamentoRepository departamentoRepository,
         EventoInscricaoRepository eventoInscricaoRepository
     ) {
         this.userRepository = userRepository;
         this.departamentoMembroRepository = departamentoMembroRepository;
+        this.departamentoRepository = departamentoRepository;
         this.eventoInscricaoRepository = eventoInscricaoRepository;
     }
 
@@ -45,7 +49,7 @@ public class NotificacaoAudienciaService {
         List<User> base = switch (audiencia) {
             case TODOS -> userRepository.findAllByIgrejaIdAndActivatedIsTrue(igrejaId);
             case INSCRITOS -> resolverInscritos(eventoId);
-            case DEPARTAMENTOS -> resolverDepartamentos(config.getDepartamentoIds());
+            case DEPARTAMENTOS -> resolverDepartamentos(igrejaId, config.getDepartamentoIds());
             case HOMENS -> filtrarPorSexo(userRepository.findAllByIgrejaIdAndActivatedIsTrue(igrejaId), Sexo.MASCULINO);
             case MULHERES -> filtrarPorSexo(userRepository.findAllByIgrejaIdAndActivatedIsTrue(igrejaId), Sexo.FEMININO);
         };
@@ -63,13 +67,17 @@ public class NotificacaoAudienciaService {
             .toList();
     }
 
-    private List<User> resolverDepartamentos(List<Long> departamentoIds) {
+    private List<User> resolverDepartamentos(Long igrejaId, List<Long> departamentoIds) {
         if (departamentoIds == null || departamentoIds.isEmpty()) {
             return List.of();
         }
         Map<Long, User> unicos = new LinkedHashMap<>();
         for (Long deptId : departamentoIds) {
             if (deptId == null) continue;
+            var deptOpt = departamentoRepository.findById(deptId);
+            if (deptOpt.isEmpty() || deptOpt.get().getIgreja() == null || !igrejaId.equals(deptOpt.get().getIgreja().getId())) {
+                continue;
+            }
             for (DepartamentoMembro membro : departamentoMembroRepository.findByDepartamentoId(deptId)) {
                 User user = membro.getUser();
                 if (user != null && user.isActivated() && user.getId() != null) {

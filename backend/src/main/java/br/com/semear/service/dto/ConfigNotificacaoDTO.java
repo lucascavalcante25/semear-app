@@ -43,6 +43,9 @@ public class ConfigNotificacaoDTO implements Serializable {
     /** Horário do lembrete (HH:mm, fuso America/Sao_Paulo). */
     private String horaLembrete = "08:00";
 
+    /** Enviar quando o evento for cancelado (fallback: {@link #enviarNaAlteracao}). */
+    private Boolean enviarNoCancelamento;
+
     /** Mensagem opcional — comunicados; se vazia, usa o conteúdo resumido. */
     private String mensagemPersonalizada;
 
@@ -68,6 +71,14 @@ public class ConfigNotificacaoDTO implements Serializable {
 
     public void setEnviarNaAlteracao(Boolean enviarNaAlteracao) {
         this.enviarNaAlteracao = enviarNaAlteracao;
+    }
+
+    public Boolean getEnviarNoCancelamento() {
+        return enviarNoCancelamento;
+    }
+
+    public void setEnviarNoCancelamento(Boolean enviarNoCancelamento) {
+        this.enviarNoCancelamento = enviarNoCancelamento;
     }
 
     public TipoAudienciaNotificacao getAudiencia() {

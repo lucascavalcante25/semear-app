@@ -1,9 +1,21 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, BellRing, Cake, CalendarDays, CheckCircle2, Heart, LifeBuoy, Loader2, Megaphone, Settings2 } from "lucide-react";
+import {
+  Bell,
+  BellRing,
+  Cake,
+  CalendarDays,
+  CheckCircle2,
+  FileWarning,
+  Heart,
+  LifeBuoy,
+  Loader2,
+  Megaphone,
+  Settings2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import { confirmarItemEscala } from "@/modules/escalas/api";
@@ -11,9 +23,9 @@ import { cn } from "@/lib/utils";
 import { usePushLembretePendente } from "@/hooks/use-push-lembrete-pendente";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
+import { rotaNotificacao, tratarCliqueNotificacao } from "@/lib/notificacao-acoes";
 
 const ICONE_POR_TIPO: Record<string, React.ElementType> = {
-  AVISO: Megaphone,
   COMUNICADO: Megaphone,
   ANIVERSARIANTE: Cake,
   SUPORTE: LifeBuoy,
@@ -21,16 +33,24 @@ const ICONE_POR_TIPO: Record<string, React.ElementType> = {
   SAAS: Bell,
   PEDIDO_ORACAO: Heart,
   ESCALA: CalendarDays,
+  ESCALA_LEMBRETE_AMANHA: CalendarDays,
+  ESCALA_LEMBRETE_SEMANA: CalendarDays,
   EVENTO: CalendarDays,
   EVENTO_CONFIRMACAO: CalendarDays,
   EVENTO_ALTERACAO: CalendarDays,
   EVENTO_LEMBRETE: CalendarDays,
   EVENTO_CANCELAMENTO: CalendarDays,
+  EVENTO_PUBLICACAO: CalendarDays,
+  EVENTO_LEMBRETE_HOJE: CalendarDays,
+  EVENTO_LEMBRETE_AMANHA: CalendarDays,
+  DOCUMENTO_VENCENDO: FileWarning,
 };
 
 const labelLinkNotificacao = (tipo: string) => {
   if (tipo.startsWith("EVENTO")) return "Ver eventos";
-  if (tipo === "ESCALA") return "Ver escalas";
+  if (tipo.startsWith("ESCALA")) return "Ver escalas";
+  if (tipo === "COMUNICADO") return "Ver comunicados";
+  if (tipo === "DOCUMENTO_VENCENDO") return "Ver documentos";
   return "Ver detalhes";
 };
 
@@ -49,6 +69,7 @@ const parseEscalaDaNotificacao = (link?: string) => {
 
 export default function Notificacoes() {
   const { user } = usarAutenticacao();
+  const navigate = useNavigate();
   const { notificacoes, refreshNotificacoes, removerNotificacaoLocal } = usarNotificacoes();
   const { mostrarLembrete: pushPendente, bloqueado: pushBloqueado } = usePushLembretePendente();
   const [confirmando, setConfirmando] = useState<string | null>(null);
@@ -64,6 +85,17 @@ export default function Notificacoes() {
       toast.error(e instanceof Error ? e.message : "Não foi possível confirmar presença.");
     } finally {
       setConfirmando(null);
+    }
+  };
+
+  const abrirNotificacao = async (n: (typeof notificacoes)[0]) => {
+    try {
+      await tratarCliqueNotificacao(n, removerNotificacaoLocal);
+    } catch {
+      /* navega mesmo se marcar vista falhar */
+    }
+    if (n.link) {
+      navigate(rotaNotificacao(n.link));
     }
   };
 
@@ -122,6 +154,7 @@ export default function Notificacoes() {
               const Icon = ICONE_POR_TIPO[n.tipo] ?? Bell;
               const escala = n.tipo === "ESCALA" ? parseEscalaDaNotificacao(n.link) : null;
               const chave = `${n.tipo}-${n.referenciaId}`;
+              const destino = n.link ? rotaNotificacao(n.link) : null;
 
               return (
                 <Card key={chave} className="hover:shadow-md transition-shadow">
@@ -165,10 +198,15 @@ export default function Notificacoes() {
                           )}
                         </Button>
                       )}
-                      {n.link && (
-                        <Link to={n.link.split("?")[0]} className="text-xs text-primary text-center">
+                      {destino && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-8 text-xs px-0"
+                          onClick={() => void abrirNotificacao(n)}
+                        >
                           {labelLinkNotificacao(n.tipo)}
-                        </Link>
+                        </Button>
                       )}
                     </div>
                   </CardContent>

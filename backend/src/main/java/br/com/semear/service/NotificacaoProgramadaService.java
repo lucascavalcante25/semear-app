@@ -90,7 +90,14 @@ public class NotificacaoProgramadaService {
     }
 
     public void notificarCancelamentoEvento(Evento evento, ConfigNotificacaoDTO config) {
-        if (evento == null || config == null || !config.isEfetivamenteAtivo() || !Boolean.TRUE.equals(config.getEnviarNaAlteracao())) {
+        if (evento == null || config == null || !config.isEfetivamenteAtivo()) {
+            return;
+        }
+        boolean avisar =
+            config.getEnviarNoCancelamento() != null
+                ? Boolean.TRUE.equals(config.getEnviarNoCancelamento())
+                : Boolean.TRUE.equals(config.getEnviarNaAlteracao());
+        if (!avisar) {
             return;
         }
         enviarImediatoEvento(

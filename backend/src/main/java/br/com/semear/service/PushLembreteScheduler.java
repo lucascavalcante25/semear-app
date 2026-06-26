@@ -76,13 +76,10 @@ public class PushLembreteScheduler {
         this.notificacaoService = notificacaoService;
     }
 
-    /** Lembretes configurados por evento — a cada hora. */
+    /** Lembretes configurados por evento — a cada hora (independente do flag push). */
     @Scheduled(cron = "0 0 * * * ?", zone = "America/Sao_Paulo")
     @Transactional
     public void processarNotificacoesAgendadas() {
-        if (!pushProperties.isEnabled()) {
-            return;
-        }
         notificacaoProgramadaService.processarAgendamentosPendentes();
     }
 
@@ -156,9 +153,6 @@ public class PushLembreteScheduler {
     @Scheduled(cron = "0 5 8 * * ?", zone = "America/Sao_Paulo")
     @Transactional
     public void notificarEscalasEntrandoNaJanela() {
-        if (!pushProperties.isEnabled()) {
-            return;
-        }
         LocalDate hoje = LocalDate.now(ZONE_BR);
         int enviados = 0;
         for (Igreja igreja : igrejaRepository.findAll()) {

@@ -73,7 +73,7 @@ export function ConfigNotificacaoForm({ value, onChange, modo, className }: Prop
 
       {value.ativo && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2">
               <Label htmlFor="enviar-publicacao" className="text-xs font-normal">
                 Enviar ao publicar
@@ -85,16 +85,28 @@ export function ConfigNotificacaoForm({ value, onChange, modo, className }: Prop
               />
             </div>
             {modo === "evento" && (
-              <div className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2">
-                <Label htmlFor="enviar-alteracao" className="text-xs font-normal">
-                  Avisar em alterações
-                </Label>
-                <Switch
-                  id="enviar-alteracao"
-                  checked={Boolean(value.enviarNaAlteracao)}
-                  onCheckedChange={(v) => atualizar({ enviarNaAlteracao: v })}
-                />
-              </div>
+              <>
+                <div className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2">
+                  <Label htmlFor="enviar-alteracao" className="text-xs font-normal">
+                    Avisar em alterações
+                  </Label>
+                  <Switch
+                    id="enviar-alteracao"
+                    checked={Boolean(value.enviarNaAlteracao)}
+                    onCheckedChange={(v) => atualizar({ enviarNaAlteracao: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-md border bg-background/60 px-3 py-2">
+                  <Label htmlFor="enviar-cancelamento" className="text-xs font-normal">
+                    Avisar em cancelamento
+                  </Label>
+                  <Switch
+                    id="enviar-cancelamento"
+                    checked={value.enviarNoCancelamento !== false}
+                    onCheckedChange={(v) => atualizar({ enviarNoCancelamento: v })}
+                  />
+                </div>
+              </>
             )}
           </div>
 

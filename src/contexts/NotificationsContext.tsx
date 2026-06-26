@@ -9,7 +9,6 @@ import {
 import { listarPreCadastrosParaAprovacao } from "@/modules/auth/preCadastro";
 import {
   listarNotificacoesNaoVistas,
-  marcarNotificacaoComoVista,
   type NotificacaoItem,
 } from "@/modules/notifications/api";
 import { listarLiderancaOracao } from "@/modules/oracao/api";

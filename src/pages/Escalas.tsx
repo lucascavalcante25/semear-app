@@ -100,6 +100,10 @@ export default function Escalas() {
   const [salvando, setSalvando] = useState(false);
   const [excluirId, setExcluirId] = useState<number | null>(null);
   const [confirmandoItem, setConfirmandoItem] = useState<string | null>(null);
+  const escalaDestaqueId = searchParams.get("escalaId");
+  const itemDestaqueId = searchParams.get("itemId");
+  const chaveDestaque =
+    escalaDestaqueId && itemDestaqueId ? `${escalaDestaqueId}-${itemDestaqueId}` : null;
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -125,6 +129,12 @@ export default function Escalas() {
       setCarregando(false);
     }
   }, [podeEditar]);
+
+  useEffect(() => {
+    if (!chaveDestaque || carregando || lista.length === 0) return;
+    const el = document.getElementById(`escala-item-${chaveDestaque}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [chaveDestaque, carregando, lista.length]);
 
   const carregarDepartamentos = useCallback(async () => {
     try {
@@ -568,9 +578,18 @@ export default function Escalas() {
                           return (
                             <div
                               key={`${grupo.chave}-${item.departamento}-${idx}`}
+                              id={
+                                item.escalaId && item.itemId
+                                  ? `escala-item-${item.escalaId}-${item.itemId}`
+                                  : undefined
+                              }
                               className={cn(
                                 "rounded-md px-3 py-2",
                                 souEu ? "border border-primary/40 bg-primary/20" : "bg-muted/50",
+                                item.escalaId &&
+                                  item.itemId &&
+                                  chaveDestaque === `${item.escalaId}-${item.itemId}` &&
+                                  "ring-2 ring-primary/60",
                               )}
                             >
                               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

@@ -202,7 +202,7 @@ public class NotificacaoEnvioService {
             NotificacaoUsuario notificacao = criarNotificacaoInterna(igreja, user, payload);
             internas++;
             try {
-                if (pushNotificationService.tentarEnviarPush(notificacao, user)) {
+                if (pushNotificationService.tentarEnviarPush(notificacao, user, payload.isRespeitarHorarioSilencioso())) {
                     pushEnviados++;
                 }
             } catch (Exception e) {

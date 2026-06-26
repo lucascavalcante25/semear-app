@@ -208,6 +208,10 @@ public class PushNotificationService {
      * Retorna {@code true} se pelo menos um dispositivo recebeu. Falhas não propagam.
      */
     public boolean tentarEnviarPush(NotificacaoUsuario notificacao, User user) {
+        return tentarEnviarPush(notificacao, user, true);
+    }
+
+    public boolean tentarEnviarPush(NotificacaoUsuario notificacao, User user, boolean respeitarHorarioSilencioso) {
         if (!pushProperties.isOperational() || notificacao == null || user == null) {
             return false;
         }
@@ -217,7 +221,7 @@ public class PushNotificationService {
         UsuarioPreferenciaNotificacao pref = preferenciaRepository
             .findByUserIdAndIgrejaId(user.getId(), notificacao.getIgreja().getId())
             .orElse(null);
-        if (!podeEnviarPush(pref, notificacao.getTipo(), true)) {
+        if (!podeEnviarPush(pref, notificacao.getTipo(), respeitarHorarioSilencioso)) {
             LOG.debug(
                 "Push não enviado para usuário {} (tipo={}): preferência ou horário silencioso",
                 user.getId(),

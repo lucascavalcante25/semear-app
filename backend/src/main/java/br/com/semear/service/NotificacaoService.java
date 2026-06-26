@@ -73,7 +73,6 @@ public class NotificacaoService {
     private final EventoRepository eventoRepository;
     private final EventoInscricaoRepository eventoInscricaoRepository;
     private final NotificacaoUsuarioRepository notificacaoUsuarioRepository;
-    private final EventoNotificacaoService eventoNotificacaoService;
     private final NotificacaoEnvioService notificacaoEnvioService;
 
     public NotificacaoService(
@@ -89,7 +88,6 @@ public class NotificacaoService {
         EventoRepository eventoRepository,
         EventoInscricaoRepository eventoInscricaoRepository,
         NotificacaoUsuarioRepository notificacaoUsuarioRepository,
-        EventoNotificacaoService eventoNotificacaoService,
         NotificacaoEnvioService notificacaoEnvioService
     ) {
         this.comunicadoRepository = comunicadoRepository;
@@ -104,9 +102,10 @@ public class NotificacaoService {
         this.eventoRepository = eventoRepository;
         this.eventoInscricaoRepository = eventoInscricaoRepository;
         this.notificacaoUsuarioRepository = notificacaoUsuarioRepository;
-        this.eventoNotificacaoService = eventoNotificacaoService;
         this.notificacaoEnvioService = notificacaoEnvioService;
     }
+
+    private static final ZoneId ZONE_BR = ZoneId.of("America/Sao_Paulo");
 
     public record NotificacaoItem(String tipo, Long referenciaId, String titulo, String descricao, String link) {}
 
@@ -123,7 +122,7 @@ public class NotificacaoService {
         Set<Long> aniversariantesVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_ANIVERSARIANTE);
 
         List<NotificacaoItem> itens = new ArrayList<>();
-        LocalDate hoje = LocalDate.now();
+        LocalDate hoje = LocalDate.now(ZONE_BR);
 
         Long igrejaId = tenantService.getIgrejaIdAtual();
         List<Comunicado> comunicados = comunicadoRepository
@@ -286,7 +285,7 @@ public class NotificacaoService {
             }
         }
 
-        Instant inicioHoje = hoje.atStartOfDay(ZoneId.of("America/Sao_Paulo")).toInstant();
+        Instant inicioHoje = hoje.atStartOfDay(ZONE_BR).toInstant();
         for (EscalaItem item : escalaItemRepository.findItensUsuarioAguardandoConfirmacao(
             user.getId(),
             StatusEscalaPublicacao.PUBLICADA,
@@ -311,9 +310,10 @@ public class NotificacaoService {
             ));
         }
 
-        gerarLembretesEventosInscritos(user, igrejaId);
-
         for (NotificacaoUsuario notificacao : notificacaoUsuarioRepository.findByUserAndLidaFalseOrderByCriadoEmDesc(user)) {
+            if (TIPO_ESCALA.equals(notificacao.getTipo())) {
+                continue;
+            }
             itens.add(new NotificacaoItem(
                 notificacao.getTipo(),
                 notificacao.getId(),
@@ -387,7 +387,7 @@ public class NotificacaoService {
         if (!EscalaNotificacaoUtils.escalaElegivelParaNotificacao(escala)) {
             return;
         }
-        LocalDate hoje = LocalDate.now(ZoneId.of("America/Sao_Paulo"));
+        LocalDate hoje = LocalDate.now(ZONE_BR);
         if (!EscalaNotificacaoUtils.escalaDentroDaJanelaPrimeiraNotificacao(escala, hoje)) {
             LOG.debug(
                 "Escala {} fora da janela de aviso ({} dias) — notificação adiada",
@@ -500,23 +500,6 @@ public class NotificacaoService {
         vista.setVistoEm(Instant.now());
         vistaRepository.save(vista);
         LOG.debug("Notificação marcada como vista: {} {} para user {}", tipo, referenciaId, user.getLogin());
-    }
-
-    private void gerarLembretesEventosInscritos(User user, Long igrejaId) {
-        Instant agora = Instant.now();
-        for (Evento evento : eventoRepository.findByIgrejaIdAndDataInicioAfterOrderByDataInicioAsc(igrejaId, agora)) {
-            if (evento.getStatus() != StatusEvento.PUBLICADO) {
-                continue;
-            }
-            boolean inscrito = eventoInscricaoRepository
-                .findByEventoIdAndUserId(evento.getId(), user.getId())
-                .filter(i -> i.getStatus() == StatusInscricaoEvento.ATIVA)
-                .isPresent();
-            if (!inscrito) {
-                continue;
-            }
-            eventoNotificacaoService.gerarLembretesInscritos(evento, List.of(user));
-        }
     }
 
     private static boolean comunicadoEstaVigente(Comunicado comunicado, LocalDate referencia) {

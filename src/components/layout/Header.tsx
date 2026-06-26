@@ -7,8 +7,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MenuMobile } from "./MobileMenu";
 import { usarEhMobile } from "@/hooks/use-mobile";
-import { marcarNotificacaoComoVista } from "@/modules/notifications/api";
-import { marcarSolicitacaoLida } from "@/modules/suporte/api";
+import { tratarCliqueNotificacao, rotaNotificacao } from "@/lib/notificacao-acoes";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import {
   DropdownMenu,
@@ -126,14 +125,10 @@ export function Cabecalho() {
                   className="flex flex-col items-start gap-1 cursor-pointer"
                   onClick={async () => {
                     try {
-                      await marcarNotificacaoComoVista(n.tipo, n.referenciaId);
-                      if (n.tipo === "SUPORTE") {
-                        await marcarSolicitacaoLida(n.referenciaId).catch(() => undefined);
-                      }
-                      removerNotificacaoLocal(n.tipo, n.referenciaId);
-                      navigate(n.link);
+                      await tratarCliqueNotificacao(n, removerNotificacaoLocal);
+                      navigate(rotaNotificacao(n.link));
                     } catch {
-                      navigate(n.link);
+                      navigate(rotaNotificacao(n.link));
                     }
                   }}
                 >
