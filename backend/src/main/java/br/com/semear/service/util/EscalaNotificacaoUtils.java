@@ -6,14 +6,19 @@ import br.com.semear.domain.EscalaItem;
 import br.com.semear.domain.enumeration.CodigoDepartamento;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 
 public final class EscalaNotificacaoUtils {
 
     private static final ZoneId ZONE_BR = ZoneId.of("America/Sao_Paulo");
     private static final DateTimeFormatter DATA_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm", Locale.forLanguageTag("pt-BR"));
+
+    /** Primeiro aviso (push/sininho) só quando faltam no máximo estes dias para servir. */
+    public static final int DIAS_JANELA_PRIMEIRA_NOTIFICACAO = 15;
 
     private EscalaNotificacaoUtils() {}
 
@@ -36,6 +41,27 @@ public final class EscalaNotificacaoUtils {
 
     public static boolean escalaElegivelParaNotificacao(Escala escala) {
         return escala != null && escala.getStatus() == StatusEscalaPublicacao.PUBLICADA && departamentoOperacional(escala.getDepartamento());
+    }
+
+    public static LocalDate dataLocalDaEscala(Escala escala) {
+        if (escala == null || escala.getDataEvento() == null) {
+            return null;
+        }
+        return escala.getDataEvento().atZone(ZONE_BR).toLocalDate();
+    }
+
+    /** Escala futura (hoje inclusive) dentro da janela de aviso inicial. */
+    public static boolean escalaDentroDaJanelaPrimeiraNotificacao(Escala escala, LocalDate hoje) {
+        LocalDate data = dataLocalDaEscala(escala);
+        if (data == null || hoje == null) {
+            return false;
+        }
+        long dias = ChronoUnit.DAYS.between(hoje, data);
+        return dias >= 0 && dias <= DIAS_JANELA_PRIMEIRA_NOTIFICACAO;
+    }
+
+    public static String montarChavePrimeiraNotificacao(Long escalaItemId, Long userId) {
+        return String.format("ESCALA_ATRIBUIDA:ESCALA_ITEM:%s:%s", escalaItemId, userId);
     }
 
     public static String montarDescricao(Escala escala) {
