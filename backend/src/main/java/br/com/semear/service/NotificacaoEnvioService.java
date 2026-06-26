@@ -70,7 +70,7 @@ public class NotificacaoEnvioService {
     public void enviarParaUsuario(Long usuarioId, NotificacaoPayloadDTO payload) {
         User user = userRepository.findById(usuarioId).orElseThrow(() -> new BadRequestAlertException("Usuário não encontrado", "user", "naoencontrado"));
         validarUsuarioIgreja(user, payload.getIgrejaId());
-        enviarParaUsuarios(List.of(user), payload);
+        enviarParaUsuariosResolvidos(List.of(user), payload);
     }
 
     public void enviarParaUsuarios(List<Long> usuarioIds, NotificacaoPayloadDTO payload) {
@@ -81,7 +81,7 @@ public class NotificacaoEnvioService {
                 users.add(u);
             });
         }
-        enviarParaUsuarios(users, payload);
+        enviarParaUsuariosResolvidos(users, payload);
     }
 
     public void enviarParaDepartamento(Long departamentoId, NotificacaoPayloadDTO payload) {
@@ -94,9 +94,9 @@ public class NotificacaoEnvioService {
         }
         List<User> membros = departamentoMembroRepository.findByDepartamentoId(departamentoId).stream()
             .map(DepartamentoMembro::getUser)
-            .filter(u -> Boolean.TRUE.equals(u.getActivated()))
+            .filter(User::isActivated)
             .toList();
-        enviarParaUsuarios(membros, payload);
+        enviarParaUsuariosResolvidos(membros, payload);
     }
 
     public void enviarParaEscala(Long escalaId, NotificacaoPayloadDTO payload) {
@@ -109,9 +109,9 @@ public class NotificacaoEnvioService {
         }
         List<User> escalados = escalaItemRepository.findByEscalaId(escalaId).stream()
             .map(EscalaItem::getUser)
-            .filter(u -> Boolean.TRUE.equals(u.getActivated()))
+            .filter(User::isActivated)
             .toList();
-        enviarParaUsuarios(escalados, payload);
+        enviarParaUsuariosResolvidos(escalados, payload);
     }
 
     public void enviarParaInscritosEvento(Long eventoId, NotificacaoPayloadDTO payload) {
@@ -128,9 +128,9 @@ public class NotificacaoEnvioService {
         }
         List<User> inscritos = eventoInscricaoRepository.findByEventoIdAndStatus(eventoId, StatusInscricaoEvento.ATIVA).stream()
             .map(EventoInscricao::getUser)
-            .filter(u -> Boolean.TRUE.equals(u.getActivated()))
+            .filter(User::isActivated)
             .toList();
-        enviarParaUsuarios(inscritos, payload);
+        enviarParaUsuariosResolvidos(inscritos, payload);
     }
 
     public void enviarParaIgreja(Long igrejaId, NotificacaoPayloadDTO payload) {
@@ -138,11 +138,11 @@ public class NotificacaoEnvioService {
         payload.setIgrejaId(igrejaId);
         Igreja igreja = igrejaRepository.findById(igrejaId).orElseThrow(() -> new BadRequestAlertException("Igreja não encontrada", "igreja", "naoencontrada"));
         List<User> membros = userRepository.findAllByIgrejaIdAndActivatedIsTrue(igrejaId);
-        enviarParaUsuarios(membros, payload);
+        enviarParaUsuariosResolvidos(membros, payload);
     }
 
     /** Cria notificação interna e tenta push — usado por jobs e integrações. */
-    public void enviarParaUsuarios(List<User> usuarios, NotificacaoPayloadDTO payload) {
+    private void enviarParaUsuariosResolvidos(List<User> usuarios, NotificacaoPayloadDTO payload) {
         if (usuarios == null || usuarios.isEmpty() || payload == null) {
             return;
         }
