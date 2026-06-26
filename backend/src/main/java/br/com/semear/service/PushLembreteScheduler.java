@@ -129,8 +129,8 @@ public class PushLembreteScheduler {
         LOG.debug("Job devocional executado para {}", hoje);
     }
 
-    /** Versículo do dia — 14:30 (mesmo texto do dashboard). Envia para quem ativou push. */
-    @Scheduled(cron = "0 30 14 * * ?", zone = "America/Sao_Paulo")
+    /** Versículo do dia — 14:33 (mesmo texto do dashboard). Envia para quem ativou push. */
+    @Scheduled(cron = "0 33 14 * * ?", zone = "America/Sao_Paulo")
     @Transactional
     public void lembreteVersiculoDoDia() {
         if (!pushProperties.isEnabled()) {
