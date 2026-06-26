@@ -44,19 +44,19 @@ public class NotificacaoPushResource {
     @PostMapping("/push/dispositivos")
     public ResponseEntity<Void> registrarDispositivo(@RequestBody PushDispositivoRegistroDTO dto) {
         LOG.info(
-            "Registrando dispositivo push — plataforma={}, navegador={}, tokenLen={}",
+            "[PUSH] POST /push/dispositivos — plataforma={}, navegador={}, tokenLen={}",
             dto.getPlataforma(),
             dto.getNavegador(),
             dto.getToken() != null ? dto.getToken().length() : 0
         );
         pushNotificationService.registrarDispositivo(dto);
-        LOG.info("Dispositivo push registrado com sucesso");
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/push/desativar")
     public ResponseEntity<Void> desativarPush(@RequestBody(required = false) Map<String, String> body) {
         String token = body != null ? body.get("token") : null;
+        LOG.info("[PUSH] POST /push/desativar — tokenInformado={}", token != null && !token.isBlank());
         pushNotificationService.desativarDispositivo(token);
         return ResponseEntity.ok().build();
     }
@@ -68,6 +68,7 @@ public class NotificacaoPushResource {
 
     @PutMapping("/preferencias")
     public ResponseEntity<UsuarioPreferenciaNotificacaoDTO> atualizarPreferencias(@RequestBody UsuarioPreferenciaNotificacaoDTO dto) {
+        LOG.info("[PUSH] PUT /preferencias — pushAtivo={}", dto.getPushAtivo());
         return ResponseEntity.ok(pushNotificationService.atualizarPreferencias(dto));
     }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Loader2, Send } from "lucide-react";
+import { Bell, CheckCircle2, Loader2, Send } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -81,10 +81,18 @@ export function PushPreferenciasCard() {
           await ativarPushCompleto();
           const dados = await obterPreferenciasNotificacao();
           setPrefs(dados);
-          toast.success("Notificações push ativadas neste dispositivo.");
+          if (dados.dispositivoRegistrado && dados.pushAtivo) {
+            toast.success("Dispositivo registrado para receber notificações.");
+          } else {
+            toast.warning("Push ativado, mas o registro do dispositivo não foi confirmado.");
+          }
           return;
         }
         await desativarPushLocal();
+        const dados = await obterPreferenciasNotificacao();
+        setPrefs(dados);
+        toast.success("Notificações push desativadas neste dispositivo.");
+        return;
       }
       const atualizado = await atualizarPreferenciasNotificacao({ [campo]: valor });
       setPrefs(atualizado);
@@ -170,6 +178,19 @@ export function PushPreferenciasCard() {
             onCheckedChange={(v) => void atualizarCampo("pushAtivo", v)}
           />
         </div>
+
+        {prefs.pushAtivo && prefs.dispositivoRegistrado && (
+          <p className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            Este dispositivo está registrado para receber notificações.
+          </p>
+        )}
+
+        {prefs.pushAtivo && !prefs.dispositivoRegistrado && (
+          <p className="text-sm text-amber-600 dark:text-amber-400">
+            Permissão concedida, mas o dispositivo ainda não foi registrado no servidor.
+          </p>
+        )}
 
         {prefs.pushAtivo && (
           <div className="space-y-4 pl-1 border-l-2 border-muted ml-1">

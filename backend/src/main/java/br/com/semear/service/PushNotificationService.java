@@ -108,19 +108,33 @@ public class PushNotificationService {
         pref.setPushAtivo(true);
         pref.setAtualizadoEm(Instant.now());
 
-        return dispositivoRepository.save(dispositivo);
+        UsuarioDispositivoPush salvo = dispositivoRepository.save(dispositivo);
+        LOG.info(
+            "[PUSH] Ativado — userId={}, login={}, igrejaId={}, dispositivoId={}, plataforma={}, navegador={}",
+            user.getId(),
+            user.getLogin(),
+            igreja.getId(),
+            salvo.getId(),
+            salvo.getPlataforma(),
+            salvo.getNavegador()
+        );
+        return salvo;
     }
 
     public void desativarDispositivo(String token) {
         User user = tenantService.getUsuarioAtual();
         Long igrejaId = tenantService.getIgrejaIdAtual();
+        int desativados = 0;
         if (token != null && !token.isBlank()) {
-            dispositivoRepository.findByUserIdAndToken(user.getId(), token).ifPresent(d -> {
+            var opt = dispositivoRepository.findByUserIdAndToken(user.getId(), token);
+            if (opt.isPresent()) {
+                UsuarioDispositivoPush d = opt.get();
                 d.setAtivo(false);
                 d.setDesativadoEm(Instant.now());
                 d.setAtualizadoEm(Instant.now());
                 dispositivoRepository.save(d);
-            });
+                desativados = 1;
+            }
         } else {
             List<UsuarioDispositivoPush> dispositivos = dispositivoRepository.findByUserIdAndIgrejaIdAndAtivoTrue(user.getId(), igrejaId);
             for (UsuarioDispositivoPush d : dispositivos) {
@@ -129,11 +143,19 @@ public class PushNotificationService {
                 d.setAtualizadoEm(Instant.now());
             }
             dispositivoRepository.saveAll(dispositivos);
+            desativados = dispositivos.size();
         }
         preferenciaRepository.findByUserIdAndIgrejaId(user.getId(), igrejaId).ifPresent(pref -> {
             pref.setPushAtivo(false);
             pref.setAtualizadoEm(Instant.now());
         });
+        LOG.info(
+            "[PUSH] Desativado — userId={}, login={}, igrejaId={}, dispositivosDesativados={}",
+            user.getId(),
+            user.getLogin(),
+            igrejaId,
+            desativados
+        );
     }
 
     @Transactional(readOnly = true)
@@ -167,7 +189,18 @@ public class PushNotificationService {
         if (dto.getHorarioSilenciosoFim() != null) pref.setHorarioSilenciosoFim(dto.getHorarioSilenciosoFim());
         pref.setAtualizadoEm(Instant.now());
         preferenciaRepository.save(pref);
-        return toDto(pref, dispositivoRepository.existsByUserIdAndIgrejaIdAndAtivoTrue(user.getId(), igreja.getId()));
+        boolean dispositivoRegistrado = dispositivoRepository.existsByUserIdAndIgrejaIdAndAtivoTrue(user.getId(), igreja.getId());
+        LOG.info(
+            "[PUSH] Preferências — userId={}, login={}, igrejaId={}, pushAtivo={}, dispositivoRegistrado={}, devocional={}, avisos={}",
+            user.getId(),
+            user.getLogin(),
+            igreja.getId(),
+            pref.getPushAtivo(),
+            dispositivoRegistrado,
+            pref.getDevocionalAtivo(),
+            pref.getAvisosGeraisAtivo()
+        );
+        return toDto(pref, dispositivoRegistrado);
     }
 
     /**
