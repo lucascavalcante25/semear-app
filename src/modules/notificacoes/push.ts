@@ -162,19 +162,18 @@ function configurarListenerForeground() {
   onMessage(messaging, (payload) => {
     const title = payload.notification?.title || payload.data?.title;
     const body = payload.notification?.body || payload.data?.body;
-    if (title && Notification.permission === "granted") {
-      const notification = new Notification(title, {
+    const url = payload.data?.url || "/";
+    if (!title || Notification.permission !== "granted") return;
+
+    // iOS PWA não exibe new Notification() — usar service worker
+    void navigator.serviceWorker.ready.then((registration) => {
+      registration.showNotification(title, {
         body: body || "",
         icon: "/brand/android-chrome-192x192.png",
-        data: { url: payload.data?.url || "/" },
+        badge: "/brand/android-chrome-192x192.png",
+        data: { url },
       });
-      notification.onclick = () => {
-        const url = payload.data?.url || "/";
-        window.focus();
-        window.location.href = url;
-        notification.close();
-      };
-    }
+    });
   });
 }
 

@@ -249,7 +249,7 @@ public class PushNotificationService {
                     dispositivo.setAtualizadoEm(Instant.now());
                     LOG.info("Token push inválido desativado para usuário {}", user.getId());
                 }
-                LOG.debug("Falha ao enviar push para usuário {}: {}", user.getId(), e.getMessage());
+                LOG.warn("[PUSH] FCM falhou — userId={}, dispositivoId={}, erro={}", user.getId(), dispositivo.getId(), e.getMessage());
             }
         }
         dispositivoRepository.saveAll(dispositivos);
@@ -258,14 +258,16 @@ public class PushNotificationService {
             notificacao.setDataEnvioPush(Instant.now());
             notificacao.setErroPush(null);
             LOG.info(
-                "Push FCM enviado para usuário {} (id={}) | tipo={} | titulo=\"{}\"",
-                user.getFirstName() != null ? user.getFirstName() : user.getLogin(),
+                "[PUSH] FCM enviado — userId={}, tipo={}, titulo=\"{}\"",
                 user.getId(),
                 notificacao.getTipo(),
                 notificacao.getTitulo()
             );
         } else if (ultimoErro != null) {
             notificacao.setErroPush(truncar(ultimoErro, 300));
+            LOG.warn("[PUSH] FCM não entregue — userId={}, tipo={}, erro={}", user.getId(), notificacao.getTipo(), ultimoErro);
+        } else {
+            LOG.warn("[PUSH] FCM não entregue — userId={}, tipo={}, motivo=sem dispositivo ou preferência", user.getId(), notificacao.getTipo());
         }
         notificacaoUsuarioRepository.save(notificacao);
         return algumEnviado;
