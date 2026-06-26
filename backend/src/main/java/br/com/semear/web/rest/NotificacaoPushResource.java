@@ -66,6 +66,12 @@ public class NotificacaoPushResource {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/teste/versiculo-dia")
+    public ResponseEntity<Void> enviarVersiculoDoDiaTeste() {
+        pushNotificationService.enviarVersiculoDoDiaParaUsuarioAtual();
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/persistidas")
     public ResponseEntity<List<NotificacaoPersistidaDTO>> listarPersistidas() {
         User user = tenantService.getUsuarioAtual();

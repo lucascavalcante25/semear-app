@@ -13,6 +13,8 @@ import br.com.semear.repository.UsuarioPreferenciaNotificacaoRepository;
 import br.com.semear.service.dto.PushConfigPublicaDTO;
 import br.com.semear.service.dto.PushDispositivoRegistroDTO;
 import br.com.semear.service.dto.UsuarioPreferenciaNotificacaoDTO;
+import br.com.semear.service.util.VersiculoDoDiaUtils;
+import br.com.semear.service.util.VersiculoDoDiaUtils.Versiculo;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -246,6 +248,27 @@ public class PushNotificationService {
         notificacao.setTitulo("Teste de lembrete");
         notificacao.setMensagem("Se você está vendo isto, as notificações no celular estão funcionando.");
         notificacao.setLink("/configuracoes");
+        notificacao.setLida(false);
+        notificacao.setCriadoEm(Instant.now());
+        notificacaoUsuarioRepository.save(notificacao);
+        tentarEnviarPush(notificacao, user);
+    }
+
+    /** Dispara o versículo do dia apenas para o usuário logado (dev/teste). */
+    public void enviarVersiculoDoDiaParaUsuarioAtual() {
+        if (!pushProperties.isTesteEndpointEnabled()) {
+            throw new BadRequestAlertException("Endpoint de teste desabilitado", "push", "testedesabilitado");
+        }
+        User user = tenantService.getUsuarioAtual();
+        Igreja igreja = tenantService.getIgrejaAtual();
+        Versiculo versiculo = VersiculoDoDiaUtils.obterVersiculoDoDia();
+        NotificacaoUsuario notificacao = new NotificacaoUsuario();
+        notificacao.setIgreja(igreja);
+        notificacao.setUser(user);
+        notificacao.setTipo("VERSICULO_DIA");
+        notificacao.setTitulo("Versículo do dia — " + versiculo.referencia());
+        notificacao.setMensagem(VersiculoDoDiaUtils.truncarTexto(versiculo.texto(), 200));
+        notificacao.setLink("/");
         notificacao.setLida(false);
         notificacao.setCriadoEm(Instant.now());
         notificacaoUsuarioRepository.save(notificacao);

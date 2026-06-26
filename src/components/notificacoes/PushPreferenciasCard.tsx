@@ -7,6 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import {
   atualizarPreferenciasNotificacao,
   enviarTestePush,
+  enviarVersiculoDoDiaTeste,
+  dispararJobVersiculoDoDiaDev,
   obterPreferenciasNotificacao,
   type PreferenciasNotificacao,
 } from "@/modules/notificacoes/api";
@@ -22,6 +24,8 @@ export function PushPreferenciasCard() {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [testando, setTestando] = useState(false);
+  const [testandoVersiculo, setTestandoVersiculo] = useState(false);
+  const [simulandoJob, setSimulandoJob] = useState(false);
   const [prefs, setPrefs] = useState<PreferenciasNotificacao>({});
 
   useEffect(() => {
@@ -104,6 +108,30 @@ export function PushPreferenciasCard() {
     }
   };
 
+  const handleVersiculoTeste = async () => {
+    setTestandoVersiculo(true);
+    try {
+      await enviarVersiculoDoDiaTeste();
+      toast.success("Versículo do dia enviado!");
+    } catch {
+      toast.error("Não foi possível enviar o versículo. Verifique push e preferências.");
+    } finally {
+      setTestandoVersiculo(false);
+    }
+  };
+
+  const handleSimularJob = async () => {
+    setSimulandoJob(true);
+    try {
+      await dispararJobVersiculoDoDiaDev();
+      toast.success("Job do versículo do dia executado — veja os logs do backend.");
+    } catch {
+      toast.error("Falha ao simular job. Push/teste habilitados no backend?");
+    } finally {
+      setSimulandoJob(false);
+    }
+  };
+
   const campos: { key: keyof PreferenciasNotificacao; label: string }[] = [
     { key: "eventosAtivo", label: "Eventos" },
     { key: "escalasAtivo", label: "Escalas" },
@@ -154,14 +182,44 @@ export function PushPreferenciasCard() {
         )}
 
         {prefs.pushAtivo && (
-          <Button variant="outline" size="sm" onClick={handleTeste} disabled={testando}>
-            {testando ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Send className="h-4 w-4 mr-2" />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleTeste} disabled={testando}>
+              {testando ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Enviar teste para mim
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleVersiculoTeste}
+              disabled={testandoVersiculo}
+            >
+              {testandoVersiculo ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Send className="h-4 w-4 mr-2" />
+              )}
+              Enviar versículo do dia
+            </Button>
+            {import.meta.env.DEV && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSimularJob}
+                disabled={simulandoJob}
+              >
+                {simulandoJob ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Simular job 14:30 (dev)
+              </Button>
             )}
-            Enviar teste para mim
-          </Button>
+          </div>
         )}
       </CardContent>
     </Card>

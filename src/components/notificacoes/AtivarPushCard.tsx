@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Bell, Loader2 } from "lucide-react";
+import { Bell, Loader2, Settings2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -43,12 +44,43 @@ export function AtivarPushCard() {
     void verificar();
   }, [user]);
 
-  if (!user || carregando || !disponivel || jaAtivou) {
+  if (!user || carregando || !disponivel) {
     return null;
   }
 
   if (negado) {
-    return null;
+    return (
+      <Card className="border-dashed border-amber-500/40 bg-amber-500/5">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notificações bloqueadas
+          </CardTitle>
+          <CardDescription className="text-sm">
+            O navegador bloqueou as notificações deste site. Abra as configurações do site (ícone
+            ao lado da URL) e permita notificações, depois recarregue a página.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  if (jaAtivou) {
+    return (
+      <Card className="border-dashed border-muted">
+        <CardContent className="py-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            Lembretes no celular já estão ativos neste dispositivo.
+          </p>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/configuracoes">
+              <Settings2 className="h-4 w-4 mr-2" />
+              Configurações
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   const handleAtivar = async () => {

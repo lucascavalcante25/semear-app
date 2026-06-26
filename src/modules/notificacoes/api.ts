@@ -62,3 +62,12 @@ export async function desativarPush(token?: string): Promise<void> {
 export async function enviarTestePush(): Promise<void> {
   await requisicaoApi("/api/notificacoes/teste/me", { method: "POST", auth: true });
 }
+
+export async function enviarVersiculoDoDiaTeste(): Promise<void> {
+  await requisicaoApi("/api/notificacoes/teste/versiculo-dia", { method: "POST", auth: true });
+}
+
+/** Dispara o job completo (todos com push ativo) — só existe no backend dev. */
+export async function dispararJobVersiculoDoDiaDev(): Promise<void> {
+  await requisicaoApi("/api/notificacoes/dev/disparar-versiculo-dia", { method: "POST", auth: true });
+}
