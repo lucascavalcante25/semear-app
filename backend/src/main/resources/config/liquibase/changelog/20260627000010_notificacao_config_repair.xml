@@ -4,16 +4,31 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="20260627000009-1" author="semear">
-        <addColumn tableName="evento">
-            <column name="config_notificacao" type="${clobType}"/>
-        </addColumn>
-        <addColumn tableName="comunicado">
-            <column name="config_notificacao" type="${clobType}"/>
-        </addColumn>
+    <!-- Reparo idempotente — cobre deploy parcial após deadlock no Render -->
+    <changeSet id="20260627000010-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="evento" columnName="config_notificacao"/>
+            </not>
+        </preConditions>
+        <sql>ALTER TABLE evento ADD COLUMN IF NOT EXISTS config_notificacao TEXT;</sql>
     </changeSet>
 
-    <changeSet id="20260627000009-2" author="semear">
+    <changeSet id="20260627000010-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="comunicado" columnName="config_notificacao"/>
+            </not>
+        </preConditions>
+        <sql>ALTER TABLE comunicado ADD COLUMN IF NOT EXISTS config_notificacao TEXT;</sql>
+    </changeSet>
+
+    <changeSet id="20260627000010-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="notificacao_agendamento"/>
+            </not>
+        </preConditions>
         <createTable tableName="notificacao_agendamento">
             <column name="id" type="bigint">
                 <constraints primaryKey="true" nullable="false"/>
@@ -50,10 +65,32 @@
             </column>
             <column name="enviado_em" type="timestamp"/>
         </createTable>
+    </changeSet>
+
+    <changeSet id="20260627000010-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="notificacao_agendamento"/>
+                <not>
+                    <indexExists indexName="idx_notif_agend_status_data"/>
+                </not>
+            </and>
+        </preConditions>
         <createIndex indexName="idx_notif_agend_status_data" tableName="notificacao_agendamento">
             <column name="status"/>
             <column name="agendado_para"/>
         </createIndex>
+    </changeSet>
+
+    <changeSet id="20260627000010-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="notificacao_agendamento"/>
+                <not>
+                    <indexExists indexName="idx_notif_agend_entidade"/>
+                </not>
+            </and>
+        </preConditions>
         <createIndex indexName="idx_notif_agend_entidade" tableName="notificacao_agendamento">
             <column name="entidade_tipo"/>
             <column name="entidade_id"/>
