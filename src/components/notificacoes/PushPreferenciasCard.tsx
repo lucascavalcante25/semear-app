@@ -216,7 +216,7 @@ export function PushPreferenciasCard() {
                 ) : (
                   <Send className="h-4 w-4 mr-2" />
                 )}
-                Simular job 14:33 (dev)
+                Simular job versículo do dia (dev)
               </Button>
             )}
           </div>

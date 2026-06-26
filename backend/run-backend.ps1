@@ -89,7 +89,7 @@ if (Test-Path $envFile) {
     }
     Write-Host "Variaveis carregadas de $envFile" -ForegroundColor DarkGray
 } else {
-    Write-Host "AVISO: .env nao encontrado em $envFile — push pode ficar desabilitado" -ForegroundColor Yellow
+    Write-Host "AVISO: .env nao encontrado em $envFile - push pode ficar desabilitado" -ForegroundColor Yellow
 }
 
 $mavenArgs = @("spring-boot:run", "-Dspring-boot.run.profiles=dev")
