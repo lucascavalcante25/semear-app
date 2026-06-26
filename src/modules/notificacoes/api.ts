@@ -1,4 +1,4 @@
-import { apiFetch } from "@/modules/api/client";
+import { requisicaoApi } from "@/modules/api/client";
 
 export interface PushConfigPublica {
   disponivel: boolean;
@@ -26,36 +26,39 @@ export interface RegistroDispositivoDTO {
 }
 
 export async function obterConfigPush(): Promise<PushConfigPublica> {
-  return apiFetch<PushConfigPublica>("/api/notificacoes/push/config");
+  return requisicaoApi<PushConfigPublica>("/api/notificacoes/push/config");
 }
 
 export async function obterPreferenciasNotificacao(): Promise<PreferenciasNotificacao> {
-  return apiFetch<PreferenciasNotificacao>("/api/notificacoes/preferencias");
+  return requisicaoApi<PreferenciasNotificacao>("/api/notificacoes/preferencias", { auth: true });
 }
 
 export async function atualizarPreferenciasNotificacao(
   prefs: PreferenciasNotificacao
 ): Promise<PreferenciasNotificacao> {
-  return apiFetch<PreferenciasNotificacao>("/api/notificacoes/preferencias", {
+  return requisicaoApi<PreferenciasNotificacao>("/api/notificacoes/preferencias", {
     method: "PUT",
-    body: JSON.stringify(prefs),
+    auth: true,
+    body: prefs,
   });
 }
 
 export async function registrarDispositivoPush(dto: RegistroDispositivoDTO): Promise<void> {
-  await apiFetch("/api/notificacoes/push/dispositivos", {
+  await requisicaoApi("/api/notificacoes/push/dispositivos", {
     method: "POST",
-    body: JSON.stringify(dto),
+    auth: true,
+    body: dto,
   });
 }
 
 export async function desativarPush(token?: string): Promise<void> {
-  await apiFetch("/api/notificacoes/push/desativar", {
+  await requisicaoApi("/api/notificacoes/push/desativar", {
     method: "POST",
-    body: JSON.stringify(token ? { token } : {}),
+    auth: true,
+    body: token ? { token } : {},
   });
 }
 
 export async function enviarTestePush(): Promise<void> {
-  await apiFetch("/api/notificacoes/teste/me", { method: "POST" });
+  await requisicaoApi("/api/notificacoes/teste/me", { method: "POST", auth: true });
 }
