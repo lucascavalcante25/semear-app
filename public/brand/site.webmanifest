@@ -20,12 +20,12 @@
       "purpose": "any"
     },
     {
-      "src": "/brand/logo-icon-512.png",
+      "src": "/brand/logo-icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ],
   "theme_color": "#5a7a3a",
-  "background_color": "#ffffff"
+  "background_color": "#5a7a3a"
 }

@@ -16,10 +16,21 @@ import {
 } from "@/modules/notificacoes/push";
 import { toast } from "sonner";
 
+type CampoPreferencia = keyof PreferenciasNotificacao;
+
+function mensagemSalvando(campo: CampoPreferencia, ativando: boolean): string {
+  if (campo === "pushAtivo") {
+    return ativando ? "Ativando notificações push…" : "Desativando notificações push…";
+  }
+  return ativando ? "Ativando preferência…" : "Desativando preferência…";
+}
+
 export function PushPreferenciasCard() {
   const [disponivel, setDisponivel] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [campoSalvando, setCampoSalvando] = useState<CampoPreferencia | null>(null);
+  const [mensagemStatus, setMensagemStatus] = useState<string | null>(null);
   const [prefs, setPrefs] = useState<PreferenciasNotificacao>({});
 
   useEffect(() => {
@@ -66,8 +77,10 @@ export function PushPreferenciasCard() {
     );
   }
 
-  const atualizarCampo = async (campo: keyof PreferenciasNotificacao, valor: boolean) => {
+  const atualizarCampo = async (campo: CampoPreferencia, valor: boolean) => {
     setSalvando(true);
+    setCampoSalvando(campo);
+    setMensagemStatus(mensagemSalvando(campo, valor));
     try {
       if (campo === "pushAtivo") {
         if (valor) {
@@ -100,10 +113,12 @@ export function PushPreferenciasCard() {
       toast.error(msg);
     } finally {
       setSalvando(false);
+      setCampoSalvando(null);
+      setMensagemStatus(null);
     }
   };
 
-  const campos: { key: keyof PreferenciasNotificacao; label: string }[] = [
+  const campos: { key: CampoPreferencia; label: string }[] = [
     { key: "eventosAtivo", label: "Eventos" },
     { key: "escalasAtivo", label: "Escalas" },
     { key: "devocionalAtivo", label: "Devocional diário" },
@@ -112,7 +127,20 @@ export function PushPreferenciasCard() {
   ];
 
   return (
-    <Card>
+    <Card className="relative">
+      {salvando && mensagemStatus && (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-[1px]"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm font-medium text-foreground">{mensagemStatus}</p>
+          <p className="text-xs text-muted-foreground">Aguarde um instante…</p>
+        </div>
+      )}
+
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Bell className="h-4 w-4" />
@@ -136,14 +164,21 @@ export function PushPreferenciasCard() {
           />
         </div>
 
-        {prefs.pushAtivo && prefs.dispositivoRegistrado && (
+        {salvando && campoSalvando === "pushAtivo" && mensagemStatus && (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+            {mensagemStatus}
+          </p>
+        )}
+
+        {prefs.pushAtivo && prefs.dispositivoRegistrado && !salvando && (
           <p className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             Este dispositivo está registrado para receber notificações.
           </p>
         )}
 
-        {prefs.pushAtivo && !prefs.dispositivoRegistrado && (
+        {prefs.pushAtivo && !prefs.dispositivoRegistrado && !salvando && (
           <p className="text-sm text-amber-600 dark:text-amber-400">
             Permissão concedida, mas o dispositivo ainda não foi registrado no servidor.
           </p>
@@ -153,7 +188,9 @@ export function PushPreferenciasCard() {
           <div className="space-y-4 pl-1 border-l-2 border-muted ml-1">
             {campos.map(({ key, label }) => (
               <div key={key} className="flex items-center justify-between gap-4 pl-3">
-                <Label htmlFor={key}>{label}</Label>
+                <Label htmlFor={key} className={salvando && campoSalvando === key ? "opacity-70" : ""}>
+                  {label}
+                </Label>
                 <Switch
                   id={key}
                   checked={Boolean(prefs[key])}
