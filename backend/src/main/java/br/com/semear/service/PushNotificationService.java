@@ -140,8 +140,11 @@ public class PushNotificationService {
     public UsuarioPreferenciaNotificacaoDTO obterPreferencias() {
         User user = tenantService.getUsuarioAtual();
         Igreja igreja = tenantService.getIgrejaAtual();
-        UsuarioPreferenciaNotificacao pref = obterOuCriarPreferencias(user, igreja);
-        return toDto(pref, dispositivoRepository.existsByUserIdAndIgrejaIdAndAtivoTrue(user.getId(), igreja.getId()));
+        boolean dispositivoRegistrado = dispositivoRepository.existsByUserIdAndIgrejaIdAndAtivoTrue(user.getId(), igreja.getId());
+        return preferenciaRepository
+            .findByUserIdAndIgrejaId(user.getId(), igreja.getId())
+            .map(pref -> toDto(pref, dispositivoRegistrado))
+            .orElseGet(() -> dtoPreferenciasPadrao(dispositivoRegistrado));
     }
 
     public UsuarioPreferenciaNotificacaoDTO atualizarPreferencias(UsuarioPreferenciaNotificacaoDTO dto) {
@@ -351,6 +354,18 @@ public class PushNotificationService {
     private boolean tokenInvalido(FirebaseMessagingException e) {
         MessagingErrorCode code = e.getMessagingErrorCode();
         return code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT;
+    }
+
+    private UsuarioPreferenciaNotificacaoDTO dtoPreferenciasPadrao(boolean dispositivoRegistrado) {
+        UsuarioPreferenciaNotificacaoDTO dto = new UsuarioPreferenciaNotificacaoDTO();
+        dto.setPushAtivo(false);
+        dto.setEventosAtivo(true);
+        dto.setEscalasAtivo(true);
+        dto.setDevocionalAtivo(false);
+        dto.setAvisosGeraisAtivo(true);
+        dto.setDepartamentosAtivo(true);
+        dto.setDispositivoRegistrado(dispositivoRegistrado);
+        return dto;
     }
 
     private UsuarioPreferenciaNotificacao obterOuCriarPreferencias(User user, Igreja igreja) {
