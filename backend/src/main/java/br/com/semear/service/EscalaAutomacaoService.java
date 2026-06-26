@@ -1392,6 +1392,9 @@ public class EscalaAutomacaoService {
             if (!escalaEhLimpeza(escala)) {
                 continue;
             }
+            if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
+                notificacaoService.notificarEscalasExcluidas(escala);
+            }
             for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
                 escalaItemRepository.delete(item);
             }
