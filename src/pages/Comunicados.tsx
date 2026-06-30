@@ -229,6 +229,7 @@ export default function Comunicados() {
   const [salvando, setSalvando] = useState(false);
   const [emEdicao, setEmEdicao] = useState<ComunicadoApp | null>(null);
   const [confirmarExclusao, setConfirmarExclusao] = useState<ComunicadoApp | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
   const [form, setForm] = useState(comunicadoVazio());
 
   const carregar = useCallback(async () => {
@@ -317,16 +318,23 @@ export default function Comunicados() {
     }
   };
 
-  const confirmarExcluir = async () => {
-    if (!confirmarExclusao?.idNum) return;
+  const confirmarExcluir = async (item: ComunicadoApp) => {
+    const id = item.idNum ?? Number(item.id);
+    if (!id || Number.isNaN(id)) {
+      toast.error("Não foi possível identificar o comunicado para exclusão.");
+      return;
+    }
+    setExcluindo(true);
     try {
-      await excluirComunicado(confirmarExclusao.idNum);
+      await excluirComunicado(id);
       toast.success("Comunicado excluído.");
       setConfirmarExclusao(null);
       await carregar();
       await refreshNotificacoes();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir.");
+    } finally {
+      setExcluindo(false);
     }
   };
 
@@ -573,12 +581,18 @@ export default function Comunicados() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={excluindo}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmarExcluir}
+              disabled={excluindo}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmarExclusao) {
+                  void confirmarExcluir(confirmarExclusao);
+                }
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Excluir
+              {excluindo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

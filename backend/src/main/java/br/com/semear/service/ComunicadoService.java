@@ -8,6 +8,7 @@ import br.com.semear.domain.enumeration.TipoComunicado;
 import br.com.semear.repository.ComunicadoLeituraRepository;
 import br.com.semear.repository.ComunicadoRepository;
 import br.com.semear.repository.UserRepository;
+import br.com.semear.repository.UsuarioNotificacaoVistaRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.dto.ComunicadoDTO;
 import br.com.semear.service.dto.ComunicadoLeituraDTO;
@@ -28,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ComunicadoService {
 
     private static final String ENTITY = "comunicado";
+    private static final String TIPO_NOTIFICACAO_COMUNICADO = "COMUNICADO";
+    private static final String TIPO_NOTIFICACAO_AVISO = "AVISO";
 
     private final ComunicadoRepository comunicadoRepository;
     private final ComunicadoLeituraRepository comunicadoLeituraRepository;
@@ -35,6 +38,7 @@ public class ComunicadoService {
     private final ComunicadoMapper comunicadoMapper;
     private final UserRepository userRepository;
     private final NotificacaoProgramadaService notificacaoProgramadaService;
+    private final UsuarioNotificacaoVistaRepository usuarioNotificacaoVistaRepository;
 
     public ComunicadoService(
         ComunicadoRepository comunicadoRepository,
@@ -42,7 +46,8 @@ public class ComunicadoService {
         TenantService tenantService,
         ComunicadoMapper comunicadoMapper,
         UserRepository userRepository,
-        NotificacaoProgramadaService notificacaoProgramadaService
+        NotificacaoProgramadaService notificacaoProgramadaService,
+        UsuarioNotificacaoVistaRepository usuarioNotificacaoVistaRepository
     ) {
         this.comunicadoRepository = comunicadoRepository;
         this.comunicadoLeituraRepository = comunicadoLeituraRepository;
@@ -50,6 +55,7 @@ public class ComunicadoService {
         this.comunicadoMapper = comunicadoMapper;
         this.userRepository = userRepository;
         this.notificacaoProgramadaService = notificacaoProgramadaService;
+        this.usuarioNotificacaoVistaRepository = usuarioNotificacaoVistaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -143,6 +149,9 @@ public class ComunicadoService {
         validarLideranca();
         Comunicado comunicado = obterDaIgreja(id).orElseThrow(this::naoEncontrado);
         notificacaoProgramadaService.cancelarEntidade("COMUNICADO", comunicado.getId());
+        comunicadoLeituraRepository.deleteByComunicadoId(comunicado.getId());
+        usuarioNotificacaoVistaRepository.deleteAllByTipoAndReferenciaId(TIPO_NOTIFICACAO_COMUNICADO, comunicado.getId());
+        usuarioNotificacaoVistaRepository.deleteAllByTipoAndReferenciaId(TIPO_NOTIFICACAO_AVISO, comunicado.getId());
         comunicadoRepository.delete(comunicado);
     }
 
