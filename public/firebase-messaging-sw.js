@@ -7,23 +7,36 @@ importScripts("/firebase-config.js");
 importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/11.6.0/firebase-messaging-compat.js");
 
+function montarOpcoesNotificacao(payload) {
+  const data = payload.data || {};
+  const title = data.title || payload.notification?.title || "Semear";
+  const body = data.body || payload.notification?.body || "";
+  const notificationId = data.notificationId || "";
+  const tipo = data.tipo || "";
+  const tag = notificationId || (tipo ? `${tipo}:${title}` : title);
+
+  return {
+    body,
+    icon: "/brand/android-chrome-192x192.png",
+    badge: "/brand/android-chrome-192x192.png",
+    tag,
+    renotify: false,
+    data: {
+      url: data.url || "/",
+      notificationId,
+      tipo,
+    },
+  };
+}
+
 if (self.FIREBASE_CONFIG && self.FIREBASE_CONFIG.apiKey) {
   firebase.initializeApp(self.FIREBASE_CONFIG);
   const messaging = firebase.messaging();
 
   messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification?.title || payload.data?.title || "Semear";
-    const options = {
-      body: payload.notification?.body || payload.data?.body || "",
-      icon: "/brand/android-chrome-192x192.png",
-      badge: "/brand/android-chrome-192x192.png",
-      data: {
-        url: payload.data?.url || "/",
-        notificationId: payload.data?.notificationId || "",
-        tipo: payload.data?.tipo || "",
-      },
-    };
-    self.registration.showNotification(title, options);
+    const title = payload.data?.title || payload.notification?.title || "Semear";
+    const options = montarOpcoesNotificacao(payload);
+    return self.registration.showNotification(title, options);
   });
 }
 

@@ -69,9 +69,6 @@ const Inicio = () => {
           )}
         </div>
 
-        {/* Alertas de escalas — somente liderança / administração */}
-        {visaoGerencial && <AlertasSecretariaEscalas />}
-
         <BannerInformativoDashboard />
 
         {visaoGerencial && <DestaqueVisitantesHoje />}
@@ -100,6 +97,8 @@ const Inicio = () => {
             <Aniversariantes />
           </div>
         </div>
+
+        {visaoGerencial && <AlertasSecretariaEscalas />}
       </div>
     </LayoutApp>
   );

@@ -21,7 +21,6 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.MessagingErrorCode;
-import com.google.firebase.messaging.Notification;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -385,12 +384,6 @@ public class PushNotificationService {
 
         Message message = Message.builder()
             .setToken(token)
-            .setNotification(
-                Notification.builder()
-                    .setTitle(notificacao.getTitulo())
-                    .setBody(notificacao.getMensagem())
-                    .build()
-            )
             .putAllData(data)
             .build();
         FirebaseMessaging.getInstance().send(message);

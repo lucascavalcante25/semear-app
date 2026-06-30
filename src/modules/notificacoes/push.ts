@@ -160,18 +160,23 @@ export async function desativarPushLocal(): Promise<void> {
 function configurarListenerForeground() {
   if (!messaging) return;
   onMessage(messaging, (payload) => {
-    const title = payload.notification?.title || payload.data?.title;
-    const body = payload.notification?.body || payload.data?.body;
+    const title = payload.data?.title || payload.notification?.title;
+    const body = payload.data?.body || payload.notification?.body;
     const url = payload.data?.url || "/";
+    const notificationId = payload.data?.notificationId || "";
+    const tipo = payload.data?.tipo || "";
     if (!title || Notification.permission !== "granted") return;
 
-    // iOS PWA não exibe new Notification() — usar service worker
+    const tag = notificationId || (tipo ? `${tipo}:${title}` : title);
+
     void navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification(title, {
         body: body || "",
         icon: "/brand/android-chrome-192x192.png",
         badge: "/brand/android-chrome-192x192.png",
-        data: { url },
+        tag,
+        renotify: false,
+        data: { url, notificationId, tipo },
       });
     });
   });

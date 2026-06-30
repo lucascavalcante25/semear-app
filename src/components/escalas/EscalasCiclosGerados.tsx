@@ -137,6 +137,9 @@ export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {g.totalEscalas ?? 0} escalas · {g.origem === "AGENDADO" ? "automático" : "manual"}
+                    {g.status === "RASCUNHO" && (g.totalEscalas ?? 0) === 0 && (
+                      <span className="text-amber-700 dark:text-amber-400"> · rascunho vazio — descarte para gerar outro</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">

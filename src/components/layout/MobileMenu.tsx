@@ -1,10 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess, canWrite, podeAcessarSuporte, usuarioEhSuperAdmin } from "@/auth/permissions";
-import { PixOfertaBloco } from "@/components/pix/PixOferta";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import { BadgeNotificacaoMenu } from "@/components/layout/BadgeNotificacaoMenu";
@@ -116,17 +115,6 @@ export function MenuMobile({ onClose }: MenuMobileProps) {
           )}
         </div>
       </nav>
-
-      <div className="space-y-3 border-t border-sidebar-border p-4">
-        <PixOfertaBloco />
-        <div className="flex items-center gap-3 rounded-lg bg-olive-light/50 px-3 py-3">
-          <Heart className="h-5 w-5 text-olive" />
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-foreground">Plantando sementes</span>
-            <span className="text-xs text-muted-foreground">Colhendo frutos</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

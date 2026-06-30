@@ -40,7 +40,15 @@ export function AlertasSecretariaEscalas() {
               </div>
             </div>
             <Button asChild size="sm" variant="outline" className="shrink-0">
-              <Link to="/escalas?aba=automacao">Ir para automação</Link>
+              <Link
+                to={
+                  alerta.geracaoId
+                    ? `/escalas?aba=automacao&geracao=${alerta.geracaoId}`
+                    : "/escalas?aba=automacao"
+                }
+              >
+                {alerta.tipo === "RASCUNHO_PENDENTE" ? "Ver rascunho" : "Ir para automação"}
+              </Link>
             </Button>
           </CardContent>
         </Card>

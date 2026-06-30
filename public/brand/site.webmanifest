@@ -1,6 +1,6 @@
 {
-  "name": "Minha Igreja Digital",
-  "short_name": "Minha Igreja",
+  "name": "Semear — Gestão da Igreja",
+  "short_name": "Semear",
   "description": "Gestão completa para igrejas — membros, avisos, financeiro e mais.",
   "start_url": "/",
   "scope": "/",

@@ -63,7 +63,6 @@ import {
 } from "@/modules/financeiro/api";
 import { formatarMoeda, valorMoedaParaNumero } from "@/lib/masks";
 import { toast } from "sonner";
-import { jsPDF } from "jspdf";
 
 const MESES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -380,65 +379,23 @@ function ModalRelatorioMensal({
 
     if (ehMobile()) {
       try {
-        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        const pageWidth = doc.internal.pageSize.getWidth();
-        let y = 15;
-
-        doc.setFontSize(14);
-        doc.text(dadosIgreja.nome, pageWidth / 2, y, { align: "center" });
-        y += 8;
-        doc.setFontSize(10);
-        doc.text(`CNPJ: ${dadosIgreja.cnpj}`, pageWidth / 2, y, { align: "center" });
-        y += 6;
-        doc.text(`Relatório - ${nomeMes}/${ano}`, pageWidth / 2, y, { align: "center" });
-        y += 12;
-
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text("Entradas", 14, y);
-        y += 6;
-        doc.setFont("helvetica", "normal");
-        entradas.forEach((l) => {
-          doc.text(`${l.date.toLocaleDateString("pt-BR")} - ${l.description} - R$ ${l.amount.toLocaleString("pt-BR")}`, 14, y);
-          y += 5;
-        });
-        doc.setFont("helvetica", "bold");
-        doc.text(`Total entradas: R$ ${totalEntradas.toLocaleString("pt-BR")}`, 14, y);
-        y += 10;
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Despesas", 14, y);
-        y += 6;
-        doc.setFont("helvetica", "normal");
-        saidas.forEach((l) => {
-          doc.text(`${l.date.toLocaleDateString("pt-BR")} - ${l.description} - R$ ${l.amount.toLocaleString("pt-BR")}`, 14, y);
-          y += 5;
-        });
-        doc.setFont("helvetica", "bold");
-        doc.text(`Total despesas: R$ ${totalSaidas.toLocaleString("pt-BR")}`, 14, y);
-        y += 12;
-
-        doc.setFillColor(232, 240, 232);
-        doc.rect(14, y, pageWidth - 28, 12, "F");
-        doc.setFont("helvetica", "bold");
-        doc.text(`Saldo do mês: R$ ${saldo.toLocaleString("pt-BR")} ${saldo >= 0 ? "(positivo)" : "(negativo)"}`, 18, y + 8);
-        y += 18;
-
-        doc.setFillColor(30, 58, 26);
-        doc.rect(14, y, pageWidth - 28, 14, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(12);
-        doc.text("SALDO TOTAL EM CAIXA", 18, y + 8);
-        doc.text(`R$ ${saldoTotal.toLocaleString("pt-BR")}`, pageWidth - 18, y + 8, { align: "right" });
-        doc.setTextColor(0, 0, 0);
-
-        doc.setFontSize(9);
-        doc.text(`${dadosIgreja.endereco} - ${ano}`, pageWidth - 14, doc.internal.pageSize.getHeight() - 10, { align: "right" });
-
-        doc.save(`relatorio-${nomeMes.toLowerCase()}-${ano}.pdf`);
-        toast.success("Relatório baixado com sucesso.");
-      } catch (e) {
-        toast.error("Erro ao gerar PDF. Tente novamente.");
+        const iframe = document.createElement("iframe");
+        iframe.setAttribute("aria-hidden", "true");
+        iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow?.document;
+        if (!doc) throw new Error("iframe indisponível");
+        doc.open();
+        doc.write(htmlConteudo);
+        doc.close();
+        iframe.contentWindow?.focus();
+        setTimeout(() => {
+          iframe.contentWindow?.print();
+          setTimeout(() => document.body.removeChild(iframe), 500);
+        }, 300);
+        toast.success("Abrindo impressão do relatório…");
+      } catch {
+        toast.error("Erro ao imprimir. Tente novamente.");
       }
       return;
     }
@@ -1141,7 +1098,7 @@ export default function Financeiro() {
               }
             }}
           >
-            <DialogContent>
+            <DialogContent className="max-h-[90dvh] overflow-y-auto overflow-x-hidden">
               <DialogHeader>
                 <DialogTitle>
                   {lancamentoEditando ? "Editar Lançamento" : "Novo Lançamento"}
@@ -1311,14 +1268,14 @@ export default function Financeiro() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <TrendingUp className="h-4 w-4 text-primary shrink-0" />
                     <span className="text-xs text-muted-foreground">Entradas</span>
                   </div>
-                  <p className="text-base sm:text-lg font-bold text-primary truncate" title={`R$ ${totalReceitas.toLocaleString("pt-BR")}`}>
+                  <p className="text-sm sm:text-lg font-bold text-primary leading-tight break-words">
                     R$ {totalReceitas.toLocaleString("pt-BR")}
                   </p>
                 </CardContent>
@@ -1327,10 +1284,10 @@ export default function Financeiro() {
               <Card className="bg-destructive/5 border-destructive/20">
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <TrendingDown className="h-4 w-4 text-destructive" />
+                    <TrendingDown className="h-4 w-4 text-destructive shrink-0" />
                     <span className="text-xs text-muted-foreground">Saídas</span>
                   </div>
-                  <p className="text-base sm:text-lg font-bold text-destructive truncate" title={`R$ ${totalDespesas.toLocaleString("pt-BR")}`}>
+                  <p className="text-sm sm:text-lg font-bold text-destructive leading-tight break-words">
                     R$ {totalDespesas.toLocaleString("pt-BR")}
                   </p>
                 </CardContent>
@@ -1348,7 +1305,7 @@ export default function Financeiro() {
                   <div className="flex items-center gap-2 mb-1">
                     <Wallet
                       className={cn(
-                        "h-4 w-4",
+                        "h-4 w-4 shrink-0",
                         saldo >= 0 ? "text-foreground" : "text-destructive"
                       )}
                     />
@@ -1356,10 +1313,9 @@ export default function Financeiro() {
                   </div>
                   <p
                     className={cn(
-                      "text-base sm:text-lg font-bold truncate",
+                      "text-sm sm:text-lg font-bold leading-tight break-words",
                       saldo >= 0 ? "text-foreground" : "text-destructive"
                     )}
-                    title={`R$ ${saldo.toLocaleString("pt-BR")}`}
                   >
                     R$ {saldo.toLocaleString("pt-BR")}
                   </p>

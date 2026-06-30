@@ -10,7 +10,7 @@ import { BarraLateral } from "./Sidebar";
 import { usarEhMobile } from "@/hooks/use-mobile";
 import { ModalInformativoLogin } from "@/components/informativo/ModalInformativoLogin";
 import { ModalAvisoEscalaLogin } from "@/components/escalas/ModalAvisoEscalaLogin";
-import { Heart } from "lucide-react";
+import { HandHeart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
@@ -53,14 +53,14 @@ export function LayoutApp({ children }: LayoutAppProps) {
           to="/oracao"
           className={cn(
             "fab-mobile fixed z-40 flex h-12 w-12 items-center justify-center rounded-full md:bottom-6",
-            "bg-rose-600 text-white shadow-lg ring-2 ring-background",
+            "bg-olive text-olive-foreground shadow-lg ring-2 ring-background",
             "transition-transform hover:scale-105 active:scale-95",
             "right-4 md:right-6",
           )}
           aria-label="Pedidos de oração"
           title="Oração"
         >
-          <Heart className="h-5 w-5" />
+          <HandHeart className="h-5 w-5" />
         </Link>
       )}
 

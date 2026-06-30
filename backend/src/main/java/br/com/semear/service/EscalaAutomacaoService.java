@@ -249,7 +249,10 @@ public class EscalaAutomacaoService {
         return geracaoRepository
             .findByIgrejaIdOrderByDataInicioDesc(igrejaId)
             .stream()
-            .filter(g -> possuiEscalasPortariaRecepcao(g.getId()))
+            .filter(
+                g ->
+                    g.getStatus() == StatusEscalaPublicacao.RASCUNHO || possuiEscalasPortariaRecepcao(g.getId())
+            )
             .map(this::toGeracaoDto)
             .toList();
     }
@@ -312,6 +315,15 @@ public class EscalaAutomacaoService {
         EscalaGeracao geracao = geracaoRepository.findByIdAndIgrejaId(id, igrejaId).orElseThrow(this::naoEncontrado);
         if (geracao.getStatus() != StatusEscalaPublicacao.RASCUNHO) {
             throw new BadRequestAlertException("Somente rascunhos podem ser descartados", ENTITY, "statusinvalido");
+        }
+        List<Escala> alvo = escalaRepository
+            .findByGeracaoId(geracao.getId())
+            .stream()
+            .filter(e -> !escalaEhLimpeza(e))
+            .toList();
+        if (alvo.isEmpty()) {
+            geracaoRepository.delete(geracao);
+            return;
         }
         excluirEscalasPortariaRecepcaoDaGeracao(geracao);
     }

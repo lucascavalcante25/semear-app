@@ -35,6 +35,7 @@ export function PixOfertaCompacto() {
           className="gap-1.5 sm:gap-2 text-primary hover:bg-primary/10 hover:text-primary text-xs sm:text-sm"
         >
           <Wallet className="h-4 w-4 shrink-0" />
+          <span className="sm:hidden">Oferta</span>
           <span className="hidden sm:inline">Ofertar via PIX</span>
         </Button>
       </PopoverTrigger>

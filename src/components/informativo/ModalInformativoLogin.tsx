@@ -76,8 +76,9 @@ export function ModalInformativoLogin() {
   return (
     <Dialog open={aberto} onOpenChange={() => {}}>
       <DialogContent
-        onPointerDownOutside={(e) => atual.obrigatorio && e.preventDefault()}
-        onEscapeKeyDown={(e) => atual.obrigatorio && e.preventDefault()}
+        hideClose
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
@@ -115,7 +116,7 @@ export function ModalInformativoLogin() {
           )}
           <Button onClick={() => void confirmar()} disabled={confirmando} className="w-full sm:w-auto">
             {confirmando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {atual.obrigatorio ? "Entendi" : "Fechar"}
+            Confirmar leitura
           </Button>
         </DialogFooter>
       </DialogContent>
