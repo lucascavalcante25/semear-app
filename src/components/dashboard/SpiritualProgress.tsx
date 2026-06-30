@@ -1,4 +1,4 @@
-import { TrendingUp, Flame, BookOpen, Calendar, Check, X } from "lucide-react";
+import { TrendingUp, Flame, BookOpen, Calendar, Check, X, ListChecks } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -26,6 +26,7 @@ import {
   obterPercentualPlanoPreciso,
   alternarProgressoLeitura,
   definirInicioPlanoIgreja,
+  marcarVariasLeiturasPlano,
 } from "@/modules/bible/service";
 import type { DiaPlanoLeitura, ProgressoLeituraUsuario, TrechoLeitura } from "@/modules/bible/types";
 import { cn } from "@/lib/utils";
@@ -134,6 +135,82 @@ const normalizarDataPlano = (valor?: string | null) => {
   return data;
 };
 
+interface LinhaLeituraPlanoProps {
+  leitura: TrechoLeitura;
+  concluida: boolean;
+  compacto?: boolean;
+  aoMarcar: (readingId: string, completed: boolean) => void;
+  aoAbrir?: (leitura: TrechoLeitura) => void;
+}
+
+function LinhaLeituraPlano({
+  leitura,
+  concluida,
+  compacto = false,
+  aoMarcar,
+  aoAbrir,
+}: LinhaLeituraPlanoProps) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 rounded-lg border border-border bg-background/70 transition-colors",
+        compacto ? "px-2 py-1" : "px-3 py-2",
+        concluida && "border-primary/25 bg-primary/5",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        {aoAbrir ? (
+          <button
+            type="button"
+            onClick={() => aoAbrir(leitura)}
+            className="text-left hover:text-primary transition-colors w-full"
+          >
+            <p className={cn("font-medium truncate", compacto ? "text-[11px]" : "text-sm")}>
+              {leitura.reference}
+            </p>
+            {!compacto && leitura.book && (
+              <p className="text-[10px] text-muted-foreground">{leitura.book}</p>
+            )}
+          </button>
+        ) : (
+          <p className={cn("font-medium truncate", compacto ? "text-[11px]" : "text-sm")}>
+            {leitura.reference}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => aoMarcar(leitura.id, true)}
+          className={cn(
+            concluida
+              ? "border-primary bg-primary text-primary-foreground pointer-events-none"
+              : "border-border text-muted-foreground hover:border-primary hover:bg-primary/10 hover:text-primary",
+          )}
+          aria-label={`Marcar ${leitura.reference} como lido`}
+        >
+          <Check className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => aoMarcar(leitura.id, false)}
+          className={cn(
+            concluida
+              ? "border-border text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+              : "border-transparent opacity-40 pointer-events-none",
+          )}
+          disabled={!concluida}
+          aria-label={`Desmarcar ${leitura.reference}`}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function ProgressoEspiritual() {
   const { user } = usarAutenticacao();
   const { configuracao } = useIgrejaConfiguracao();
@@ -151,6 +228,24 @@ export function ProgressoEspiritual() {
   useEffect(() => {
     definirInicioPlanoIgreja(dataInicioPlano ?? null);
   }, [dataInicioPlano]);
+
+  useEffect(() => {
+    const recarregar = () => setProgressoLeitura(obterProgressoLeitura(userId));
+    recarregar();
+    window.addEventListener("semear:progresso-leitura", recarregar);
+    window.addEventListener("focus", recarregar);
+    const onVisibilidade = () => {
+      if (document.visibilityState === "visible") {
+        recarregar();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilidade);
+    return () => {
+      window.removeEventListener("semear:progresso-leitura", recarregar);
+      window.removeEventListener("focus", recarregar);
+      document.removeEventListener("visibilitychange", onVisibilidade);
+    };
+  }, [userId]);
 
   useEffect(() => {
     setProgressoLeitura(obterProgressoLeitura(userId));
@@ -240,6 +335,17 @@ export function ProgressoEspiritual() {
         completed,
       ),
     );
+  };
+
+  const marcarTodasLeiturasDia = (dia: DiaPlanoLeitura) => {
+    if (!planoId) {
+      return;
+    }
+    const pendentes = leiturasPendentesNoDia(dia).map((leitura) => leitura.id);
+    if (pendentes.length === 0) {
+      return;
+    }
+    setProgressoLeitura(marcarVariasLeiturasPlano(userId, planoId, pendentes, true));
   };
 
   const parsearReferencia = (leitura: TrechoLeitura) => {
@@ -405,63 +511,36 @@ export function ProgressoEspiritual() {
                   Nenhuma leitura disponível para hoje.
                 </p>
               ) : (
-                leiturasHoje.map((reading) => {
-                  const concluida = leiturasConcluidas.has(reading.id);
-                  return (
-                  <div
+                leiturasHoje.map((reading) => (
+                  <LinhaLeituraPlano
                     key={reading.id}
-                    className={cn(
-                      "flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-border bg-background/70 transition-colors",
-                      concluida && "border-primary/25 bg-primary/5",
-                    )}
-                  >
-                    <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => abrirLeitura(reading)}
-                        className="text-left hover:text-primary transition-colors"
-                      >
-                        <p className="text-sm font-medium truncate">{reading.reference}</p>
-                        <p className="text-[10px] text-muted-foreground">{reading.book}</p>
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => marcarLeitura(reading.id, true)}
-                        className={cn(
-                          concluida
-                            ? "border-primary bg-primary text-primary-foreground pointer-events-none"
-                            : "border-border text-muted-foreground hover:border-primary hover:bg-primary/10 hover:text-primary",
-                        )}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => marcarLeitura(reading.id, false)}
-                        className={cn(
-                          concluida
-                            ? "border-border text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-                            : "border-transparent opacity-40 pointer-events-none",
-                        )}
-                        disabled={!concluida}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  );
-                })
+                    leitura={reading}
+                    concluida={leiturasConcluidas.has(reading.id)}
+                    aoMarcar={marcarLeitura}
+                    aoAbrir={abrirLeitura}
+                  />
+                ))
               )}
             </div>
 
             <div className="mt-1.5 space-y-1.5">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Dias em atraso:</span>
-                <span>{diasEmAtraso.length}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>Dias em atraso:</span>
+                  <span>{diasEmAtraso.length}</span>
+                </div>
+                {diasEmAtraso.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-[11px] gap-1 border-dashed border-amber-600/35 text-amber-900 dark:text-amber-200 hover:bg-amber-600/10"
+                    onClick={() => setModalAtrasadosAberto(true)}
+                  >
+                    <ListChecks className="h-3.5 w-3.5" />
+                    Marcar atrasos
+                  </Button>
+                )}
               </div>
               {diasEmAtraso.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
@@ -477,16 +556,16 @@ export function ProgressoEspiritual() {
                         className="space-y-1 px-2 py-1.5 rounded-lg border border-dashed border-amber-600/25 bg-amber-600/5"
                       >
                         <p className="text-sm font-medium">Dia {dia.dayNumber}</p>
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-1">
                           {pendentes.map((reading) => (
-                            <button
+                            <LinhaLeituraPlano
                               key={reading.id}
-                              type="button"
-                              onClick={() => abrirLeitura(reading)}
-                              className="text-left text-[11px] text-muted-foreground hover:text-primary hover:underline underline-offset-2 transition-colors truncate"
-                            >
-                              {reading.reference}
-                            </button>
+                              leitura={reading}
+                              concluida={false}
+                              compacto
+                              aoMarcar={marcarLeitura}
+                              aoAbrir={abrirLeitura}
+                            />
                           ))}
                         </div>
                       </div>
@@ -500,7 +579,7 @@ export function ProgressoEspiritual() {
                       className="w-full text-xs h-8 border-dashed border-primary/30 text-primary hover:bg-primary/5"
                       onClick={() => setModalAtrasadosAberto(true)}
                     >
-                      Ver mais atrasados ({diasEmAtraso.length - LIMITE_DIAS_ATRASO_RESUMO})
+                      Ver todos ({diasEmAtraso.length} dias)
                     </Button>
                   )}
                 </>
@@ -511,11 +590,11 @@ export function ProgressoEspiritual() {
       </CardContent>
 
       <Dialog open={modalAtrasadosAberto} onOpenChange={setModalAtrasadosAberto}>
-        <DialogContent className="max-h-[85vh] flex flex-col gap-0 p-0">
+        <DialogContent className="max-h-[85vh] flex flex-col gap-0 p-0 sm:max-w-lg">
           <DialogHeader className="p-6 pb-2 shrink-0">
             <DialogTitle>Dias em atraso</DialogTitle>
             <DialogDescription>
-              Toque em uma leitura para abrir o capítulo na Bíblia. São{" "}
+              Marque os capítulos que você já leu para atualizar seu progresso. São{" "}
               <span className="font-medium text-foreground">{diasEmAtraso.length}</span>{" "}
               {diasEmAtraso.length === 1 ? "dia" : "dias"} com leituras pendentes.
             </DialogDescription>
@@ -526,19 +605,31 @@ export function ProgressoEspiritual() {
               return (
                 <div
                   key={dia.id}
-                  className="space-y-1.5 px-3 py-2 rounded-lg border border-dashed border-amber-600/25 bg-amber-600/5"
+                  className="space-y-2 px-3 py-2.5 rounded-lg border border-dashed border-amber-600/25 bg-amber-600/5"
                 >
-                  <p className="text-sm font-semibold">Dia {dia.dayNumber}</p>
-                  <div className="flex flex-col gap-1">
-                    {pendentes.map((reading) => (
-                      <button
-                        key={reading.id}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">Dia {dia.dayNumber}</p>
+                    {pendentes.length > 0 && (
+                      <Button
                         type="button"
-                        onClick={() => abrirLeitura(reading)}
-                        className="text-left text-sm text-foreground/90 hover:text-primary hover:underline underline-offset-2 transition-colors"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:bg-primary/10"
+                        onClick={() => marcarTodasLeiturasDia(dia)}
                       >
-                        {reading.reference}
-                      </button>
+                        Marcar dia inteiro
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {dia.readings.map((reading) => (
+                      <LinhaLeituraPlano
+                        key={reading.id}
+                        leitura={reading}
+                        concluida={leiturasConcluidas.has(reading.id)}
+                        aoMarcar={marcarLeitura}
+                        aoAbrir={abrirLeitura}
+                      />
                     ))}
                   </div>
                 </div>

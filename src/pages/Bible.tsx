@@ -457,6 +457,12 @@ export default function Biblia() {
   }, [userId]);
 
   useEffect(() => {
+    const recarregarProgressoPlano = () => setReadingProgress(obterProgressoLeitura(userId));
+    window.addEventListener("semear:progresso-leitura", recarregarProgressoPlano);
+    return () => window.removeEventListener("semear:progresso-leitura", recarregarProgressoPlano);
+  }, [userId]);
+
+  useEffect(() => {
     if (!selectedBook || !selectedChapter) {
       return;
     }
@@ -606,6 +612,15 @@ export default function Biblia() {
     setLeiturasCapitulos(
       alternarLeituraCapitulo(userId, selectedBook, selectedChapter, selectedVersion),
     );
+    setReadingProgress(obterProgressoLeitura(userId));
+  };
+
+  const rolarParaTopo = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const rolarParaFim = () => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
   };
 
   const selectionReference = useMemo(() => {
@@ -1170,7 +1185,7 @@ export default function Biblia() {
                   {capituloLido ? "Capítulo concluído" : "Concluir leitura do capítulo"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Marque este capítulo como lido para atualizar seu progresso.
+                  Marque este capítulo como lido para atualizar seu progresso e o plano anual.
                 </p>
               </div>
               <Button
@@ -1200,6 +1215,29 @@ export default function Biblia() {
               onClick={() => setSelectedChapter((prev) => (prev || 1) + 1)}
             >
               Próximo →
+            </Button>
+          </div>
+
+          <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-2 md:bottom-8">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 rounded-full shadow-md border border-border/80 bg-background/95 backdrop-blur-sm"
+              onClick={rolarParaTopo}
+              aria-label="Ir ao início da página"
+            >
+              <ChevronUp className="h-5 w-5" />
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 rounded-full shadow-md border border-border/80 bg-background/95 backdrop-blur-sm"
+              onClick={rolarParaFim}
+              aria-label="Ir ao fim da página"
+            >
+              <ChevronDown className="h-5 w-5" />
             </Button>
           </div>
         </div>

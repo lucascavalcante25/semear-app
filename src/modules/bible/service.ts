@@ -579,7 +579,79 @@ export const alternarProgressoLeitura = (
       ];
   salvarColecao(userId, CHAVE_PROGRESSO, next);
   atualizarProgressoComunitario(userId, date.split("T")[0], completed);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("semear:progresso-leitura"));
+  }
   return next;
+};
+
+const referenciaCorrespondeCapitulo = (
+  reading: TrechoLeitura,
+  bookName: string,
+  chapter: number,
+): boolean => {
+  const raw = reading.reference.trim();
+  const match = raw.match(/(.+)\s(\d+)(?::(\d+)(?:\s*-\s*(\d+))?)?$/);
+  const nome = (reading.book ?? match?.[1]?.trim() ?? "").toLowerCase();
+  const capitulo = Number(match?.[2] ?? 0);
+  return nome === bookName.toLowerCase() && capitulo === chapter;
+};
+
+/** Trechos do plano anual que correspondem a um capítulo da Bíblia. */
+export const obterLeiturasPlanoPorCapitulo = (
+  userId: string,
+  bookId: string,
+  chapter: number,
+): Array<{ planId: string; readingId: string }> => {
+  const book = livrosBiblia.find((item) => item.id === bookId);
+  if (!book) {
+    return [];
+  }
+  const resultado: Array<{ planId: string; readingId: string }> = [];
+  for (const plan of obterPlanosLeitura(userId)) {
+    const dias = obterDiasPlanoLeitura(userId, plan.id);
+    for (const dia of dias) {
+      for (const reading of dia.readings) {
+        if (referenciaCorrespondeCapitulo(reading, book.name, chapter)) {
+          resultado.push({ planId: plan.id, readingId: reading.id });
+        }
+      }
+    }
+  }
+  return resultado;
+};
+
+/** Marca ou desmarca no plano todos os trechos que correspondem ao capítulo. */
+export const sincronizarPlanoComCapitulo = (
+  userId: string,
+  book: LivroBiblia,
+  chapter: number,
+  completed: boolean,
+): ProgressoLeituraUsuario[] => {
+  const matches = obterLeiturasPlanoPorCapitulo(userId, book.id, chapter);
+  if (matches.length === 0) {
+    return obterProgressoLeitura(userId);
+  }
+  const now = new Date().toISOString();
+  let progress = obterProgressoLeitura(userId);
+  for (const { planId, readingId } of matches) {
+    progress = alternarProgressoLeitura(userId, planId, readingId, now, completed);
+  }
+  return progress;
+};
+
+export const marcarVariasLeiturasPlano = (
+  userId: string,
+  planId: string,
+  readingIds: string[],
+  completed: boolean,
+): ProgressoLeituraUsuario[] => {
+  const now = new Date().toISOString();
+  let progress = obterProgressoLeitura(userId);
+  for (const readingId of readingIds) {
+    progress = alternarProgressoLeitura(userId, planId, readingId, now, completed);
+  }
+  return progress;
 };
 
 export const obterProgressoLeituraPorDia = (
@@ -800,6 +872,7 @@ export const alternarLeituraCapitulo = (
     ];
   }
   salvarColecao(userId, CHAVE_LEITURA_CAPITULOS, next);
+  sincronizarPlanoComCapitulo(userId, book, chapter, !existe);
   return next;
 };
 
