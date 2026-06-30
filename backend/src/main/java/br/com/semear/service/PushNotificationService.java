@@ -74,6 +74,50 @@ public class PushNotificationService {
         return pushProperties.isOperational();
     }
 
+    /**
+     * Envia código de recuperação de senha via push (Firebase — gratuito).
+     * Ignora preferências de horário silencioso — fluxo crítico de segurança.
+     */
+    public void enviarCodigoRecuperacao(User user, String codigo) {
+        if (!pushProperties.isOperational()) {
+            throw new IllegalStateException("Notificações push não configuradas");
+        }
+        List<UsuarioDispositivoPush> dispositivos = dispositivoRepository.findByUserIdAndAtivoTrue(user.getId());
+        if (dispositivos.isEmpty()) {
+            throw new IllegalStateException("Nenhum celular com notificações ativas");
+        }
+
+        String titulo = br.com.semear.config.Constants.NOME_PLATAFORMA + " — Recuperação de senha";
+        String corpo = "Seu código: " + codigo + ". Válido por 15 minutos.";
+        boolean algumEnviado = false;
+        String ultimoErro = null;
+
+        for (UsuarioDispositivoPush dispositivo : dispositivos) {
+            try {
+                enviarFcmDireto(dispositivo.getToken(), titulo, corpo, "/esqueci-senha", "RECUPERACAO_SENHA");
+                dispositivo.setUltimoUso(Instant.now());
+                dispositivo.setAtualizadoEm(Instant.now());
+                algumEnviado = true;
+            } catch (FirebaseMessagingException e) {
+                ultimoErro = e.getMessage();
+                if (tokenInvalido(e)) {
+                    dispositivo.setAtivo(false);
+                    dispositivo.setDesativadoEm(Instant.now());
+                    dispositivo.setAtualizadoEm(Instant.now());
+                }
+                LOG.warn("[PUSH] Falha ao enviar código de recuperação — userId={}, erro={}", user.getId(), e.getMessage());
+            }
+        }
+        dispositivoRepository.saveAll(dispositivos);
+
+        if (!algumEnviado) {
+            throw new IllegalStateException(
+                ultimoErro != null ? "Não foi possível entregar a notificação no celular" : "Nenhum dispositivo ativo"
+            );
+        }
+        LOG.info("[PUSH] Código de recuperação enviado para userId={} em {} dispositivo(s)", user.getId(), dispositivos.size());
+    }
+
     public UsuarioDispositivoPush registrarDispositivo(PushDispositivoRegistroDTO dto) {
         if (!pushProperties.isEnabled()) {
             throw new BadRequestAlertException("Push notifications desabilitado", "push", "desabilitado");
@@ -382,10 +426,22 @@ public class PushNotificationService {
         data.put("notificationId", notificacao.getId() != null ? notificacao.getId().toString() : "");
         data.put("tipo", notificacao.getTipo());
 
-        Message message = Message.builder()
-            .setToken(token)
-            .putAllData(data)
-            .build();
+        Message message = Message.builder().setToken(token).putAllData(data).build();
+        FirebaseMessaging.getInstance().send(message);
+    }
+
+    private void enviarFcmDireto(String token, String titulo, String corpo, String url, String tipo)
+        throws FirebaseMessagingException {
+        if (FirebaseApp.getApps().isEmpty()) {
+            throw new IllegalStateException("Firebase não inicializado");
+        }
+        Map<String, String> data = new HashMap<>();
+        data.put("title", titulo);
+        data.put("body", corpo);
+        data.put("url", url != null ? url : "/");
+        data.put("tipo", tipo != null ? tipo : "");
+
+        Message message = Message.builder().setToken(token).putAllData(data).build();
         FirebaseMessaging.getInstance().send(message);
     }
 

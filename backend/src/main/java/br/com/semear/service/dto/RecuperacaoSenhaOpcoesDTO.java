@@ -9,6 +9,8 @@ public class RecuperacaoSenhaOpcoesDTO implements Serializable {
     private boolean emailDisponivel;
     private boolean smsDisponivel;
     private boolean escolhaNecessaria;
+    private boolean pushDisponivel;
+    private int dispositivosPushAtivos;
     private String emailMascarado;
     private String telefoneMascarado;
 
@@ -50,6 +52,22 @@ public class RecuperacaoSenhaOpcoesDTO implements Serializable {
 
     public void setEscolhaNecessaria(boolean escolhaNecessaria) {
         this.escolhaNecessaria = escolhaNecessaria;
+    }
+
+    public boolean isPushDisponivel() {
+        return pushDisponivel;
+    }
+
+    public void setPushDisponivel(boolean pushDisponivel) {
+        this.pushDisponivel = pushDisponivel;
+    }
+
+    public int getDispositivosPushAtivos() {
+        return dispositivosPushAtivos;
+    }
+
+    public void setDispositivosPushAtivos(int dispositivosPushAtivos) {
+        this.dispositivosPushAtivos = dispositivosPushAtivos;
     }
 
     public String getEmailMascarado() {

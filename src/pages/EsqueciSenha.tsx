@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Mail, Smartphone, KeyRound } from "lucide-react";
+import { ArrowLeft, Bell, Mail, Smartphone, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +81,13 @@ export default function EsqueciSenha() {
         return;
       }
 
+      // Push disponível: envia direto no celular (prioridade sobre e-mail/SMS)
+      if (res.pushDisponivel) {
+        setCanalEscolhido("PUSH");
+        await enviarCodigo("PUSH");
+        return;
+      }
+
       if (res.escolhaNecessaria) {
         if (res.emailDisponivel && !res.smsDisponivel) {
           setCanalEscolhido("EMAIL");
@@ -103,8 +110,11 @@ export default function EsqueciSenha() {
     }
   };
 
-  const canalEnvioDisponivel = (canal: CanalRecuperacao) =>
-    canal === "EMAIL" ? Boolean(opcoes?.emailDisponivel) : Boolean(opcoes?.smsDisponivel);
+  const canalEnvioDisponivel = (canal: CanalRecuperacao) => {
+    if (canal === "PUSH") return Boolean(opcoes?.pushDisponivel);
+    if (canal === "EMAIL") return Boolean(opcoes?.emailDisponivel);
+    return Boolean(opcoes?.smsDisponivel);
+  };
 
   const confirmarCanal = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,14 +127,18 @@ export default function EsqueciSenha() {
 
     if (canalEscolhido && !canalEnvioDisponivel(canalEscolhido)) {
       setErro(
-        canalEscolhido === "SMS"
-          ? "O envio por SMS não está disponível no momento. Escolha e-mail."
-          : "O envio por e-mail não está disponível no momento. Escolha SMS.",
+        canalEscolhido === "PUSH"
+          ? "Notificação no celular indisponível. Escolha outro canal."
+          : canalEscolhido === "SMS"
+            ? "O envio por SMS não está disponível no momento. Escolha outro canal."
+            : "O envio por e-mail não está disponível no momento. Escolha outro canal.",
       );
       return;
     }
 
-    const canal = canalEscolhido ?? (opcoes?.emailDisponivel ? "EMAIL" : "SMS");
+    const canal =
+      canalEscolhido ??
+      (opcoes?.pushDisponivel ? "PUSH" : opcoes?.emailDisponivel ? "EMAIL" : "SMS");
     await enviarCodigo(canal);
   };
 
@@ -239,6 +253,26 @@ export default function EsqueciSenha() {
             <form className={styles.recoverForm} onSubmit={confirmarCanal}>
               {opcoes.escolhaNecessaria ? (
                 <div className={styles.canalGrid} role="radiogroup" aria-label="Canal de envio">
+                  {opcoes.pushDisponivel && (
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={canalEscolhido === "PUSH"}
+                      className={cn(
+                        styles.canalOption,
+                        canalEscolhido === "PUSH" && styles.canalOptionActive,
+                      )}
+                      onClick={() => setCanalEscolhido("PUSH")}
+                    >
+                      <Bell className="h-5 w-5 shrink-0" aria-hidden />
+                      <span>
+                        <strong>Notificação no celular</strong>
+                        <small>
+                          {opcoes.dispositivosPushAtivos ?? 1} dispositivo(s) — gratuito via app
+                        </small>
+                      </span>
+                    </button>
+                  )}
                   {opcoes.emailMascarado && (
                     <button
                       type="button"
@@ -290,10 +324,12 @@ export default function EsqueciSenha() {
                 </div>
               ) : (
                 <div className={styles.canalInfo}>
-                  {opcoes.emailDisponivel ? (
-                    <Mail className="h-5 w-5 shrink-0 text-primary" aria-hidden />
-                  ) : (
+                  {opcoes.pushDisponivel ? (
+                    <Bell className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  ) : opcoes.smsDisponivel ? (
                     <Smartphone className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  ) : (
+                    <Mail className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                   )}
                   <p>{opcoes.mensagem}</p>
                 </div>
@@ -327,7 +363,9 @@ export default function EsqueciSenha() {
             <form className={styles.recoverForm} onSubmit={validarCodigo}>
               {infoEnvio && (
                 <div className={styles.canalInfo}>
-                  {infoEnvio.canal === "SMS" ? (
+                  {infoEnvio.canal === "PUSH" ? (
+                    <Bell className="h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  ) : infoEnvio.canal === "SMS" ? (
                     <Smartphone className="h-5 w-5 shrink-0 text-primary" aria-hidden />
                   ) : (
                     <Mail className="h-5 w-5 shrink-0 text-primary" aria-hidden />

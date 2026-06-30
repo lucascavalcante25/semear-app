@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260630000002-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="monitoramento_snapshot"/></not>
+        </preConditions>
+        <createTable tableName="monitoramento_snapshot">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="coletado_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_geral" type="varchar(20)"/>
+            <column name="status_banco" type="varchar(20)"/>
+            <column name="memoria_percentual" type="int"/>
+            <column name="cpu_percentual" type="double"/>
+            <column name="conexoes_ativas" type="int"/>
+            <column name="conexoes_max" type="int"/>
+            <column name="requisicoes_por_minuto" type="double"/>
+            <column name="latencia_media_ms" type="double"/>
+            <column name="total_usuarios" type="bigint"/>
+            <column name="total_igrejas" type="bigint"/>
+        </createTable>
+        <createIndex tableName="monitoramento_snapshot" indexName="idx_monitor_snapshot_coletado">
+            <column name="coletado_em" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260630000002-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="monitoramento_alerta_enviado"/></not>
+        </preConditions>
+        <createTable tableName="monitoramento_alerta_enviado">
+            <column name="tipo_alerta" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="ultimo_envio_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

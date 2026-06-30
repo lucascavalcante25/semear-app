@@ -3,19 +3,15 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
-import { listarPreCadastrosParaAprovacao } from "@/modules/auth/preCadastro";
-import {
-  listarNotificacoesNaoVistas,
-  type NotificacaoItem,
-} from "@/modules/notifications/api";
-import { listarLiderancaOracao } from "@/modules/oracao/api";
+import { obterResumoNotificacoes } from "@/modules/notifications/resumo";
+import { type NotificacaoItem } from "@/modules/notifications/api";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { ehLiderancaOracao } from "@/auth/permissions";
+import { usarPollingInteligente } from "@/hooks/use-polling-inteligente";
 
-const INTERVALO_POLLING_MS = 15_000;
+const INTERVALO_POLLING_VISIVEL_MS = 20_000;
+const INTERVALO_POLLING_OCULTO_MS = 90_000;
 
 type NotificationsContextValue = {
   pendentesCount: number;
@@ -32,40 +28,18 @@ export function ProvedorNotificacoes({ children }: { children: React.ReactNode }
   const [pendentesCount, setPendentesCount] = useState(0);
   const [pedidosOracaoPendentes, setPedidosOracaoPendentes] = useState(0);
   const [notificacoes, setNotificacoes] = useState<NotificacaoItem[]>([]);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const carregar = useCallback(async () => {
     if (!user) return;
 
     try {
-      if (user.role === "admin") {
-        const lista = await listarPreCadastrosParaAprovacao();
-        setPendentesCount(lista.length);
-      } else {
-        setPendentesCount(0);
-      }
+      const resumo = await obterResumoNotificacoes();
+      setPendentesCount(resumo.preCadastrosPendentes);
+      setNotificacoes(resumo.notificacoes ?? []);
+      setPedidosOracaoPendentes(resumo.pedidosOracaoPendentes);
     } catch {
       setPendentesCount(0);
-    }
-
-    try {
-      const lista = await listarNotificacoesNaoVistas();
-      setNotificacoes(lista ?? []);
-    } catch {
       setNotificacoes([]);
-    }
-
-    if (ehLiderancaOracao(user)) {
-      try {
-        const pendentes = await listarLiderancaOracao({
-          status: "AGUARDANDO_APROVACAO",
-          size: 200,
-        });
-        setPedidosOracaoPendentes(pendentes.length);
-      } catch {
-        setPedidosOracaoPendentes(0);
-      }
-    } else {
       setPedidosOracaoPendentes(0);
     }
   }, [user]);
@@ -85,22 +59,12 @@ export function ProvedorNotificacoes({ children }: { children: React.ReactNode }
     void carregar();
   }, [carregar]);
 
-  // Polling e atualização ao retornar à aba
-  useEffect(() => {
-    if (!user) return;
-
-    const atualizar = () => void carregar();
-    intervalRef.current = setInterval(atualizar, INTERVALO_POLLING_MS);
-    window.addEventListener("focus", atualizar);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      window.removeEventListener("focus", atualizar);
-    };
-  }, [user, carregar]);
+  usarPollingInteligente({
+    ativo: !!user,
+    aoAtualizar: () => void carregar(),
+    intervaloVisivelMs: INTERVALO_POLLING_VISIVEL_MS,
+    intervaloOcultoMs: INTERVALO_POLLING_OCULTO_MS,
+  });
 
   const value: NotificationsContextValue = {
     pendentesCount,

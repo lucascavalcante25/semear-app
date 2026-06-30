@@ -13,8 +13,10 @@ import br.com.semear.repository.SolicitacaoAcessoRepository;
 import br.com.semear.repository.SolicitacaoSuporteRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.service.dto.AdminDashboardDTO;
+import br.com.semear.service.dto.AdminMenuResumoDTO;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,6 +94,17 @@ public class AdminDashboardService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         dto.setReceitaMensalPrevista(receitaMensal);
         dto.setReceitaAnualPrevista(receitaAnual);
+        return dto;
+    }
+
+    public AdminMenuResumoDTO obterMenuResumo() {
+        AdminMenuResumoDTO dto = new AdminMenuResumoDTO();
+        dto.setSolicitacoesPendentes((int) solicitacaoAcessoRepository.countByStatus(StatusSolicitacaoAcesso.PENDENTE));
+        dto.setSuporteAguardandoResposta(
+            (int) solicitacaoSuporteRepository.countByLidaPeloSuporteFalseAndStatusNotIn(
+                List.of(StatusSolicitacaoSuporte.FINALIZADA, StatusSolicitacaoSuporte.CANCELADA)
+            )
+        );
         return dto;
     }
 }

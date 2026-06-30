@@ -15,6 +15,7 @@ import br.com.semear.domain.enumeration.StatusEvento;
 import br.com.semear.domain.enumeration.StatusInscricaoEvento;
 import br.com.semear.domain.enumeration.StatusAssinatura;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
+import br.com.semear.domain.enumeration.StatusCadastro;
 import br.com.semear.domain.enumeration.StatusPedidoOracao;
 import br.com.semear.domain.enumeration.TipoPagamentoPlataforma;
 import br.com.semear.domain.enumeration.VisibilidadePedidoOracao;
@@ -29,12 +30,14 @@ import br.com.semear.repository.EventoInscricaoRepository;
 import br.com.semear.repository.EventoRepository;
 import br.com.semear.repository.NotificacaoUsuarioRepository;
 import br.com.semear.repository.PedidoOracaoRepository;
+import br.com.semear.repository.PreCadastroRepository;
 import br.com.semear.repository.SolicitacaoSuporteRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.UsuarioNotificacaoVistaRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
+import br.com.semear.service.dto.NotificacaoResumoDTO;
 import br.com.semear.service.util.EscalaNotificacaoUtils;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -76,6 +79,7 @@ public class NotificacaoService {
     private final EventoInscricaoRepository eventoInscricaoRepository;
     private final NotificacaoUsuarioRepository notificacaoUsuarioRepository;
     private final NotificacaoEnvioService notificacaoEnvioService;
+    private final PreCadastroRepository preCadastroRepository;
 
     public NotificacaoService(
         ComunicadoRepository comunicadoRepository,
@@ -90,7 +94,8 @@ public class NotificacaoService {
         EventoRepository eventoRepository,
         EventoInscricaoRepository eventoInscricaoRepository,
         NotificacaoUsuarioRepository notificacaoUsuarioRepository,
-        NotificacaoEnvioService notificacaoEnvioService
+        NotificacaoEnvioService notificacaoEnvioService,
+        PreCadastroRepository preCadastroRepository
     ) {
         this.comunicadoRepository = comunicadoRepository;
         this.userRepository = userRepository;
@@ -105,6 +110,7 @@ public class NotificacaoService {
         this.eventoInscricaoRepository = eventoInscricaoRepository;
         this.notificacaoUsuarioRepository = notificacaoUsuarioRepository;
         this.notificacaoEnvioService = notificacaoEnvioService;
+        this.preCadastroRepository = preCadastroRepository;
     }
 
     private static final ZoneId ZONE_BR = ZoneId.of("America/Sao_Paulo");
@@ -352,6 +358,41 @@ public class NotificacaoService {
         }
 
         return itens;
+    }
+
+    @Transactional(readOnly = true)
+    public NotificacaoResumoDTO obterResumo() {
+        Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneByLogin);
+        NotificacaoResumoDTO resumo = new NotificacaoResumoDTO();
+        if (userOpt.isEmpty()) {
+            return resumo;
+        }
+        User user = userOpt.get();
+        resumo.setNotificacoes(listarNaoVistas());
+
+        boolean ehAdmin = user
+            .getAuthorities()
+            .stream()
+            .anyMatch(a -> AuthoritiesConstants.ADMIN.equals(a.getName()));
+        if (ehAdmin) {
+            Long igrejaId = tenantService.getIgrejaIdAtual();
+            long pendentes = preCadastroRepository.countByIgrejaIdAndStatusIn(
+                igrejaId,
+                List.of(StatusCadastro.PRIMEIROACESSO, StatusCadastro.PENDENTE)
+            );
+            resumo.setPreCadastrosPendentes((int) pendentes);
+        }
+
+        if (usuarioEhLideranca(user)) {
+            Long igrejaId = tenantService.getIgrejaIdAtual();
+            long oracaoPendentes = pedidoOracaoRepository.countByIgrejaIdAndDeletedAtIsNullAndStatusIn(
+                igrejaId,
+                List.of(StatusPedidoOracao.AGUARDANDO_APROVACAO)
+            );
+            resumo.setPedidosOracaoPendentes((int) oracaoPendentes);
+        }
+
+        return resumo;
     }
 
     public void notificarTesteIniciado(Igreja igreja, AssinaturaIgreja assinatura) {

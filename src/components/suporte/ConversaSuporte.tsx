@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { TEXTO_SUPORTE } from "@/lib/plataforma";
+import { usarPollingInteligente } from "@/hooks/use-polling-inteligente";
 import type { SolicitacaoSuporte, SolicitacaoSuporteMensagem, StatusSolicitacaoSuporte } from "@/modules/suporte/api";
 
-const INTERVALO_POLLING_MS = 5_000;
+const INTERVALO_POLLING_VISIVEL_MS = 8_000;
+const INTERVALO_POLLING_OCULTO_MS = 30_000;
 
 function formatarData(iso?: string) {
   if (!iso) return "";
@@ -62,6 +64,7 @@ export function ConversaSuporte({
   const deveRolarRef = useRef(true);
   const assinaturaRef = useRef(assinaturaMensagens(mensagens));
   const statusRef = useRef(status);
+  const sincronizarRef = useRef<(() => Promise<void>) | null>(null);
 
   statusRef.current = status;
 
@@ -130,16 +133,20 @@ export function ConversaSuporte({
       }
     };
 
-    const intervalo = setInterval(() => void sincronizar(), INTERVALO_POLLING_MS);
-    const onFocus = () => void sincronizar();
-    window.addEventListener("focus", onFocus);
+    sincronizarRef.current = () => sincronizar();
 
     return () => {
       cancelado = true;
-      clearInterval(intervalo);
-      window.removeEventListener("focus", onFocus);
+      sincronizarRef.current = null;
     };
   }, [buscarAtualizacao, onSincronizar, onAtualizacaoRemota, visao]);
+
+  usarPollingInteligente({
+    ativo: !!buscarAtualizacao,
+    aoAtualizar: () => void sincronizarRef.current?.(),
+    intervaloVisivelMs: INTERVALO_POLLING_VISIVEL_MS,
+    intervaloOcultoMs: INTERVALO_POLLING_OCULTO_MS,
+  });
 
   const enviar = async () => {
     const t = texto.trim();

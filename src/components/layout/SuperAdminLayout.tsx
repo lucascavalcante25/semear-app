@@ -13,6 +13,7 @@ import {
   Moon,
   Sun,
   Headphones,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -34,6 +35,7 @@ const menuItems = [
   { icon: Users, label: "Usuários", path: "/super-admin/usuarios" },
   { icon: CreditCard, label: "Planos", path: "/super-admin/planos" },
   { icon: Wallet, label: "Meu Financeiro", path: "/super-admin/financeiro" },
+  { icon: Activity, label: "Monitoramento", path: "/super-admin/monitoramento" },
   { icon: Settings, label: "Configurações", path: "/super-admin/configuracoes" },
 ];
 

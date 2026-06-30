@@ -4,6 +4,7 @@ import br.com.semear.domain.User;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.AssinaturaIgrejaService;
+import br.com.semear.service.IgrejaCargoService;
 import br.com.semear.service.MailService;
 import br.com.semear.service.TenantService;
 import br.com.semear.service.UserService;
@@ -49,19 +50,22 @@ public class AccountResource {
     private final MailService mailService;
     private final TenantService tenantService;
     private final AssinaturaIgrejaService assinaturaIgrejaService;
+    private final IgrejaCargoService igrejaCargoService;
 
     public AccountResource(
         UserRepository userRepository,
         UserService userService,
         MailService mailService,
         TenantService tenantService,
-        AssinaturaIgrejaService assinaturaIgrejaService
+        AssinaturaIgrejaService assinaturaIgrejaService,
+        IgrejaCargoService igrejaCargoService
     ) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.mailService = mailService;
         this.tenantService = tenantService;
         this.assinaturaIgrejaService = assinaturaIgrejaService;
+        this.igrejaCargoService = igrejaCargoService;
     }
 
     /**
@@ -106,7 +110,11 @@ public class AccountResource {
     public AdminUserDTO getAccount() {
         return userService
             .getUserWithAuthorities()
-            .map(AdminUserDTO::new)
+            .map(user -> {
+                AdminUserDTO dto = new AdminUserDTO(user);
+                igrejaCargoService.enriquecerAdminUserDto(user, dto);
+                return dto;
+            })
             .orElseThrow(() -> new AccountResourceException("User could not be found"));
     }
 

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { obterResumoSuporte } from "@/modules/admin/suporte";
-import { obterDashboardAdmin } from "@/modules/igreja/solicitacao";
+import { obterMenuResumoAdmin } from "@/modules/admin/monitoramento";
+import { usarPollingInteligente } from "@/hooks/use-polling-inteligente";
 
-const INTERVALO_POLLING_MS = 30_000;
+const INTERVALO_VISIVEL_MS = 45_000;
+const INTERVALO_OCULTO_MS = 120_000;
 
 type TipoVisto = "solicitacoes" | "suporte";
 
@@ -44,7 +45,6 @@ export function usarNotificacoesSuperAdmin() {
   const [suporteNaoLidas, setSuporteNaoLidas] = useState(0);
   const [vistoSolicitacoes, setVistoSolicitacoes] = useState<number | null>(null);
   const [vistoSuporte, setVistoSuporte] = useState<number | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const userId = user?.id ?? "";
 
@@ -52,12 +52,9 @@ export function usarNotificacoesSuperAdmin() {
     if (!userId) return;
 
     try {
-      const [dashboard, suporte] = await Promise.all([
-        obterDashboardAdmin(),
-        obterResumoSuporte(),
-      ]);
-      setSolicitacoesPendentes(dashboard.solicitacoesPendentes ?? 0);
-      setSuporteNaoLidas(suporte.aguardandoRespostaSuporte ?? 0);
+      const resumo = await obterMenuResumoAdmin();
+      setSolicitacoesPendentes(resumo.solicitacoesPendentes ?? 0);
+      setSuporteNaoLidas(resumo.suporteAguardandoResposta ?? 0);
     } catch {
       setSolicitacoesPendentes(0);
       setSuporteNaoLidas(0);
@@ -74,21 +71,12 @@ export function usarNotificacoesSuperAdmin() {
     void carregar();
   }, [carregar]);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    const atualizar = () => void carregar();
-    intervalRef.current = setInterval(atualizar, INTERVALO_POLLING_MS);
-    window.addEventListener("focus", atualizar);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      window.removeEventListener("focus", atualizar);
-    };
-  }, [userId, carregar]);
+  usarPollingInteligente({
+    ativo: !!userId,
+    aoAtualizar: () => void carregar(),
+    intervaloVisivelMs: INTERVALO_VISIVEL_MS,
+    intervaloOcultoMs: INTERVALO_OCULTO_MS,
+  });
 
   useEffect(() => {
     if (!userId) return;

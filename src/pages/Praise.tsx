@@ -69,6 +69,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { canWrite } from "@/auth/permissions";
 import {
   listarLouvores,
   criarLouvor,
@@ -304,7 +305,7 @@ function SortableCartaoLouvor(props: SortableCartaoLouvorProps) {
 
 export default function PaginaLouvores() {
   const { user } = usarAutenticacao();
-  const podeCadastrar = ["admin", "pastor", "lider", "secretaria"].includes(user?.role ?? "");
+  const podeCadastrar = canWrite(user, "/louvores");
 
   const [buscaTexto, setBuscaTexto] = useState("");
   const [louvores, setLouvores] = useState<LouvorApp[]>([]);

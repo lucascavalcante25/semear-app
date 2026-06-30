@@ -39,10 +39,11 @@ import {
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canWrite, podeGerenciarDocumentosIgreja } from "@/auth/permissions";
 import { DocumentosIgrejaTab } from "@/components/documentos/DocumentosIgrejaTab";
+import { CargosPermissoesPanel } from "@/components/configuracoes/CargosPermissoesPanel";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-const ABAS = ["dados", "responsavel", "endereco", "pix", "visual", "textos", "site", "plano", "documentos"] as const;
+const ABAS = ["dados", "responsavel", "endereco", "pix", "visual", "textos", "site", "plano", "cargos", "documentos"] as const;
 type AbaConfig = (typeof ABAS)[number];
 
 export default function ConfiguracoesIgreja() {
@@ -254,6 +255,7 @@ export default function ConfiguracoesIgreja() {
           <TabsTrigger value="textos">Textos</TabsTrigger>
           <TabsTrigger value="site">Site público</TabsTrigger>
           <TabsTrigger value="plano">Plano de Leitura</TabsTrigger>
+          <TabsTrigger value="cargos">Cargos</TabsTrigger>
           {podeDocumentos && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
         </TabsList>
 
@@ -686,6 +688,14 @@ export default function ConfiguracoesIgreja() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="cargos">
+          <Card>
+            <CardContent className="pt-6">
+              <CargosPermissoesPanel somenteLeitura={!canWrite(user, "/configuracoes-igreja")} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {podeDocumentos && (

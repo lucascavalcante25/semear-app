@@ -3,6 +3,7 @@ package br.com.semear.web.rest;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.AdminDashboardService;
 import br.com.semear.service.dto.AdminDashboardDTO;
+import br.com.semear.service.dto.AdminMenuResumoDTO;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,5 +23,11 @@ public class AdminDashboardResource {
     @RolesAllowed({ AuthoritiesConstants.SUPER_ADMIN, AuthoritiesConstants.ADMIN })
     public AdminDashboardDTO obterDashboard() {
         return adminDashboardService.obterEstatisticas();
+    }
+
+    @GetMapping("/menu-resumo")
+    @RolesAllowed({ AuthoritiesConstants.SUPER_ADMIN })
+    public AdminMenuResumoDTO obterMenuResumo() {
+        return adminDashboardService.obterMenuResumo();
     }
 }

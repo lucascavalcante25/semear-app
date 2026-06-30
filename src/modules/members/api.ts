@@ -18,6 +18,8 @@ export type AdminUserDTO = {
   lastModifiedDate?: string;
   authorities?: string[] | Array<{ name: string }>;
   modules?: string[] | string;
+  cargoIds?: number[];
+  permissoesEfetivas?: string[];
   birthDate?: string;
   sexo?: "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO";
   isDependente?: boolean;
@@ -88,6 +90,8 @@ export const mapearParaMembro = (dto: AdminUserDTO) => {
     role,
     authorities,
     modules: modules as ModuleKey[],
+    cargoIds: dto.cargoIds ?? [],
+    permissoesEfetivas: dto.permissoesEfetivas ?? [],
     isDependente: dto.isDependente ?? false,
     birthDate: dto.birthDate,
     sexo: dto.sexo,
@@ -114,6 +118,7 @@ export type AtualizarMembroPayload = {
   activated?: boolean;
   authorities: string[];
   modules: string[];
+  cargoIds?: number[];
   paiId?: number | null;
   maeId?: number | null;
   dataBatismo?: string | null;
@@ -155,6 +160,7 @@ export const atualizarMembro = async (
     activated: payload.activated ?? true,
     authorities: payload.authorities,
     modules: payload.modules,
+    cargoIds: payload.cargoIds,
     paiId: payload.paiId ?? undefined,
     maeId: payload.maeId ?? undefined,
     dataBatismo: payload.dataBatismo || undefined,

@@ -154,5 +154,14 @@ semear:
     firebase-service-account: ${SEMEAR_FIREBASE_SERVICE_ACCOUNT:}
     vapid-public-key: ${SEMEAR_FIREBASE_VAPID_PUBLIC_KEY:}
     teste-endpoint-enabled: ${SEMEAR_PUSH_TESTE_ENABLED:false}
+  recuperacao-senha:
+    email-habilitado: ${SEMEAR_RECUPERACAO_EMAIL_ENABLED:true}
+  monitoramento:
+    intervalo-coleta-ms: 300000
+    historico-retencao-dias: 7
+    alertas:
+      habilitado: ${SEMEAR_MONITORAMENTO_ALERTAS_ENABLED:true}
+      cooldown-minutos: 60
+      email-destinos: ${SEMEAR_MONITORAMENTO_ALERTAS_EMAIL:}
 
 # application:

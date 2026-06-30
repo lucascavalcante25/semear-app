@@ -5,6 +5,7 @@ import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.CanalRecuperacaoSenha;
 import br.com.semear.repository.RecuperacaoSenhaRepository;
 import br.com.semear.repository.UserRepository;
+import br.com.semear.repository.UsuarioDispositivoPushRepository;
 import br.com.semear.service.dto.RecuperacaoSenhaConcluirDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaIniciarDTO;
 import br.com.semear.service.dto.RecuperacaoSenhaOpcoesDTO;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,19 +40,28 @@ public class RecuperacaoSenhaService {
     private final RecuperacaoSenhaRepository recuperacaoSenhaRepository;
     private final MailService mailService;
     private final SmsService smsService;
+    private final PushNotificationService pushNotificationService;
+    private final UsuarioDispositivoPushRepository dispositivoPushRepository;
     private final UserService userService;
+
+    @Value("${semear.recuperacao-senha.email-habilitado:true}")
+    private boolean emailRecuperacaoHabilitado;
 
     public RecuperacaoSenhaService(
         UserRepository userRepository,
         RecuperacaoSenhaRepository recuperacaoSenhaRepository,
         MailService mailService,
         SmsService smsService,
+        PushNotificationService pushNotificationService,
+        UsuarioDispositivoPushRepository dispositivoPushRepository,
         UserService userService
     ) {
         this.userRepository = userRepository;
         this.recuperacaoSenhaRepository = recuperacaoSenhaRepository;
         this.mailService = mailService;
         this.smsService = smsService;
+        this.pushNotificationService = pushNotificationService;
+        this.dispositivoPushRepository = dispositivoPushRepository;
         this.userService = userService;
     }
 
@@ -138,12 +149,16 @@ public class RecuperacaoSenhaService {
         resposta.setCodigoEnviado(true);
         resposta.setCanal(canal);
         resposta.setDestinoMascarado(mascararDestino(user, canal));
-        resposta.setMensagem(
-            canal == CanalRecuperacaoSenha.EMAIL
-                ? "Enviamos um código para o seu e-mail cadastrado."
-                : "Enviamos um código por SMS para o seu celular cadastrado."
-        );
+        resposta.setMensagem(mensagemCanal(canal));
         return resposta;
+    }
+
+    private String mensagemCanal(CanalRecuperacaoSenha canal) {
+        return switch (canal) {
+            case PUSH -> "Enviamos o código como notificação no seu celular (app instalado).";
+            case SMS -> "Enviamos um código por SMS para o seu celular cadastrado.";
+            case EMAIL -> "Enviamos um código para o seu e-mail cadastrado.";
+        };
     }
 
     @Transactional(readOnly = true)
@@ -219,6 +234,10 @@ public class RecuperacaoSenhaService {
     }
 
     private void enviarCodigo(User user, CanalRecuperacaoSenha canal, String codigo) {
+        if (canal == CanalRecuperacaoSenha.PUSH) {
+            pushNotificationService.enviarCodigoRecuperacao(user, codigo);
+            return;
+        }
         if (canal == CanalRecuperacaoSenha.EMAIL) {
             mailService.sendCodigoRecuperacaoEmailSync(user.getEmail(), codigo);
             return;
@@ -231,12 +250,20 @@ public class RecuperacaoSenhaService {
         RecuperacaoSenhaOpcoesDTO opcoes = new RecuperacaoSenhaOpcoesDTO();
         boolean temEmail = StringUtils.isNotBlank(user.getEmail());
         boolean temTelefone = StringUtils.isNotBlank(user.getPhone()) || StringUtils.isNotBlank(user.getPhoneSecondary());
-        boolean emailDisponivel = temEmail && mailService.isEnvioDisponivel();
-        boolean smsDisponivel = temTelefone && smsService.isDisponivel();
+        int dispositivosPush = (int) dispositivoPushRepository.countByUserIdAndAtivoTrue(user.getId());
 
-        opcoes.setEmailDisponivel(emailDisponivel);
+        boolean pushDisponivel = dispositivosPush > 0 && pushNotificationService.isEnabled();
+        boolean smsDisponivel = temTelefone && smsService.isDisponivel();
+        boolean emailDisponivel = temEmail && emailRecuperacaoHabilitado && mailService.isEnvioDisponivel();
+
+        opcoes.setPushDisponivel(pushDisponivel);
+        opcoes.setDispositivosPushAtivos(dispositivosPush);
         opcoes.setSmsDisponivel(smsDisponivel);
-        opcoes.setEscolhaNecessaria(emailDisponivel && smsDisponivel);
+        opcoes.setEmailDisponivel(emailDisponivel);
+
+        int canaisDisponiveis = (pushDisponivel ? 1 : 0) + (smsDisponivel ? 1 : 0) + (emailDisponivel ? 1 : 0);
+        // Com push ativo, prioridade automática no celular — sem pedir escolha
+        opcoes.setEscolhaNecessaria(!pushDisponivel && canaisDisponiveis > 1);
 
         if (temEmail) {
             opcoes.setEmailMascarado(mascararEmail(user.getEmail()));
@@ -245,25 +272,25 @@ public class RecuperacaoSenhaService {
             opcoes.setTelefoneMascarado(mascararTelefone(StringUtils.firstNonBlank(user.getPhone(), user.getPhoneSecondary())));
         }
 
-        if (!emailDisponivel && !smsDisponivel) {
+        if (canaisDisponiveis == 0) {
             opcoes.setPodeRecuperar(false);
-            if (temEmail && !mailService.isEnvioDisponivel() && temTelefone && !smsService.isDisponivel()) {
+            if (dispositivosPush > 0 && !pushNotificationService.isEnabled()) {
                 opcoes.setMensagem(
-                    "O envio de e-mail e SMS não está disponível no momento. Peça à secretaria da igreja para redefinir sua senha."
+                    "Você tem o app instalado, mas as notificações push não estão ativas no servidor. " +
+                    "Peça à secretaria da igreja para redefinir sua senha ou ative o push nas configurações."
                 );
-            } else if (temEmail && !mailService.isEnvioDisponivel()) {
+            } else if (temTelefone && !smsService.isDisponivel() && !pushDisponivel) {
                 opcoes.setMensagem(
-                    "Seu cadastro possui e-mail, mas o envio não está configurado no servidor. " +
-                    "Peça à secretaria da igreja para cadastrar seu celular ou redefinir sua senha."
+                    "Seu cadastro possui celular, mas o envio por SMS não está disponível. " +
+                    "Instale o app e ative as notificações, ou peça ajuda à secretaria da igreja."
                 );
-            } else if (temTelefone && !smsService.isDisponivel()) {
+            } else if (temEmail && emailRecuperacaoHabilitado && !mailService.isEnvioDisponivel()) {
                 opcoes.setMensagem(
-                    "Seu cadastro possui celular, mas o envio por SMS não está disponível no momento. " +
-                    "Peça à secretaria da igreja para cadastrar ou atualizar seu e-mail."
+                    "Nenhum canal automático disponível no momento. Procure a secretaria da igreja para redefinir sua senha."
                 );
             } else {
                 opcoes.setMensagem(
-                    "Seu cadastro não possui e-mail nem celular para recuperação. " +
+                    "Seu cadastro não possui celular com notificações ativas nem outro canal de recuperação. " +
                     "Procure a secretaria da igreja para atualizar seus dados."
                 );
             }
@@ -273,6 +300,8 @@ public class RecuperacaoSenhaService {
         opcoes.setPodeRecuperar(true);
         if (opcoes.isEscolhaNecessaria()) {
             opcoes.setMensagem("Escolha como deseja receber o código de verificação.");
+        } else if (pushDisponivel) {
+            opcoes.setMensagem("Enviaremos o código como notificação no seu celular.");
         } else if (emailDisponivel) {
             opcoes.setMensagem("Enviaremos o código para o e-mail " + opcoes.getEmailMascarado() + ".");
         } else {
@@ -284,17 +313,15 @@ public class RecuperacaoSenhaService {
     private CanalRecuperacaoSenha resolverCanalEscolhido(RecuperacaoSenhaOpcoesDTO opcoes, CanalRecuperacaoSenha canalSolicitado) {
         if (opcoes.isEscolhaNecessaria()) {
             if (canalSolicitado == null) {
-                throw new BadRequestAlertException("Escolha e-mail ou SMS para receber o código", ENTITY, "canalobrigatorio");
+                throw new BadRequestAlertException("Escolha como deseja receber o código", ENTITY, "canalobrigatorio");
             }
-            if (canalSolicitado == CanalRecuperacaoSenha.EMAIL && !opcoes.isEmailDisponivel()) {
-                throw new BadRequestAlertException("E-mail não disponível para recuperação", ENTITY, "canalinvalido");
-            }
-            if (canalSolicitado == CanalRecuperacaoSenha.SMS && !opcoes.isSmsDisponivel()) {
-                throw new BadRequestAlertException("SMS não disponível para recuperação", ENTITY, "canalinvalido");
-            }
+            validarCanalDisponivel(opcoes, canalSolicitado);
             return canalSolicitado;
         }
 
+        if (opcoes.isPushDisponivel()) {
+            return CanalRecuperacaoSenha.PUSH;
+        }
         if (opcoes.isEmailDisponivel()) {
             return CanalRecuperacaoSenha.EMAIL;
         }
@@ -302,6 +329,18 @@ public class RecuperacaoSenhaService {
             return CanalRecuperacaoSenha.SMS;
         }
         throw new IllegalArgumentException("Nenhum canal disponível");
+    }
+
+    private void validarCanalDisponivel(RecuperacaoSenhaOpcoesDTO opcoes, CanalRecuperacaoSenha canal) {
+        if (canal == CanalRecuperacaoSenha.PUSH && !opcoes.isPushDisponivel()) {
+            throw new BadRequestAlertException("Notificação no celular não disponível", ENTITY, "canalinvalido");
+        }
+        if (canal == CanalRecuperacaoSenha.EMAIL && !opcoes.isEmailDisponivel()) {
+            throw new BadRequestAlertException("E-mail não disponível para recuperação", ENTITY, "canalinvalido");
+        }
+        if (canal == CanalRecuperacaoSenha.SMS && !opcoes.isSmsDisponivel()) {
+            throw new BadRequestAlertException("SMS não disponível para recuperação", ENTITY, "canalinvalido");
+        }
     }
 
     private RecuperacaoSenhaRespostaDTO respostaFalhaEnvio(String mensagem) {
@@ -314,7 +353,7 @@ public class RecuperacaoSenhaService {
     private RecuperacaoSenhaOpcoesDTO opcoesGenericas() {
         RecuperacaoSenhaOpcoesDTO resposta = new RecuperacaoSenhaOpcoesDTO();
         resposta.setMensagem(
-            "Se o CPF estiver cadastrado e possuir e-mail ou celular, você poderá receber um código de verificação."
+            "Se o CPF estiver cadastrado e possuir celular com notificações ou outro canal, você poderá receber um código."
         );
         resposta.setPodeRecuperar(false);
         return resposta;
@@ -323,7 +362,7 @@ public class RecuperacaoSenhaService {
     private RecuperacaoSenhaRespostaDTO respostaGenerica() {
         RecuperacaoSenhaRespostaDTO resposta = new RecuperacaoSenhaRespostaDTO();
         resposta.setMensagem(
-            "Se o CPF estiver cadastrado e possuir e-mail ou celular, você receberá um código em instantes."
+            "Se o CPF estiver cadastrado, você receberá um código em instantes (notificação, SMS ou e-mail)."
         );
         resposta.setCodigoEnviado(false);
         return resposta;
@@ -360,6 +399,10 @@ public class RecuperacaoSenhaService {
     private String mascararDestino(User user, CanalRecuperacaoSenha canal) {
         if (canal == CanalRecuperacaoSenha.EMAIL) {
             return mascararEmail(user.getEmail());
+        }
+        if (canal == CanalRecuperacaoSenha.PUSH) {
+            int qtd = (int) dispositivoPushRepository.countByUserIdAndAtivoTrue(user.getId());
+            return qtd + " celular" + (qtd == 1 ? "" : "es") + " com notificações";
         }
         return mascararTelefone(StringUtils.firstNonBlank(user.getPhone(), user.getPhoneSecondary()));
     }

@@ -14,6 +14,8 @@ type Usuario = UserAccess & {
   id: string;
   name: string;
   email: string;
+  permissoesEfetivas?: string[];
+  cargoIds?: number[];
 };
 
 type ResultadoLogin = {
@@ -80,6 +82,10 @@ const normalizarUsuario = (user: Partial<Usuario> | null): Usuario | null => {
     authorities,
     modules: modules.length > 0 ? modules : undefined,
     permissions: (user as any).permissions,
+    permissoesEfetivas: Array.isArray((user as Usuario).permissoesEfetivas)
+      ? (user as Usuario).permissoesEfetivas
+      : undefined,
+    cargoIds: Array.isArray((user as Usuario).cargoIds) ? (user as Usuario).cargoIds : undefined,
   };
 };
 
@@ -132,6 +138,8 @@ type RespostaConta = {
   lastName?: string;
   authorities?: string[];
   modules?: string[];
+  permissoesEfetivas?: string[];
+  cargoIds?: number[];
 };
 
 const mapearAutoridadesParaPerfil = (
@@ -186,6 +194,8 @@ const mapearContaParaUsuario = (account: RespostaConta): Usuario => {
     authorities: account.authorities,
     modules: modulesFromApi.length > 0 ? modulesFromApi : undefined,
     permissions: (account as any).permissions,
+    permissoesEfetivas: account.permissoesEfetivas,
+    cargoIds: account.cargoIds,
   };
 };
 

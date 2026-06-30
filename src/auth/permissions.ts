@@ -186,7 +186,30 @@ export type UserAccess = {
   authorities?: string[];
   modules?: (string | string[])[];
   permissions?: ModulePermission[];
+  /** Permissões efetivas calculadas no servidor (cargos + override). Formato: `modulo:READ|WRITE` */
+  permissoesEfetivas?: string[];
+  cargoIds?: number[];
 };
+
+const parseStringsPermissao = (items: string[]): ModulePermission[] => {
+  const result: ModulePermission[] = [];
+  for (const item of items) {
+    const colonIdx = item.indexOf(":");
+    if (colonIdx >= 0) {
+      const module = item.slice(0, colonIdx) as ModuleKey;
+      const access = item.slice(colonIdx + 1).toUpperCase() as AccessLevel;
+      if (MODULES.includes(module) && (access === "READ" || access === "WRITE")) {
+        result.push({ module, access });
+      } else if ((module === "avisos" || module === "informativos") && (access === "READ" || access === "WRITE")) {
+        result.push({ module: "comunicados", access });
+      }
+    }
+  }
+  return result;
+};
+
+export const temPermissoesDinamicas = (user: UserAccess | null | undefined): boolean =>
+  Boolean(user?.permissoesEfetivas && user.permissoesEfetivas.length > 0);
 
 export const podeAcessarSuporte = (user: UserAccess | null | undefined): boolean => user != null;
 
@@ -258,6 +281,9 @@ export const getDefaultPermissionsForRole = (role: Role): ModulePermission[] => 
 
 export const getEffectivePermissions = (user: UserAccess | null | undefined): ModulePermission[] => {
   if (!user) return [];
+  if (user.permissoesEfetivas && user.permissoesEfetivas.length > 0) {
+    return parseStringsPermissao(user.permissoesEfetivas);
+  }
   const parsed = parsePermissoes(user);
   if (parsed.length > 0) return parsed;
   return getDefaultPermissionsForRole(user.role);
@@ -270,7 +296,7 @@ export const hasModuleAccess = (
 ): boolean => {
   if (!user) return false;
   if (usuarioEhSuperAdmin(user)) return true;
-  if (ROLES_FULL_ACCESS.includes(user.role)) return true;
+  if (!temPermissoesDinamicas(user) && ROLES_FULL_ACCESS.includes(user.role)) return true;
 
   const perms = getEffectivePermissions(user);
   const perm = perms.find((p) => p.module === module);
@@ -292,7 +318,7 @@ export const canAccess = (user: UserAccess | null | undefined, path: string): bo
   if (base.startsWith("/i/")) return true;
 
   if (usuarioEhSuperAdmin(user)) return true;
-  if (ROLES_FULL_ACCESS.includes(user.role)) return true;
+  if (!temPermissoesDinamicas(user) && ROLES_FULL_ACCESS.includes(user.role)) return true;
 
   const moduleKey = getModuleForRoute(base);
   if (!moduleKey) return false;
@@ -308,7 +334,7 @@ export const canWrite = (user: UserAccess | null | undefined, path: string): boo
   if (podeAcessarRotaSuporte(base)) return false;
 
   if (usuarioEhSuperAdmin(user)) return true;
-  if (ROLES_FULL_ACCESS.includes(user.role)) return true;
+  if (!temPermissoesDinamicas(user) && ROLES_FULL_ACCESS.includes(user.role)) return true;
 
   const moduleKey = getModuleForRoute(base);
   if (!moduleKey) return false;

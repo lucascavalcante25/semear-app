@@ -101,9 +101,11 @@ public class ModuleAccessService {
     private static final List<String> VISITANTE_MODULES = List.of("biblia", "oracao", "configuracoes");
 
     private final TenantService tenantService;
+    private final IgrejaCargoService igrejaCargoService;
 
-    public ModuleAccessService(TenantService tenantService) {
+    public ModuleAccessService(TenantService tenantService, IgrejaCargoService igrejaCargoService) {
         this.tenantService = tenantService;
+        this.igrejaCargoService = igrejaCargoService;
     }
 
     public boolean hasModuleAccess(String module, NivelAcessoModulo nivel) {
@@ -158,11 +160,7 @@ public class ModuleAccessService {
     }
 
     private Map<String, NivelAcessoModulo> obterPermissoesEfetivas(User user) {
-        Map<String, NivelAcessoModulo> parsed = parseModulos(user.getModules());
-        if (!parsed.isEmpty()) {
-            return parsed;
-        }
-        return permissoesPadraoDoRole(user);
+        return igrejaCargoService.obterPermissoesEfetivasUsuario(user);
     }
 
     private Map<String, NivelAcessoModulo> parseModulos(String modulesCsv) {

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260628000001-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="igreja_cargo"/></not>
+        </preConditions>
+        <createTable tableName="igreja_cargo">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="codigo" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome" type="varchar(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="descricao" type="varchar(500)"/>
+            <column name="sistema" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ordem" type="int" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="criado_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="igreja_cargo"
+            baseColumnNames="igreja_id"
+            constraintName="fk_igreja_cargo_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="igreja_cargo" columnNames="igreja_id, codigo" constraintName="uk_igreja_cargo_codigo"/>
+        <createIndex tableName="igreja_cargo" indexName="idx_igreja_cargo_igreja">
+            <column name="igreja_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260628000001-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="igreja_cargo_modulo"/></not>
+        </preConditions>
+        <createTable tableName="igreja_cargo_modulo">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="cargo_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="modulo" type="varchar(60)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nivel" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="igreja_cargo_modulo"
+            baseColumnNames="cargo_id"
+            constraintName="fk_igreja_cargo_modulo_cargo"
+            referencedTableName="igreja_cargo"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="igreja_cargo_modulo" columnNames="cargo_id, modulo" constraintName="uk_igreja_cargo_modulo"/>
+    </changeSet>
+
+    <changeSet id="20260628000001-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="user_igreja_cargo"/></not>
+        </preConditions>
+        <createTable tableName="user_igreja_cargo">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cargo_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="atribuido_em" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="user_igreja_cargo"
+            baseColumnNames="user_id"
+            constraintName="fk_user_igreja_cargo_user"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="user_igreja_cargo"
+            baseColumnNames="cargo_id"
+            constraintName="fk_user_igreja_cargo_cargo"
+            referencedTableName="igreja_cargo"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="user_igreja_cargo" columnNames="user_id, cargo_id" constraintName="uk_user_igreja_cargo"/>
+        <createIndex tableName="user_igreja_cargo" indexName="idx_user_igreja_cargo_user">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

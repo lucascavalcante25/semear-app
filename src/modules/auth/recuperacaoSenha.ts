@@ -1,6 +1,6 @@
 import { requisicaoApi } from "@/modules/api/client";
 
-export type CanalRecuperacao = "EMAIL" | "SMS";
+export type CanalRecuperacao = "PUSH" | "SMS" | "EMAIL";
 
 export type RespostaRecuperacao = {
   mensagem: string;
@@ -12,6 +12,8 @@ export type RespostaRecuperacao = {
 export type OpcoesRecuperacao = {
   mensagem: string;
   podeRecuperar: boolean;
+  pushDisponivel: boolean;
+  dispositivosPushAtivos?: number;
   emailDisponivel: boolean;
   smsDisponivel: boolean;
   escolhaNecessaria: boolean;

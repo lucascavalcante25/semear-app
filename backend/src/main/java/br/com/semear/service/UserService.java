@@ -54,6 +54,8 @@ public class UserService {
 
     private final TenantService tenantService;
 
+    private final IgrejaCargoService igrejaCargoService;
+
     private final CacheManager cacheManager;
 
     @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
@@ -68,13 +70,15 @@ public class UserService {
         PasswordEncoder passwordEncoder,
         AuthorityRepository authorityRepository,
         CacheManager cacheManager,
-        TenantService tenantService
+        TenantService tenantService,
+        IgrejaCargoService igrejaCargoService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authorityRepository = authorityRepository;
         this.cacheManager = cacheManager;
         this.tenantService = tenantService;
+        this.igrejaCargoService = igrejaCargoService;
     }
 
     public Optional<User> activateRegistration(String key) {
@@ -334,7 +338,9 @@ public class UserService {
             .findOneWithAuthoritiesByLogin(login)
             .map(user -> {
                 tenantService.validarMesmaIgreja(user.getIgreja());
-                return new AdminUserDTO(user);
+                AdminUserDTO dto = new AdminUserDTO(user);
+                igrejaCargoService.enriquecerAdminUserDto(user, dto);
+                return dto;
             });
     }
 
@@ -404,7 +410,29 @@ public class UserService {
                 }
                 Set<Authority> managedAuthorities = user.getAuthorities();
                 managedAuthorities.clear();
-                if (userDTO.getAuthorities() != null && !userDTO.getAuthorities().isEmpty()) {
+                if (userDTO.getCargoIds() != null && !userDTO.getCargoIds().isEmpty()) {
+                    igrejaCargoService.atribuirCargosUsuario(user.getId(), userDTO.getCargoIds().stream().toList());
+                    Set<String> authoritiesFromCargos = igrejaCargoService.derivarAuthoritiesDosCargos(
+                        userDTO.getCargoIds().stream().toList()
+                    );
+                    if (!authoritiesFromCargos.isEmpty()) {
+                        authoritiesFromCargos
+                            .stream()
+                            .map(authorityRepository::findById)
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .forEach(managedAuthorities::add);
+                    } else if (userDTO.getAuthorities() != null) {
+                        userDTO
+                            .getAuthorities()
+                            .stream()
+                            .map(authorityRepository::findById)
+                            .filter(Optional::isPresent)
+                            .map(Optional::get)
+                            .forEach(managedAuthorities::add);
+                    }
+                    user.setModules(null);
+                } else if (userDTO.getAuthorities() != null && !userDTO.getAuthorities().isEmpty()) {
                     userDTO
                         .getAuthorities()
                         .stream()
@@ -418,7 +446,11 @@ public class UserService {
                 LOG.debug("Changed Information for User: {}", user);
                 return user;
             })
-            .map(AdminUserDTO::new);
+            .map(user -> {
+                AdminUserDTO dto = new AdminUserDTO(user);
+                igrejaCargoService.enriquecerAdminUserDto(user, dto);
+                return dto;
+            });
     }
 
     public void deleteUser(String login) {
@@ -653,7 +685,13 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<AdminUserDTO> getAllManagedUsers(Pageable pageable) {
-        return userRepository.findAllByIgrejaId(tenantService.getIgrejaIdAtual(), pageable).map(AdminUserDTO::new);
+        return userRepository
+            .findAllByIgrejaId(tenantService.getIgrejaIdAtual(), pageable)
+            .map(user -> {
+                AdminUserDTO dto = new AdminUserDTO(user);
+                igrejaCargoService.enriquecerAdminUserDto(user, dto);
+                return dto;
+            });
     }
 
     @Transactional(readOnly = true)

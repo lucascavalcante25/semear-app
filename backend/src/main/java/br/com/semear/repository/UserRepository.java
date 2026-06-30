@@ -9,6 +9,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -50,4 +51,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByIgrejaId(Long igrejaId);
 
     long countByIgrejaIdAndActivatedIsTrue(Long igrejaId);
+
+    @Query(
+        """
+        SELECT u.igreja.id, u.igreja.nome, COUNT(u)
+        FROM User u
+        WHERE u.igreja IS NOT NULL AND u.activated = true
+        GROUP BY u.igreja.id, u.igreja.nome
+        ORDER BY COUNT(u) DESC
+        """
+    )
+    List<Object[]> findTopIgrejasPorUsuariosAtivos(Pageable pageable);
+
+    @Query(
+        """
+        SELECT DISTINCT u FROM User u JOIN u.authorities a
+        WHERE a.name = :authority AND u.activated = true AND u.email IS NOT NULL
+        """
+    )
+    List<User> findAllAtivosComAutoridade(@Param("authority") String authority);
 }

@@ -56,18 +56,12 @@ import {
   atualizarMembro,
   excluirMembro,
   cadastrarDependente,
-  roleParaAuthority,
   type MembroApi,
   type AtualizarMembroPayload,
 } from "@/modules/members/api";
+import { listarCargos, type IgrejaCargo } from "@/modules/cargos/api";
 import {
-  MODULE_LABELS,
-  modulesToKeys,
-  permissionsToModules,
-  ROLE_ALLOWED_MODULES,
-  ROLE_DEFAULT_MODULES,
   ROLE_LABELS,
-  type ModuleKey,
   type Role,
 } from "@/auth/permissions";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -210,6 +204,53 @@ interface FormMembroProps {
   onSucesso: () => void;
 }
 
+const CODIGO_POR_ROLE: Partial<Record<Role, string>> = {
+  admin: "ADMIN_IGREJA",
+  admin_igreja: "ADMIN_IGREJA",
+  pastor: "PASTOR",
+  copastor: "COPASTOR",
+  secretaria: "SECRETARIA",
+  tesouraria: "TESOURARIA",
+  lider: "LIDER",
+  membro: "MEMBRO",
+  visitante: "VISITANTE",
+};
+
+function cargoIdsIniciais(membro: MembroApi, cargos: IgrejaCargo[]): number[] {
+  if (membro.cargoIds?.length) return [...membro.cargoIds];
+  const codigo = CODIGO_POR_ROLE[membro.role];
+  if (!codigo) return [];
+  const cargo = cargos.find((c) => c.codigo === codigo);
+  return cargo?.id != null ? [cargo.id] : [];
+}
+
+function authorityPrincipalDosCargos(cargos: IgrejaCargo[], selecionados: number[]): string[] {
+  const prioridade = [
+    "ADMIN_IGREJA",
+    "PASTOR",
+    "COPASTOR",
+    "SECRETARIA",
+    "TESOURARIA",
+    "LIDER",
+    "MEMBRO",
+    "VISITANTE",
+  ];
+  const codigos = cargos
+    .filter((c) => c.id != null && selecionados.includes(c.id))
+    .map((c) => c.codigo)
+    .filter(Boolean) as string[];
+  const authorities: string[] = [];
+  for (const cod of prioridade) {
+    if (codigos.includes(cod)) {
+      authorities.push(cod === "ADMIN_IGREJA" ? "ROLE_ADMIN_IGREJA" : `ROLE_${cod}`);
+    }
+  }
+  if (authorities.length === 0) {
+    authorities.push("ROLE_MEMBRO");
+  }
+  return authorities;
+}
+
 function FormMembro({
   membroEdicao,
   aberto,
@@ -226,13 +267,12 @@ function FormMembro({
   const [dataCasamento, setDataCasamento] = useState("");
   const [dataMembroSince, setDataMembroSince] = useState("");
   const [activated, setActivated] = useState(true);
-  const [perfil, setPerfil] = useState<Role>("membro");
-  const [modulesSelecionados, setModulesSelecionados] = useState<ModuleKey[]>([]);
+  const [cargos, setCargos] = useState<IgrejaCargo[]>([]);
+  const [cargoIdsSelecionados, setCargoIdsSelecionados] = useState<number[]>([]);
   const [salvando, setSalvando] = useState(false);
 
   const resetarForm = useCallback(() => {
     if (membroEdicao) {
-      const defaultForRole = ROLE_DEFAULT_MODULES[membroEdicao.role] ?? ROLE_DEFAULT_MODULES.membro;
       setLogin(membroEdicao.login);
       setFirstName(membroEdicao.firstName);
       setLastName(membroEdicao.lastName);
@@ -243,12 +283,7 @@ function FormMembro({
       setDataMembroSince(membroEdicao.dataMembroSince ?? "");
       setSexo((membroEdicao.sexo as "MASCULINO" | "FEMININO" | "OUTRO" | "NAO_INFORMADO") ?? "NAO_INFORMADO");
       setActivated(membroEdicao.activated);
-      setPerfil(membroEdicao.role);
-      setModulesSelecionados(
-        membroEdicao.modules?.length
-          ? modulesToKeys(membroEdicao.modules as string[])
-          : defaultForRole
-      );
+      setCargoIdsSelecionados(cargoIdsIniciais(membroEdicao, cargos));
     } else {
       setLogin("");
       setFirstName("");
@@ -260,10 +295,16 @@ function FormMembro({
       setDataMembroSince("");
       setSexo("NAO_INFORMADO");
       setActivated(true);
-      setPerfil("membro");
-      setModulesSelecionados(ROLE_DEFAULT_MODULES.membro);
+      setCargoIdsSelecionados([]);
     }
-  }, [membroEdicao]);
+  }, [membroEdicao, cargos]);
+
+  useEffect(() => {
+    if (!aberto) return;
+    listarCargos()
+      .then(setCargos)
+      .catch(() => toast.error("Não foi possível carregar os cargos."));
+  }, [aberto]);
 
   useEffect(() => {
     if (aberto) {
@@ -272,17 +313,16 @@ function FormMembro({
   }, [aberto, resetarForm]);
 
   useEffect(() => {
-    const allowed = ROLE_ALLOWED_MODULES[perfil] ?? [];
-    setModulesSelecionados((prev) => prev.filter((m) => allowed.includes(m)));
-  }, [perfil]);
+    if (aberto && membroEdicao && cargos.length > 0) {
+      setCargoIdsSelecionados(cargoIdsIniciais(membroEdicao, cargos));
+    }
+  }, [aberto, membroEdicao, cargos]);
 
-  const toggleModulo = (mod: ModuleKey) => {
-    setModulesSelecionados((prev) =>
-      prev.includes(mod) ? prev.filter((m) => m !== mod) : [...prev, mod]
+  const toggleCargo = (cargoId: number) => {
+    setCargoIdsSelecionados((prev) =>
+      prev.includes(cargoId) ? prev.filter((id) => id !== cargoId) : [...prev, cargoId],
     );
   };
-
-  const allowedForPerfil = ROLE_ALLOWED_MODULES[perfil] ?? [];
 
   const handleSalvar = async () => {
     const loginTrim = login.trim().toLowerCase();
@@ -295,14 +335,15 @@ function FormMembro({
       toast.error("Nome e sobrenome são obrigatórios.");
       return;
     }
+    if (cargoIdsSelecionados.length === 0) {
+      toast.error("Selecione ao menos um cargo para o membro.");
+      return;
+    }
 
     setSalvando(true);
     try {
       if (membroEdicao?.idNum) {
-        const access = perfil === "membro" ? "READ" as const : "WRITE" as const;
-        const modulesParaApi = permissionsToModules(
-          modulesSelecionados.map((m) => ({ module: m, access })),
-        );
+        const authorities = authorityPrincipalDosCargos(cargos, cargoIdsSelecionados);
         const payload: AtualizarMembroPayload = {
           id: membroEdicao.idNum,
           login: loginTrim,
@@ -315,8 +356,9 @@ function FormMembro({
           dataMembroSince: dataMembroSince.trim() || null,
           sexo: sexo !== "NAO_INFORMADO" ? sexo : undefined,
           activated,
-          authorities: [roleParaAuthority(perfil)],
-          modules: modulesParaApi,
+          authorities,
+          modules: [],
+          cargoIds: cargoIdsSelecionados,
         };
         await atualizarMembro(payload);
         toast.success("Membro atualizado com sucesso.");
@@ -331,7 +373,7 @@ function FormMembro({
   };
 
   const titulo = "Editar Membro";
-  const descricao = "Altere os dados do membro e os módulos de acesso.";
+  const descricao = "Altere os dados do membro e os cargos de acesso no sistema.";
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
@@ -436,21 +478,6 @@ function FormMembro({
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Perfil</Label>
-            <Select value={perfil} onValueChange={(v) => setPerfil(v as Role)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PERFIS_DISPONIVEIS.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {ROLE_LABELS[p]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
               <Label htmlFor="activated">Ativo</Label>
@@ -461,26 +488,31 @@ function FormMembro({
             <Switch id="activated" checked={activated} onCheckedChange={setActivated} />
           </div>
           <div className="space-y-3">
-            <Label>Módulos de acesso</Label>
+            <Label>Cargos na igreja</Label>
             <p className="text-sm text-muted-foreground">
-              Selecione exatamente quais módulos este membro poderá acessar.
+              Selecione um ou mais cargos. As permissões de todos os cargos se combinam automaticamente.
             </p>
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto rounded-md border p-3">
-              {allowedForPerfil.map((mod) => (
-                <div key={mod} className="flex items-center space-x-2">
+            <div className="grid gap-2 max-h-48 overflow-y-auto rounded-md border p-3">
+              {cargos.map((cargo) => (
+                <div key={cargo.id} className="flex items-start space-x-2">
                   <Checkbox
-                    id={`mod-${mod}`}
-                    checked={modulesSelecionados.includes(mod)}
-                    onCheckedChange={() => toggleModulo(mod)}
+                    id={`cargo-${cargo.id}`}
+                    checked={cargo.id != null && cargoIdsSelecionados.includes(cargo.id)}
+                    onCheckedChange={() => cargo.id != null && toggleCargo(cargo.id)}
                   />
-                  <label
-                    htmlFor={`mod-${mod}`}
-                    className="text-sm font-medium leading-none cursor-pointer"
-                  >
-                    {MODULE_LABELS[mod]}
+                  <label htmlFor={`cargo-${cargo.id}`} className="text-sm leading-snug cursor-pointer">
+                    <span className="font-medium">{cargo.nome}</span>
+                    {cargo.descricao && (
+                      <span className="block text-muted-foreground text-xs">{cargo.descricao}</span>
+                    )}
                   </label>
                 </div>
               ))}
+              {cargos.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum cargo cadastrado. Configure em Configurações da Igreja → Cargos.
+                </p>
+              )}
             </div>
           </div>
         </div>

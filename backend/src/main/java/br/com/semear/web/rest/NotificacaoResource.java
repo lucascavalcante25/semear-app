@@ -2,6 +2,7 @@ package br.com.semear.web.rest;
 
 import br.com.semear.service.NotificacaoService;
 import br.com.semear.service.NotificacaoService.NotificacaoItem;
+import br.com.semear.service.dto.NotificacaoResumoDTO;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -25,6 +26,11 @@ public class NotificacaoResource {
     public ResponseEntity<List<NotificacaoItem>> listarNaoVistas() {
         List<NotificacaoItem> itens = notificacaoService.listarNaoVistas();
         return ResponseEntity.ok(itens);
+    }
+
+    @GetMapping("/resumo")
+    public ResponseEntity<NotificacaoResumoDTO> obterResumo() {
+        return ResponseEntity.ok(notificacaoService.obterResumo());
     }
 
     @PostMapping("/marcar-vista")

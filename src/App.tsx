@@ -21,6 +21,7 @@ import PlanosSuperAdmin from "./pages/super-admin/Planos";
 import FinanceiroSuperAdmin from "./pages/super-admin/Financeiro";
 import ConfiguracoesSuperAdmin from "./pages/super-admin/Configuracoes";
 import SuporteClientesSuperAdmin from "./pages/super-admin/SuporteClientes";
+import MonitoramentoSuperAdmin from "./pages/super-admin/Monitoramento";
 import Suporte from "./pages/Suporte";
 import SolicitarAcesso from "./pages/SolicitarAcesso";
 import Landing from "./pages/Landing";
@@ -53,7 +54,14 @@ import Escalas from "./pages/Escalas";
 import Eventos from "./pages/Eventos";
 import PublicIgreja from "./pages/PublicIgreja";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -146,6 +154,14 @@ const App = () => (
                 element={
                   <RequerSuperAdmin>
                     <SuporteClientesSuperAdmin />
+                  </RequerSuperAdmin>
+                }
+              />
+              <Route
+                path="/super-admin/monitoramento"
+                element={
+                  <RequerSuperAdmin>
+                    <MonitoramentoSuperAdmin />
                   </RequerSuperAdmin>
                 }
               />
