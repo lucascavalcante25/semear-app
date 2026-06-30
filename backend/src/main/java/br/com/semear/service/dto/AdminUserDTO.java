@@ -89,6 +89,10 @@ public class AdminUserDTO implements Serializable {
 
     private Set<String> modules;
 
+    private Set<Long> cargoIds;
+
+    private Set<String> permissoesEfetivas;
+
     private LocalDate birthDate;
 
     private LocalDate dataBatismo;
@@ -361,6 +365,22 @@ public class AdminUserDTO implements Serializable {
 
     public void setModules(Set<String> modules) {
         this.modules = modules;
+    }
+
+    public Set<Long> getCargoIds() {
+        return cargoIds;
+    }
+
+    public void setCargoIds(Set<Long> cargoIds) {
+        this.cargoIds = cargoIds;
+    }
+
+    public Set<String> getPermissoesEfetivas() {
+        return permissoesEfetivas;
+    }
+
+    public void setPermissoesEfetivas(Set<String> permissoesEfetivas) {
+        this.permissoesEfetivas = permissoesEfetivas;
     }
 
     public LocalDate getBirthDate() {
