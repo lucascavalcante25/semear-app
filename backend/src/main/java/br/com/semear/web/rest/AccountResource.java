@@ -112,7 +112,7 @@ public class AccountResource {
             .getUserWithAuthorities()
             .map(user -> {
                 AdminUserDTO dto = new AdminUserDTO(user);
-                igrejaCargoService.enriquecerAdminUserDto(user, dto);
+                igrejaCargoService.enriquecerAdminUserDtoComMigracao(user, dto);
                 return dto;
             })
             .orElseThrow(() -> new AccountResourceException("User could not be found"));

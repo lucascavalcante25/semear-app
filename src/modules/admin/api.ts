@@ -195,5 +195,24 @@ export async function salvarMensagensComerciaisAdmin(dados: MensagensComerciais)
 }
 
 export async function obterPlanoPublico(): Promise<PlanoPublico> {
-  return requisicaoApi<PlanoPublico>("/api/public/plano-lancamento");
+  const CACHE_KEY = "semear:plano-publico";
+  const CACHE_TTL_MS = 60 * 60 * 1000;
+
+  try {
+    const bruto = sessionStorage.getItem(CACHE_KEY);
+    if (bruto) {
+      const { data, ts } = JSON.parse(bruto) as { data: PlanoPublico; ts: number };
+      if (Date.now() - ts < CACHE_TTL_MS) return data;
+    }
+  } catch {
+    /* cache inválido — ignora */
+  }
+
+  const data = await requisicaoApi<PlanoPublico>("/api/public/plano-lancamento");
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+  } catch {
+    /* quota excedida — ignora */
+  }
+  return data;
 }

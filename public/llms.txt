@@ -1,0 +1,24 @@
+# Minha Igreja Digital
+
+> Plataforma web de gestão para igrejas — membros, escalas, financeiro, comunicação e muito mais. Desenvolvida por WillTech Solutions Dev.
+
+Sistema 100% web, funciona no computador e celular, com teste grátis de 7 dias.
+
+## Páginas principais
+
+- [Landing / página inicial](https://minha-igreja-digital-app.vercel.app/landing)
+- [Planos e preços](https://minha-igreja-digital-app.vercel.app/precos)
+- [Solicitar teste grátis](https://minha-igreja-digital-app.vercel.app/solicitar-acesso)
+- [Entrar no sistema](https://minha-igreja-digital-app.vercel.app/login)
+
+## Recursos
+
+- [Módulos do sistema](https://minha-igreja-digital-app.vercel.app/landing#modulos)
+- [Screenshots do painel](https://minha-igreja-digital-app.vercel.app/landing#sistema)
+- [Perguntas frequentes](https://minha-igreja-digital-app.vercel.app/landing#faq)
+- [Contato](https://minha-igreja-digital-app.vercel.app/landing#contato)
+
+## Contato
+
+- WhatsApp: [wa.me/5585999584674](https://wa.me/5585999584674)
+- E-mail: [willtechsolutionsdev@gmail.com](mailto:willtechsolutionsdev@gmail.com)

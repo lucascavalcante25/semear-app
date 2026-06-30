@@ -15,6 +15,8 @@ export function CreditoEmpresa({ className, compacto = false, mostrarTexto = tru
       <img
         src={MARCA.logoEmpresa}
         alt={MARCA.empresa}
+        width={653}
+        height={469}
         className={cn(
           "object-contain",
           compacto ? "h-10 max-w-[200px]" : "h-14 max-w-[280px] sm:h-16 sm:max-w-[320px]",

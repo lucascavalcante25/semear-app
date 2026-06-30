@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Notificador } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,46 +14,47 @@ import { SincronizarCoresIgreja } from "@/components/theme/SincronizarCoresIgrej
 import { SincronizarIgreja } from "@/components/theme/SincronizarIgreja";
 import { LimparBloqueioNavegacao } from "@/components/navigation/LimparBloqueioNavegacao";
 import { RequerSuperAdmin } from "@/components/auth/RequireSuperAdmin";
-import DashboardSuperAdmin from "./pages/super-admin/Dashboard";
-import IgrejasSuperAdmin from "./pages/super-admin/Igrejas";
-import SolicitacoesSuperAdmin from "./pages/super-admin/Solicitacoes";
-import UsuariosSuperAdmin from "./pages/super-admin/Usuarios";
-import PlanosSuperAdmin from "./pages/super-admin/Planos";
-import FinanceiroSuperAdmin from "./pages/super-admin/Financeiro";
-import ConfiguracoesSuperAdmin from "./pages/super-admin/Configuracoes";
-import SuporteClientesSuperAdmin from "./pages/super-admin/SuporteClientes";
-import MonitoramentoSuperAdmin from "./pages/super-admin/Monitoramento";
-import Suporte from "./pages/Suporte";
-import SolicitarAcesso from "./pages/SolicitarAcesso";
-import Landing from "./pages/Landing";
-import AssinaturaBloqueada from "./pages/AssinaturaBloqueada";
-import ConfiguracoesIgreja from "./pages/ConfiguracoesIgreja";
+import { RastreadorAnalytics } from "@/components/analytics/RastreadorAnalytics";
+import { MetaVerificacaoGoogle } from "@/components/seo/MetaVerificacaoGoogle";
 
-// Pages
-import Inicio from "./pages/Index";
-import Biblia from "./pages/Bible";
-import Membros from "./pages/Members";
-import AniversariantesPagina from "./pages/Birthdays";
-import Louvores from "./pages/Praise";
-import Financeiro from "./pages/Financial";
-import Visitantes from "./pages/Visitors";
-import Comunicados from "./pages/Comunicados";
-import Devocionais from "./pages/Devotionals";
-import Mais from "./pages/More";
-import Configuracoes from "./pages/Settings";
-import Entrar from "./pages/Login";
-import EsqueciSenha from "./pages/EsqueciSenha";
-import PreCadastro from "./pages/PreCadastro";
-import AprovarPreCadastros from "./pages/AprovarPreCadastros";
-import AcessoNegado from "./pages/AccessDenied";
-import NaoEncontrado from "./pages/NotFound";
-import PedidosOracao from "./pages/PrayerRequests";
-import Sobre from "./pages/About";
-import NotificacoesPagina from "./pages/Notifications";
-import Departamentos from "./pages/Departamentos";
-import Escalas from "./pages/Escalas";
-import Eventos from "./pages/Eventos";
-import PublicIgreja from "./pages/PublicIgreja";
+const DashboardSuperAdmin = lazy(() => import("./pages/super-admin/Dashboard"));
+const IgrejasSuperAdmin = lazy(() => import("./pages/super-admin/Igrejas"));
+const SolicitacoesSuperAdmin = lazy(() => import("./pages/super-admin/Solicitacoes"));
+const UsuariosSuperAdmin = lazy(() => import("./pages/super-admin/Usuarios"));
+const PlanosSuperAdmin = lazy(() => import("./pages/super-admin/Planos"));
+const FinanceiroSuperAdmin = lazy(() => import("./pages/super-admin/Financeiro"));
+const ConfiguracoesSuperAdmin = lazy(() => import("./pages/super-admin/Configuracoes"));
+const SuporteClientesSuperAdmin = lazy(() => import("./pages/super-admin/SuporteClientes"));
+const MonitoramentoSuperAdmin = lazy(() => import("./pages/super-admin/Monitoramento"));
+const Suporte = lazy(() => import("./pages/Suporte"));
+const SolicitarAcesso = lazy(() => import("./pages/SolicitarAcesso"));
+const Landing = lazy(() => import("./pages/Landing"));
+const AssinaturaBloqueada = lazy(() => import("./pages/AssinaturaBloqueada"));
+const ConfiguracoesIgreja = lazy(() => import("./pages/ConfiguracoesIgreja"));
+const Inicio = lazy(() => import("./pages/Index"));
+const Biblia = lazy(() => import("./pages/Bible"));
+const Membros = lazy(() => import("./pages/Members"));
+const AniversariantesPagina = lazy(() => import("./pages/Birthdays"));
+const Louvores = lazy(() => import("./pages/Praise"));
+const Financeiro = lazy(() => import("./pages/Financial"));
+const Visitantes = lazy(() => import("./pages/Visitors"));
+const Comunicados = lazy(() => import("./pages/Comunicados"));
+const Devocionais = lazy(() => import("./pages/Devotionals"));
+const Mais = lazy(() => import("./pages/More"));
+const Configuracoes = lazy(() => import("./pages/Settings"));
+const Entrar = lazy(() => import("./pages/Login"));
+const EsqueciSenha = lazy(() => import("./pages/EsqueciSenha"));
+const PreCadastro = lazy(() => import("./pages/PreCadastro"));
+const AprovarPreCadastros = lazy(() => import("./pages/AprovarPreCadastros"));
+const AcessoNegado = lazy(() => import("./pages/AccessDenied"));
+const NaoEncontrado = lazy(() => import("./pages/NotFound"));
+const PedidosOracao = lazy(() => import("./pages/PrayerRequests"));
+const Sobre = lazy(() => import("./pages/About"));
+const NotificacoesPagina = lazy(() => import("./pages/Notifications"));
+const Departamentos = lazy(() => import("./pages/Departamentos"));
+const Escalas = lazy(() => import("./pages/Escalas"));
+const Eventos = lazy(() => import("./pages/Eventos"));
+const PublicIgreja = lazy(() => import("./pages/PublicIgreja"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +64,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function CarregandoPagina() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background" role="status" aria-live="polite">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <span className="sr-only">Carregando…</span>
+    </div>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -73,10 +84,13 @@ const App = () => (
           <ProvedorIgreja>
           <ProvedorNotificacoes>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <RastreadorAnalytics />
+            <MetaVerificacaoGoogle />
             <SincronizarTema />
             <SincronizarIgreja />
             <SincronizarCoresIgreja />
             <LimparBloqueioNavegacao />
+            <Suspense fallback={<CarregandoPagina />}>
             <Routes>
               <Route path="/login" element={<Entrar />} />
               <Route path="/esqueci-senha" element={<EsqueciSenha />} />
@@ -346,6 +360,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NaoEncontrado />} />
             </Routes>
+            </Suspense>
           </BrowserRouter>
           </ProvedorNotificacoes>
           </ProvedorIgreja>

@@ -15,11 +15,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Semear" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="%VITE_SITE_URL%/landing" />
     <link rel="icon" href="/favicon.ico?v=10" sizes="any" />
     <link rel="icon" href="/brand/favicon-16.png?v=10" type="image/png" sizes="16x16" />
     <link rel="icon" href="/brand/favicon-32.png?v=10" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png?v=10" />
     <link rel="manifest" href="/brand/site.webmanifest?v=10" />
+
+    <!-- LCP: imagem principal do hero -->
+    <link rel="preload" href="/landing/dashboard.png" as="image" fetchpriority="high" />
+    <!-- API em produção (preconnect reduz latência da 1ª requisição) -->
+    <link rel="dns-prefetch" href="%VITE_API_URL%" />
+    <link rel="preconnect" href="%VITE_API_URL%" crossorigin />
 
     <meta property="og:title" content="Minha Igreja Digital — Gestão completa para igrejas" />
     <meta
@@ -28,6 +36,9 @@
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Minha Igreja Digital" />
+    <meta property="og:url" content="%VITE_SITE_URL%/landing" />
+    <meta property="og:image" content="%VITE_SITE_URL%/landing/dashboard.png" />
+    <meta property="og:locale" content="pt_BR" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Minha Igreja Digital — Gestão para igrejas" />
@@ -35,6 +46,7 @@
       name="twitter:description"
       content="Sua igreja organizada em um só lugar. Teste grátis, funciona no computador e no celular."
     />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/landing/dashboard.png" />
   </head>
 
   <body>

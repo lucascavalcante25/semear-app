@@ -269,8 +269,17 @@ public class IgrejaCargoService {
     }
 
     public void enriquecerAdminUserDto(User user, AdminUserDTO dto) {
+        enriquecerAdminUserDto(user, dto, false);
+    }
+
+    /** Migra cargos a partir das authorities — usar apenas em transações de escrita (ex.: login). */
+    public void enriquecerAdminUserDtoComMigracao(User user, AdminUserDTO dto) {
+        enriquecerAdminUserDto(user, dto, true);
+    }
+
+    private void enriquecerAdminUserDto(User user, AdminUserDTO dto, boolean migrarCargos) {
         if (user == null || dto == null || user.getId() == null) return;
-        if (user.getIgreja() != null) {
+        if (migrarCargos && user.getIgreja() != null) {
             garantirCargosPadrao(user.getIgreja().getId());
             sincronizarCargosDeAutoridades(user);
         }

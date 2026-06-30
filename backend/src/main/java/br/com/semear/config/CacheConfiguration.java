@@ -62,6 +62,7 @@ public class CacheConfiguration {
             createCache(cm, br.com.semear.domain.HistoricoLeituraBiblia.class.getName());
             createCache(cm, br.com.semear.domain.PreferenciaBibliaUsuario.class.getName());
             createCache(cm, br.com.semear.domain.CapituloBibliaCache.class.getName());
+            createCache(cm, br.com.semear.service.PlanoComercialService.PLANO_PUBLICO_CACHE);
             // jhipster-needle-ehcache-add-entry
         };
     }

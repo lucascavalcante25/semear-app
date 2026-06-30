@@ -23,6 +23,11 @@ import { CreditoEmpresa } from "@/components/brand/CreditoEmpresa";
 import { MARCA, PLATAFORMA, PRODUTO } from "@/lib/plataforma";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { cn } from "@/lib/utils";
+import { rastrearCtaTesteGratis, rastrearFaq, rastrearTelefone, rastrearWhatsapp } from "@/lib/analytics";
+import {
+  DadosEstruturadosLanding,
+  PreloadImagemLcp,
+} from "@/components/landing/DadosEstruturadosLanding";
 import {
   CalendarDays,
   ArrowRight,
@@ -333,7 +338,7 @@ function LinkNav({ href, children }: { href: string; children: React.ReactNode }
   return (
     <a
       href={href}
-      className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
+      className="text-sm font-medium text-foreground/75 transition hover:text-foreground"
     >
       {children}
     </a>
@@ -350,9 +355,19 @@ export default function Landing() {
   useTituloDocumento({ area: "produto" });
 
   useEffect(() => {
-    obterPlanoPublico()
-      .then(setPlano)
-      .catch(() => setPlano(null));
+    const carregarPlano = () => {
+      obterPlanoPublico()
+        .then(setPlano)
+        .catch(() => setPlano(null));
+    };
+
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(carregarPlano, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+
+    const timer = window.setTimeout(carregarPlano, 2500);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const mudarSlide = (proximo: number) => {
@@ -387,11 +402,19 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-background pt-14 text-foreground">
+      <DadosEstruturadosLanding />
+      <PreloadImagemLcp />
       {/* Header fixo ao rolar */}
       <header className="fixed inset-x-0 top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/90">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:gap-4">
           <Link to="/landing" className="flex min-w-0 items-center gap-2 font-semibold">
-            <img src={MARCA.logoLogin} alt="" className="h-8 w-8 shrink-0 rounded-lg" />
+            <img
+              src={MARCA.logoLogin}
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 shrink-0 rounded-lg"
+            />
             <span className="truncate">{MARCA.nome}</span>
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
@@ -406,7 +429,11 @@ export default function Landing() {
               <Link to="/login">Entrar</Link>
             </Button>
             <Button asChild size="sm" className="shrink-0 px-2.5 text-xs sm:px-3 sm:text-sm">
-              <Link to="/solicitar-acesso" title="Cadastro e teste grátis para administrador da igreja">
+              <Link
+                to="/solicitar-acesso"
+                title="Cadastro e teste grátis para administrador da igreja"
+                onClick={() => rastrearCtaTesteGratis("header")}
+              >
                 <span className="sm:hidden">Teste grátis (admin)</span>
                 <span className="hidden sm:inline">Admin da igreja — teste grátis</span>
               </Link>
@@ -415,6 +442,7 @@ export default function Landing() {
         </div>
       </header>
 
+      <main>
       {/* Hero slider */}
       <section className="relative overflow-hidden border-b bg-gradient-to-br from-primary/15 via-background to-primary/5">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
@@ -440,7 +468,10 @@ export default function Landing() {
               <p className="text-base text-muted-foreground sm:text-lg lg:max-w-xl">{slide.subtitulo}</p>
               <div className="flex flex-wrap justify-center gap-3 pt-1 lg:justify-start">
                 <Button asChild size="lg" className="gap-2 px-8">
-                  <Link to="/solicitar-acesso">
+                  <Link
+                    to="/solicitar-acesso"
+                    onClick={() => rastrearCtaTesteGratis("hero")}
+                  >
                     Testar grátis por {diasTrial} dias
                     <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -474,33 +505,47 @@ export default function Landing() {
                     key={slide.imagem}
                     src={slide.imagem}
                     alt={slide.imagemAlt}
+                    width={2048}
+                    height={2266}
                     className="aspect-[4/3] w-full rounded-b-xl object-cover object-top"
                     loading={slideAtivo === 0 ? "eager" : "lazy"}
+                    fetchPriority={slideAtivo === 0 ? "high" : "auto"}
+                    decoding={slideAtivo === 0 ? "sync" : "async"}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 flex justify-center gap-2 lg:mt-10">
+          <div className="mt-8 flex justify-center gap-1 lg:mt-10" role="tablist" aria-label="Slides do hero">
             {HERO_SLIDES.map((_, i) => (
               <button
                 key={i}
                 type="button"
-                aria-label={`Slide ${i + 1}`}
+                role="tab"
+                aria-selected={i === slideAtivo}
+                aria-label={`Slide ${i + 1} de ${HERO_SLIDES.length}`}
                 onClick={() => mudarSlide(i)}
-                className={cn(
-                  "h-2 rounded-full transition-all duration-500 ease-in-out",
-                  i === slideAtivo ? "w-8 bg-primary" : "w-2 bg-primary/30 hover:bg-primary/50",
-                )}
-              />
+                className="flex h-11 w-11 items-center justify-center rounded-full"
+              >
+                <span
+                  className={cn(
+                    "block rounded-full transition-all duration-500 ease-in-out",
+                    i === slideAtivo ? "h-2.5 w-8 bg-primary" : "h-2.5 w-2.5 bg-primary/40",
+                  )}
+                  aria-hidden
+                />
+              </button>
             ))}
           </div>
         </div>
       </section>
 
       {/* Pilares */}
-      <section className="border-b bg-muted/20 py-12">
+      <section className="border-b bg-muted/20 py-12" aria-labelledby="pilares-titulo">
+        <h2 id="pilares-titulo" className="sr-only">
+          Por que escolher o {MARCA.nome}
+        </h2>
         <div className="mx-auto grid max-w-6xl gap-6 px-4 sm:grid-cols-2 lg:grid-cols-4">
           {PILARES.map(({ titulo, descricao, icon: Icon }) => (
             <div key={titulo} className="rounded-xl border bg-background p-5 text-center shadow-sm">
@@ -530,7 +575,7 @@ export default function Landing() {
             a rotina da sua igreja.
           </p>
           <Button asChild size="lg" className="mt-8 gap-2">
-            <Link to="/solicitar-acesso">
+            <Link to="/solicitar-acesso" onClick={() => rastrearCtaTesteGratis("narrativa")}>
               Conhecer o {PRODUTO.nome}
               <ArrowRight className="h-4 w-4" />
             </Link>
@@ -775,7 +820,9 @@ export default function Landing() {
                   <strong>{formatarMoeda(taxaAdesao)}</strong> (única vez).
                 </p>
                 <Button asChild className="w-full" size="lg">
-                  <Link to="/solicitar-acesso">Começar teste grátis</Link>
+                  <Link to="/solicitar-acesso" onClick={() => rastrearCtaTesteGratis("precos")}>
+                    Começar teste grátis
+                  </Link>
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
                   Sem taxas escondidas. O que você vê é o que você paga.
@@ -810,7 +857,16 @@ export default function Landing() {
       <section id="faq" className="scroll-mt-20 py-16 sm:py-20">
         <div className="mx-auto max-w-3xl px-4">
           <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl">Perguntas frequentes</h2>
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion
+            type="single"
+            collapsible
+            className="w-full"
+            onValueChange={(valor) => {
+              if (!valor) return;
+              const item = FAQ[Number(valor.replace("faq-", ""))];
+              if (item) rastrearFaq(item.pergunta);
+            }}
+          >
             {FAQ.map((item, i) => (
               <AccordionItem key={item.pergunta} value={`faq-${i}`}>
                 <AccordionTrigger className="text-left font-medium">{item.pergunta}</AccordionTrigger>
@@ -841,6 +897,8 @@ export default function Landing() {
                 <a
                   href={`tel:${MARCA.contato.telefoneE164}`}
                   className="text-sm font-medium text-primary hover:underline"
+                  aria-label={`Ligar para ${MARCA.contato.telefoneExibicao}`}
+                  onClick={() => rastrearTelefone("telefone_card")}
                 >
                   {MARCA.contato.telefoneExibicao}
                 </a>
@@ -859,6 +917,8 @@ export default function Landing() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm font-medium text-primary hover:underline"
+                  aria-label={`Conversar no WhatsApp: ${MARCA.contato.telefoneExibicao}`}
+                  onClick={() => rastrearWhatsapp("whatsapp_card")}
                 >
                   {MARCA.contato.telefoneExibicao}
                 </a>
@@ -883,7 +943,12 @@ export default function Landing() {
             </Card>
           </div>
           <Button asChild size="lg" className="mt-8 gap-2">
-            <a href={MARCA.contato.whatsappUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={MARCA.contato.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => rastrearWhatsapp("contato_botao")}
+            >
               <MessageCircle className="h-4 w-4" />
               Chamar no WhatsApp
             </a>
@@ -901,7 +966,7 @@ export default function Landing() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" variant="secondary" className="gap-2">
-              <Link to="/solicitar-acesso">
+              <Link to="/solicitar-acesso" onClick={() => rastrearCtaTesteGratis("rodape")}>
                 Teste grátis por {diasTrial} dias
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -918,6 +983,8 @@ export default function Landing() {
         </div>
       </section>
 
+      </main>
+
       <footer className="border-t py-10">
         <div className="mx-auto max-w-6xl px-4 text-center text-sm text-muted-foreground">
           <p className="font-medium text-foreground">{MARCA.nome}</p>
@@ -928,7 +995,11 @@ export default function Landing() {
               Contato
             </a>
             {" · "}
-            <a href={`tel:${MARCA.contato.telefoneE164}`} className="hover:text-foreground hover:underline">
+            <a
+              href={`tel:${MARCA.contato.telefoneE164}`}
+              className="hover:text-foreground hover:underline"
+              aria-label={`Telefone: ${MARCA.contato.telefoneExibicao}`}
+            >
               {MARCA.contato.telefoneExibicao}
             </a>
             {" · "}

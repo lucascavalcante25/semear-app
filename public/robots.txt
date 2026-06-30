@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://minha-igreja-digital-app.vercel.app/sitemap.xml

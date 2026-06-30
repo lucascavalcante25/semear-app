@@ -7,6 +7,7 @@ import { CampoSenha } from "@/components/ui/password-input";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { aplicarMascaraCpf } from "@/lib/mascara-telefone";
 import { MARCA } from "@/lib/plataforma";
+import { rastrearCtaTesteGratis } from "@/lib/analytics";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { Church, DoorOpen } from "lucide-react";
 import styles from "./Login.module.css";
@@ -151,6 +152,7 @@ export default function Entrar() {
                 to="/solicitar-acesso"
                 className={styles.navLinkPrimary}
                 title="Cadastro e teste grátis para pastor, tesoureiro ou responsável pela igreja"
+                onClick={() => rastrearCtaTesteGratis("login_nav")}
               >
                 Admin da igreja — teste grátis
               </Link>
@@ -278,7 +280,12 @@ export default function Entrar() {
                             Pastor, tesoureiro ou responsável — solicite teste grátis de 7 dias.
                           </p>
                           <Button asChild variant="secondary" className="w-full">
-                            <Link to="/solicitar-acesso">Teste grátis — admin da igreja</Link>
+                            <Link
+                              to="/solicitar-acesso"
+                              onClick={() => rastrearCtaTesteGratis("login_card")}
+                            >
+                              Teste grátis — admin da igreja
+                            </Link>
                           </Button>
                         </div>
                       </div>

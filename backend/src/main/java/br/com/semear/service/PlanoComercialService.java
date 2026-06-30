@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,7 @@ public class PlanoComercialService {
     private static final Logger LOG = LoggerFactory.getLogger(PlanoComercialService.class);
     private static final Long PLANO_LANCAMENTO_ID = 1L;
     private static final String ENTITY = "plano";
+    public static final String PLANO_PUBLICO_CACHE = "planoPublico";
 
     private final PlanoRepository planoRepository;
 
@@ -34,6 +37,7 @@ public class PlanoComercialService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = PLANO_PUBLICO_CACHE)
     public PlanoPublicoDTO obterPlanoPublico() {
         try {
             Optional<Object[]> opt = planoRepository.findDadosPublicosById(PLANO_LANCAMENTO_ID);
@@ -95,6 +99,7 @@ public class PlanoComercialService {
         return dto;
     }
 
+    @CacheEvict(cacheNames = PLANO_PUBLICO_CACHE, allEntries = true)
     public PlanoDTO atualizarPlanoLancamento(PlanoDTO input) {
         Plano p = buscarPlanoLancamento();
         if (input.getNome() != null) p.setNome(input.getNome());

@@ -42,6 +42,7 @@ import {
 } from "@/lib/validacao-solicitacao";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { rastrearCtaTesteGratis, rastrearLeadEnviado } from "@/lib/analytics";
 
 const FORM_INICIAL: FormSolicitacaoAcesso = {
   nomeSolicitante: "",
@@ -175,6 +176,7 @@ export default function SolicitarAcesso() {
     setEnviando(true);
     try {
       await enviarSolicitacaoAcesso(normalizarPayloadSolicitacao(form));
+      rastrearLeadEnviado();
       setEnviado(true);
       toast.success("Solicitação enviada com sucesso!");
     } catch (err) {
