@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260630000001-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists indexName="idx_comunicado_igreja_ativo_data" tableName="comunicado"/></not>
+        </preConditions>
+        <createIndex indexName="idx_comunicado_igreja_ativo_data" tableName="comunicado">
+            <column name="igreja_id"/>
+            <column name="ativo"/>
+            <column name="data_inicio" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260630000001-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists indexName="idx_visitante_igreja_data" tableName="visitante"/></not>
+        </preConditions>
+        <createIndex indexName="idx_visitante_igreja_data" tableName="visitante">
+            <column name="igreja_id"/>
+            <column name="data_visita" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260630000001-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists indexName="idx_pedido_oracao_igreja_status" tableName="pedido_oracao"/></not>
+        </preConditions>
+        <createIndex indexName="idx_pedido_oracao_igreja_status" tableName="pedido_oracao">
+            <column name="igreja_id"/>
+            <column name="status"/>
+            <column name="criado_em" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260630000001-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists indexName="idx_notif_usuario_igreja_lida" tableName="notificacao_usuario"/></not>
+        </preConditions>
+        <createIndex indexName="idx_notif_usuario_igreja_lida" tableName="notificacao_usuario">
+            <column name="igreja_id"/>
+            <column name="user_id"/>
+            <column name="lida"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260630000001-5" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists indexName="idx_user_igreja_ativado" tableName="jhi_user"/></not>
+        </preConditions>
+        <createIndex indexName="idx_user_igreja_ativado" tableName="jhi_user">
+            <column name="igreja_id"/>
+            <column name="activated"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260630000001-6" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><indexExists indexName="idx_evento_igreja_data" tableName="evento"/></not>
+        </preConditions>
+        <createIndex indexName="idx_evento_igreja_data" tableName="evento">
+            <column name="igreja_id"/>
+            <column name="data_inicio" descending="true"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
