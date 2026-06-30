@@ -1,6 +1,7 @@
 package br.com.semear.service.dto;
 
 import br.com.semear.domain.enumeration.TipoAudienciaNotificacao;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -137,6 +138,7 @@ public class ConfigNotificacaoDTO implements Serializable {
         this.mensagemPersonalizada = mensagemPersonalizada;
     }
 
+    @JsonIgnore
     public boolean isEfetivamenteAtivo() {
         return Boolean.TRUE.equals(ativo);
     }

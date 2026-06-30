@@ -72,7 +72,7 @@ public class IgrejaCargoService {
         this.tenantService = tenantService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<IgrejaCargoDTO> listar() {
         Long igrejaId = tenantService.getIgrejaIdAtual();
         garantirCargosPadrao(igrejaId);

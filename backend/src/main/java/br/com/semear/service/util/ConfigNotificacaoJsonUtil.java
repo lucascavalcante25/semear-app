@@ -2,6 +2,7 @@ package br.com.semear.service.util;
 
 import br.com.semear.service.dto.ConfigNotificacaoDTO;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +10,8 @@ import org.slf4j.LoggerFactory;
 public final class ConfigNotificacaoJsonUtil {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConfigNotificacaoJsonUtil.class);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private ConfigNotificacaoJsonUtil() {}
 
