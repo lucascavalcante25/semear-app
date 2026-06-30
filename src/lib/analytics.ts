@@ -7,30 +7,46 @@ declare global {
 
 const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined;
 
-let inicializado = false;
+let scriptSolicitado = false;
 
-/** Carrega gtag.js e configura GA4 (compatível com Google Tag Assistant). */
-export function inicializarAnalytics(): void {
-  if (typeof window === "undefined" || !GA_ID || inicializado) return;
-  inicializado = true;
-
+/** Stub do gtag (enfileira eventos antes do script carregar). */
+function garantirGtagStub(): boolean {
+  if (typeof window === "undefined" || !GA_ID) return false;
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = function gtag(...args: unknown[]) {
-    window.dataLayer!.push(args);
-  };
-  window.gtag("js", new Date());
-  window.gtag("config", GA_ID, { send_page_view: false });
+  if (!window.gtag) {
+    window.gtag = function gtag(...args: unknown[]) {
+      window.dataLayer!.push(args);
+    };
+    window.gtag("js", new Date());
+    window.gtag("config", GA_ID, { send_page_view: false });
+  }
+  return true;
+}
 
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
-  document.head.appendChild(script);
+/** Carrega gtag.js após a página interativa (não compete com LCP). */
+export function inicializarAnalytics(): void {
+  if (!garantirGtagStub() || scriptSolicitado) return;
+
+  const carregarScript = () => {
+    if (scriptSolicitado) return;
+    scriptSolicitado = true;
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+    document.head.appendChild(script);
+  };
+
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(carregarScript, { timeout: 3500 });
+  } else {
+    window.setTimeout(carregarScript, 2000);
+  }
 }
 
 /** Registra visualização de página (SPA). */
 export function registrarPagina(caminho: string, titulo?: string): void {
-  if (!GA_ID || !window.gtag) return;
-  window.gtag("event", "page_view", {
+  if (!garantirGtagStub()) return;
+  window.gtag!("event", "page_view", {
     page_path: caminho,
     page_title: titulo ?? document.title,
   });
@@ -41,8 +57,8 @@ export function registrarEvento(
   nome: string,
   params?: Record<string, string | number | boolean>,
 ): void {
-  if (!GA_ID || !window.gtag) return;
-  window.gtag("event", nome, params);
+  if (!garantirGtagStub()) return;
+  window.gtag!("event", nome, params);
 }
 
 /** Eventos padronizados para GA4 / Google Tag Assistant. */
@@ -68,6 +84,7 @@ export function rastrearWhatsapp(local: string): void {
 export function rastrearTelefone(local: string): void {
   registrarEvento(EVENTOS_ANALYTICS.CONTATO_TELEFONE, { local });
 }
+
 /** Registra abertura de pergunta no FAQ. */
 export function rastrearFaq(pergunta: string): void {
   registrarEvento(EVENTOS_ANALYTICS.FAQ_ABERTO, { pergunta });
@@ -85,4 +102,3 @@ export function rastrearLeadEnviado(): void {
 export function analyticsAtivo(): boolean {
   return Boolean(GA_ID);
 }
-

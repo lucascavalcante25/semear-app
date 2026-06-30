@@ -59,7 +59,7 @@ const HERO_SLIDES = [
     titulo: "Sua igreja organizada em um só lugar",
     subtitulo:
       "Membros, visitantes, escalas de portaria e limpeza, eventos com inscrições, informativos, oração, documentos, louvores, financeiro e PIX — no computador e no celular.",
-    imagem: "/landing/dashboard.png",
+    imagem: "/landing/dashboard.webp",
     imagemAlt: "Painel principal com visão geral da igreja",
   },
   {
@@ -67,7 +67,7 @@ const HERO_SLIDES = [
     titulo: "Foque no que realmente importa: vidas",
     subtitulo:
       "Gestão completa para sua igreja — membros, avisos, louvores, financeiro e PIX em um sistema simples.",
-    imagem: "/landing/membros.png",
+    imagem: "/landing/membros.webp",
     imagemAlt: "Cadastro e gestão de membros da igreja",
   },
   {
@@ -75,7 +75,7 @@ const HERO_SLIDES = [
     titulo: "Secretaria, finanças e comunicação em um só lugar",
     subtitulo:
       "Chega de dados espalhados em planilhas, cadernos e grupos de WhatsApp. Tudo integrado e acessível no celular.",
-    imagem: "/landing/financeiro.png",
+    imagem: "/landing/financeiro.webp",
     imagemAlt: "Módulo financeiro da igreja",
   },
   {
@@ -83,7 +83,7 @@ const HERO_SLIDES = [
     titulo: "Tecnologia a serviço do ministério",
     subtitulo:
       "Plataforma criada para pastores e líderes que querem menos papelada e mais tempo com as pessoas.",
-    imagem: "/landing/pix.png",
+    imagem: "/landing/pix.webp",
     imagemAlt: "Ofertas via PIX integradas ao sistema",
   },
   {
@@ -91,7 +91,7 @@ const HERO_SLIDES = [
     titulo: "Portaria, recepção e limpeza sorteadas por ciclo",
     subtitulo:
       "Cadastre os cultos, gere o sorteio em rascunho, publique para a igreja e acompanhe tudo em um calendário claro — com limpeza mensal, semanal ou por culto.",
-    imagem: "/landing/dashboard.png",
+    imagem: "/landing/dashboard.webp",
     imagemAlt: "Escalas de portaria, recepção e limpeza organizadas por ciclo",
   },
   {
@@ -99,7 +99,7 @@ const HERO_SLIDES = [
     titulo: "Dúvidas, erros e sugestões com quem entende sua igreja",
     subtitulo:
       "Abra chamados direto no sistema para tirar dúvidas, reportar problemas e enviar ideias de melhoria. A equipe acompanha cada solicitação da sua igreja.",
-    imagem: "/landing/suporte.png",
+    imagem: "/landing/suporte.webp",
     imagemAlt: "Central de suporte integrada",
   },
 ] as const;
@@ -224,12 +224,12 @@ const MODULOS = [
 ];
 
 const SCREENSHOTS = [
-  { src: "/landing/dashboard.png", alt: "Dashboard da igreja", legenda: "Dashboard" },
-  { src: "/landing/membros.png", alt: "Cadastro de membros", legenda: "Membros" },
-  { src: "/landing/financeiro.png", alt: "Financeiro da igreja", legenda: "Financeiro" },
-  { src: "/landing/pix.png", alt: "Ofertas via PIX", legenda: "PIX" },
-  { src: "/landing/configuracoes.png", alt: "Configurações", legenda: "Configurações" },
-  { src: "/landing/suporte.png", alt: "Central de suporte", legenda: "Suporte" },
+  { src: "/landing/dashboard.webp", alt: "Dashboard da igreja", legenda: "Dashboard" },
+  { src: "/landing/membros.webp", alt: "Cadastro de membros", legenda: "Membros" },
+  { src: "/landing/financeiro.webp", alt: "Financeiro da igreja", legenda: "Financeiro" },
+  { src: "/landing/pix.webp", alt: "Ofertas via PIX", legenda: "PIX" },
+  { src: "/landing/configuracoes.webp", alt: "Configurações", legenda: "Configurações" },
+  { src: "/landing/suporte.webp", alt: "Central de suporte", legenda: "Suporte" },
 ];
 
 const FAQ = [
@@ -505,8 +505,8 @@ export default function Landing() {
                     key={slide.imagem}
                     src={slide.imagem}
                     alt={slide.imagemAlt}
-                    width={2048}
-                    height={2266}
+                    width={960}
+                    height={1062}
                     className="aspect-[4/3] w-full rounded-b-xl object-cover object-top"
                     loading={slideAtivo === 0 ? "eager" : "lazy"}
                     fetchPriority={slideAtivo === 0 ? "high" : "auto"}

@@ -63,11 +63,12 @@ export function DadosEstruturadosLanding() {
 /** Preload da imagem LCP do hero (primeiro slide). */
 export function PreloadImagemLcp() {
   useEffect(() => {
-    const href = "/landing/dashboard.png";
+    const href = "/landing/dashboard.webp";
     if (document.querySelector(`link[rel="preload"][href="${href}"]`)) return;
     const link = document.createElement("link");
     link.rel = "preload";
     link.as = "image";
+    link.type = "image/webp";
     link.href = href;
     link.fetchPriority = "high";
     document.head.appendChild(link);
