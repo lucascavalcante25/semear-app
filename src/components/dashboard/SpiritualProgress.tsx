@@ -249,7 +249,7 @@ export function ProgressoEspiritual() {
 
   useEffect(() => {
     setProgressoLeitura(obterProgressoLeitura(userId));
-    const leitura = getLeituraDoDia(userId);
+    const leitura = getLeituraDoDia(userId, dataInicioPlano);
     if (leitura) {
       const dias = obterDiasPlanoLeitura(userId, leitura.plano.id);
       setTotalDiasPlano(dias.length || 365);
@@ -270,18 +270,18 @@ export function ProgressoEspiritual() {
   );
 
   const percentualPlanoPreciso = useMemo(
-    () => obterPercentualPlanoPreciso(totalDiasPlano),
-    [totalDiasPlano],
+    () => obterPercentualPlanoPreciso(totalDiasPlano, dataInicioPlano),
+    [totalDiasPlano, dataInicioPlano],
   );
 
   const percentualPlanoTexto = useMemo(
-    () => formatarPercentualPlano(totalDiasPlano),
-    [totalDiasPlano],
+    () => formatarPercentualPlano(totalDiasPlano, dataInicioPlano),
+    [totalDiasPlano, dataInicioPlano],
   );
 
   const diasPassadosPlano = useMemo(
-    () => obterDiasPassadosPlano(totalDiasPlano),
-    [totalDiasPlano],
+    () => obterDiasPassadosPlano(totalDiasPlano, dataInicioPlano),
+    [totalDiasPlano, dataInicioPlano],
   );
 
   const planoInicio = useMemo(() => normalizarDataPlano(dataInicioPlano), [dataInicioPlano]);

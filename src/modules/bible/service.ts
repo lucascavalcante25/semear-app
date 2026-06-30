@@ -69,8 +69,10 @@ export const planoLeituraJaIniciou = () => {
 
 const obterPlanoInicioEfetivo = (): Date | null => planoInicioIgreja;
 
-const obterDiasDesdeInicio = (): number | null => {
-  const inicio = obterPlanoInicioEfetivo();
+const obterDiasDesdeInicio = (dataInicioIso?: string | null): number | null => {
+  const inicio = dataInicioIso
+    ? normalizarDataLocal(dataInicioIso.split("T")[0])
+    : obterPlanoInicioEfetivo();
   if (!inicio) return null;
   const hoje = normalizarDataLocal(new Date());
   if (hoje.getTime() < inicio.getTime()) return -1;
@@ -525,13 +527,13 @@ export const obterDiasPlanoLeitura = (userId: string, planId: string) => {
   return existente;
 };
 
-export const getLeituraDoDia = (userId: string) => {
+export const getLeituraDoDia = (userId: string, dataInicioIso?: string | null) => {
   const plano = obterPlanosLeitura(userId)[0];
   const dias = obterDiasPlanoLeitura(userId, plano.id);
   if (dias.length === 0) {
     return null;
   }
-  const diff = obterDiasDesdeInicio();
+  const diff = obterDiasDesdeInicio(dataInicioIso);
   if (diff === null || diff < 0) {
     return null;
   }
@@ -776,25 +778,27 @@ export const obterEstatisticasComunitarias = () => {
   };
 };
 
-const calcularPercentualPlano = (totalDias: number): number => {
+const calcularPercentualPlano = (totalDias: number, dataInicioIso?: string | null): number => {
   if (totalDias <= 0) {
     return 0;
   }
-  const diff = obterDiasDesdeInicio();
+  const diff = obterDiasDesdeInicio(dataInicioIso);
   if (diff === null || diff < 0) return 0;
   const diasPassados = Math.min(Math.max(diff + 1, 0), totalDias);
   return (diasPassados / totalDias) * 100;
 };
 
 /** Percentual inteiro (útil para barras que esperam 0–100 arredondado). */
-export const obterPercentualPlano = (totalDias: number) => Math.round(calcularPercentualPlano(totalDias));
+export const obterPercentualPlano = (totalDias: number, dataInicioIso?: string | null) =>
+  Math.round(calcularPercentualPlano(totalDias, dataInicioIso));
 
 /** Percentual exato com casas decimais — baseado em dias corridos do plano, não em leituras concluídas. */
-export const obterPercentualPlanoPreciso = (totalDias: number) => calcularPercentualPlano(totalDias);
+export const obterPercentualPlanoPreciso = (totalDias: number, dataInicioIso?: string | null) =>
+  calcularPercentualPlano(totalDias, dataInicioIso);
 
 /** Exibe 0,3% nos primeiros dias; a partir de 10% usa número inteiro. */
-export const formatarPercentualPlano = (totalDias: number): string => {
-  const pct = calcularPercentualPlano(totalDias);
+export const formatarPercentualPlano = (totalDias: number, dataInicioIso?: string | null): string => {
+  const pct = calcularPercentualPlano(totalDias, dataInicioIso);
   if (pct <= 0) return "0";
   if (pct < 10) {
     return pct.toLocaleString("pt-BR", {
@@ -807,11 +811,11 @@ export const formatarPercentualPlano = (totalDias: number): string => {
 
 export const obterPlanoInicio = () => obterPlanoInicioEfetivo();
 
-export const obterDiasPassadosPlano = (totalDias: number) => {
+export const obterDiasPassadosPlano = (totalDias: number, dataInicioIso?: string | null) => {
   if (totalDias <= 0) {
     return 0;
   }
-  const diff = obterDiasDesdeInicio();
+  const diff = obterDiasDesdeInicio(dataInicioIso);
   if (diff === null || diff < 0) return 0;
   return Math.min(Math.max(diff + 1, 0), totalDias);
 };

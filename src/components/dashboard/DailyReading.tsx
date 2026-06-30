@@ -6,6 +6,7 @@ import { formatarData, type TrechoLeitura } from "@/data/daily-reading";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import {
   alternarProgressoLeitura,
   getLeituraDoDia,
@@ -92,6 +93,8 @@ function ItemLeitura({ leitura, concluida, aoMarcar }: ItemLeituraProps) {
 
 export function LeituraDiaria() {
   const { user } = usarAutenticacao();
+  const { configuracao } = useIgrejaConfiguracao();
+  const dataInicioPlano = configuracao?.dataInicioPlanoLeitura;
   const userId = obterIdUsuario(user?.id);
   const [progressoLeitura, setProgressoLeitura] = useState<ProgressoLeituraUsuario[]>([]);
   const [planoId, setPlanoId] = useState<string>("");
@@ -99,12 +102,12 @@ export function LeituraDiaria() {
 
   useEffect(() => {
     setProgressoLeitura(obterProgressoLeitura(userId));
-    const leitura = getLeituraDoDia(userId);
+    const leitura = getLeituraDoDia(userId, dataInicioPlano);
     if (leitura) {
       setPlanoId(leitura.plano.id);
       setLeiturasHoje(leitura.dia.readings);
     }
-  }, [userId]);
+  }, [userId, dataInicioPlano]);
 
   const leiturasConcluidas = useMemo(() => {
     const concluidas = new Set<string>();
