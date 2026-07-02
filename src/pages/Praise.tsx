@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -84,6 +85,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -131,13 +133,120 @@ interface CartaoLouvorProps {
   louvor: LouvorApp;
   aoEditar: (louvor: LouvorApp) => void;
   aoExcluir: (louvor: LouvorApp) => void;
+  aoVerDetalhes?: (louvor: LouvorApp) => void;
   showDrag?: boolean;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
-function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemoverDoGrupo, dragHandleProps }: CartaoLouvorProps) {
+function DialogDetalheLouvor({
+  louvor,
+  aberto,
+  onAbertoChange,
+  aoEditar,
+  noGrupo,
+  aoRemoverDoGrupo,
+}: {
+  louvor: LouvorApp | null;
+  aberto: boolean;
+  onAbertoChange: (aberto: boolean) => void;
+  aoEditar: (louvor: LouvorApp) => void;
+  noGrupo?: boolean;
+  aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
+}) {
+  if (!louvor) return null;
+  const config = typeConfig[louvor.type];
+
+  return (
+    <Dialog open={aberto} onOpenChange={onAbertoChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-left leading-snug pr-6">{louvor.title}</DialogTitle>
+          <DialogDescription className="text-left">{louvor.artist}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className={cn("text-xs", config.color)}>
+              {config.label}
+            </Badge>
+            {louvor.key && (
+              <Badge variant="secondary" className="text-xs">
+                Tom: {louvor.key}
+              </Badge>
+            )}
+            {louvor.tempo && (
+              <Badge variant="secondary" className="text-xs">
+                {louvor.tempo}
+              </Badge>
+            )}
+          </div>
+          {louvor.notes && (
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{louvor.notes}</p>
+          )}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {louvor.youtubeUrl && (
+              <Button variant="outline" size="sm" className="justify-start" asChild>
+                <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
+                  <Youtube className="h-4 w-4 mr-2" />
+                  Abrir no YouTube
+                </a>
+              </Button>
+            )}
+            {louvor.cifraUrl && (
+              <Button variant="outline" size="sm" className="justify-start" asChild>
+                <a href={louvor.cifraUrl} target="_blank" rel="noopener noreferrer">
+                  <CifraClubIcon size={16} className="mr-2" />
+                  Abrir no Cifra Club
+                </a>
+              </Button>
+            )}
+            {louvor.hasCifra && louvor.cifraFileName && (
+              <p className="text-xs text-muted-foreground self-center">
+                Cifra anexada: {louvor.cifraFileName}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+            {noGrupo && aoRemoverDoGrupo && (
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={() => {
+                  onAbertoChange(false);
+                  aoRemoverDoGrupo(louvor);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Remover do grupo
+              </Button>
+            )}
+            <Button
+              onClick={() => {
+                onAbertoChange(false);
+                aoEditar(louvor);
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar louvor
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CartaoLouvor({
+  louvor,
+  aoEditar,
+  aoExcluir,
+  aoVerDetalhes,
+  showDrag,
+  noGrupo,
+  aoRemoverDoGrupo,
+  dragHandleProps,
+}: CartaoLouvorProps) {
   const config = typeConfig[louvor.type];
   const [baixandoCifra, setBaixandoCifra] = useState(false);
 
@@ -213,7 +322,11 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
             {louvor.key || "—"}
           </div>
 
-          <div className="flex-1 min-w-0">
+          <button
+            type="button"
+            className="flex-1 min-w-0 text-left rounded-md -my-1 py-1 px-0.5 hover:bg-muted/50 transition-colors"
+            onClick={() => aoVerDetalhes?.(louvor)}
+          >
             <h3 className="font-semibold text-sm sm:text-base leading-snug break-words">
               {louvor.title}
             </h3>
@@ -225,7 +338,7 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
                 {louvor.artist}
               </p>
             </div>
-          </div>
+          </button>
 
           <div className="flex items-center gap-0.5 shrink-0 -mr-1 sm:mr-0">
             <div className="hidden sm:flex items-center gap-0.5">
@@ -292,20 +405,28 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
                   <p>Mais opções</p>
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-52">
                 <div className="sm:hidden">{linksExtras}</div>
-                {noGrupo && aoRemoverDoGrupo && (
-                  <DropdownMenuItem onClick={() => aoRemoverDoGrupo(louvor)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Remover do grupo
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={() => aoVerDetalhes?.(louvor)}>
+                  <Music className="h-4 w-4 mr-2" />
+                  Ver detalhes
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => aoEditar(louvor)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
+                {(noGrupo && aoRemoverDoGrupo) || !noGrupo ? <DropdownMenuSeparator /> : null}
+                {noGrupo && aoRemoverDoGrupo && (
+                  <DropdownMenuItem
+                    onClick={() => aoRemoverDoGrupo(louvor)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remover do grupo
+                  </DropdownMenuItem>
+                )}
                 {!noGrupo && (
-                  <DropdownMenuItem onClick={() => aoExcluir(louvor)} className="text-destructive">
+                  <DropdownMenuItem onClick={() => aoExcluir(louvor)} className="text-destructive focus:text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
                     Excluir
                   </DropdownMenuItem>
@@ -330,7 +451,7 @@ function SortableCartaoLouvor(props: SortableCartaoLouvorProps) {
   });
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? transition : undefined,
   };
   return (
     <div ref={setNodeRef} style={style} className={cn(isDragging && "opacity-50")}>
@@ -356,6 +477,15 @@ export default function PaginaLouvores() {
   const [nomeNovoGrupo, setNomeNovoGrupo] = useState("");
   const [excluindoGrupo, setExcluindoGrupo] = useState<GrupoLouvorApp | null>(null);
   const [grupoModalAdicionar, setGrupoModalAdicionar] = useState<GrupoLouvorApp | null>(null);
+  const [louvorDetalhe, setLouvorDetalhe] = useState<{
+    louvor: LouvorApp;
+    grupo?: GrupoLouvorApp;
+  } | null>(null);
+  const [removendoLouvorDoGrupo, setRemovendoLouvorDoGrupo] = useState<{
+    grupo: GrupoLouvorApp;
+    louvor: LouvorApp;
+  } | null>(null);
+  const ordemGrupoTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   // Form state
   const [titulo, setTitulo] = useState("");
@@ -401,6 +531,59 @@ export default function PaginaLouvores() {
   useEffect(() => {
     carregarGrupos();
   }, [carregarGrupos]);
+
+  const abrirDetalheLouvor = (louvor: LouvorApp, grupo?: GrupoLouvorApp) => {
+    setLouvorDetalhe({ louvor, grupo });
+  };
+
+  const solicitarRemoverDoGrupo = (grupo: GrupoLouvorApp, louvor: LouvorApp) => {
+    setLouvorDetalhe(null);
+    setRemovendoLouvorDoGrupo({ grupo, louvor });
+  };
+
+  const executarRemoverDoGrupo = async () => {
+    if (!removendoLouvorDoGrupo) return;
+    const { grupo, louvor } = removendoLouvorDoGrupo;
+    if (!louvor.idNum) return;
+    setRemovendoLouvorDoGrupo(null);
+    setGrupos((prev) =>
+      prev.map((g) =>
+        g.id === grupo.id ? { ...g, louvorIds: g.louvorIds.filter((id) => id !== louvor.id) } : g,
+      ),
+    );
+    try {
+      await removerLouvorDoGrupo(grupo.idNum, louvor.idNum);
+      toast.success("Louvor removido do grupo.");
+    } catch {
+      toast.error("Erro ao remover louvor do grupo.");
+      await carregarGrupos();
+    }
+  };
+
+  const salvarOrdemGrupoDebounced = useCallback((grupo: GrupoLouvorApp, louvorIds: string[]) => {
+    const louvorIdsNumericos = louvorIds.map((id) => parseInt(id, 10)).filter((n) => !Number.isNaN(n));
+    const timerAnterior = ordemGrupoTimersRef.current.get(grupo.idNum);
+    if (timerAnterior) clearTimeout(timerAnterior);
+    const timer = setTimeout(async () => {
+      ordemGrupoTimersRef.current.delete(grupo.idNum);
+      try {
+        const atualizado = await reordenarLouvoresNoGrupo(grupo.idNum, louvorIdsNumericos);
+        setGrupos((prev) => prev.map((g) => (g.id === grupo.id ? atualizado : g)));
+      } catch {
+        toast.error("Erro ao salvar ordem.");
+        await carregarGrupos();
+      }
+    }, 350);
+    ordemGrupoTimersRef.current.set(grupo.idNum, timer);
+  }, [carregarGrupos]);
+
+  useEffect(() => {
+    const timers = ordemGrupoTimersRef.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
 
   const resetForm = () => {
     setTitulo("");
@@ -537,18 +720,7 @@ export default function PaginaLouvores() {
     }
   };
 
-  const removerLouvorDoGrupoHandler = async (grupo: GrupoLouvorApp, louvor: LouvorApp) => {
-    if (!louvor.idNum) return;
-    try {
-      await removerLouvorDoGrupo(grupo.idNum, louvor.idNum);
-      await carregarGrupos();
-      toast.success("Louvor removido do grupo.");
-    } catch (e) {
-      toast.error("Erro ao remover louvor do grupo.");
-    }
-  };
-
-  const handleDragEndGrupo = async (grupo: GrupoLouvorApp, event: DragEndEvent) => {
+  const handleDragEndGrupo = (grupo: GrupoLouvorApp, event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const ids = [...grupo.louvorIds];
@@ -558,22 +730,14 @@ export default function PaginaLouvores() {
     const newIndex = ids.indexOf(overId);
     if (oldIndex === -1 || newIndex === -1) return;
     const reordenados = arrayMove(ids, oldIndex, newIndex);
-    const louvorIdsNumericos = reordenados
-      .map((id) => parseInt(id, 10))
-      .filter((n) => !Number.isNaN(n));
-    try {
-      const atualizado = await reordenarLouvoresNoGrupo(grupo.idNum, louvorIdsNumericos);
-      setGrupos((prev) => prev.map((g) => (g.id === grupo.id ? atualizado : g)));
-      toast.success("Ordem atualizada.");
-    } catch (e) {
-      toast.error("Erro ao reordenar.");
-      await carregarGrupos();
-    }
+    setGrupos((prev) => prev.map((g) => (g.id === grupo.id ? { ...g, louvorIds: reordenados } : g)));
+    salvarOrdemGrupoDebounced(grupo, reordenados);
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const louvoresFiltrados = louvores;
@@ -795,7 +959,7 @@ export default function PaginaLouvores() {
                           <CardTitle className="text-base break-words text-left leading-snug">
                             {grupo.name}
                           </CardTitle>
-                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                          <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
                             {podeCadastrar && (
                               <Dialog open={grupoModalAdicionar?.id === grupo.id} onOpenChange={(open) => !open && setGrupoModalAdicionar(null)}>
                                 <Button
@@ -854,7 +1018,7 @@ export default function PaginaLouvores() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-destructive"
+                                    className="h-8 w-8 text-destructive ml-0.5 sm:ml-1"
                                     onClick={() => setExcluindoGrupo(grupo)}
                                   >
                                     <X className="h-4 w-4" />
@@ -891,8 +1055,9 @@ export default function PaginaLouvores() {
                                     louvor={louvor}
                                     aoEditar={abrirEditar}
                                     aoExcluir={confirmarExcluir}
+                                    aoVerDetalhes={(l) => abrirDetalheLouvor(l, grupo)}
                                     noGrupo
-                                    aoRemoverDoGrupo={() => removerLouvorDoGrupoHandler(grupo, louvor)}
+                                    aoRemoverDoGrupo={() => solicitarRemoverDoGrupo(grupo, louvor)}
                                   />
                                 ))}
                               </div>
@@ -959,6 +1124,7 @@ export default function PaginaLouvores() {
                     louvor={louvor}
                     aoEditar={abrirEditar}
                     aoExcluir={confirmarExcluir}
+                    aoVerDetalhes={(l) => abrirDetalheLouvor(l)}
                   />
                 ))}
                 {louvoresFiltrados.length === 0 && (
@@ -976,6 +1142,42 @@ export default function PaginaLouvores() {
             )}
           </TabsContent>
         </Tabs>
+
+        <DialogDetalheLouvor
+          louvor={louvorDetalhe?.louvor ?? null}
+          aberto={!!louvorDetalhe}
+          onAbertoChange={(open) => {
+            if (!open) setLouvorDetalhe(null);
+          }}
+          aoEditar={abrirEditar}
+          noGrupo={!!louvorDetalhe?.grupo}
+          aoRemoverDoGrupo={
+            louvorDetalhe?.grupo
+              ? (l) => solicitarRemoverDoGrupo(louvorDetalhe.grupo!, l)
+              : undefined
+          }
+        />
+
+        <AlertDialog open={!!removendoLouvorDoGrupo} onOpenChange={(open) => !open && setRemovendoLouvorDoGrupo(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover do grupo</AlertDialogTitle>
+              <AlertDialogDescription>
+                Remover &quot;{removendoLouvorDoGrupo?.louvor.title}&quot; do grupo &quot;
+                {removendoLouvorDoGrupo?.grupo.name}&quot;? O louvor continua no repertório geral.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => void executarRemoverDoGrupo()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog open={!!excluindo} onOpenChange={() => setExcluindo(null)}>
           <AlertDialogContent>
