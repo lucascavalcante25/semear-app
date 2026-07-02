@@ -1,8 +1,12 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "semear-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucascavalcante25/semear-app.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",

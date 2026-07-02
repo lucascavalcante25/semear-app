@@ -19,7 +19,7 @@ Aplicação da Comunidade Evangélica Semear – gestão de membros, visitantes,
 
 ```sh
 # Clone o repositório
-git clone <YOUR_GIT_URL>
+git clone https://github.com/lucascavalcante25/semear-app.git
 cd semear-app
 
 # Instale as dependências
