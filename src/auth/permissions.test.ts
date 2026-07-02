@@ -80,4 +80,31 @@ describe("permissions — matriz por perfil", () => {
     expect(mods).toContain("membros");
     expect(mods).not.toContain("financeiro");
   });
+
+  it("admin com permissoesEfetivas incompletas (cargos legados) ainda vê departamentos e escalas", () => {
+    const adminLegado = user("admin", {
+      authorities: ["ROLE_ADMIN_IGREJA"],
+      permissoesEfetivas: [
+        "dashboard:WRITE",
+        "biblia:WRITE",
+        "membros:WRITE",
+        "comunicados:WRITE",
+        "configuracoes:WRITE",
+      ],
+    });
+    expect(hasModuleAccess(adminLegado, "departamentos", "WRITE")).toBe(true);
+    expect(hasModuleAccess(adminLegado, "escalas", "WRITE")).toBe(true);
+    expect(canAccess(adminLegado, "/departamentos")).toBe(true);
+    expect(canAccess(adminLegado, "/escalas")).toBe(true);
+  });
+
+  it("lider com permissoesEfetivas incompletas mantém acesso a escalas", () => {
+    const liderLegado = user("lider", {
+      authorities: ["ROLE_LIDER"],
+      permissoesEfetivas: ["dashboard:WRITE", "biblia:WRITE", "louvores:WRITE"],
+    });
+    expect(hasModuleAccess(liderLegado, "escalas", "WRITE")).toBe(true);
+    expect(hasModuleAccess(liderLegado, "departamentos", "WRITE")).toBe(true);
+    expect(canAccess(liderLegado, "/escalas")).toBe(true);
+  });
 });

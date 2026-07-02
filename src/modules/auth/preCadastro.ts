@@ -160,19 +160,19 @@ export type PreCadastroCompleto = PreCadastroApi & {
   endereco?: EnderecoPayload & { id?: number };
 };
 
+export const cpfValidoParaAprovacao = (cpf?: string | null): boolean => {
+  const digitos = (cpf ?? "").replace(/\D/g, "");
+  return digitos.length === 11;
+};
+
 export const listarPreCadastrosParaAprovacao = async (): Promise<PreCadastroCompleto[]> => {
   const statusAprovacao: StatusCadastro[] = ["PRIMEIROACESSO", "PENDENTE"];
-  const filtrarCpfValido = (items: PreCadastroCompleto[]) =>
-    items.filter((item) => {
-      const cpf = (item.cpf ?? "").replace(/\D/g, "");
-      return cpf.length === 11;
-    });
   if (API_ATIVA) {
     try {
       const pendentes = await requisicaoApi<PreCadastroCompleto[]>("/api/pre-cadastros/pendentes", {
         auth: true,
       });
-      return filtrarCpfValido(Array.isArray(pendentes) ? pendentes : []);
+      return Array.isArray(pendentes) ? pendentes : [];
     } catch {
       try {
         const todos = await requisicaoApi<PreCadastroCompleto[]>(
@@ -180,17 +180,13 @@ export const listarPreCadastrosParaAprovacao = async (): Promise<PreCadastroComp
           { auth: true },
         );
         const lista = Array.isArray(todos) ? todos : [];
-        return filtrarCpfValido(
-          lista.filter((item) => statusAprovacao.includes((item.status ?? "") as StatusCadastro)),
-        );
+        return lista.filter((item) => statusAprovacao.includes((item.status ?? "") as StatusCadastro));
       } catch {
         return [];
       }
     }
   }
-  return filtrarCpfValido(
-    lerLocal().filter((item) => statusAprovacao.includes(item.status)) as PreCadastroCompleto[],
-  );
+  return lerLocal().filter((item) => statusAprovacao.includes(item.status)) as PreCadastroCompleto[];
 };
 
 export const obterPreCadastroPorId = async (id: string | number): Promise<PreCadastroCompleto | null> => {

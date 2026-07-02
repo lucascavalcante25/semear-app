@@ -19,6 +19,7 @@ import {
   aprovarPreCadastro,
   rejeitarPreCadastro,
   excluirPreCadastro,
+  cpfValidoParaAprovacao,
   type PreCadastroCompleto,
 } from "@/modules/auth/preCadastro";
 import {
@@ -116,6 +117,10 @@ export default function AprovarPreCadastros() {
   }, [perfilSelecionado]);
 
   const handleAprovar = async (id: string | number, perfil: Role) => {
+    if (detalhe && !cpfValidoParaAprovacao(detalhe.cpf)) {
+      toast.error("CPF inválido neste pré-cadastro. Rejeite ou exclua o registro.");
+      return;
+    }
     setProcessando(String(id));
     try {
       const isMembro = perfil === "membro";
@@ -192,6 +197,12 @@ export default function AprovarPreCadastros() {
             <h2 className="text-xl font-semibold">Dados do solicitante</h2>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!cpfValidoParaAprovacao(detalhe.cpf) && (
+              <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                Este registro tem CPF inválido (dados de teste ou cadastro incompleto). Rejeite ou exclua — não é
+                possível aprovar.
+              </p>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <span className="text-sm text-muted-foreground">Nome completo</span>
@@ -294,7 +305,7 @@ export default function AprovarPreCadastros() {
                 <Button
                   className="sm:flex-1"
                   onClick={() => handleAprovar(detalhe.id!, perfilSelecionado)}
-                  disabled={!!processando}
+                  disabled={!!processando || !cpfValidoParaAprovacao(detalhe.cpf)}
                 >
                   {processando === String(detalhe.id) ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -377,8 +388,8 @@ export default function AprovarPreCadastros() {
               className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => abrirDetalhe(item.id!)}
             >
-              <CardContent className="flex items-center justify-between py-4">
-                <div className="flex items-center gap-3">
+              <CardContent className="flex items-center justify-between gap-3 py-4">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                     <User className="h-5 w-5 text-muted-foreground" />
                   </div>
@@ -390,7 +401,14 @@ export default function AprovarPreCadastros() {
                     </p>
                   </div>
                 </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
                 <Badge variant="secondary">{item.status ?? "PENDENTE"}</Badge>
+                {!cpfValidoParaAprovacao(item.cpf) && (
+                  <Badge variant="outline" className="text-amber-700 border-amber-300">
+                    CPF inválido
+                  </Badge>
+                )}
+                </div>
               </CardContent>
             </Card>
           ))}

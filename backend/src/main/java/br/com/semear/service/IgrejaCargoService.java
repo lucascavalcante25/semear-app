@@ -218,11 +218,16 @@ public class IgrejaCargoService {
     @Transactional(readOnly = true)
     public Map<String, NivelAcessoModulo> obterPermissoesEfetivasUsuario(User user) {
         if (user == null) return Map.of();
-        Map<String, NivelAcessoModulo> fromCargos = user.getId() != null ? obterPermissoesDosCargosDoUsuario(user.getId()) : Map.of();
-        if (!fromCargos.isEmpty()) return fromCargos;
-        Map<String, NivelAcessoModulo> parsed = parseModulos(user.getModules());
-        if (!parsed.isEmpty()) return parsed;
-        return permissoesLegadoPorAuthorities(user);
+        Map<String, NivelAcessoModulo> merged = new HashMap<>();
+        if (user.getId() != null) {
+            aplicarMergeMap(merged, obterPermissoesDosCargosDoUsuario(user.getId()));
+        }
+        aplicarMergeMap(merged, parseModulos(user.getModules()));
+        Map<String, NivelAcessoModulo> fromAuthorities = permissoesLegadoPorAuthorities(user);
+        if (merged.isEmpty() || temAuthorityAcessoTotal(user) || temAuthorityComDefaultsMerge(user)) {
+            aplicarMergeMap(merged, fromAuthorities);
+        }
+        return merged;
     }
 
     public void sincronizarCargosDeAutoridades(User user) {
@@ -242,29 +247,62 @@ public class IgrejaCargoService {
         }
     }
 
+    @Transactional
     public void garantirCargosPadrao(Long igrejaId) {
         if (igrejaId == null) return;
-        if (cargoRepository.countByIgrejaId(igrejaId) > 0) return;
-
-        Igreja igreja = igrejaRepository.findById(igrejaId).orElseThrow(this::naoEncontrado);
-        List<CargoTemplate> templates = templatesPadrao();
-        for (CargoTemplate template : templates) {
-            IgrejaCargo cargo = new IgrejaCargo();
-            cargo.setIgreja(igreja);
-            cargo.setCodigo(template.codigo());
-            cargo.setNome(template.nome());
-            cargo.setDescricao(template.descricao());
-            cargo.setSistema(true);
-            cargo.setOrdem(template.ordem());
-            cargo.setCriadoEm(Instant.now());
-            for (ModuloPermissaoDTO mp : template.modulos()) {
-                IgrejaCargoModulo item = new IgrejaCargoModulo();
-                item.setCargo(cargo);
-                item.setModulo(mp.getModulo());
-                item.setNivel(mp.getNivel());
-                cargo.getModulos().add(item);
+        if (cargoRepository.countByIgrejaId(igrejaId) == 0) {
+            Igreja igreja = igrejaRepository.findById(igrejaId).orElseThrow(this::naoEncontrado);
+            List<CargoTemplate> templates = templatesPadrao();
+            for (CargoTemplate template : templates) {
+                IgrejaCargo cargo = new IgrejaCargo();
+                cargo.setIgreja(igreja);
+                cargo.setCodigo(template.codigo());
+                cargo.setNome(template.nome());
+                cargo.setDescricao(template.descricao());
+                cargo.setSistema(true);
+                cargo.setOrdem(template.ordem());
+                cargo.setCriadoEm(Instant.now());
+                for (ModuloPermissaoDTO mp : template.modulos()) {
+                    IgrejaCargoModulo item = new IgrejaCargoModulo();
+                    item.setCargo(cargo);
+                    item.setModulo(mp.getModulo());
+                    item.setNivel(mp.getNivel());
+                    cargo.getModulos().add(item);
+                }
+                cargoRepository.save(cargo);
             }
-            cargoRepository.save(cargo);
+        }
+        repararModulosCargosSistema(igrejaId);
+    }
+
+    /** Cargos de sistema criados antes de novos módulos (ex.: departamentos, escalas) não recebiam atualização automática. */
+    private void repararModulosCargosSistema(Long igrejaId) {
+        Map<String, CargoTemplate> templatesByCodigo = templatesPadrao()
+            .stream()
+            .collect(Collectors.toMap(CargoTemplate::codigo, t -> t));
+        for (IgrejaCargo cargo : cargoRepository.findByIgrejaIdOrderByOrdemAscNomeAsc(igrejaId)) {
+            if (!Boolean.TRUE.equals(cargo.getSistema())) continue;
+            CargoTemplate template = templatesByCodigo.get(cargo.getCodigo());
+            if (template == null) continue;
+            Set<String> existentes = cargo
+                .getModulos()
+                .stream()
+                .map(IgrejaCargoModulo::getModulo)
+                .collect(Collectors.toSet());
+            boolean changed = false;
+            for (ModuloPermissaoDTO mp : template.modulos()) {
+                if (!existentes.contains(mp.getModulo())) {
+                    IgrejaCargoModulo item = new IgrejaCargoModulo();
+                    item.setCargo(cargo);
+                    item.setModulo(mp.getModulo());
+                    item.setNivel(mp.getNivel());
+                    cargo.getModulos().add(item);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                cargoRepository.save(cargo);
+            }
         }
     }
 
@@ -279,9 +317,11 @@ public class IgrejaCargoService {
 
     private void enriquecerAdminUserDto(User user, AdminUserDTO dto, boolean migrarCargos) {
         if (user == null || dto == null || user.getId() == null) return;
-        if (migrarCargos && user.getIgreja() != null) {
+        if (user.getIgreja() != null) {
             garantirCargosPadrao(user.getIgreja().getId());
-            sincronizarCargosDeAutoridades(user);
+            if (migrarCargos) {
+                sincronizarCargosDeAutoridades(user);
+            }
         }
         dto.setCargoIds(new HashSet<>(obterCargoIdsUsuario(user.getId())));
         dto.setPermissoesEfetivas(new HashSet<>(formatarPermissoesMap(obterPermissoesEfetivasUsuario(user))));
@@ -370,6 +410,46 @@ public class IgrejaCargoService {
                         : NivelAcessoModulo.READ
             );
         }
+    }
+
+    private void aplicarMergeMap(Map<String, NivelAcessoModulo> target, Map<String, NivelAcessoModulo> source) {
+        for (Map.Entry<String, NivelAcessoModulo> entry : source.entrySet()) {
+            target.merge(
+                entry.getKey(),
+                entry.getValue(),
+                (atual, novo) ->
+                    atual == NivelAcessoModulo.WRITE || novo == NivelAcessoModulo.WRITE
+                        ? NivelAcessoModulo.WRITE
+                        : NivelAcessoModulo.READ
+            );
+        }
+    }
+
+    private boolean temAuthorityAcessoTotal(User user) {
+        Set<String> authorities = user.getAuthorities().stream().map(a -> a.getName()).collect(Collectors.toSet());
+        return authorities
+            .stream()
+            .anyMatch(a ->
+                Set.of(
+                    AuthoritiesConstants.ADMIN,
+                    AuthoritiesConstants.ADMIN_IGREJA,
+                    AuthoritiesConstants.PASTOR,
+                    AuthoritiesConstants.COPASTOR
+                ).contains(a)
+            );
+    }
+
+    private boolean temAuthorityComDefaultsMerge(User user) {
+        Set<String> authorities = user.getAuthorities().stream().map(a -> a.getName()).collect(Collectors.toSet());
+        return authorities
+            .stream()
+            .anyMatch(a ->
+                Set.of(
+                    AuthoritiesConstants.SECRETARIA,
+                    AuthoritiesConstants.TESOURARIA,
+                    AuthoritiesConstants.LIDER
+                ).contains(a)
+            );
     }
 
     private List<String> formatarPermissoesMap(Map<String, NivelAcessoModulo> map) {

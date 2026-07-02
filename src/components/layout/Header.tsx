@@ -1,13 +1,12 @@
 import { Bell, Menu, LogOut, User, Moon, Sun } from "lucide-react";
 import { PixOfertaCompacto } from "@/components/pix/PixOferta";
-import { LembretePushSininho } from "@/components/notificacoes/LembretePushSininho";
+import { PainelSininhoNotificacoes } from "@/components/notificacoes/PainelSininhoNotificacoes";
 import { usePushLembretePendente } from "@/hooks/use-push-lembrete-pendente";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MenuMobile } from "./MobileMenu";
 import { usarEhMobile } from "@/hooks/use-mobile";
-import { tratarCliqueNotificacao, rotaNotificacao } from "@/lib/notificacao-acoes";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import {
   DropdownMenu,
@@ -20,7 +19,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useAvatarUrlCurrentUser } from "@/hooks/use-avatar-url";
-import { ROLE_LABELS, canAccess } from "@/auth/permissions";
+import { canAccess } from "@/auth/permissions";
+import { BadgesCargos } from "@/components/membros/BadgesCargos";
+import { useCargosIgreja } from "@/hooks/use-cargos-igreja";
+import { obterRotulosCargos } from "@/lib/rotulos-cargos";
+import { podeVerPreCadastrosPendentes } from "@/lib/pre-cadastro-permissoes";
 import { Link, useNavigate } from "react-router-dom";
 import { usarTema } from "@/contexts/ThemeContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
@@ -29,14 +32,24 @@ import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 export function Cabecalho() {
   const isMobile = usarEhMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { pendentesCount, notificacoes, removerNotificacaoLocal } = usarNotificacoes();
+  const { pendentesCount, notificacoes } = usarNotificacoes();
   const { user, logout } = usarAutenticacao();
+  const cargosIgreja = useCargosIgreja();
   const avatarUrl = useAvatarUrlCurrentUser();
+  const rotulosCargosUsuario = user
+    ? obterRotulosCargos(
+        { cargoIds: user.cargoIds, authorities: user.authorities, role: user.role },
+        cargosIgreja,
+      )
+    : [];
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = usarTema();
   const { nomeExibicao, subtituloExibicao, logoUrl } = useIgrejaConfiguracao();
   const { mostrarLembrete: pushPendente } = usePushLembretePendente();
+  const podeVerPreCadastros = podeVerPreCadastrosPendentes(user?.role);
+  const totalBadgeNotificacoes =
+    (podeVerPreCadastros ? pendentesCount : 0) + notificacoes.length;
   const userInitials = user?.name
     ?.split(" ")
     .map((part) => part.charAt(0))
@@ -86,68 +99,24 @@ export function Cabecalho() {
 
         {/* Right Actions */}
         <div className="flex-1 min-w-0">
-          <div className="flex h-14 md:h-16 items-center justify-end gap-1 pl-2 pr-3 md:px-4">
+          <div className="flex h-14 md:h-16 items-center justify-end gap-2 sm:gap-3 pl-2 pr-3 md:px-4">
           <PixOfertaCompacto />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="relative">
+              <Button variant="ghost" size="icon-sm" className="relative mr-0.5 sm:mr-1">
                 <Bell className="h-5 w-5" />
                 {pushPendente && (
                   <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-olive ring-2 ring-background" />
                 )}
-                {((user?.role === "admin" && pendentesCount > 0) || notificacoes.length > 0) && (
+                {totalBadgeNotificacoes > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
-                    {user?.role === "admin" ? pendentesCount + notificacoes.length : notificacoes.length}
+                    {totalBadgeNotificacoes}
                   </span>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72 max-h-80 overflow-y-auto">
-              <DropdownMenuLabel>Notificações</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <LembretePushSininho />
-              {user?.role === "admin" && pendentesCount > 0 && (
-                <DropdownMenuItem
-                  className="flex flex-col items-start gap-1 cursor-pointer"
-                  onClick={() => navigate("/aprovar-pre-cadastros")}
-                >
-                  <span className="text-sm font-medium">
-                    {pendentesCount} pré-cadastro(s) pendente(s)
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Clique para aprovar ou rejeitar
-                  </span>
-                </DropdownMenuItem>
-              )}
-              {notificacoes.map((n) => (
-                <DropdownMenuItem
-                  key={`${n.tipo}-${n.referenciaId}`}
-                  className="flex flex-col items-start gap-1 cursor-pointer"
-                  onClick={async () => {
-                    try {
-                      await tratarCliqueNotificacao(n, removerNotificacaoLocal);
-                      navigate(rotaNotificacao(n.link));
-                    } catch {
-                      navigate(rotaNotificacao(n.link));
-                    }
-                  }}
-                >
-                  <span className="text-sm font-medium">{n.titulo}</span>
-                  <span className="text-xs text-muted-foreground line-clamp-2">{n.descricao}</span>
-                </DropdownMenuItem>
-              ))}
-              {(user?.role !== "admin" || pendentesCount === 0) && notificacoes.length === 0 && (
-                <DropdownMenuItem className="text-sm text-muted-foreground" disabled>
-                  Sem notificações no momento
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/notificacoes")}>
-                Ver central de notificações
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
+            <PainelSininhoNotificacoes />
+          </DropdownMenu>          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -167,9 +136,15 @@ export function Cabecalho() {
                   <span className="text-xs text-muted-foreground">
                     {user?.email ?? "Sem e-mail"}
                   </span>
-                  <span className="text-xs text-muted-foreground">
-                    {user?.role ? ROLE_LABELS[user.role] : "Sem função"}
-                  </span>
+                  {rotulosCargosUsuario.length > 0 ? (
+                    <BadgesCargos
+                      rotulos={rotulosCargosUsuario}
+                      className="mt-1"
+                      badgeClassName="text-[10px] font-normal"
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Sem função</span>
+                  )}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

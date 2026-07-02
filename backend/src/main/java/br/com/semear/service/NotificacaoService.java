@@ -370,11 +370,7 @@ public class NotificacaoService {
         User user = userOpt.get();
         resumo.setNotificacoes(listarNaoVistas());
 
-        boolean ehAdmin = user
-            .getAuthorities()
-            .stream()
-            .anyMatch(a -> AuthoritiesConstants.ADMIN.equals(a.getName()));
-        if (ehAdmin) {
+        if (usuarioPodeAprovarPreCadastro(user)) {
             Long igrejaId = tenantService.getIgrejaIdAtual();
             long pendentes = preCadastroRepository.countByIgrejaIdAndStatusIn(
                 igrejaId,
@@ -604,6 +600,21 @@ public class NotificacaoService {
             .getAuthorities()
             .stream()
             .anyMatch(a -> AuthoritiesConstants.ADMIN_IGREJA.equals(a.getName()));
+    }
+
+    private boolean usuarioPodeAprovarPreCadastro(User user) {
+        return user
+            .getAuthorities()
+            .stream()
+            .anyMatch(a ->
+                Set.of(
+                    AuthoritiesConstants.ADMIN,
+                    AuthoritiesConstants.ADMIN_IGREJA,
+                    AuthoritiesConstants.PASTOR,
+                    AuthoritiesConstants.COPASTOR,
+                    AuthoritiesConstants.SECRETARIA
+                ).contains(a.getName())
+            );
     }
 
     private boolean usuarioEhLideranca(User user) {

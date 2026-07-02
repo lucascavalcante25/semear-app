@@ -61,9 +61,11 @@ import {
 } from "@/modules/members/api";
 import { listarCargos, type IgrejaCargo } from "@/modules/cargos/api";
 import {
-  ROLE_LABELS,
   type Role,
 } from "@/auth/permissions";
+import { BadgesCargos } from "@/components/membros/BadgesCargos";
+import { useCargosIgreja } from "@/hooks/use-cargos-igreja";
+import { membroCombinaBuscaCargos, obterRotulosCargos } from "@/lib/rotulos-cargos";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess, canWrite } from "@/auth/permissions";
 import { toast } from "sonner";
@@ -96,14 +98,19 @@ function obterIniciais(name: string): string {
 
 interface CartaoMembroProps {
   membro: MembroApi;
+  cargosIgreja: IgrejaCargo[];
   aoEditar: (membro: MembroApi) => void;
   aoExcluir: (membro: MembroApi) => void;
   podeEditar: boolean;
   isDependente?: boolean;
 }
 
-function CartaoMembro({ membro, aoEditar, aoExcluir, podeEditar, isDependente }: CartaoMembroProps) {
+function CartaoMembro({ membro, cargosIgreja, aoEditar, aoExcluir, podeEditar, isDependente }: CartaoMembroProps) {
   const avatarUrl = useAvatarUrlByUserId(membro.idNum ?? membro.id);
+  const rotulosCargos = obterRotulosCargos(
+    { cargoIds: membro.cargoIds, authorities: membro.authorities, role: membro.role },
+    cargosIgreja,
+  );
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
@@ -125,9 +132,7 @@ function CartaoMembro({ membro, aoEditar, aoExcluir, podeEditar, isDependente }:
                       Criança/Jovem
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-xs">
-                      {ROLE_LABELS[membro.role]}
-                    </Badge>
+                    <BadgesCargos rotulos={rotulosCargos} />
                   )}
                   {!membro.activated && !isDependente && (
                     <Badge variant="outline" className="text-xs text-muted-foreground">
@@ -828,6 +833,7 @@ function FormDependenteEdicao({
 
 export default function Members() {
   const { user } = usarAutenticacao();
+  const cargosIgreja = useCargosIgreja();
   const podeEscreverMembros = canWrite(user, "/membros");
   const [modalAberto, setModalAberto] = useState(false);
   const [membros, setMembros] = useState<MembroApi[]>([]);
@@ -866,7 +872,11 @@ export default function Members() {
       m.name.toLowerCase().includes(buscaTexto.toLowerCase()) ||
       m.login.toLowerCase().includes(buscaTexto.toLowerCase()) ||
       (m.email?.toLowerCase().includes(buscaTexto.toLowerCase()) ?? false) ||
-      ROLE_LABELS[m.role].toLowerCase().includes(buscaTexto.toLowerCase()) ||
+      membroCombinaBuscaCargos(
+        { cargoIds: m.cargoIds, authorities: m.authorities, role: m.role },
+        cargosIgreja,
+        buscaTexto,
+      ) ||
       (m.isDependente && ("criança jovem dependente".includes(buscaTexto.toLowerCase()) || buscaTexto === ""))
   );
 
@@ -944,7 +954,7 @@ export default function Members() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, login, e-mail ou perfil..."
+            placeholder="Buscar por nome, login, e-mail ou cargo..."
             className="pl-10"
             value={buscaTexto}
             onChange={(e) => setBuscaTexto(e.target.value)}
@@ -961,6 +971,7 @@ export default function Members() {
               <CartaoMembro
                 key={membro.id}
                 membro={membro}
+                cargosIgreja={cargosIgreja}
                 aoEditar={editarMembro}
                 aoExcluir={abrirExcluir}
                 podeEditar={podeEscreverMembros}

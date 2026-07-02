@@ -107,6 +107,30 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
 /** Perfis com WRITE em todos os módulos da igreja */
 const ROLES_FULL_ACCESS: Role[] = ["admin", "admin_igreja", "pastor", "copastor"];
 
+const AUTHORITIES_ACESSO_TOTAL = [
+  "ROLE_ADMIN",
+  "ROLE_ADMIN_IGREJA",
+  "ROLE_PASTOR",
+  "ROLE_COPASTOR",
+] as const;
+
+const AUTHORITIES_COM_DEFAULTS_MERGE = [
+  ...AUTHORITIES_ACESSO_TOTAL,
+  "ROLE_SECRETARIA",
+  "ROLE_TESOURARIA",
+  "ROLE_LIDER",
+] as const;
+
+const ROLES_COM_DEFAULTS_MERGE: Role[] = [
+  "admin",
+  "admin_igreja",
+  "pastor",
+  "copastor",
+  "secretaria",
+  "tesouraria",
+  "lider",
+];
+
 const writeAll = (mods: ModuleKey[]): ModulePermission[] =>
   mods.map((module) => ({ module, access: "WRITE" as AccessLevel }));
 
@@ -208,6 +232,23 @@ const parseStringsPermissao = (items: string[]): ModulePermission[] => {
   return result;
 };
 
+export const usuarioTemAcessoTotalIgreja = (user: UserAccess | null | undefined): boolean => {
+  if (!user) return false;
+  if (ROLES_FULL_ACCESS.includes(user.role)) return true;
+  return user.authorities?.some((a) => AUTHORITIES_ACESSO_TOTAL.includes(a as (typeof AUTHORITIES_ACESSO_TOTAL)[number])) ?? false;
+};
+
+const usuarioDeveMesclarDefaultsPerfil = (user: UserAccess): boolean => {
+  if (ROLES_COM_DEFAULTS_MERGE.includes(user.role)) return true;
+  return (
+    user.authorities?.some((a) =>
+      AUTHORITIES_COM_DEFAULTS_MERGE.includes(a as (typeof AUTHORITIES_COM_DEFAULTS_MERGE)[number]),
+    ) ?? false
+  );
+};
+
+const roleParaDefaults = (user: UserAccess): Role => (user.role === "admin" ? "admin_igreja" : user.role);
+
 export const temPermissoesDinamicas = (user: UserAccess | null | undefined): boolean =>
   Boolean(user?.permissoesEfetivas && user.permissoesEfetivas.length > 0);
 
@@ -281,12 +322,21 @@ export const getDefaultPermissionsForRole = (role: Role): ModulePermission[] => 
 
 export const getEffectivePermissions = (user: UserAccess | null | undefined): ModulePermission[] => {
   if (!user) return [];
+
+  let perms: ModulePermission[] = [];
   if (user.permissoesEfetivas && user.permissoesEfetivas.length > 0) {
-    return parseStringsPermissao(user.permissoesEfetivas);
+    perms = parseStringsPermissao(user.permissoesEfetivas);
+  } else {
+    const parsed = parsePermissoes(user);
+    perms = parsed.length > 0 ? parsed : getDefaultPermissionsForRole(user.role);
   }
-  const parsed = parsePermissoes(user);
-  if (parsed.length > 0) return parsed;
-  return getDefaultPermissionsForRole(user.role);
+
+  // Cargos legados em produção podem não incluir módulos novos (departamentos, escalas, etc.)
+  if (usuarioDeveMesclarDefaultsPerfil(user)) {
+    perms = mergePerms(perms, getDefaultPermissionsForRole(roleParaDefaults(user)));
+  }
+
+  return perms;
 };
 
 export const hasModuleAccess = (
@@ -296,7 +346,7 @@ export const hasModuleAccess = (
 ): boolean => {
   if (!user) return false;
   if (usuarioEhSuperAdmin(user)) return true;
-  if (!temPermissoesDinamicas(user) && ROLES_FULL_ACCESS.includes(user.role)) return true;
+  if (usuarioTemAcessoTotalIgreja(user)) return true;
 
   const perms = getEffectivePermissions(user);
   const perm = perms.find((p) => p.module === module);
@@ -318,7 +368,7 @@ export const canAccess = (user: UserAccess | null | undefined, path: string): bo
   if (base.startsWith("/i/")) return true;
 
   if (usuarioEhSuperAdmin(user)) return true;
-  if (!temPermissoesDinamicas(user) && ROLES_FULL_ACCESS.includes(user.role)) return true;
+  if (usuarioTemAcessoTotalIgreja(user)) return true;
 
   const moduleKey = getModuleForRoute(base);
   if (!moduleKey) return false;
@@ -334,7 +384,7 @@ export const canWrite = (user: UserAccess | null | undefined, path: string): boo
   if (podeAcessarRotaSuporte(base)) return false;
 
   if (usuarioEhSuperAdmin(user)) return true;
-  if (!temPermissoesDinamicas(user) && ROLES_FULL_ACCESS.includes(user.role)) return true;
+  if (usuarioTemAcessoTotalIgreja(user)) return true;
 
   const moduleKey = getModuleForRoute(base);
   if (!moduleKey) return false;

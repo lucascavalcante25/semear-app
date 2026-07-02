@@ -12,6 +12,7 @@ import br.com.semear.repository.PreCadastroRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.PreCadastroService;
+import br.com.semear.service.TenantService;
 import br.com.semear.service.util.NomePessoaUtils;
 import br.com.semear.web.rest.vm.AprovarPreCadastroVM;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
@@ -59,19 +60,22 @@ public class PreCadastroResource {
     private final UserRepository userRepository;
     private final EnderecoRepository enderecoRepository;
     private final IgrejaRepository igrejaRepository;
+    private final TenantService tenantService;
 
     public PreCadastroResource(
         PreCadastroRepository preCadastroRepository,
         PreCadastroService preCadastroService,
         UserRepository userRepository,
         EnderecoRepository enderecoRepository,
-        IgrejaRepository igrejaRepository
+        IgrejaRepository igrejaRepository,
+        TenantService tenantService
     ) {
         this.preCadastroRepository = preCadastroRepository;
         this.preCadastroService = preCadastroService;
         this.userRepository = userRepository;
         this.enderecoRepository = enderecoRepository;
         this.igrejaRepository = igrejaRepository;
+        this.tenantService = tenantService;
     }
 
     /**
@@ -332,7 +336,9 @@ public class PreCadastroResource {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_ADMIN_IGREJA', 'ROLE_PASTOR', 'ROLE_COPASTOR', 'ROLE_SECRETARIA')")
     public ResponseEntity<List<PreCadastro>> getPreCadastrosPendentes() {
         LOG.debug("REST request to get pending PreCadastros");
-        List<PreCadastro> list = preCadastroRepository.findByStatusIn(
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        List<PreCadastro> list = preCadastroRepository.findByIgrejaIdAndStatusIn(
+            igrejaId,
             List.of(StatusCadastro.PRIMEIROACESSO, StatusCadastro.PENDENTE)
         );
         return ResponseEntity.ok().body(list);

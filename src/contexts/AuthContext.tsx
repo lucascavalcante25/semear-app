@@ -228,7 +228,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
   };
 
   useEffect(() => {
-    if (!API_ATIVA || user || carregandoConta) {
+    if (!API_ATIVA || carregandoConta) {
       return;
     }
     const token = obterToken();
@@ -251,7 +251,8 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
       }
     };
     void fetchAccount();
-  }, [user, carregandoConta]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sincroniza permissões com o servidor ao abrir o app
+  }, []);
 
   const login = async (identificador: string, password: string): Promise<ResultadoLogin> => {
     const identificadorNormalizado = normalizarIdentificador(identificador);

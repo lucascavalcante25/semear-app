@@ -23,7 +23,13 @@ import { cn } from "@/lib/utils";
 import { usePushLembretePendente } from "@/hooks/use-push-lembrete-pendente";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess } from "@/auth/permissions";
-import { rotaNotificacao, tratarCliqueNotificacao } from "@/lib/notificacao-acoes";
+import {
+  marcarNotificacaoComoLida,
+  marcarTodasNotificacoesComoLidas,
+  notificacaoIgnoraMarcarVista,
+  rotaNotificacao,
+  tratarCliqueNotificacao,
+} from "@/lib/notificacao-acoes";
 
 const ICONE_POR_TIPO: Record<string, React.ElementType> = {
   COMUNICADO: Megaphone,
@@ -75,7 +81,11 @@ export default function Notificacoes() {
   const { notificacoes, refreshNotificacoes, removerNotificacaoLocal } = usarNotificacoes();
   const { mostrarLembrete: pushPendente, bloqueado: pushBloqueado } = usePushLembretePendente();
   const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [marcandoTodas, setMarcandoTodas] = useState(false);
+  const [marcandoChave, setMarcandoChave] = useState<string | null>(null);
   const rotaConfig = canAccess(user, "/configuracoes") ? "/configuracoes" : "/mais";
+
+  const temNotificacoesMarcaveis = notificacoes.some((n) => !notificacaoIgnoraMarcarVista(n.tipo));
 
   const confirmarEscala = async (escalaId: number, itemId: number, chave: string) => {
     setConfirmando(chave);
@@ -91,13 +101,42 @@ export default function Notificacoes() {
   };
 
   const abrirNotificacao = async (n: (typeof notificacoes)[0]) => {
+    const chave = `${n.tipo}-${n.referenciaId}`;
+    setMarcandoChave(chave);
     try {
       await tratarCliqueNotificacao(n, removerNotificacaoLocal);
     } catch {
       /* navega mesmo se marcar vista falhar */
+    } finally {
+      setMarcandoChave(null);
     }
     if (n.link) {
       navigate(rotaNotificacao(n.link));
+    }
+  };
+
+  const marcarComoLida = async (n: (typeof notificacoes)[0]) => {
+    const chave = `${n.tipo}-${n.referenciaId}`;
+    setMarcandoChave(chave);
+    try {
+      await marcarNotificacaoComoLida(n, removerNotificacaoLocal);
+      toast.success("Notificação marcada como lida.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível marcar como lida.");
+    } finally {
+      setMarcandoChave(null);
+    }
+  };
+
+  const marcarTodasComoLidas = async () => {
+    setMarcandoTodas(true);
+    try {
+      await marcarTodasNotificacoesComoLidas(notificacoes, removerNotificacaoLocal);
+      toast.success("Todas as notificações foram marcadas como lidas.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Não foi possível marcar todas como lidas.");
+    } finally {
+      setMarcandoTodas(false);
     }
   };
 
@@ -114,9 +153,26 @@ export default function Notificacoes() {
               Avisos, escalas, pedidos de oração e atualizações
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void refreshNotificacoes()}>
-            Atualizar
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {temNotificacoesMarcaveis && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={marcandoTodas}
+                onClick={() => void marcarTodasComoLidas()}
+              >
+                {marcandoTodas ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                )}
+                Marcar todas como lidas
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => void refreshNotificacoes()}>
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         {(pushPendente || pushBloqueado) && (
@@ -196,6 +252,24 @@ export default function Notificacoes() {
                             <>
                               <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
                               Confirmar
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {!notificacaoIgnoraMarcarVista(n.tipo) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          disabled={marcandoChave === chave || marcandoTodas}
+                          onClick={() => void marcarComoLida(n)}
+                        >
+                          {marcandoChave === chave ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                              Marcar lida
                             </>
                           )}
                         </Button>
