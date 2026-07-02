@@ -160,16 +160,45 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
     }
   };
 
+  const linksExtras = (
+    <>
+      {louvor.cifraUrl && (
+        <DropdownMenuItem onClick={handleBaixarCifra}>
+          <CifraClubIcon size={16} className="mr-2" />
+          Abrir no Cifra Club
+        </DropdownMenuItem>
+      )}
+      {louvor.hasCifra && louvor.cifraFileName && (
+        <DropdownMenuItem onClick={handleBaixarCifra} disabled={baixandoCifra}>
+          {baixandoCifra ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          Baixar cifra
+        </DropdownMenuItem>
+      )}
+      {louvor.youtubeUrl && (
+        <DropdownMenuItem asChild>
+          <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
+            <Youtube className="h-4 w-4 mr-2" />
+            Abrir no YouTube
+          </a>
+        </DropdownMenuItem>
+      )}
+    </>
+  );
+
   return (
     <Card className="hover:shadow-md transition-shadow min-w-0 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-start gap-2 sm:gap-3 min-w-0">
           {showDrag && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
                   {...dragHandleProps}
-                  className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted shrink-0"
+                  className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted shrink-0 mt-0.5"
                 >
                   <GripVertical className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -180,75 +209,81 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
             </Tooltip>
           )}
 
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold-dark font-bold text-sm">
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold-dark font-bold text-xs sm:text-sm">
             {louvor.key || "—"}
           </div>
 
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <div className="flex items-center gap-2 min-w-0">
-              <h3 className="font-semibold truncate">{louvor.title}</h3>
-              <Badge variant="outline" className={cn("text-xs shrink-0 flex-shrink-0", config.color)}>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm sm:text-base leading-snug break-words">
+              {louvor.title}
+            </h3>
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Badge variant="outline" className={cn("text-[10px] sm:text-xs shrink-0", config.color)}>
                 {config.label}
               </Badge>
+              <p className="text-xs sm:text-sm text-muted-foreground break-words min-w-0">
+                {louvor.artist}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">{louvor.artist}</p>
           </div>
 
-          <div className="flex items-center gap-1 shrink-0 flex-shrink-0">
-            {louvor.cifraUrl && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={handleBaixarCifra}
-                  >
-                    <CifraClubIcon size={16} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Abrir no Cifra Club</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {louvor.hasCifra && louvor.cifraFileName && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={handleBaixarCifra}
-                    disabled={baixandoCifra}
-                  >
-                    {baixandoCifra ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Baixar cifra</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {louvor.youtubeUrl && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                    <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
-                      <Youtube className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Abrir no YouTube</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+          <div className="flex items-center gap-0.5 shrink-0 -mr-1 sm:mr-0">
+            <div className="hidden sm:flex items-center gap-0.5">
+              {louvor.cifraUrl && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleBaixarCifra}
+                    >
+                      <CifraClubIcon size={16} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Abrir no Cifra Club</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {louvor.hasCifra && louvor.cifraFileName && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleBaixarCifra}
+                      disabled={baixandoCifra}
+                    >
+                      {baixandoCifra ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Baixar cifra</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {louvor.youtubeUrl && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                      <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
+                        <Youtube className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Abrir no YouTube</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -257,7 +292,8 @@ function CartaoLouvor({ louvor, aoEditar, aoExcluir, showDrag, noGrupo, aoRemove
                   <p>Mais opções</p>
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="sm:hidden">{linksExtras}</div>
                 {noGrupo && aoRemoverDoGrupo && (
                   <DropdownMenuItem onClick={() => aoRemoverDoGrupo(louvor)}>
                     <Trash2 className="h-4 w-4 mr-2" />
@@ -754,12 +790,12 @@ export default function PaginaLouvores() {
 
                   return (
                     <Card key={grupo.id} className="min-w-0 overflow-hidden">
-                      <CardHeader className="pb-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 min-w-0">
-                          <CardTitle className="text-base truncate text-center sm:text-center">
+                      <CardHeader className="pb-3 px-3 sm:px-6">
+                        <div className="flex flex-col gap-2 min-w-0 sm:flex-row sm:items-center sm:justify-between">
+                          <CardTitle className="text-base break-words text-left leading-snug">
                             {grupo.name}
                           </CardTitle>
-                          <div className="flex items-center justify-center sm:justify-end gap-2 shrink-0 flex-wrap">
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
                             {podeCadastrar && (
                               <Dialog open={grupoModalAdicionar?.id === grupo.id} onOpenChange={(open) => !open && setGrupoModalAdicionar(null)}>
                                 <Button
@@ -832,7 +868,7 @@ export default function PaginaLouvores() {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-2">
+                      <CardContent className="space-y-2 px-3 sm:px-6">
                         {louvoresNoGrupo.length === 0 ? (
                           <p className="text-sm text-muted-foreground py-4">
                             Nenhum louvor no grupo. Clique em &quot;Adicionar&quot; para incluir louvores.
