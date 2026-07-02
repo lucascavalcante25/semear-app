@@ -125,5 +125,6 @@
     <include file="config/liquibase/changelog/20260630000001_performance_indexes.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260630000002_monitoramento_historico.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260630000003_louvor_artista.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260630000004_louvor_letra_cache.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260628000001_igreja_cargo.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

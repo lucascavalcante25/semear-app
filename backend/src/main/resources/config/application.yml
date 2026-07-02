@@ -231,3 +231,7 @@ jhipster:
 # ===================================================================
 
 # application:
+
+semear:
+  vagalume:
+    api-key: ${SEMEAR_VAGALUME_API_KEY:}

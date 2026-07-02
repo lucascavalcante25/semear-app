@@ -56,6 +56,15 @@ public class Louvor implements Serializable {
     @Column(name = "cifra_conteudo", columnDefinition = "text")
     private String cifraConteudo;
 
+    @Column(name = "letra_conteudo", columnDefinition = "text")
+    private String letraConteudo;
+
+    @Column(name = "letra_cache_em")
+    private Instant letraCacheEm;
+
+    @Column(name = "cifra_api_cache_em")
+    private Instant cifraApiCacheEm;
+
     @Column(name = "cifra_file_name", length = 255)
     private String cifraFileName;
 
@@ -151,6 +160,30 @@ public class Louvor implements Serializable {
 
     public void setCifraConteudo(String cifraConteudo) {
         this.cifraConteudo = cifraConteudo;
+    }
+
+    public String getLetraConteudo() {
+        return letraConteudo;
+    }
+
+    public void setLetraConteudo(String letraConteudo) {
+        this.letraConteudo = letraConteudo;
+    }
+
+    public Instant getLetraCacheEm() {
+        return letraCacheEm;
+    }
+
+    public void setLetraCacheEm(Instant letraCacheEm) {
+        this.letraCacheEm = letraCacheEm;
+    }
+
+    public Instant getCifraApiCacheEm() {
+        return cifraApiCacheEm;
+    }
+
+    public void setCifraApiCacheEm(Instant cifraApiCacheEm) {
+        this.cifraApiCacheEm = cifraApiCacheEm;
     }
 
     public String getCifraFileName() {

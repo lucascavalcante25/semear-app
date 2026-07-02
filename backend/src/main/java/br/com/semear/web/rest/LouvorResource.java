@@ -2,10 +2,13 @@ package br.com.semear.web.rest;
 
 import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.service.ArtistaLouvorService;
+import br.com.semear.service.LouvorConteudoService;
 import br.com.semear.service.LouvorService;
 import br.com.semear.service.ModuleAccessService;
 import br.com.semear.security.SecurityUtils;
+import br.com.semear.service.dto.LouvorCifraApiDTO;
 import br.com.semear.service.dto.LouvorDTO;
+import br.com.semear.service.dto.LouvorLetraDTO;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
@@ -44,15 +47,18 @@ public class LouvorResource {
     private final LouvorService louvorService;
     private final ModuleAccessService moduleAccessService;
     private final ArtistaLouvorService artistaLouvorService;
+    private final LouvorConteudoService louvorConteudoService;
 
     public LouvorResource(
         LouvorService louvorService,
         ModuleAccessService moduleAccessService,
-        ArtistaLouvorService artistaLouvorService
+        ArtistaLouvorService artistaLouvorService,
+        LouvorConteudoService louvorConteudoService
     ) {
         this.louvorService = louvorService;
         this.moduleAccessService = moduleAccessService;
         this.artistaLouvorService = artistaLouvorService;
+        this.louvorConteudoService = louvorConteudoService;
     }
 
     @PostMapping("")
@@ -164,6 +170,22 @@ public class LouvorResource {
         log.debug("REST request to get Louvor : {}", id);
         Optional<LouvorDTO> louvorDTO = louvorService.findOne(id);
         return ResponseUtil.wrapOrNotFound(louvorDTO);
+    }
+
+    @GetMapping("/{id}/letra")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LouvorLetraDTO> getLetra(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
+        log.debug("REST request to get letra for Louvor : {}", id);
+        return ResponseEntity.ok(louvorConteudoService.obterLetra(id));
+    }
+
+    @GetMapping("/{id}/cifra-online")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LouvorCifraApiDTO> getCifraOnline(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
+        log.debug("REST request to get cifra online for Louvor : {}", id);
+        return ResponseEntity.ok(louvorConteudoService.obterCifraApi(id));
     }
 
     /**

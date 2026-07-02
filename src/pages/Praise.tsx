@@ -46,10 +46,14 @@ import {
   Upload,
   X,
   Eye,
+  Mic2,
+  FileText,
 } from "lucide-react";
 import { CifraClubIcon } from "@/components/icons/CifraClubIcon";
 import { CampoArtistaLouvor } from "@/components/louvores/CampoArtistaLouvor";
 import { VisualizadorCifraLouvor } from "@/components/louvores/VisualizadorCifraLouvor";
+import { VisualizadorLetraLouvor } from "@/components/louvores/VisualizadorLetraLouvor";
+import { VisualizadorCifraOnlineLouvor } from "@/components/louvores/VisualizadorCifraOnlineLouvor";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -138,6 +142,8 @@ interface CartaoLouvorProps {
   aoExcluir: (louvor: LouvorApp) => void;
   aoVerDetalhes?: (louvor: LouvorApp) => void;
   aoVisualizarCifra?: (louvor: LouvorApp) => void;
+  aoVisualizarLetra?: (louvor: LouvorApp) => void;
+  aoVisualizarCifraOnline?: (louvor: LouvorApp) => void;
   showDrag?: boolean;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
@@ -150,6 +156,8 @@ function DialogDetalheLouvor({
   onAbertoChange,
   aoEditar,
   aoVisualizarCifra,
+  aoVisualizarLetra,
+  aoVisualizarCifraOnline,
   noGrupo,
   aoRemoverDoGrupo,
 }: {
@@ -158,6 +166,8 @@ function DialogDetalheLouvor({
   onAbertoChange: (aberto: boolean) => void;
   aoEditar: (louvor: LouvorApp) => void;
   aoVisualizarCifra?: (louvor: LouvorApp) => void;
+  aoVisualizarLetra?: (louvor: LouvorApp) => void;
+  aoVisualizarCifraOnline?: (louvor: LouvorApp) => void;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
 }) {
@@ -191,6 +201,36 @@ function DialogDetalheLouvor({
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{louvor.notes}</p>
           )}
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="justify-start"
+              onClick={() => {
+                onAbertoChange(false);
+                aoVisualizarLetra?.(louvor);
+              }}
+            >
+              <Mic2 className="h-4 w-4 mr-2" />
+              Ver letra
+              {louvor.temLetraSalva && (
+                <Badge variant="outline" className="ml-2 text-[10px] py-0">salva</Badge>
+              )}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="justify-start"
+              onClick={() => {
+                onAbertoChange(false);
+                aoVisualizarCifraOnline?.(louvor);
+              }}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Cifra online
+              {louvor.temCifraApiSalva && (
+                <Badge variant="outline" className="ml-2 text-[10px] py-0">salva</Badge>
+              )}
+            </Button>
             {louvor.youtubeUrl && (
               <Button variant="outline" size="sm" className="justify-start" asChild>
                 <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
@@ -258,6 +298,8 @@ function CartaoLouvor({
   aoExcluir,
   aoVerDetalhes,
   aoVisualizarCifra,
+  aoVisualizarLetra,
+  aoVisualizarCifraOnline,
   showDrag,
   noGrupo,
   aoRemoverDoGrupo,
@@ -293,6 +335,16 @@ function CartaoLouvor({
 
   const linksExtras = (
     <>
+      <DropdownMenuItem onClick={() => aoVisualizarLetra?.(louvor)}>
+        <Mic2 className="h-4 w-4 mr-2" />
+        Ver letra
+        {louvor.temLetraSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => aoVisualizarCifraOnline?.(louvor)}>
+        <FileText className="h-4 w-4 mr-2" />
+        Cifra online
+        {louvor.temCifraApiSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
+      </DropdownMenuItem>
       {louvor.cifraUrl && (
         <DropdownMenuItem onClick={handleAbrirCifraClub}>
           <CifraClubIcon size={16} className="mr-2" />
@@ -370,6 +422,36 @@ function CartaoLouvor({
 
           <div className="flex items-center gap-0.5 shrink-0 -mr-1 sm:mr-0">
             <div className="hidden sm:flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => aoVisualizarLetra?.(louvor)}
+                  >
+                    <Mic2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => aoVisualizarCifraOnline?.(louvor)}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
+                </TooltipContent>
+              </Tooltip>
               {louvor.cifraUrl && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -513,6 +595,8 @@ export default function PaginaLouvores() {
     louvor: LouvorApp;
   } | null>(null);
   const [cifraVisualizando, setCifraVisualizando] = useState<LouvorApp | null>(null);
+  const [letraVisualizando, setLetraVisualizando] = useState<LouvorApp | null>(null);
+  const [cifraOnlineVisualizando, setCifraOnlineVisualizando] = useState<LouvorApp | null>(null);
   const ordemGrupoTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   // Form state
@@ -563,6 +647,14 @@ export default function PaginaLouvores() {
   const abrirVisualizadorCifra = (louvor: LouvorApp) => {
     if (!louvor.hasCifra || !louvor.cifraFileName) return;
     setCifraVisualizando(louvor);
+  };
+
+  const abrirVisualizadorLetra = (louvor: LouvorApp) => {
+    setLetraVisualizando(louvor);
+  };
+
+  const abrirVisualizadorCifraOnline = (louvor: LouvorApp) => {
+    setCifraOnlineVisualizando(louvor);
   };
 
   const abrirDetalheLouvor = (louvor: LouvorApp, grupo?: GrupoLouvorApp) => {
@@ -1090,6 +1182,8 @@ export default function PaginaLouvores() {
                                     aoExcluir={confirmarExcluir}
                                     aoVerDetalhes={(l) => abrirDetalheLouvor(l, grupo)}
                                     aoVisualizarCifra={abrirVisualizadorCifra}
+                                    aoVisualizarLetra={abrirVisualizadorLetra}
+                                    aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
                                     noGrupo
                                     aoRemoverDoGrupo={() => solicitarRemoverDoGrupo(grupo, louvor)}
                                   />
@@ -1160,6 +1254,8 @@ export default function PaginaLouvores() {
                     aoExcluir={confirmarExcluir}
                     aoVerDetalhes={(l) => abrirDetalheLouvor(l)}
                     aoVisualizarCifra={abrirVisualizadorCifra}
+                    aoVisualizarLetra={abrirVisualizadorLetra}
+                    aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
                   />
                 ))}
                 {louvoresFiltrados.length === 0 && (
@@ -1186,6 +1282,8 @@ export default function PaginaLouvores() {
           }}
           aoEditar={abrirEditar}
           aoVisualizarCifra={abrirVisualizadorCifra}
+          aoVisualizarLetra={abrirVisualizadorLetra}
+          aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
           noGrupo={!!louvorDetalhe?.grupo}
           aoRemoverDoGrupo={
             louvorDetalhe?.grupo
@@ -1236,6 +1334,20 @@ export default function PaginaLouvores() {
           louvor={cifraVisualizando}
           aberto={!!cifraVisualizando}
           onFechar={() => setCifraVisualizando(null)}
+        />
+
+        <VisualizadorLetraLouvor
+          louvor={letraVisualizando}
+          aberto={!!letraVisualizando}
+          onFechar={() => setLetraVisualizando(null)}
+          onCacheAtualizado={carregarLouvores}
+        />
+
+        <VisualizadorCifraOnlineLouvor
+          louvor={cifraOnlineVisualizando}
+          aberto={!!cifraOnlineVisualizando}
+          onFechar={() => setCifraOnlineVisualizando(null)}
+          onCacheAtualizado={carregarLouvores}
         />
       </div>
     </LayoutApp>

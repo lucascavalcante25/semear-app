@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -64,6 +65,8 @@ public class LouvorServiceImpl implements LouvorService {
         dto.setCifraContentType(louvor.getCifraContentType());
         dto.setObservacoes(louvor.getObservacoes());
         dto.setAtivo(louvor.getAtivo());
+        dto.setTemLetraSalva(louvor.getLetraConteudo() != null && !louvor.getLetraConteudo().isBlank());
+        dto.setTemCifraApiSalva(louvor.getCifraApiCacheEm() != null);
         dto.setCreatedAt(louvor.getCreatedAt());
         dto.setUpdatedAt(louvor.getUpdatedAt());
         return dto;
@@ -94,12 +97,50 @@ public class LouvorServiceImpl implements LouvorService {
     public LouvorDTO save(LouvorDTO dto) {
         log.debug("Request to save Louvor : {}", dto);
         Louvor louvor = toEntity(dto);
-        if (louvor.getIgreja() == null) {
+        if (dto.getId() != null) {
+            Louvor existente = louvorRepository.findById(dto.getId()).orElseThrow(
+                () -> new IllegalArgumentException("Louvor não encontrado: " + dto.getId())
+            );
+            tenantService.validarMesmaIgreja(existente.getIgreja());
+            louvor.setIgreja(existente.getIgreja());
+            louvor.setCreatedAt(existente.getCreatedAt());
+            louvor.setCifraFileName(existente.getCifraFileName());
+            louvor.setCifraContentType(existente.getCifraContentType());
+
+            boolean artistaOuTituloMudou =
+                !Objects.equals(normalizarTexto(existente.getArtista()), normalizarTexto(dto.getArtista())) ||
+                !Objects.equals(normalizarTexto(existente.getTitulo()), normalizarTexto(dto.getTitulo()));
+            boolean cifraUrlMudou = !Objects.equals(
+                normalizarTexto(existente.getCifraUrl()),
+                normalizarTexto(dto.getCifraUrl())
+            );
+
+            if (artistaOuTituloMudou) {
+                louvor.setLetraConteudo(null);
+                louvor.setLetraCacheEm(null);
+                louvor.setCifraConteudo(null);
+                louvor.setCifraApiCacheEm(null);
+            } else {
+                louvor.setLetraConteudo(existente.getLetraConteudo());
+                louvor.setLetraCacheEm(existente.getLetraCacheEm());
+                if (cifraUrlMudou) {
+                    louvor.setCifraConteudo(null);
+                    louvor.setCifraApiCacheEm(null);
+                } else {
+                    louvor.setCifraConteudo(existente.getCifraConteudo());
+                    louvor.setCifraApiCacheEm(existente.getCifraApiCacheEm());
+                }
+            }
+        } else if (louvor.getIgreja() == null) {
             louvor.setIgreja(tenantService.resolverIgrejaParaCriacao());
         }
         louvor = louvorRepository.save(louvor);
         artistaLouvorService.registrarSeNecessario(louvor.getIgreja(), louvor.getArtista());
         return toDto(louvor);
+    }
+
+    private static String normalizarTexto(String valor) {
+        return valor == null ? null : valor.trim();
     }
 
     @Override

@@ -28,6 +28,8 @@ public class LouvorDTO implements Serializable {
     private String cifraContentType;
     private String observacoes;
     private Boolean ativo = true;
+    private Boolean temLetraSalva;
+    private Boolean temCifraApiSalva;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -133,6 +135,22 @@ public class LouvorDTO implements Serializable {
 
     public void setAtivo(Boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public Boolean getTemLetraSalva() {
+        return temLetraSalva;
+    }
+
+    public void setTemLetraSalva(Boolean temLetraSalva) {
+        this.temLetraSalva = temLetraSalva;
+    }
+
+    public Boolean getTemCifraApiSalva() {
+        return temCifraApiSalva;
+    }
+
+    public void setTemCifraApiSalva(Boolean temCifraApiSalva) {
+        this.temCifraApiSalva = temCifraApiSalva;
     }
 
     public Instant getCreatedAt() {

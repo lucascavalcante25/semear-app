@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260630000004-1" author="semear">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="louvor" columnName="letra_conteudo"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="louvor">
+            <column name="letra_conteudo" type="text"/>
+            <column name="letra_cache_em" type="${datetimeType}"/>
+            <column name="cifra_api_cache_em" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

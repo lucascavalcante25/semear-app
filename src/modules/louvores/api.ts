@@ -16,6 +16,8 @@ export type LouvorDTO = {
   cifraContentType?: string | null;
   observacoes?: string | null;
   ativo: boolean;
+  temLetraSalva?: boolean | null;
+  temCifraApiSalva?: boolean | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -32,6 +34,8 @@ export type LouvorApp = {
   cifraUrl?: string;
   cifraFileName?: string;
   hasCifra: boolean;
+  temLetraSalva: boolean;
+  temCifraApiSalva: boolean;
   isActive: boolean;
   notes?: string;
   createdAt: Date;
@@ -62,6 +66,8 @@ export const mapearLouvor = (dto: LouvorDTO): LouvorApp => ({
   cifraUrl: dto.cifraUrl ?? undefined,
   cifraFileName: dto.cifraFileName ?? undefined,
   hasCifra: Boolean(dto.cifraFileName || dto.cifraUrl),
+  temLetraSalva: Boolean(dto.temLetraSalva),
+  temCifraApiSalva: Boolean(dto.temCifraApiSalva),
   isActive: dto.ativo ?? true,
   notes: dto.observacoes ?? undefined,
   createdAt: dto.createdAt ? new Date(dto.createdAt) : new Date(),
@@ -215,5 +221,32 @@ export const baixarCifra = async (id: number, filename = "cifra.pdf") => {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+};
+
+export type LouvorLetraResposta = {
+  texto?: string;
+  fonte?: string;
+  doCache: boolean;
+  disponivel: boolean;
+  mensagem?: string;
+  cacheEm?: string;
+};
+
+export type LouvorCifraOnlineResposta = {
+  linhas?: string[];
+  url?: string;
+  fonte?: string;
+  doCache: boolean;
+  disponivel: boolean;
+  mensagem?: string;
+  cacheEm?: string;
+};
+
+export const obterLetraLouvor = async (id: number): Promise<LouvorLetraResposta> => {
+  return requisicaoApi<LouvorLetraResposta>(`/api/louvores/${id}/letra`, { auth: true });
+};
+
+export const obterCifraOnlineLouvor = async (id: number): Promise<LouvorCifraOnlineResposta> => {
+  return requisicaoApi<LouvorCifraOnlineResposta>(`/api/louvores/${id}/cifra-online`, { auth: true });
 };
 
