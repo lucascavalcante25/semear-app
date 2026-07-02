@@ -721,13 +721,23 @@ public class NotificacaoService {
         if (userOpt.isEmpty()) return;
         User user = userOpt.get();
 
-        if (tipo != null && tipo.startsWith("EVENTO_")) {
-            notificacaoUsuarioRepository.findByIdAndUserId(referenciaId, user.getId()).ifPresent(notificacao -> {
-                notificacao.setLida(true);
-                notificacaoUsuarioRepository.save(notificacao);
-                invalidarCacheUsuario(user);
-            });
-            return;
+        Optional<NotificacaoUsuario> notificacaoInterna = notificacaoUsuarioRepository.findByIdAndUserId(referenciaId, user.getId());
+        if (notificacaoInterna.isPresent()) {
+            NotificacaoUsuario notificacao = notificacaoInterna.get();
+            if (tipo == null || tipo.equals(notificacao.getTipo())) {
+                if (!Boolean.TRUE.equals(notificacao.getLida())) {
+                    notificacao.setLida(true);
+                    notificacaoUsuarioRepository.save(notificacao);
+                    invalidarCacheUsuario(user);
+                    LOG.debug(
+                        "Notificação interna marcada como lida: {} {} para user {}",
+                        notificacao.getTipo(),
+                        referenciaId,
+                        user.getLogin()
+                    );
+                }
+                return;
+            }
         }
 
         if (vistaRepository.findByUserAndTipoAndReferenciaId(user, tipo, referenciaId).isPresent()) {
