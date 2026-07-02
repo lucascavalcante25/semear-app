@@ -154,7 +154,8 @@ export default function Entrar() {
                 title="Cadastro e teste grátis para pastor, tesoureiro ou responsável pela igreja"
                 onClick={() => rastrearCtaTesteGratis("login_nav")}
               >
-                Admin da igreja — teste grátis
+                <span className={styles.navLinkPrimaryShort}>Teste grátis</span>
+                <span className={styles.navLinkPrimaryFull}>Admin da igreja — teste grátis</span>
               </Link>
             </nav>
           </header>
