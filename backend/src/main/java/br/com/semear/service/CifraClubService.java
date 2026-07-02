@@ -1,5 +1,6 @@
 package br.com.semear.service;
 
+import br.com.semear.service.util.LouvorLetraUtils;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -44,15 +45,10 @@ public class CifraClubService {
 
     public Optional<ResultadoCifra> buscarLetra(String artista, String titulo, String cifraUrlInformada) {
         for (String url : gerarUrlsCandidatas(artista, titulo, cifraUrlInformada)) {
-            Optional<ResultadoCifra> resultado = buscarLetraPorUrl(url);
+            String letraUrl = url.endsWith("/letra/") ? url : url + "letra/";
+            Optional<ResultadoCifra> resultado = buscarLetraPorUrl(letraUrl);
             if (resultado.isPresent()) {
                 return resultado;
-            }
-            if (!url.endsWith("/letra/")) {
-                Optional<ResultadoCifra> letraUrl = buscarLetraPorUrl(url + "letra/");
-                if (letraUrl.isPresent()) {
-                    return letraUrl;
-                }
             }
         }
         return Optional.empty();
@@ -90,7 +86,7 @@ public class CifraClubService {
             Element pre = doc.selectFirst("pre");
             if (pre != null) {
                 List<String> linhas = htmlPreParaLinhas(pre.html());
-                if (!linhas.isEmpty() && pareceLetra(linhas)) {
+                if (!linhas.isEmpty() && LouvorLetraUtils.pareceLetra(linhas)) {
                     return Optional.of(new ResultadoCifra(url, linhas));
                 }
             }
@@ -98,7 +94,7 @@ public class CifraClubService {
             Element letra = doc.selectFirst("div.letra");
             if (letra != null) {
                 List<String> linhas = htmlLetraParaLinhas(letra.html());
-                if (!linhas.isEmpty()) {
+                if (!linhas.isEmpty() && !LouvorLetraUtils.pareceCifra(String.join("\n", linhas))) {
                     return Optional.of(new ResultadoCifra(url, linhas));
                 }
             }
@@ -300,21 +296,6 @@ public class CifraClubService {
             }
         }
         return linhas;
-    }
-
-    private boolean pareceLetra(List<String> linhas) {
-        int comTexto = 0;
-        for (String linha : linhas) {
-            String trimmed = linha.trim();
-            if (trimmed.isEmpty() || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
-                continue;
-            }
-            String semAcordes = trimmed.replaceAll("\\b[A-G][#b]?(?:m|maj|min|sus|add|dim|aug)?[0-9]*(?:/[A-G][#b]?)?\\b", " ").trim();
-            if (semAcordes.length() >= 8 && semAcordes.matches(".*[a-zA-ZÀ-ÿ]{3,}.*")) {
-                comTexto++;
-            }
-        }
-        return comTexto >= 2;
     }
 
     private Document conectar(String url) {

@@ -52,7 +52,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, LabelList } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, LabelList, type LabelProps } from "recharts";
 import {
   listarLancamentos,
   criarLancamento,
@@ -177,6 +177,59 @@ function agregarPorMes(lancamentos: LancamentoApp[], ano: number) {
       saldoAcumulado,
     };
   });
+}
+
+type PontoGraficoMensal = ReturnType<typeof agregarPorMes>[number];
+
+function formatarValorGrafico(valor: number): string {
+  if (!Number.isFinite(valor) || valor === 0) return "";
+  const abs = Math.abs(valor);
+  const sinal = valor < 0 ? "-" : "";
+  if (abs >= 1_000_000) {
+    return `${sinal}R$ ${(abs / 1_000_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi`;
+  }
+  if (abs >= 10_000) {
+    return `${sinal}R$ ${(abs / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} mil`;
+  }
+  if (abs >= 1_000) {
+    return `${sinal}R$ ${(abs / 1_000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k`;
+  }
+  return `${sinal}R$ ${abs.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`;
+}
+
+function RotuloSaldoGrafico(props: LabelProps) {
+  const { x = 0, y = 0, width = 0, payload } = props;
+  const ponto = payload as PontoGraficoMensal | undefined;
+  if (!ponto || (ponto.entradas === 0 && ponto.saidas === 0)) {
+    return null;
+  }
+
+  const texto = formatarValorGrafico(ponto.saldoAcumulado);
+  if (!texto) return null;
+
+  return (
+    <text
+      x={Number(x) + Number(width) / 2}
+      y={Number(y) - 6}
+      textAnchor="middle"
+      fill="hsl(var(--muted-foreground))"
+      fontSize={10}
+    >
+      {texto}
+    </text>
+  );
+}
+
+function RotuloSaldoEntradas(props: LabelProps) {
+  const ponto = props.payload as PontoGraficoMensal | undefined;
+  if (!ponto || ponto.entradas < ponto.saidas) return null;
+  return RotuloSaldoGrafico(props);
+}
+
+function RotuloSaldoSaidas(props: LabelProps) {
+  const ponto = props.payload as PontoGraficoMensal | undefined;
+  if (!ponto || ponto.saidas <= ponto.entradas) return null;
+  return RotuloSaldoGrafico(props);
 }
 
 function filtrarLancamentosPorMes(
@@ -1330,15 +1383,38 @@ export default function Financeiro() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="overflow-x-auto -mx-1 px-1">
-                <div className={cn("min-w-0", isMobile && "min-w-[320px]")}>
-                  <ChartContainer config={chartConfig} className={cn("w-full [&_.recharts-rectangle]:cursor-pointer", isMobile ? "h-[200px]" : "h-[220px]")}>
-                    <BarChart data={chartData} margin={isMobile ? { top: 8, right: 8, left: 8, bottom: 4 } : undefined}>
+                <div className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[var(--color-entradas)]" />
+                    Entradas
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[var(--color-saidas)]" />
+                    Saídas
+                  </span>
+                  <span className="hidden text-[11px] sm:inline">Valores acima das barras = saldo em caixa no mês</span>
+                </div>
+                <div className={cn("w-full", isMobile ? "min-w-[42rem]" : "min-w-0")}>
+                  <ChartContainer
+                    config={chartConfig}
+                    className={cn(
+                      "w-full [&_.recharts-rectangle]:cursor-pointer",
+                      isMobile ? "h-[240px]" : "h-[280px]",
+                    )}
+                  >
+                    <BarChart
+                      data={chartData}
+                      barSize={isMobile ? 14 : 18}
+                      barGap={2}
+                      margin={{ top: 28, right: isMobile ? 6 : 12, left: isMobile ? 6 : 12, bottom: 4 }}
+                    >
                       <XAxis
                         dataKey="month"
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                        tick={{ fontSize: isMobile ? 11 : 12 }}
                         interval={0}
+                        tickMargin={8}
                       />
                       <YAxis hide />
                       <ChartTooltip
@@ -1362,25 +1438,16 @@ export default function Financeiro() {
                         radius={4}
                         onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
                       >
-                        {!isMobile && (
-                          <LabelList
-                            dataKey="saldoAcumulado"
-                            position="bottom"
-                            formatter={(v: number) => {
-                              const n = Number(v);
-                              if (Number.isNaN(n)) return "";
-                              return `R$ ${n.toLocaleString("pt-BR")}`;
-                            }}
-                            style={{ fontSize: 10 }}
-                          />
-                        )}
+                        <LabelList dataKey="saldoAcumulado" content={RotuloSaldoEntradas} />
                       </Bar>
                       <Bar
                         dataKey="saidas"
                         fill="var(--color-saidas)"
                         radius={4}
                         onClick={(_, index) => index !== undefined && setMesSelecionado(index + 1)}
-                      />
+                      >
+                        <LabelList dataKey="saldoAcumulado" content={RotuloSaldoSaidas} />
+                      </Bar>
                     </BarChart>
                   </ChartContainer>
                 </div>

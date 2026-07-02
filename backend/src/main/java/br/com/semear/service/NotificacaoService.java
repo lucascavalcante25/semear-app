@@ -126,7 +126,7 @@ public class NotificacaoService {
 
     @Transactional(readOnly = true)
     public List<NotificacaoItem> listarNaoVistas() {
-        Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneByLogin);
+        Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneWithAuthoritiesByLogin);
         if (userOpt.isEmpty()) {
             return List.of();
         }
@@ -369,7 +369,7 @@ public class NotificacaoService {
 
     @Transactional(readOnly = true)
     public NotificacaoResumoDTO obterResumo() {
-        Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneByLogin);
+        Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneWithAuthoritiesByLogin);
         NotificacaoResumoDTO resumo = new NotificacaoResumoDTO();
         if (userOpt.isEmpty()) {
             return resumo;
@@ -405,6 +405,7 @@ public class NotificacaoService {
         return contagem;
     }
 
+    @Transactional(readOnly = true)
     public Optional<String> obterFingerprintAtual() {
         Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneByLogin);
         if (userOpt.isEmpty()) {
@@ -455,7 +456,12 @@ public class NotificacaoService {
         resumo
             .getNotificacoes()
             .stream()
-            .sorted(Comparator.comparing(NotificacaoItem::tipo).thenComparing(NotificacaoItem::referenciaId))
+            .sorted(
+                Comparator.comparing(NotificacaoItem::tipo, Comparator.nullsLast(String::compareTo)).thenComparing(
+                    NotificacaoItem::referenciaId,
+                    Comparator.nullsLast(Comparator.naturalOrder())
+                )
+            )
             .forEach(item -> sb.append(item.tipo()).append(':').append(item.referenciaId()).append(','));
         return Integer.toHexString(sb.toString().hashCode());
     }

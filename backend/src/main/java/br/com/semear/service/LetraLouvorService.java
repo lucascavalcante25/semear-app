@@ -2,11 +2,10 @@ package br.com.semear.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.regex.Pattern;
+import br.com.semear.service.util.LouvorLetraUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,8 +19,6 @@ public class LetraLouvorService {
     private static final Logger log = LoggerFactory.getLogger(LetraLouvorService.class);
     private static final String LRCLIB_BASE = "https://lrclib.net/api";
     private static final String GENIUS_BASE = "https://api.genius.com";
-    private static final Pattern LINHA_TAB = Pattern.compile("^[EBGDA]\\|", Pattern.CASE_INSENSITIVE);
-
     private final RestClient lrclibClient;
     private final RestClient geniusClient;
     private final CifraClubService cifraClubService;
@@ -50,11 +47,6 @@ public class LetraLouvorService {
             return Optional.empty();
         }
 
-        Optional<ResultadoLetra> cifraClub = buscarLetraCifraClub(artista.trim(), titulo.trim(), cifraUrl);
-        if (cifraClub.isPresent()) {
-            return cifraClub;
-        }
-
         Optional<ResultadoLetra> lrclib = buscarLrclib(artista.trim(), titulo.trim());
         if (lrclib.isPresent()) {
             return lrclib;
@@ -65,6 +57,11 @@ public class LetraLouvorService {
             if (genius.isPresent()) {
                 return genius;
             }
+        }
+
+        Optional<ResultadoLetra> cifraClub = buscarLetraCifraClub(artista.trim(), titulo.trim(), cifraUrl);
+        if (cifraClub.isPresent()) {
+            return cifraClub;
         }
 
         Optional<ResultadoLetra> cifra = extrairLetraDaCifra(artista.trim(), titulo.trim(), cifraUrl);
@@ -237,30 +234,17 @@ public class LetraLouvorService {
             return Optional.empty();
         }
 
-        List<String> linhasLetra = new ArrayList<>();
-        for (String linha : letra.get().linhas()) {
-            String trimmed = linha.trim();
-            if (trimmed.isEmpty()) {
-                if (!linhasLetra.isEmpty() && !linhasLetra.get(linhasLetra.size() - 1).isEmpty()) {
-                    linhasLetra.add("");
-                }
-                continue;
-            }
-            if (LINHA_TAB.matcher(trimmed).find()) {
-                continue;
-            }
-            linhasLetra.add(trimmed);
-        }
-
-        while (!linhasLetra.isEmpty() && linhasLetra.get(linhasLetra.size() - 1).isEmpty()) {
-            linhasLetra.remove(linhasLetra.size() - 1);
-        }
-
+        List<String> linhasLetra = LouvorLetraUtils.extrairLetraDasLinhas(letra.get().linhas());
         if (linhasLetra.isEmpty()) {
             return Optional.empty();
         }
 
-        return Optional.of(new ResultadoLetra(String.join("\n", linhasLetra), "cifraclub"));
+        String texto = String.join("\n", linhasLetra);
+        if (LouvorLetraUtils.pareceCifra(texto)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new ResultadoLetra(texto, "cifraclub"));
     }
 
     private Optional<ResultadoLetra> extrairLetraDaCifra(String artista, String titulo, String cifraUrl) {
@@ -269,40 +253,7 @@ public class LetraLouvorService {
             return Optional.empty();
         }
 
-        List<String> linhasLetra = new ArrayList<>();
-        for (String linha : cifra.get().linhas()) {
-            String trimmed = linha.trim();
-            if (trimmed.isEmpty()) {
-                if (!linhasLetra.isEmpty() && !linhasLetra.get(linhasLetra.size() - 1).isEmpty()) {
-                    linhasLetra.add("");
-                }
-                continue;
-            }
-            if (LINHA_TAB.matcher(trimmed).find()) {
-                continue;
-            }
-            if (trimmed.matches("(?i)^parte\\s+\\d+\\s+de\\s+\\d+$")) {
-                continue;
-            }
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-                linhasLetra.add(trimmed);
-                continue;
-            }
-
-            String semAcordes = trimmed
-                .replaceAll("\\b[A-G][#b]?(?:m|maj|min|sus|add|dim|aug)?[0-9]*(?:/[A-G][#b]?)?\\b", " ")
-                .replaceAll("\\s+", " ")
-                .trim();
-
-            if (semAcordes.length() >= 3 && semAcordes.matches(".*[a-zA-ZÀ-ÿ]{2,}.*")) {
-                linhasLetra.add(semAcordes);
-            }
-        }
-
-        while (!linhasLetra.isEmpty() && linhasLetra.get(linhasLetra.size() - 1).isEmpty()) {
-            linhasLetra.remove(linhasLetra.size() - 1);
-        }
-
+        List<String> linhasLetra = LouvorLetraUtils.extrairLetraDasLinhas(cifra.get().linhas());
         if (linhasLetra.isEmpty()) {
             return Optional.empty();
         }

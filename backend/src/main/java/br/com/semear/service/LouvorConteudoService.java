@@ -4,6 +4,7 @@ import br.com.semear.domain.Louvor;
 import br.com.semear.repository.LouvorRepository;
 import br.com.semear.service.dto.LouvorCifraApiDTO;
 import br.com.semear.service.dto.LouvorLetraDTO;
+import br.com.semear.service.util.LouvorLetraUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
@@ -51,13 +52,16 @@ public class LouvorConteudoService {
             LouvorLetraDTO dto = new LouvorLetraDTO();
 
             Optional<LetraCache> cache = lerLetraSalva(louvor.getLetraConteudo());
-            if (cache.isPresent()) {
+            if (cache.isPresent() && !LouvorLetraUtils.pareceCifra(cache.get().texto())) {
                 dto.setDisponivel(true);
                 dto.setTexto(cache.get().texto());
                 dto.setFonte(cache.get().fonte());
                 dto.setDoCache(true);
                 dto.setCacheEm(louvor.getLetraCacheEm());
                 return dto;
+            }
+            if (cache.isPresent() && LouvorLetraUtils.pareceCifra(cache.get().texto())) {
+                log.debug("Cache de letra do louvor {} parece cifra; buscando novamente", id);
             }
 
             Optional<LetraLouvorService.ResultadoLetra> letra = letraLouvorService.buscarLetra(
@@ -69,6 +73,14 @@ public class LouvorConteudoService {
                 dto.setDisponivel(false);
                 dto.setMensagem(
                     "Letra não encontrada. Você pode inserir manualmente ou informar o link do Cifra Club no cadastro."
+                );
+                return dto;
+            }
+
+            if (LouvorLetraUtils.pareceCifra(letra.get().texto())) {
+                dto.setDisponivel(false);
+                dto.setMensagem(
+                    "Letra não encontrada automaticamente. Use inserir manualmente para colar só a letra."
                 );
                 return dto;
             }
