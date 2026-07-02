@@ -250,3 +250,28 @@ export const obterCifraOnlineLouvor = async (id: number): Promise<LouvorCifraOnl
   return requisicaoApi<LouvorCifraOnlineResposta>(`/api/louvores/${id}/cifra-online`, { auth: true });
 };
 
+export const salvarLetraManualLouvor = async (id: number, texto: string): Promise<LouvorLetraResposta> => {
+  return requisicaoApi<LouvorLetraResposta>(`/api/louvores/${id}/letra`, {
+    method: "PUT",
+    body: JSON.stringify({ texto }),
+    auth: true,
+  });
+};
+
+export const salvarCifraManualLouvor = async (id: number, texto: string): Promise<LouvorCifraOnlineResposta> => {
+  return requisicaoApi<LouvorCifraOnlineResposta>(`/api/louvores/${id}/cifra-online`, {
+    method: "PUT",
+    body: JSON.stringify({ texto }),
+    auth: true,
+  });
+};
+
+export const atualizarTomLouvor = async (id: number, tonalidade: string | null): Promise<LouvorApp> => {
+  const updated = await requisicaoApi<LouvorDTO>(`/api/louvores/${id}/tonalidade`, {
+    method: "PATCH",
+    body: JSON.stringify({ tonalidade: tonalidade || null }),
+    auth: true,
+  });
+  return mapearLouvor(updated);
+};
+

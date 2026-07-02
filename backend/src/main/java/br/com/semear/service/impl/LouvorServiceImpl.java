@@ -199,6 +199,17 @@ public class LouvorServiceImpl implements LouvorService {
     }
 
     @Override
+    public LouvorDTO atualizarTonalidade(Long id, String tonalidade) {
+        Louvor louvor = louvorRepository.findById(id).orElseThrow(
+            () -> new IllegalArgumentException("Louvor não encontrado: " + id)
+        );
+        tenantService.validarMesmaIgreja(louvor.getIgreja());
+        louvor.setTonalidade(tonalidade != null && !tonalidade.isBlank() ? tonalidade.trim() : null);
+        louvor = louvorRepository.save(louvor);
+        return toDto(louvor);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<LouvorDTO> findAll() {
         return louvorRepository.findAllByIgrejaIdOrderByTituloAsc(tenantService.getIgrejaIdAtual()).stream()

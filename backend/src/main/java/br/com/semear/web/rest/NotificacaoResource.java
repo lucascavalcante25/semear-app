@@ -3,10 +3,14 @@ package br.com.semear.web.rest;
 import br.com.semear.service.NotificacaoService;
 import br.com.semear.service.NotificacaoService.NotificacaoItem;
 import br.com.semear.service.dto.NotificacaoResumoDTO;
+import br.com.semear.service.dto.NotificacaoContagemDTO;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +33,42 @@ public class NotificacaoResource {
     }
 
     @GetMapping("/resumo")
-    public ResponseEntity<NotificacaoResumoDTO> obterResumo() {
-        return ResponseEntity.ok(notificacaoService.obterResumo());
+    public ResponseEntity<NotificacaoResumoDTO> obterResumo(
+        @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatch
+    ) {
+        Optional<String> fingerprint = notificacaoService.obterFingerprintAtual();
+        if (fingerprint.isPresent() && Objects.equals(fingerprint.get(), normalizarEtag(ifNoneMatch))) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(fingerprint.get()).build();
+        }
+        NotificacaoResumoDTO resumo = notificacaoService.obterResumo();
+        String etag = notificacaoService.obterFingerprintAtual().orElse(null);
+        if (etag == null) {
+            return ResponseEntity.ok(resumo);
+        }
+        return ResponseEntity.ok().eTag(etag).body(resumo);
+    }
+
+    @GetMapping("/contagem")
+    public ResponseEntity<NotificacaoContagemDTO> obterContagem(
+        @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatch
+    ) {
+        Optional<String> fingerprint = notificacaoService.obterFingerprintAtual();
+        if (fingerprint.isPresent() && Objects.equals(fingerprint.get(), normalizarEtag(ifNoneMatch))) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(fingerprint.get()).build();
+        }
+        NotificacaoContagemDTO contagem = notificacaoService.obterContagem();
+        String etag = contagem.getFingerprint();
+        if (etag == null || etag.isBlank()) {
+            return ResponseEntity.ok(contagem);
+        }
+        return ResponseEntity.ok().eTag(etag).body(contagem);
+    }
+
+    private static String normalizarEtag(String etag) {
+        if (etag == null || etag.isBlank()) {
+            return null;
+        }
+        return etag.replace("\"", "").trim();
     }
 
     @PostMapping("/marcar-vista")

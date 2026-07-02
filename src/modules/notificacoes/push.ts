@@ -5,6 +5,7 @@ import {
   registrarDispositivoPush,
   type PushConfigPublica,
 } from "./api";
+import { dispararAtualizacaoNotificacoes } from "@/modules/notifications/sync";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
@@ -27,6 +28,7 @@ function firebaseConfigValida(): boolean {
 let app: FirebaseApp | null = null;
 let messaging: Messaging | null = null;
 let configBackend: PushConfigPublica | null = null;
+let listenerForegroundRegistrado = false;
 
 export async function verificarSuportePush(): Promise<boolean> {
   if (!("serviceWorker" in navigator) || !("Notification" in window)) {
@@ -159,7 +161,12 @@ export async function desativarPushLocal(): Promise<void> {
 
 function configurarListenerForeground() {
   if (!messaging) return;
+  if (listenerForegroundRegistrado) return;
+  listenerForegroundRegistrado = true;
+
   onMessage(messaging, (payload) => {
+    dispararAtualizacaoNotificacoes();
+
     const title = payload.data?.title || payload.notification?.title;
     const body = payload.data?.body || payload.notification?.body;
     const url = payload.data?.url || "/";
@@ -185,4 +192,21 @@ function configurarListenerForeground() {
 export function tratarCliqueNotificacao(url?: string) {
   const destino = url && url.startsWith("/") ? url : "/";
   window.location.href = destino;
+}
+
+/** Registra listener FCM se o usuário já concedeu permissão de push. */
+export async function iniciarListenerPushSeAtivo(): Promise<void> {
+  if (listenerForegroundRegistrado) return;
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  if (!firebaseConfigValida()) return;
+
+  try {
+    const suportado = await isSupported();
+    if (!suportado) return;
+    await obterConfigPushCache();
+    messaging = getMessaging(obterAppFirebase());
+    configurarListenerForeground();
+  } catch {
+    // push opcional — polling cobre o restante
+  }
 }

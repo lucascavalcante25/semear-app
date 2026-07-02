@@ -233,5 +233,7 @@ jhipster:
 # application:
 
 semear:
-  vagalume:
-    api-key: ${SEMEAR_VAGALUME_API_KEY:}
+  letras:
+    lrclib-user-agent: SemearApp/1.0 (https://github.com/lucascavalcante25/semear-app)
+  genius:
+    access-token: ${SEMEAR_GENIUS_ACCESS_TOKEN:}

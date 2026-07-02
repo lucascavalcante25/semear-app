@@ -43,7 +43,6 @@ import {
   List,
   Loader2,
   Download,
-  Upload,
   X,
   Eye,
   Mic2,
@@ -82,9 +81,9 @@ import {
   listarLouvores,
   criarLouvor,
   atualizarLouvor,
-  atualizarCifraLouvor,
   excluirLouvor,
   baixarCifra,
+  atualizarTomLouvor,
   type LouvorApp,
 } from "@/modules/louvores/api";
 import {
@@ -134,8 +133,6 @@ const typeConfig = {
   ceia: { label: "Ceia", color: "bg-olive/10 text-olive border-olive/20" },
 };
 
-const ACCEPT_CIFRA = "application/pdf,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.docx,application/msword,.doc";
-
 interface CartaoLouvorProps {
   louvor: LouvorApp;
   aoEditar: (louvor: LouvorApp) => void;
@@ -158,6 +155,9 @@ function DialogDetalheLouvor({
   aoVisualizarCifra,
   aoVisualizarLetra,
   aoVisualizarCifraOnline,
+  aoLetraManual,
+  aoCifraManual,
+  onLouvorAtualizado,
   noGrupo,
   aoRemoverDoGrupo,
 }: {
@@ -168,11 +168,40 @@ function DialogDetalheLouvor({
   aoVisualizarCifra?: (louvor: LouvorApp) => void;
   aoVisualizarLetra?: (louvor: LouvorApp) => void;
   aoVisualizarCifraOnline?: (louvor: LouvorApp) => void;
+  aoLetraManual?: (louvor: LouvorApp) => void;
+  aoCifraManual?: (louvor: LouvorApp) => void;
+  onLouvorAtualizado?: (louvor: LouvorApp) => void;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
 }) {
+  const [tom, setTom] = useState("");
+  const [salvandoTom, setSalvandoTom] = useState(false);
+
+  useEffect(() => {
+    if (louvor) {
+      setTom(louvor.key ?? "");
+    }
+  }, [louvor]);
+
   if (!louvor) return null;
   const config = typeConfig[louvor.type];
+
+  const alterarTom = async (novoTom: string) => {
+    if (!louvor.idNum) return;
+    const valor = novoTom === "__none__" ? "" : novoTom;
+    setTom(valor);
+    setSalvandoTom(true);
+    try {
+      const atualizado = await atualizarTomLouvor(louvor.idNum, valor || null);
+      onLouvorAtualizado?.(atualizado);
+      toast.success(valor ? `Tom alterado para ${valor}.` : "Tom removido.");
+    } catch {
+      setTom(louvor.key ?? "");
+      toast.error("Erro ao alterar o tom.");
+    } finally {
+      setSalvandoTom(false);
+    }
+  };
 
   return (
     <Dialog open={aberto} onOpenChange={onAbertoChange}>
@@ -186,16 +215,25 @@ function DialogDetalheLouvor({
             <Badge variant="outline" className={cn("text-xs", config.color)}>
               {config.label}
             </Badge>
-            {louvor.key && (
-              <Badge variant="secondary" className="text-xs">
-                Tom: {louvor.key}
-              </Badge>
-            )}
-            {louvor.tempo && (
-              <Badge variant="secondary" className="text-xs">
-                {louvor.tempo}
-              </Badge>
-            )}
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="tom-louvor" className="sr-only">
+                Tom
+              </Label>
+              <Select value={tom || "__none__"} onValueChange={(v) => void alterarTom(v)} disabled={salvandoTom}>
+                <SelectTrigger id="tom-louvor" className="h-7 w-[7.5rem] text-xs">
+                  <SelectValue placeholder="Tom" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem tom</SelectItem>
+                  {TONALIDADES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      Tom: {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {salvandoTom && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+            </div>
           </div>
           {louvor.notes && (
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{louvor.notes}</p>
@@ -213,7 +251,9 @@ function DialogDetalheLouvor({
               <Mic2 className="h-4 w-4 mr-2" />
               Ver letra
               {louvor.temLetraSalva && (
-                <Badge variant="outline" className="ml-2 text-[10px] py-0">salva</Badge>
+                <Badge variant="outline" className="ml-2 border-white/50 text-[10px] py-0 text-white">
+                  salva
+                </Badge>
               )}
             </Button>
             <Button
@@ -228,7 +268,9 @@ function DialogDetalheLouvor({
               <FileText className="h-4 w-4 mr-2" />
               Cifra online
               {louvor.temCifraApiSalva && (
-                <Badge variant="outline" className="ml-2 text-[10px] py-0">salva</Badge>
+                <Badge variant="outline" className="ml-2 border-white/50 text-[10px] py-0 text-white">
+                  salva
+                </Badge>
               )}
             </Button>
             {louvor.youtubeUrl && (
@@ -261,6 +303,32 @@ function DialogDetalheLouvor({
                 Visualizar cifra
               </Button>
             )}
+          </div>
+          <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              className="justify-start text-xs"
+              onClick={() => {
+                onAbertoChange(false);
+                aoLetraManual?.(louvor);
+              }}
+            >
+              <Edit className="h-3.5 w-3.5 mr-2" />
+              {louvor.temLetraSalva ? "Editar letra manual" : "Adicionar letra manual"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="justify-start text-xs"
+              onClick={() => {
+                onAbertoChange(false);
+                aoCifraManual?.(louvor);
+              }}
+            >
+              <Edit className="h-3.5 w-3.5 mr-2" />
+              {louvor.temCifraApiSalva ? "Editar cifra manual" : "Adicionar cifra manual"}
+            </Button>
           </div>
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             {noGrupo && aoRemoverDoGrupo && (
@@ -596,18 +664,17 @@ export default function PaginaLouvores() {
   } | null>(null);
   const [cifraVisualizando, setCifraVisualizando] = useState<LouvorApp | null>(null);
   const [letraVisualizando, setLetraVisualizando] = useState<LouvorApp | null>(null);
+  const [letraModoEdicao, setLetraModoEdicao] = useState(false);
   const [cifraOnlineVisualizando, setCifraOnlineVisualizando] = useState<LouvorApp | null>(null);
+  const [cifraOnlineModoEdicao, setCifraOnlineModoEdicao] = useState(false);
   const ordemGrupoTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   // Form state
   const [titulo, setTitulo] = useState("");
   const [artista, setArtista] = useState("");
   const [tonalidade, setTonalidade] = useState("");
-  const [tempo, setTempo] = useState("");
   const [tipo, setTipo] = useState<LouvorApp["type"]>("adoracao");
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [cifraUrl, setCifraUrl] = useState("");
-  const [cifraFile, setCifraFile] = useState<File | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   const carregarLouvores = useCallback(async () => {
@@ -650,12 +717,31 @@ export default function PaginaLouvores() {
   };
 
   const abrirVisualizadorLetra = (louvor: LouvorApp) => {
+    setLetraModoEdicao(false);
+    setLetraVisualizando(louvor);
+  };
+
+  const abrirLetraManual = (louvor: LouvorApp) => {
+    setLetraModoEdicao(true);
     setLetraVisualizando(louvor);
   };
 
   const abrirVisualizadorCifraOnline = (louvor: LouvorApp) => {
+    setCifraOnlineModoEdicao(false);
     setCifraOnlineVisualizando(louvor);
   };
+
+  const abrirCifraManual = (louvor: LouvorApp) => {
+    setCifraOnlineModoEdicao(true);
+    setCifraOnlineVisualizando(louvor);
+  };
+
+  const atualizarLouvorNaLista = useCallback((atualizado: LouvorApp) => {
+    setLouvores((prev) => prev.map((l) => (l.id === atualizado.id ? atualizado : l)));
+    setLouvorDetalhe((prev) =>
+      prev && prev.louvor.id === atualizado.id ? { ...prev, louvor: atualizado } : prev,
+    );
+  }, []);
 
   const abrirDetalheLouvor = (louvor: LouvorApp, grupo?: GrupoLouvorApp) => {
     setLouvorDetalhe({ louvor, grupo });
@@ -714,11 +800,8 @@ export default function PaginaLouvores() {
     setTitulo("");
     setArtista("");
     setTonalidade("");
-    setTempo("");
     setTipo("adoracao");
     setYoutubeUrl("");
-    setCifraUrl("");
-    setCifraFile(null);
     setEditando(null);
   };
 
@@ -733,11 +816,8 @@ export default function PaginaLouvores() {
     setTitulo(louvor.title);
     setArtista(louvor.artist);
     setTonalidade(louvor.key);
-    setTempo(louvor.tempo ?? "");
     setTipo(louvor.type);
     setYoutubeUrl(louvor.youtubeUrl ?? "");
-    setCifraUrl(louvor.cifraUrl ?? "");
-    setCifraFile(null);
     setDialogAberto(true);
   };
 
@@ -753,30 +833,22 @@ export default function PaginaLouvores() {
           title: titulo.trim(),
           artist: artista.trim(),
           key: tonalidade,
-          tempo: tempo || undefined,
+          tempo: editando.tempo,
           type: tipo,
           youtubeUrl: youtubeUrl.trim() || undefined,
-          cifraUrl: cifraUrl.trim() || undefined,
+          cifraUrl: editando.cifraUrl,
           isActive: true,
         });
-        if (cifraFile) {
-          await atualizarCifraLouvor(editando.idNum, cifraFile);
-        }
         toast.success("Louvor atualizado.");
       } else {
-        await criarLouvor(
-          {
-            title: titulo.trim(),
-            artist: artista.trim(),
-            key: tonalidade,
-            tempo: tempo || undefined,
-            type: tipo,
-            youtubeUrl: youtubeUrl.trim() || undefined,
-            cifraUrl: cifraUrl.trim() || undefined,
-            isActive: true,
-          },
-          cifraFile ?? undefined
-        );
+        await criarLouvor({
+          title: titulo.trim(),
+          artist: artista.trim(),
+          key: tonalidade,
+          type: tipo,
+          youtubeUrl: youtubeUrl.trim() || undefined,
+          isActive: true,
+        });
         toast.success("Louvor cadastrado.");
       }
       setDialogAberto(false);
@@ -947,15 +1019,6 @@ export default function PaginaLouvores() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="tempo">Tempo (opcional)</Label>
-                    <Input
-                      id="tempo"
-                      placeholder="Ex: Moderado, Lento, Alegre"
-                      value={tempo}
-                      onChange={(e) => setTempo(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="youtube">Link do YouTube</Label>
                     <Input
                       id="youtube"
@@ -963,40 +1026,6 @@ export default function PaginaLouvores() {
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cifraUrl">Link do Cifra Club</Label>
-                    <Input
-                      id="cifraUrl"
-                      placeholder="https://www.cifraclub.com.br/..."
-                      value={cifraUrl}
-                      onChange={(e) => setCifraUrl(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Use quando não tiver o arquivo da cifra. O link abrirá diretamente no Cifra Club.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cifra" className="flex items-center gap-2">
-                      <Upload className="h-4 w-4" />
-                      Cifra (PDF ou Word)
-                    </Label>
-                    <Input
-                      id="cifra"
-                      type="file"
-                      accept={ACCEPT_CIFRA}
-                      onChange={(e) => setCifraFile(e.target.files?.[0] ?? null)}
-                    />
-                    {cifraFile && (
-                      <p className="text-xs text-muted-foreground">
-                        Arquivo selecionado: {cifraFile.name}
-                      </p>
-                    )}
-                    {editando?.hasCifra && !cifraFile && (
-                      <p className="text-xs text-muted-foreground">
-                        Já existe cifra anexada. Selecione outro arquivo para substituir.
-                      </p>
-                    )}
                   </div>
                   <div className="flex justify-end gap-2 pt-4">
                     <Button variant="outline" onClick={() => setDialogAberto(false)}>
@@ -1284,6 +1313,9 @@ export default function PaginaLouvores() {
           aoVisualizarCifra={abrirVisualizadorCifra}
           aoVisualizarLetra={abrirVisualizadorLetra}
           aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
+          aoLetraManual={abrirLetraManual}
+          aoCifraManual={abrirCifraManual}
+          onLouvorAtualizado={atualizarLouvorNaLista}
           noGrupo={!!louvorDetalhe?.grupo}
           aoRemoverDoGrupo={
             louvorDetalhe?.grupo
@@ -1339,15 +1371,23 @@ export default function PaginaLouvores() {
         <VisualizadorLetraLouvor
           louvor={letraVisualizando}
           aberto={!!letraVisualizando}
-          onFechar={() => setLetraVisualizando(null)}
+          onFechar={() => {
+            setLetraVisualizando(null);
+            setLetraModoEdicao(false);
+          }}
           onCacheAtualizado={carregarLouvores}
+          modoEdicaoInicial={letraModoEdicao}
         />
 
         <VisualizadorCifraOnlineLouvor
           louvor={cifraOnlineVisualizando}
           aberto={!!cifraOnlineVisualizando}
-          onFechar={() => setCifraOnlineVisualizando(null)}
+          onFechar={() => {
+            setCifraOnlineVisualizando(null);
+            setCifraOnlineModoEdicao(false);
+          }}
           onCacheAtualizado={carregarLouvores}
+          modoEdicaoInicial={cifraOnlineModoEdicao}
         />
       </div>
     </LayoutApp>

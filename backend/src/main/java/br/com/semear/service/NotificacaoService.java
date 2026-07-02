@@ -37,12 +37,14 @@ import br.com.semear.repository.UsuarioNotificacaoVistaRepository;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
+import br.com.semear.service.dto.NotificacaoContagemDTO;
 import br.com.semear.service.dto.NotificacaoResumoDTO;
 import br.com.semear.service.util.EscalaNotificacaoUtils;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,6 +116,11 @@ public class NotificacaoService {
     }
 
     private static final ZoneId ZONE_BR = ZoneId.of("America/Sao_Paulo");
+    private static final long CACHE_RESUMO_TTL_MS = 10_000;
+
+    private final ConcurrentHashMap<String, CacheResumoNotificacao> cacheResumoPorLogin = new ConcurrentHashMap<>();
+
+    private record CacheResumoNotificacao(NotificacaoResumoDTO resumo, String fingerprint, long expiraEm) {}
 
     public record NotificacaoItem(String tipo, Long referenciaId, String titulo, String descricao, String link) {}
 
@@ -368,6 +375,54 @@ public class NotificacaoService {
             return resumo;
         }
         User user = userOpt.get();
+        String login = user.getLogin();
+        if (login != null) {
+            CacheResumoNotificacao cache = cacheResumoPorLogin.get(login);
+            if (cache != null && System.currentTimeMillis() < cache.expiraEm()) {
+                return cache.resumo();
+            }
+        }
+
+        resumo = construirResumo(user);
+        if (login != null) {
+            String fingerprint = calcularFingerprint(resumo);
+            cacheResumoPorLogin.put(
+                login,
+                new CacheResumoNotificacao(resumo, fingerprint, System.currentTimeMillis() + CACHE_RESUMO_TTL_MS)
+            );
+        }
+        return resumo;
+    }
+
+    @Transactional(readOnly = true)
+    public NotificacaoContagemDTO obterContagem() {
+        NotificacaoResumoDTO resumo = obterResumo();
+        NotificacaoContagemDTO contagem = new NotificacaoContagemDTO();
+        contagem.setTotalNotificacoes(resumo.getNotificacoes().size());
+        contagem.setPreCadastrosPendentes(resumo.getPreCadastrosPendentes());
+        contagem.setPedidosOracaoPendentes(resumo.getPedidosOracaoPendentes());
+        contagem.setFingerprint(calcularFingerprint(resumo));
+        return contagem;
+    }
+
+    public Optional<String> obterFingerprintAtual() {
+        Optional<User> userOpt = SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneByLogin);
+        if (userOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        String login = userOpt.get().getLogin();
+        if (login == null) {
+            return Optional.empty();
+        }
+        CacheResumoNotificacao cache = cacheResumoPorLogin.get(login);
+        if (cache != null && System.currentTimeMillis() < cache.expiraEm()) {
+            return Optional.of(cache.fingerprint());
+        }
+        return Optional.of(calcularFingerprint(obterResumo()));
+    }
+
+    private NotificacaoResumoDTO construirResumo(User user) {
+        NotificacaoResumoDTO resumo = new NotificacaoResumoDTO();
         resumo.setNotificacoes(listarNaoVistas());
 
         if (usuarioPodeAprovarPreCadastro(user)) {
@@ -389,6 +444,26 @@ public class NotificacaoService {
         }
 
         return resumo;
+    }
+
+    private String calcularFingerprint(NotificacaoResumoDTO resumo) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("p=").append(resumo.getPreCadastrosPendentes());
+        sb.append(";o=").append(resumo.getPedidosOracaoPendentes());
+        sb.append(";n=").append(resumo.getNotificacoes().size());
+        sb.append(';');
+        resumo
+            .getNotificacoes()
+            .stream()
+            .sorted(Comparator.comparing(NotificacaoItem::tipo).thenComparing(NotificacaoItem::referenciaId))
+            .forEach(item -> sb.append(item.tipo()).append(':').append(item.referenciaId()).append(','));
+        return Integer.toHexString(sb.toString().hashCode());
+    }
+
+    private void invalidarCacheUsuario(User user) {
+        if (user != null && user.getLogin() != null) {
+            cacheResumoPorLogin.remove(user.getLogin());
+        }
     }
 
     public void notificarTesteIniciado(Igreja igreja, AssinaturaIgreja assinatura) {
@@ -644,6 +719,7 @@ public class NotificacaoService {
             notificacaoUsuarioRepository.findByIdAndUserId(referenciaId, user.getId()).ifPresent(notificacao -> {
                 notificacao.setLida(true);
                 notificacaoUsuarioRepository.save(notificacao);
+                invalidarCacheUsuario(user);
             });
             return;
         }
@@ -658,6 +734,7 @@ public class NotificacaoService {
         vista.setReferenciaId(referenciaId);
         vista.setVistoEm(Instant.now());
         vistaRepository.save(vista);
+        invalidarCacheUsuario(user);
         LOG.debug("Notificação marcada como vista: {} {} para user {}", tipo, referenciaId, user.getLogin());
     }
 

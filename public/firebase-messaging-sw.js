@@ -36,7 +36,12 @@ if (self.FIREBASE_CONFIG && self.FIREBASE_CONFIG.apiKey) {
   messaging.onBackgroundMessage((payload) => {
     const title = payload.data?.title || payload.notification?.title || "Semear";
     const options = montarOpcoesNotificacao(payload);
-    return self.registration.showNotification(title, options);
+    const notificarClientes = clients.matchAll({ type: "window", includeUncontrolled: true }).then((lista) => {
+      lista.forEach((client) => {
+        client.postMessage({ type: "semear:notificacoes-atualizar" });
+      });
+    });
+    return Promise.all([self.registration.showNotification(title, options), notificarClientes]);
   });
 }
 

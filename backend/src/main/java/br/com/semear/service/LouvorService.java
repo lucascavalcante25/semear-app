@@ -13,6 +13,8 @@ public interface LouvorService {
 
     LouvorDTO updateCifra(Long id, MultipartFile cifraFile);
 
+    LouvorDTO atualizarTonalidade(Long id, String tonalidade);
+
     List<LouvorDTO> findAll();
 
     List<LouvorDTO> search(String query);

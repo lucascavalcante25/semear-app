@@ -9,6 +9,9 @@ import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.LouvorCifraApiDTO;
 import br.com.semear.service.dto.LouvorDTO;
 import br.com.semear.service.dto.LouvorLetraDTO;
+import br.com.semear.service.dto.LouvorSalvarCifraDTO;
+import br.com.semear.service.dto.LouvorSalvarLetraDTO;
+import br.com.semear.service.dto.LouvorTonalidadeDTO;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
@@ -186,6 +189,42 @@ public class LouvorResource {
         moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
         log.debug("REST request to get cifra online for Louvor : {}", id);
         return ResponseEntity.ok(louvorConteudoService.obterCifraApi(id));
+    }
+
+    @PutMapping("/{id}/letra")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA", "ROLE_MEMBRO"})
+    public ResponseEntity<LouvorLetraDTO> salvarLetraManual(
+        @PathVariable Long id,
+        @Valid @RequestBody LouvorSalvarLetraDTO body
+    ) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
+        log.debug("REST request to save manual letra for Louvor : {}", id);
+        return ResponseEntity.ok(louvorConteudoService.salvarLetraManual(id, body.getTexto()));
+    }
+
+    @PutMapping("/{id}/cifra-online")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA", "ROLE_MEMBRO"})
+    public ResponseEntity<LouvorCifraApiDTO> salvarCifraManual(
+        @PathVariable Long id,
+        @Valid @RequestBody LouvorSalvarCifraDTO body
+    ) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
+        log.debug("REST request to save manual cifra for Louvor : {}", id);
+        return ResponseEntity.ok(louvorConteudoService.salvarCifraManual(id, body.getTexto()));
+    }
+
+    @PatchMapping("/{id}/tonalidade")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA", "ROLE_MEMBRO"})
+    public ResponseEntity<LouvorDTO> atualizarTonalidade(
+        @PathVariable Long id,
+        @Valid @RequestBody LouvorTonalidadeDTO body
+    ) {
+        moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.WRITE);
+        log.debug("REST request to update tonalidade for Louvor : {}", id);
+        LouvorDTO result = louvorService.atualizarTonalidade(id, body.getTonalidade());
+        return ResponseEntity.ok()
+            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, id.toString()))
+            .body(result);
     }
 
     /**

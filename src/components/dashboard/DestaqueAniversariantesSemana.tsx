@@ -53,7 +53,7 @@ function ItemDestaqueAniversariante({ aniversariante }: ItemDestaqueProps) {
       </Avatar>
 
       <div className="min-w-0 flex-1">
-        <p className="text-base leading-snug text-foreground sm:text-lg">
+        <div className="text-base leading-snug text-foreground sm:text-lg">
           <span className="font-semibold">{aniversariante.name}</span>
           {ehHoje ? (
             <>
@@ -66,7 +66,7 @@ function ItemDestaqueAniversariante({ aniversariante }: ItemDestaqueProps) {
           ) : (
             <> — aniversário {textoData}</>
           )}
-        </p>
+        </div>
         <p className="mt-1 text-sm text-foreground/75">
           {ehHoje ? `Completa ${idade} anos` : `Completa ${idade} anos · lembre de cantar parabéns no culto`}
         </p>
