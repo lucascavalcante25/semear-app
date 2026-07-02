@@ -54,8 +54,8 @@ function MenuLateral({
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="border-b border-sidebar-border p-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground">
+      <div className="shrink-0 border-b border-sidebar-border p-4">
         <div className="flex items-center gap-2">
           <img src={PLATAFORMA.logoUrl} alt="" className="h-8 w-8 rounded-lg" aria-hidden />
           <div>
@@ -64,7 +64,7 @@ function MenuLateral({
         </div>
         <p className="mt-1 text-xs text-muted-foreground">{MARCA.painelPlataforma}</p>
       </div>
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const ativo = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
@@ -93,7 +93,7 @@ function MenuLateral({
           );
         })}
       </nav>
-      <div className="space-y-1 border-t border-sidebar-border p-3">
+      <div className="shrink-0 space-y-1 border-t border-sidebar-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <Button
           variant="ghost"
           className="w-full justify-start gap-2"
@@ -134,7 +134,7 @@ export function LayoutSuperAdmin({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <div className="flex min-h-screen">
         {!isMobile && (
-          <aside className="w-64 shrink-0 border-r border-border">
+          <aside className="sticky top-0 h-screen w-64 shrink-0 overflow-hidden border-r border-border">
             <MenuLateral badgeSolicitacoes={badgeSolicitacoes} badgeSuporte={badgeSuporte} />
           </aside>
         )}
@@ -150,7 +150,7 @@ export function LayoutSuperAdmin({ children }: { children: React.ReactNode }) {
                     )}
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-72 p-0">
+                <SheetContent side="left" className="flex h-full w-72 flex-col p-0">
                   <MenuLateral
                     onNavigate={() => setMenuAberto(false)}
                     badgeSolicitacoes={badgeSolicitacoes}
