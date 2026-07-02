@@ -2,6 +2,7 @@ package br.com.semear.service.impl;
 
 import br.com.semear.domain.Louvor;
 import br.com.semear.repository.LouvorRepository;
+import br.com.semear.service.ArtistaLouvorService;
 import br.com.semear.service.LouvorService;
 import br.com.semear.service.TenantService;
 import br.com.semear.service.dto.LouvorDTO;
@@ -32,13 +33,19 @@ public class LouvorServiceImpl implements LouvorService {
 
     private final LouvorRepository louvorRepository;
     private final TenantService tenantService;
+    private final ArtistaLouvorService artistaLouvorService;
 
     @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
     private String uploadDir;
 
-    public LouvorServiceImpl(LouvorRepository louvorRepository, TenantService tenantService) {
+    public LouvorServiceImpl(
+        LouvorRepository louvorRepository,
+        TenantService tenantService,
+        ArtistaLouvorService artistaLouvorService
+    ) {
         this.louvorRepository = louvorRepository;
         this.tenantService = tenantService;
+        this.artistaLouvorService = artistaLouvorService;
     }
 
     private static LouvorDTO toDto(Louvor louvor) {
@@ -91,6 +98,7 @@ public class LouvorServiceImpl implements LouvorService {
             louvor.setIgreja(tenantService.resolverIgrejaParaCriacao());
         }
         louvor = louvorRepository.save(louvor);
+        artistaLouvorService.registrarSeNecessario(louvor.getIgreja(), louvor.getArtista());
         return toDto(louvor);
     }
 

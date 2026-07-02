@@ -288,3 +288,25 @@
     display: none;
   }
 }
+
+@layer components {
+  .cifra-docx {
+    font-family: ui-monospace, "Cascadia Code", "Courier New", monospace;
+    word-break: break-word;
+  }
+
+  .cifra-docx p {
+    margin: 0.35em 0;
+  }
+
+  .cifra-docx table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .cifra-docx td,
+  .cifra-docx th {
+    padding: 0.25rem 0.5rem;
+    vertical-align: top;
+  }
+}

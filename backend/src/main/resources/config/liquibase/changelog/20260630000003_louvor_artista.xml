@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260630000003-1" author="semear">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="louvor_artista"/>
+            </not>
+        </preConditions>
+        <createTable tableName="louvor_artista">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nome" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_at" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="louvor_artista"
+            baseColumnNames="igreja_id"
+            constraintName="fk_louvor_artista_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <sql dbms="postgresql">
+            CREATE UNIQUE INDEX uk_louvor_artista_igreja_nome ON louvor_artista (igreja_id, lower(btrim(nome)));
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260630000003-2" author="semear">
+        <validCheckSum>ANY</validCheckSum>
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="louvor_artista"/>
+            <tableExists tableName="louvor"/>
+        </preConditions>
+        <sql dbms="postgresql">
+            INSERT INTO louvor_artista (igreja_id, nome, created_at, updated_at)
+            SELECT sub.igreja_id, sub.nome, sub.created_at, sub.updated_at
+            FROM (
+                SELECT l.igreja_id,
+                       MIN(l.artista) AS nome,
+                       MIN(l.created_at) AS created_at,
+                       MAX(l.updated_at) AS updated_at
+                FROM louvor l
+                WHERE l.igreja_id IS NOT NULL
+                  AND l.artista IS NOT NULL
+                  AND btrim(l.artista) &lt;&gt; ''
+                GROUP BY l.igreja_id, lower(btrim(l.artista))
+            ) sub
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM louvor_artista a
+                WHERE a.igreja_id = sub.igreja_id
+                  AND lower(btrim(a.nome)) = lower(btrim(sub.nome))
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

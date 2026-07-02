@@ -45,8 +45,11 @@ import {
   Download,
   Upload,
   X,
+  Eye,
 } from "lucide-react";
 import { CifraClubIcon } from "@/components/icons/CifraClubIcon";
+import { CampoArtistaLouvor } from "@/components/louvores/CampoArtistaLouvor";
+import { VisualizadorCifraLouvor } from "@/components/louvores/VisualizadorCifraLouvor";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -134,6 +137,7 @@ interface CartaoLouvorProps {
   aoEditar: (louvor: LouvorApp) => void;
   aoExcluir: (louvor: LouvorApp) => void;
   aoVerDetalhes?: (louvor: LouvorApp) => void;
+  aoVisualizarCifra?: (louvor: LouvorApp) => void;
   showDrag?: boolean;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
@@ -145,6 +149,7 @@ function DialogDetalheLouvor({
   aberto,
   onAbertoChange,
   aoEditar,
+  aoVisualizarCifra,
   noGrupo,
   aoRemoverDoGrupo,
 }: {
@@ -152,6 +157,7 @@ function DialogDetalheLouvor({
   aberto: boolean;
   onAbertoChange: (aberto: boolean) => void;
   aoEditar: (louvor: LouvorApp) => void;
+  aoVisualizarCifra?: (louvor: LouvorApp) => void;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
 }) {
@@ -202,9 +208,18 @@ function DialogDetalheLouvor({
               </Button>
             )}
             {louvor.hasCifra && louvor.cifraFileName && (
-              <p className="text-xs text-muted-foreground self-center">
-                Cifra anexada: {louvor.cifraFileName}
-              </p>
+              <Button
+                variant="default"
+                size="sm"
+                className="justify-start"
+                onClick={() => {
+                  onAbertoChange(false);
+                  aoVisualizarCifra?.(louvor);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar cifra
+              </Button>
             )}
           </div>
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
@@ -242,6 +257,7 @@ function CartaoLouvor({
   aoEditar,
   aoExcluir,
   aoVerDetalhes,
+  aoVisualizarCifra,
   showDrag,
   noGrupo,
   aoRemoverDoGrupo,
@@ -250,19 +266,25 @@ function CartaoLouvor({
   const config = typeConfig[louvor.type];
   const [baixandoCifra, setBaixandoCifra] = useState(false);
 
-  const handleBaixarCifra = async () => {
-    if (!louvor.idNum) return;
+  const handleAbrirCifraClub = () => {
     if (louvor.cifraUrl) {
       window.open(louvor.cifraUrl, "_blank", "noopener,noreferrer");
-      return;
     }
-    if (!louvor.hasCifra) return;
+  };
+
+  const handleVisualizarCifra = () => {
+    if (!louvor.hasCifra || !louvor.cifraFileName) return;
+    aoVisualizarCifra?.(louvor);
+  };
+
+  const handleBaixarCifra = async () => {
+    if (!louvor.idNum || !louvor.hasCifra) return;
     setBaixandoCifra(true);
     try {
       const ext = louvor.cifraFileName?.match(/\.(pdf|docx?)$/i)?.[1] ?? "pdf";
       await baixarCifra(louvor.idNum, `${louvor.title.replace(/\s+/g, "_")}_cifra.${ext}`);
       toast.success("Cifra baixada.");
-    } catch (e) {
+    } catch {
       toast.error("Não foi possível baixar a cifra.");
     } finally {
       setBaixandoCifra(false);
@@ -272,20 +294,26 @@ function CartaoLouvor({
   const linksExtras = (
     <>
       {louvor.cifraUrl && (
-        <DropdownMenuItem onClick={handleBaixarCifra}>
+        <DropdownMenuItem onClick={handleAbrirCifraClub}>
           <CifraClubIcon size={16} className="mr-2" />
           Abrir no Cifra Club
         </DropdownMenuItem>
       )}
       {louvor.hasCifra && louvor.cifraFileName && (
-        <DropdownMenuItem onClick={handleBaixarCifra} disabled={baixandoCifra}>
-          {baixandoCifra ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4 mr-2" />
-          )}
-          Baixar cifra
-        </DropdownMenuItem>
+        <>
+          <DropdownMenuItem onClick={handleVisualizarCifra}>
+            <Eye className="h-4 w-4 mr-2" />
+            Visualizar cifra
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleBaixarCifra} disabled={baixandoCifra}>
+            {baixandoCifra ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Baixar cifra
+          </DropdownMenuItem>
+        </>
       )}
       {louvor.youtubeUrl && (
         <DropdownMenuItem asChild>
@@ -349,7 +377,7 @@ function CartaoLouvor({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={handleBaixarCifra}
+                      onClick={handleAbrirCifraClub}
                     >
                       <CifraClubIcon size={16} />
                     </Button>
@@ -366,14 +394,13 @@ function CartaoLouvor({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={handleBaixarCifra}
-                      disabled={baixandoCifra}
+                      onClick={handleVisualizarCifra}
                     >
-                      {baixandoCifra ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      <Eye className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Baixar cifra</p>
+                    <p>Visualizar cifra</p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -485,6 +512,7 @@ export default function PaginaLouvores() {
     grupo: GrupoLouvorApp;
     louvor: LouvorApp;
   } | null>(null);
+  const [cifraVisualizando, setCifraVisualizando] = useState<LouvorApp | null>(null);
   const ordemGrupoTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   // Form state
@@ -531,6 +559,11 @@ export default function PaginaLouvores() {
   useEffect(() => {
     carregarGrupos();
   }, [carregarGrupos]);
+
+  const abrirVisualizadorCifra = (louvor: LouvorApp) => {
+    if (!louvor.hasCifra || !louvor.cifraFileName) return;
+    setCifraVisualizando(louvor);
+  };
 
   const abrirDetalheLouvor = (louvor: LouvorApp, grupo?: GrupoLouvorApp) => {
     setLouvorDetalhe({ louvor, grupo });
@@ -785,11 +818,11 @@ export default function PaginaLouvores() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="artist">Artista/Ministério *</Label>
-                    <Input
+                    <CampoArtistaLouvor
                       id="artist"
-                      placeholder="Ex: Hillsong"
                       value={artista}
-                      onChange={(e) => setArtista(e.target.value)}
+                      onChange={setArtista}
+                      ativo={dialogAberto}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -1056,6 +1089,7 @@ export default function PaginaLouvores() {
                                     aoEditar={abrirEditar}
                                     aoExcluir={confirmarExcluir}
                                     aoVerDetalhes={(l) => abrirDetalheLouvor(l, grupo)}
+                                    aoVisualizarCifra={abrirVisualizadorCifra}
                                     noGrupo
                                     aoRemoverDoGrupo={() => solicitarRemoverDoGrupo(grupo, louvor)}
                                   />
@@ -1125,6 +1159,7 @@ export default function PaginaLouvores() {
                     aoEditar={abrirEditar}
                     aoExcluir={confirmarExcluir}
                     aoVerDetalhes={(l) => abrirDetalheLouvor(l)}
+                    aoVisualizarCifra={abrirVisualizadorCifra}
                   />
                 ))}
                 {louvoresFiltrados.length === 0 && (
@@ -1150,6 +1185,7 @@ export default function PaginaLouvores() {
             if (!open) setLouvorDetalhe(null);
           }}
           aoEditar={abrirEditar}
+          aoVisualizarCifra={abrirVisualizadorCifra}
           noGrupo={!!louvorDetalhe?.grupo}
           aoRemoverDoGrupo={
             louvorDetalhe?.grupo
@@ -1195,6 +1231,12 @@ export default function PaginaLouvores() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <VisualizadorCifraLouvor
+          louvor={cifraVisualizando}
+          aberto={!!cifraVisualizando}
+          onFechar={() => setCifraVisualizando(null)}
+        />
       </div>
     </LayoutApp>
   );

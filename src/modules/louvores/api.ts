@@ -74,6 +74,12 @@ export const listarLouvores = async (query?: string): Promise<LouvorApp[]> => {
   return (lista ?? []).map(mapearLouvor);
 };
 
+export const listarArtistasLouvor = async (query?: string): Promise<string[]> => {
+  const params = query ? `?q=${encodeURIComponent(query)}` : "";
+  const lista = await requisicaoApi<string[]>(`/api/louvores/artistas${params}`, { auth: true });
+  return lista ?? [];
+};
+
 export const obterLouvor = async (id: number): Promise<LouvorApp> => {
   const dto = await requisicaoApi<LouvorDTO>(`/api/louvores/${id}`, { auth: true });
   return mapearLouvor(dto);
@@ -161,8 +167,28 @@ export const urlCifraLouvor = (id: number): string => {
   return `${base}/api/louvores/${id}/cifra`;
 };
 
-/** Abre a cifra em nova aba (usa fetch com auth para visualizar PDF/Word) */
-export const abrirCifra = async (id: number) => {
+export type CifraLouvorArquivo = {
+  blob: Blob;
+  contentType: string;
+  fileName: string;
+};
+
+const extrairNomeArquivo = (contentDisposition: string | null, fallback: string): string => {
+  if (!contentDisposition) return fallback;
+  const utf8 = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8?.[1]) {
+    try {
+      return decodeURIComponent(utf8[1]);
+    } catch {
+      return utf8[1];
+    }
+  }
+  const simples = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return simples?.[1]?.trim() || fallback;
+};
+
+/** Busca o arquivo da cifra anexada (para visualização in-app). */
+export const obterCifraLouvor = async (id: number): Promise<CifraLouvorArquivo> => {
   const token = typeof window !== "undefined" ? localStorage.getItem("semear.token") : null;
   const url = urlCifraLouvor(id);
   const res = await fetch(url, {
@@ -170,9 +196,9 @@ export const abrirCifra = async (id: number) => {
   });
   if (!res.ok) throw new Error("Não foi possível carregar a cifra.");
   const blob = await res.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  window.open(blobUrl, "_blank", "noopener,noreferrer");
-  URL.revokeObjectURL(blobUrl);
+  const contentType = res.headers.get("content-type") ?? blob.type ?? "application/octet-stream";
+  const fileName = extrairNomeArquivo(res.headers.get("content-disposition"), `cifra_${id}.pdf`);
+  return { blob, contentType, fileName };
 };
 
 /** Baixa a cifra (usa fetch com auth) */

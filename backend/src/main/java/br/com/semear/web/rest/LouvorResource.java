@@ -1,6 +1,7 @@
 package br.com.semear.web.rest;
 
 import br.com.semear.domain.enumeration.NivelAcessoModulo;
+import br.com.semear.service.ArtistaLouvorService;
 import br.com.semear.service.LouvorService;
 import br.com.semear.service.ModuleAccessService;
 import br.com.semear.security.SecurityUtils;
@@ -42,10 +43,16 @@ public class LouvorResource {
 
     private final LouvorService louvorService;
     private final ModuleAccessService moduleAccessService;
+    private final ArtistaLouvorService artistaLouvorService;
 
-    public LouvorResource(LouvorService louvorService, ModuleAccessService moduleAccessService) {
+    public LouvorResource(
+        LouvorService louvorService,
+        ModuleAccessService moduleAccessService,
+        ArtistaLouvorService artistaLouvorService
+    ) {
         this.louvorService = louvorService;
         this.moduleAccessService = moduleAccessService;
+        this.artistaLouvorService = artistaLouvorService;
     }
 
     @PostMapping("")
@@ -136,6 +143,16 @@ public class LouvorResource {
             ? louvorService.search(q.trim())
             : louvorService.findAll();
         return ResponseEntity.ok().body(list);
+    }
+
+    @GetMapping("/artistas")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<List<String>> getArtistas(@RequestParam(required = false) String q) {
+        if (SecurityUtils.isAuthenticated()) {
+            moduleAccessService.assertModuleAccess("louvores", NivelAcessoModulo.READ);
+        }
+        log.debug("REST request to get artistas de louvor, q={}", q);
+        return ResponseEntity.ok(artistaLouvorService.listarNomes(q));
     }
 
     @GetMapping("/{id}")
