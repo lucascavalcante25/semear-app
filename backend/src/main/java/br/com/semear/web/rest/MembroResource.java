@@ -4,7 +4,9 @@ import br.com.semear.config.Constants;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.NivelAcessoModulo;
 import br.com.semear.repository.UserRepository;
+import br.com.semear.repository.projection.AniversarianteProjection;
 import br.com.semear.service.ModuleAccessService;
+import br.com.semear.service.TenantService;
 import br.com.semear.service.UserService;
 import br.com.semear.service.dto.AdminUserDTO;
 import br.com.semear.service.dto.DependenteCreateDTO;
@@ -53,11 +55,18 @@ public class MembroResource {
     private final UserRepository userRepository;
     private final UserService userService;
     private final ModuleAccessService moduleAccessService;
+    private final TenantService tenantService;
 
-    public MembroResource(UserRepository userRepository, UserService userService, ModuleAccessService moduleAccessService) {
+    public MembroResource(
+        UserRepository userRepository,
+        UserService userService,
+        ModuleAccessService moduleAccessService,
+        TenantService tenantService
+    ) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.moduleAccessService = moduleAccessService;
+        this.tenantService = tenantService;
     }
 
     private static boolean onlyContainsAllowedProperties(Pageable pageable) {
@@ -96,7 +105,7 @@ public class MembroResource {
         LocalDate hoje = LocalDate.now();
         LocalDate limite = hoje.plusDays(janela);
 
-        return userRepository.findAllComBirthDateParaAniversariantes().stream()
+        return userRepository.findAniversariantesPorIgreja(tenantService.getIgrejaIdAtual()).stream()
             .map(u -> new Object[] { u, proximoAniversario(hoje, u.getBirthDate()) })
             .filter(arr -> arr[1] != null)
             .filter(arr -> {
@@ -106,7 +115,7 @@ public class MembroResource {
             .sorted(Comparator.comparing(arr -> (LocalDate) arr[1]))
             .limit(20)
             .map(arr -> {
-                User u = (User) arr[0];
+                AniversarianteProjection u = (AniversarianteProjection) arr[0];
                 LocalDate prox = (LocalDate) arr[1];
                 String name = montarNome(u);
                 String avatarUrl = temAvatar(u) ? "/api/avatars/" + u.getId() : null;
@@ -123,9 +132,9 @@ public class MembroResource {
         moduleAccessService.assertModuleAccess("membros", NivelAcessoModulo.READ);
         LOG.debug("REST request to get birthday calendar");
 
-        return userRepository.findAllComBirthDateParaAniversariantes().stream()
+        return userRepository.findAniversariantesPorIgreja(tenantService.getIgrejaIdAtual()).stream()
             .sorted(
-                Comparator.comparing((User u) -> u.getBirthDate().getMonthValue())
+                Comparator.comparing((AniversarianteProjection u) -> u.getBirthDate().getMonthValue())
                     .thenComparing(u -> u.getBirthDate().getDayOfMonth())
                     .thenComparing(MembroResource::montarNome, String.CASE_INSENSITIVE_ORDER)
             )
@@ -137,12 +146,11 @@ public class MembroResource {
             .collect(Collectors.toList());
     }
 
-    private static boolean temAvatar(User u) {
-        return (u.getImageData() != null && u.getImageData().length > 0)
-            || (u.getImageUrl() != null && !u.getImageUrl().isBlank());
+    private static boolean temAvatar(AniversarianteProjection u) {
+        return u.getImageUrl() != null && !u.getImageUrl().isBlank();
     }
 
-    private static String montarNome(User u) {
+    private static String montarNome(AniversarianteProjection u) {
         String first = u.getFirstName();
         String last = u.getLastName();
         String full = (Objects.toString(first, "") + " " + Objects.toString(last, "")).trim();

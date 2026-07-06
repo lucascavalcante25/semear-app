@@ -34,6 +34,7 @@ import br.com.semear.repository.PreCadastroRepository;
 import br.com.semear.repository.SolicitacaoSuporteRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.UsuarioNotificacaoVistaRepository;
+import br.com.semear.repository.projection.AniversarianteProjection;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.security.SecurityUtils;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
@@ -45,7 +46,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -116,7 +116,7 @@ public class NotificacaoService {
     }
 
     private static final ZoneId ZONE_BR = ZoneId.of("America/Sao_Paulo");
-    private static final long CACHE_RESUMO_TTL_MS = 10_000;
+    private static final long CACHE_RESUMO_TTL_MS = 90_000;
 
     private final ConcurrentHashMap<String, CacheResumoNotificacao> cacheResumoPorLogin = new ConcurrentHashMap<>();
 
@@ -161,17 +161,13 @@ public class NotificacaoService {
             }
         }
 
-        List<User> aniversariantes = userRepository.findAllByIgrejaIdAndBirthDateIsNotNullAndActivatedIsTrue(igrejaId).stream()
-            .filter(u -> {
-                LocalDate bd = u.getBirthDate();
-                if (bd == null) return false;
-                LocalDate thisYear = LocalDate.of(hoje.getYear(), bd.getMonth(), bd.getDayOfMonth());
-                return thisYear.equals(hoje);
-            })
-            .limit(10)
-            .collect(Collectors.toList());
+        List<AniversarianteProjection> aniversariantes = userRepository.findAniversariantesDoDiaPorIgreja(
+            igrejaId,
+            hoje.getMonthValue(),
+            hoje.getDayOfMonth()
+        );
 
-        for (User u : aniversariantes) {
+        for (AniversarianteProjection u : aniversariantes) {
             if (!aniversariantesVistos.contains(u.getId())) {
                 String name = (Objects.toString(u.getFirstName(), "") + " " + Objects.toString(u.getLastName(), "")).trim();
                 if (name.isBlank()) name = u.getLogin();
@@ -200,7 +196,7 @@ public class NotificacaoService {
 
         if (usuarioEhLideranca(user)) {
             Set<Long> pedidosVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_PEDIDO_ORACAO);
-            List<PedidoOracao> pedidosLideranca = pedidoOracaoRepository.findByIgrejaIdAndDeletedAtIsNullOrderByCriadoEmDesc(igrejaId);
+            List<PedidoOracao> pedidosLideranca = pedidoOracaoRepository.findPendentesNotificacaoLideranca(igrejaId);
             for (PedidoOracao p : pedidosLideranca) {
                 if (pedidosVistos.contains(p.getId())) {
                     continue;
@@ -338,14 +334,16 @@ public class NotificacaoService {
         Set<Long> eventosVistos = vistaRepository.findReferenciaIdsByUserAndTipo(user, TIPO_EVENTO);
         Instant agora = Instant.now();
         Instant limite = agora.plusSeconds(7L * 24 * 3600);
-        for (Evento evento : eventoRepository.findByIgrejaIdOrderByDataInicioDesc(igrejaId)) {
+        for (Evento evento : eventoRepository.findPublicadosProximosParaNotificacao(
+            igrejaId,
+            StatusEvento.PUBLICADO,
+            agora,
+            limite
+        )) {
             if (eventosVistos.contains(evento.getId())) {
                 continue;
             }
-            if (evento.getStatus() != StatusEvento.PUBLICADO) {
-                continue;
-            }
-            if (evento.getDataInicio() == null || evento.getDataInicio().isBefore(agora) || evento.getDataInicio().isAfter(limite)) {
+            if (evento.getDataInicio() == null) {
                 continue;
             }
             boolean inscrito = eventoInscricaoRepository

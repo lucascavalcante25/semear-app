@@ -4,7 +4,7 @@ import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { filtrarTablaturas, destacarAcordesNaLinha } from "@/lib/cifra-linhas";
+import { textoCifraParaExibicao } from "@/lib/cifra-linhas";
 import {
   obterCifraOnlineLouvor,
   salvarCifraManualLouvor,
@@ -161,7 +161,7 @@ export function VisualizadorCifraOnlineLouvor({
 
   if (!aberto || !louvor) return null;
 
-  const linhasExibidas = filtrarTablaturas(linhas);
+  const textoExibicao = textoCifraParaExibicao(linhas);
   const tamanhoFonte = Math.round(15 * escala);
 
   return createPortal(
@@ -297,7 +297,7 @@ export function VisualizadorCifraOnlineLouvor({
           </div>
         )}
 
-        {!modoEdicao && !carregando && !erro && linhasExibidas.length > 0 && (
+        {!modoEdicao && !carregando && !erro && textoExibicao.length > 0 && (
           <article
             className={cn(
               "mx-auto max-w-2xl rounded-lg bg-[#fffef8] px-4 py-5 text-zinc-900 shadow-2xl shadow-black/40",
@@ -305,14 +305,10 @@ export function VisualizadorCifraOnlineLouvor({
             )}
           >
             <pre
-              className="whitespace-pre-wrap font-mono leading-relaxed break-words"
-              style={{ fontSize: `${tamanhoFonte}px` }}
+              className="overflow-x-auto whitespace-pre font-mono leading-relaxed text-zinc-900"
+              style={{ fontSize: `${tamanhoFonte}px`, tabSize: 4 }}
             >
-              {linhasExibidas.map((linha, idx) => (
-                <span key={idx} className="block">
-                  {linha.trim() === "" ? "\u00A0" : destacarAcordesNaLinha(linha)}
-                </span>
-              ))}
+              {textoExibicao}
             </pre>
             {url && fonte !== "manual" && (
               <p className="mt-6 text-center text-xs text-zinc-500">

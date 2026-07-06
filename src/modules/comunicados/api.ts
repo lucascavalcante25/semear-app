@@ -155,6 +155,11 @@ export const listarComunicados = async (ativos = true, limit = 200): Promise<Com
   return (lista ?? []).map(mapearComunicado);
 };
 
+export const obterComunicado = async (id: number): Promise<ComunicadoApp> => {
+  const dto = await requisicaoApi<ComunicadoDTO>(`/api/comunicados/${id}`, { auth: true });
+  return mapearComunicado(dto);
+};
+
 export const criarComunicado = async (body: ComunicadoDTO) => {
   const created = await requisicaoApi<ComunicadoDTO>("/api/comunicados", {
     method: "POST",

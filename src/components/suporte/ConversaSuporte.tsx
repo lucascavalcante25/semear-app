@@ -7,8 +7,8 @@ import { TEXTO_SUPORTE } from "@/lib/plataforma";
 import { usarPollingInteligente } from "@/hooks/use-polling-inteligente";
 import type { SolicitacaoSuporte, SolicitacaoSuporteMensagem, StatusSolicitacaoSuporte } from "@/modules/suporte/api";
 
-const INTERVALO_POLLING_VISIVEL_MS = 8_000;
-const INTERVALO_POLLING_OCULTO_MS = 30_000;
+const INTERVALO_POLLING_VISIVEL_MS = 20_000;
+const INTERVALO_POLLING_OCULTO_MS = 60_000;
 
 function formatarData(iso?: string) {
   if (!iso) return "";

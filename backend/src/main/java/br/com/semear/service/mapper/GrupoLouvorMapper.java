@@ -11,11 +11,19 @@ import org.springframework.stereotype.Service;
 public class GrupoLouvorMapper {
 
     public GrupoLouvorDTO toDto(GrupoLouvor grupo) {
+        return toDto(grupo, null);
+    }
+
+    public GrupoLouvorDTO toDto(GrupoLouvor grupo, List<Long> louvorIds) {
         if (grupo == null) return null;
         GrupoLouvorDTO dto = new GrupoLouvorDTO();
         dto.setId(grupo.getId());
         dto.setNome(grupo.getNome());
         dto.setOrdem(grupo.getOrdem() != null ? grupo.getOrdem() : 0);
+        if (louvorIds != null) {
+            dto.setLouvorIds(louvorIds);
+            return dto;
+        }
         List<Long> ids = new ArrayList<>();
         for (GrupoLouvorItem item : grupo.getItens()) {
             if (item.getLouvor() != null && item.getLouvor().getId() != null) {

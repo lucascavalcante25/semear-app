@@ -1,6 +1,7 @@
 package br.com.semear.repository;
 
 import br.com.semear.domain.User;
+import br.com.semear.repository.projection.AniversarianteProjection;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,37 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.birthDate IS NOT NULL AND (u.activated = true OR u.isDependente = true)")
     List<User> findAllComBirthDateParaAniversariantes();
+
+    @Query(
+        """
+        SELECT u.id AS id, u.firstName AS firstName, u.lastName AS lastName, u.login AS login,
+        u.birthDate AS birthDate, u.imageUrl AS imageUrl
+        FROM User u
+        WHERE u.igreja.id = :igrejaId
+        AND u.birthDate IS NOT NULL
+        AND (u.activated = true OR u.isDependente = true)
+        """
+    )
+    List<AniversarianteProjection> findAniversariantesPorIgreja(@Param("igrejaId") Long igrejaId);
+
+    @Query(
+        """
+        SELECT u.id AS id, u.firstName AS firstName, u.lastName AS lastName, u.login AS login,
+        u.birthDate AS birthDate, u.imageUrl AS imageUrl
+        FROM User u
+        WHERE u.igreja.id = :igrejaId
+        AND u.activated = true
+        AND u.birthDate IS NOT NULL
+        AND EXTRACT(MONTH FROM u.birthDate) = :mes
+        AND EXTRACT(DAY FROM u.birthDate) = :dia
+        ORDER BY u.firstName ASC, u.lastName ASC
+        """
+    )
+    List<AniversarianteProjection> findAniversariantesDoDiaPorIgreja(
+        @Param("igrejaId") Long igrejaId,
+        @Param("mes") int mes,
+        @Param("dia") int dia
+    );
 
     @EntityGraph(attributePaths = { "authorities", "igreja" })
     @Cacheable(cacheNames = USERS_BY_LOGIN_CACHE, unless = "#result == null")

@@ -16,6 +16,23 @@ import org.springframework.stereotype.Repository;
 public interface EventoRepository extends JpaRepository<Evento, Long> {
     List<Evento> findByIgrejaIdOrderByDataInicioDesc(Long igrejaId);
 
+    @Query(
+        """
+        SELECT e FROM Evento e
+        WHERE e.igreja.id = :igrejaId
+        AND e.status = :status
+        AND e.dataInicio >= :agora
+        AND e.dataInicio <= :limite
+        ORDER BY e.dataInicio ASC
+        """
+    )
+    List<Evento> findPublicadosProximosParaNotificacao(
+        @Param("igrejaId") Long igrejaId,
+        @Param("status") StatusEvento status,
+        @Param("agora") Instant agora,
+        @Param("limite") Instant limite
+    );
+
     Optional<Evento> findByIdAndIgrejaId(Long id, Long igrejaId);
 
     List<Evento> findByIgrejaIdAndPublicoAndDataInicioAfterOrderByDataInicioAsc(Long igrejaId, PublicoEvento publico, Instant after);

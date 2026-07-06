@@ -63,6 +63,7 @@ import {
   criarComunicado,
   excluirComunicado,
   listarComunicados,
+  obterComunicado,
   atualizarComunicado,
   dtoFromApp,
   LABEL_PUBLICO,
@@ -235,7 +236,7 @@ export default function Comunicados() {
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
-      const dados = await listarComunicados(true, 500);
+      const dados = await listarComunicados(true, 100);
       setLista(dados);
     } catch (err) {
       setLista([]);
@@ -272,25 +273,30 @@ export default function Comunicados() {
     setDialogAberto(true);
   };
 
-  const editar = (item: ComunicadoApp) => {
-    setEmEdicao(item);
-    setForm({
-      title: item.title,
-      content: item.content,
-      type: item.type,
-      publicoAlvo: item.publicoAlvo,
-      prioridade: item.prioridade,
-      exibirNoLogin: item.exibirNoLogin,
-      obrigatorio: item.obrigatorio,
-      exibirNoSitePublico: item.exibirNoSitePublico,
-      startDate: item.startDate,
-      endDate: item.endDate,
-      isActive: item.isActive,
-      ctaRotulo: item.ctaRotulo,
-      ctaRota: item.ctaRota,
-      configNotificacao: item.configNotificacao ?? configNotificacaoPadrao(),
-    });
-    setDialogAberto(true);
+  const editar = async (item: ComunicadoApp) => {
+    try {
+      const completo = item.idNum != null ? await obterComunicado(item.idNum) : item;
+      setEmEdicao(completo);
+      setForm({
+        title: completo.title,
+        content: completo.content,
+        type: completo.type,
+        publicoAlvo: completo.publicoAlvo,
+        prioridade: completo.prioridade,
+        exibirNoLogin: completo.exibirNoLogin,
+        obrigatorio: completo.obrigatorio,
+        exibirNoSitePublico: completo.exibirNoSitePublico,
+        startDate: completo.startDate,
+        endDate: completo.endDate,
+        isActive: completo.isActive,
+        ctaRotulo: completo.ctaRotulo,
+        ctaRota: completo.ctaRota,
+        configNotificacao: completo.configNotificacao ?? configNotificacaoPadrao(),
+      });
+      setDialogAberto(true);
+    } catch {
+      toast.error("Não foi possível carregar o comunicado para edição.");
+    }
   };
 
   const salvar = async () => {

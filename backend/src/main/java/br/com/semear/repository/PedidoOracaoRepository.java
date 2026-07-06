@@ -61,4 +61,16 @@ public interface PedidoOracaoRepository extends JpaRepository<PedidoOracao, Long
     );
 
     long countByIgrejaIdAndDeletedAtIsNullAndStatusIn(Long igrejaId, List<StatusPedidoOracao> statuses);
+
+    @Query(
+        """
+        SELECT p FROM PedidoOracao p
+        WHERE p.igreja.id = :igrejaId
+        AND p.deletedAt IS NULL
+        AND (p.visibilidade = br.com.semear.domain.enumeration.VisibilidadePedidoOracao.PRIVADA
+             OR p.status = br.com.semear.domain.enumeration.StatusPedidoOracao.AGUARDANDO_APROVACAO)
+        ORDER BY p.criadoEm DESC
+        """
+    )
+    List<PedidoOracao> findPendentesNotificacaoLideranca(@Param("igrejaId") Long igrejaId);
 }

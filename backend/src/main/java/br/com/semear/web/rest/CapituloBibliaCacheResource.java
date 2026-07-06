@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
@@ -159,6 +160,7 @@ public class CapituloBibliaCacheResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of capituloBibliaCaches in body.
      */
     @GetMapping("")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     public List<CapituloBibliaCache> getAllCapituloBibliaCaches() {
         LOG.debug("REST request to get all CapituloBibliaCaches");
         return capituloBibliaCacheRepository.findAll();

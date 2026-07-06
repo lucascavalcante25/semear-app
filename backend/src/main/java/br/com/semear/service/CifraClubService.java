@@ -284,16 +284,29 @@ public class CifraClubService {
     }
 
     private List<String> htmlParaLinhas(String html) {
-        String comQuebras = html.replaceAll("(?i)<br\\s*/?>", "\n").replaceAll("(?i)</p>", "\n");
-        String texto = Jsoup.clean(comQuebras, "", Safelist.none(), new org.jsoup.nodes.Document.OutputSettings().prettyPrint(false));
+        if (html == null || html.isBlank()) {
+            return List.of();
+        }
+        String comQuebras = html
+            .replace("&nbsp;", " ")
+            .replaceAll("(?i)<br\\s*/?>", "\n")
+            .replaceAll("(?i)</p>", "\n")
+            .replaceAll("(?i)</div>", "\n")
+            .replaceAll("(?i)<div[^>]*>", "");
+        String texto = Jsoup.clean(
+            comQuebras,
+            "",
+            Safelist.none(),
+            new org.jsoup.nodes.Document.OutputSettings().prettyPrint(false)
+        );
         texto = texto.replace("\r\n", "\n").replace('\r', '\n');
         String[] partes = texto.split("\n", -1);
         List<String> linhas = new ArrayList<>(partes.length);
         for (String parte : partes) {
-            String linha = parte.stripTrailing();
-            if (!linha.isBlank()) {
-                linhas.add(linha);
-            }
+            linhas.add(parte.stripTrailing());
+        }
+        while (!linhas.isEmpty() && linhas.get(linhas.size() - 1).isBlank()) {
+            linhas.remove(linhas.size() - 1);
         }
         return linhas;
     }

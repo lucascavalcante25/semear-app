@@ -2,6 +2,7 @@ package br.com.semear.service.impl;
 
 import br.com.semear.domain.Louvor;
 import br.com.semear.repository.LouvorRepository;
+import br.com.semear.repository.projection.LouvorListagemProjection;
 import br.com.semear.service.ArtistaLouvorService;
 import br.com.semear.service.LouvorService;
 import br.com.semear.service.TenantService;
@@ -47,6 +48,27 @@ public class LouvorServiceImpl implements LouvorService {
         this.louvorRepository = louvorRepository;
         this.tenantService = tenantService;
         this.artistaLouvorService = artistaLouvorService;
+    }
+
+    private static LouvorDTO fromListagem(LouvorListagemProjection p) {
+        if (p == null) return null;
+        LouvorDTO dto = new LouvorDTO();
+        dto.setId(p.getId());
+        dto.setTitulo(p.getTitulo());
+        dto.setArtista(p.getArtista());
+        dto.setTonalidade(p.getTonalidade());
+        dto.setTempo(p.getTempo());
+        dto.setTipo(p.getTipo());
+        dto.setYoutubeUrl(p.getYoutubeUrl());
+        dto.setCifraUrl(p.getCifraUrl());
+        dto.setCifraFileName(p.getCifraFileName());
+        dto.setCifraContentType(p.getCifraContentType());
+        dto.setAtivo(p.getAtivo());
+        dto.setTemLetraSalva(p.getTemLetraSalva());
+        dto.setTemCifraApiSalva(p.getTemCifraApiSalva());
+        dto.setCreatedAt(p.getCreatedAt());
+        dto.setUpdatedAt(p.getUpdatedAt());
+        return dto;
     }
 
     private static LouvorDTO toDto(Louvor louvor) {
@@ -212,8 +234,10 @@ public class LouvorServiceImpl implements LouvorService {
     @Override
     @Transactional(readOnly = true)
     public List<LouvorDTO> findAll() {
-        return louvorRepository.findAllByIgrejaIdOrderByTituloAsc(tenantService.getIgrejaIdAtual()).stream()
-            .map(LouvorServiceImpl::toDto)
+        return louvorRepository
+            .findResumoByIgrejaIdOrderByTituloAsc(tenantService.getIgrejaIdAtual())
+            .stream()
+            .map(LouvorServiceImpl::fromListagem)
             .toList();
     }
 
@@ -223,8 +247,10 @@ public class LouvorServiceImpl implements LouvorService {
         if (query == null || query.isBlank()) {
             return findAll();
         }
-        return louvorRepository.searchByIgrejaAndTituloOrArtista(tenantService.getIgrejaIdAtual(), query.trim()).stream()
-            .map(LouvorServiceImpl::toDto)
+        return louvorRepository
+            .searchResumoByIgrejaAndTituloOrArtista(tenantService.getIgrejaIdAtual(), query.trim())
+            .stream()
+            .map(LouvorServiceImpl::fromListagem)
             .toList();
     }
 

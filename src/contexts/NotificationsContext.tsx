@@ -21,10 +21,10 @@ import { usarPollingInteligente } from "@/hooks/use-polling-inteligente";
 import { useLiderAbas } from "@/hooks/use-lider-abas";
 import { iniciarListenerPushSeAtivo } from "@/modules/notificacoes/push";
 
-const INTERVALO_POLLING_VISIVEL_MS = 30_000;
-const INTERVALO_POLLING_OCULTO_MS = 90_000;
-const INTERVALO_POLLING_PUSH_VISIVEL_MS = 60_000;
-const INTERVALO_POLLING_PUSH_OCULTO_MS = 120_000;
+const INTERVALO_POLLING_VISIVEL_MS = 45_000;
+const INTERVALO_POLLING_OCULTO_MS = 120_000;
+const INTERVALO_POLLING_PUSH_VISIVEL_MS = 90_000;
+const INTERVALO_POLLING_PUSH_OCULTO_MS = 180_000;
 const CHAVE_LIDER_ABAS = "semear.notificacoes";
 
 type NotificationsContextValue = {

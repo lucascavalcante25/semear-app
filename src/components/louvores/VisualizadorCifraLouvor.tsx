@@ -8,12 +8,11 @@ import {
   Plus,
   RotateCcw,
   X,
-  Download,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { baixarCifra, obterCifraLouvor, type LouvorApp } from "@/modules/louvores/api";
+import { obterCifraLouvor, type LouvorApp } from "@/modules/louvores/api";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
@@ -151,16 +150,6 @@ export function VisualizadorCifraLouvor({ louvor, aberto, onFechar }: Props) {
     [numPaginas],
   );
 
-  const handleBaixar = async () => {
-    if (!louvor?.idNum) return;
-    const ext = fileName.match(/\.(pdf|docx?)$/i)?.[1] ?? "pdf";
-    try {
-      await baixarCifra(louvor.idNum, `${louvor.title.replace(/\s+/g, "_")}_cifra.${ext}`);
-    } catch {
-      setErro("Não foi possível baixar a cifra.");
-    }
-  };
-
   if (!aberto || !louvor) return null;
 
   return createPortal(
@@ -226,17 +215,6 @@ export function VisualizadorCifraLouvor({ louvor, aberto, onFechar }: Props) {
             )}
           </div>
         )}
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0 text-zinc-300 hover:bg-zinc-800 hover:text-white"
-          onClick={handleBaixar}
-          aria-label="Baixar cifra"
-        >
-          <Download className="h-4 w-4" />
-        </Button>
       </header>
 
       <div
@@ -269,12 +247,11 @@ export function VisualizadorCifraLouvor({ louvor, aberto, onFechar }: Props) {
           <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-4 px-6 text-center">
             <AlertCircle className="h-10 w-10 text-amber-400" />
             <p className="max-w-sm text-sm text-zinc-300">
-              Este formato de arquivo não pode ser visualizado no app. Baixe o arquivo para abrir no
-              seu dispositivo.
+              Este formato de arquivo não pode ser visualizado no app. Use a opção &quot;Cifra online&quot; no
+              cadastro do louvor.
             </p>
-            <Button onClick={handleBaixar}>
-              <Download className="mr-2 h-4 w-4" />
-              Baixar cifra
+            <Button variant="ghost" onClick={onFechar}>
+              Fechar
             </Button>
           </div>
         )}

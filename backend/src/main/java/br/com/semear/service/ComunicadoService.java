@@ -64,7 +64,7 @@ public class ComunicadoService {
         Page<Comunicado> page = ativos
             ? comunicadoRepository.findAllByIgrejaIdAndAtivoIsTrue(pageable, igrejaId)
             : comunicadoRepository.findAllByIgrejaId(pageable, igrejaId);
-        return page.map(c -> comunicadoMapper.toDto(c, null));
+        return page.map(c -> comunicadoMapper.toListagemDto(c, null));
     }
 
     @Transactional(readOnly = true)

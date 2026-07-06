@@ -47,6 +47,15 @@ public class ComunicadoMapper {
         return dto;
     }
 
+    /** Listagem paginada — omite config de notificação (JSON pesado) para reduzir payload. */
+    public ComunicadoDTO toListagemDto(Comunicado comunicado, Boolean lido) {
+        ComunicadoDTO dto = toDto(comunicado, lido);
+        if (dto != null) {
+            dto.setConfigNotificacao(null);
+        }
+        return dto;
+    }
+
     public ComunicadoLeituraDTO toLeituraDto(ComunicadoLeitura leitura) {
         if (leitura == null) {
             return null;

@@ -42,7 +42,6 @@ import {
   GripVertical,
   List,
   Loader2,
-  Download,
   X,
   Eye,
   Mic2,
@@ -82,7 +81,6 @@ import {
   criarLouvor,
   atualizarLouvor,
   excluirLouvor,
-  baixarCifra,
   atualizarTomLouvor,
   type LouvorApp,
 } from "@/modules/louvores/api";
@@ -374,7 +372,6 @@ function CartaoLouvor({
   dragHandleProps,
 }: CartaoLouvorProps) {
   const config = typeConfig[louvor.type];
-  const [baixandoCifra, setBaixandoCifra] = useState(false);
 
   const handleAbrirCifraClub = () => {
     if (louvor.cifraUrl) {
@@ -385,20 +382,6 @@ function CartaoLouvor({
   const handleVisualizarCifra = () => {
     if (!louvor.hasCifra || !louvor.cifraFileName) return;
     aoVisualizarCifra?.(louvor);
-  };
-
-  const handleBaixarCifra = async () => {
-    if (!louvor.idNum || !louvor.hasCifra) return;
-    setBaixandoCifra(true);
-    try {
-      const ext = louvor.cifraFileName?.match(/\.(pdf|docx?)$/i)?.[1] ?? "pdf";
-      await baixarCifra(louvor.idNum, `${louvor.title.replace(/\s+/g, "_")}_cifra.${ext}`);
-      toast.success("Cifra baixada.");
-    } catch {
-      toast.error("Não foi possível baixar a cifra.");
-    } finally {
-      setBaixandoCifra(false);
-    }
   };
 
   const linksExtras = (
@@ -420,20 +403,10 @@ function CartaoLouvor({
         </DropdownMenuItem>
       )}
       {louvor.hasCifra && louvor.cifraFileName && (
-        <>
-          <DropdownMenuItem onClick={handleVisualizarCifra}>
-            <Eye className="h-4 w-4 mr-2" />
-            Visualizar cifra
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleBaixarCifra} disabled={baixandoCifra}>
-            {baixandoCifra ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            Baixar cifra
-          </DropdownMenuItem>
-        </>
+        <DropdownMenuItem onClick={handleVisualizarCifra}>
+          <Eye className="h-4 w-4 mr-2" />
+          Visualizar cifra (arquivo)
+        </DropdownMenuItem>
       )}
       {louvor.youtubeUrl && (
         <DropdownMenuItem asChild>

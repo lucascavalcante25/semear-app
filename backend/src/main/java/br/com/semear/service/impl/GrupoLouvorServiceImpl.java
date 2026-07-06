@@ -80,14 +80,16 @@ public class GrupoLouvorServiceImpl implements GrupoLouvorService {
     @Transactional(readOnly = true)
     public List<GrupoLouvorDTO> findAll() {
         return grupoRepository.findAllByIgrejaIdWithItensOrderByOrdemAsc(tenantService.getIgrejaIdAtual()).stream()
-            .map(mapper::toDto)
+            .map(g -> mapper.toDto(g, itemRepository.findLouvorIdsByGrupoIdOrderByOrdem(g.getId())))
             .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<GrupoLouvorDTO> findOne(Long id) {
-        return grupoRepository.findByIdAndIgrejaIdWithItens(id, tenantService.getIgrejaIdAtual()).map(mapper::toDto);
+        return grupoRepository
+            .findByIdAndIgrejaIdWithItens(id, tenantService.getIgrejaIdAtual())
+            .map(g -> mapper.toDto(g, itemRepository.findLouvorIdsByGrupoIdOrderByOrdem(g.getId())));
     }
 
     @Override
