@@ -21,12 +21,6 @@ public interface LouvorListagemProjection {
 
     String getYoutubeUrl();
 
-    String getCifraUrl();
-
-    String getCifraFileName();
-
-    String getCifraContentType();
-
     Boolean getAtivo();
 
     Boolean getTemLetraSalva();

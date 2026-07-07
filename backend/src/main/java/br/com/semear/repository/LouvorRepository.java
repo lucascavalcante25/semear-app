@@ -18,8 +18,7 @@ public interface LouvorRepository extends JpaRepository<Louvor, Long> {
     @Query(
         """
         SELECT l.id AS id, l.titulo AS titulo, l.artista AS artista, l.tonalidade AS tonalidade, l.tempo AS tempo,
-        l.tipo AS tipo, l.youtubeUrl AS youtubeUrl, l.cifraUrl AS cifraUrl, l.cifraFileName AS cifraFileName,
-        l.cifraContentType AS cifraContentType, l.ativo AS ativo,
+        l.tipo AS tipo, l.youtubeUrl AS youtubeUrl, l.ativo AS ativo,
         CASE WHEN l.letraConteudo IS NOT NULL AND TRIM(l.letraConteudo) <> '' THEN true ELSE false END AS temLetraSalva,
         CASE WHEN l.cifraApiCacheEm IS NOT NULL THEN true ELSE false END AS temCifraApiSalva,
         l.createdAt AS createdAt, l.updatedAt AS updatedAt
@@ -31,8 +30,7 @@ public interface LouvorRepository extends JpaRepository<Louvor, Long> {
     @Query(
         """
         SELECT l.id AS id, l.titulo AS titulo, l.artista AS artista, l.tonalidade AS tonalidade, l.tempo AS tempo,
-        l.tipo AS tipo, l.youtubeUrl AS youtubeUrl, l.cifraUrl AS cifraUrl, l.cifraFileName AS cifraFileName,
-        l.cifraContentType AS cifraContentType, l.ativo AS ativo,
+        l.tipo AS tipo, l.youtubeUrl AS youtubeUrl, l.ativo AS ativo,
         CASE WHEN l.letraConteudo IS NOT NULL AND TRIM(l.letraConteudo) <> '' THEN true ELSE false END AS temLetraSalva,
         CASE WHEN l.cifraApiCacheEm IS NOT NULL THEN true ELSE false END AS temCifraApiSalva,
         l.createdAt AS createdAt, l.updatedAt AS updatedAt

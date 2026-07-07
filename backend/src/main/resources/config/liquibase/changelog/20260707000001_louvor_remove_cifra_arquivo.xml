@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Recursos "Abrir no Cifra Club" (cifra_url) e cifra em arquivo PDF/Word
+        (cifra_file_name / cifra_content_type) foram descontinuados em favor da
+        API de cifras e letras. Limpa os dados residuais dessas colunas.
+    -->
+    <changeSet id="20260707000001-1" author="semear">
+        <sql>UPDATE louvor SET cifra_url = NULL, cifra_file_name = NULL, cifra_content_type = NULL</sql>
+    </changeSet>
+
+</databaseChangeLog>

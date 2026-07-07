@@ -1,4 +1,4 @@
-import { requisicaoApi, URL_BASE_API } from "@/modules/api/client";
+import { requisicaoApi } from "@/modules/api/client";
 
 export type TipoLouvorApi = "JUBILO" | "ADORACAO" | "CEIA";
 
@@ -10,10 +10,6 @@ export type LouvorDTO = {
   tempo?: string | null;
   tipo: TipoLouvorApi;
   youtubeUrl?: string | null;
-  cifraUrl?: string | null;
-  cifraConteudo?: string | null;
-  cifraFileName?: string | null;
-  cifraContentType?: string | null;
   observacoes?: string | null;
   ativo: boolean;
   temLetraSalva?: boolean | null;
@@ -31,9 +27,6 @@ export type LouvorApp = {
   tempo?: string;
   type: "jubilo" | "adoracao" | "ceia";
   youtubeUrl?: string;
-  cifraUrl?: string;
-  cifraFileName?: string;
-  hasCifra: boolean;
   temLetraSalva: boolean;
   temCifraApiSalva: boolean;
   isActive: boolean;
@@ -63,9 +56,6 @@ export const mapearLouvor = (dto: LouvorDTO): LouvorApp => ({
   tempo: dto.tempo ?? undefined,
   type: mapTipo(dto.tipo),
   youtubeUrl: dto.youtubeUrl ?? undefined,
-  cifraUrl: dto.cifraUrl ?? undefined,
-  cifraFileName: dto.cifraFileName ?? undefined,
-  hasCifra: Boolean(dto.cifraFileName || dto.cifraUrl),
   temLetraSalva: Boolean(dto.temLetraSalva),
   temCifraApiSalva: Boolean(dto.temCifraApiSalva),
   isActive: dto.ativo ?? true,
@@ -92,8 +82,7 @@ export const obterLouvor = async (id: number): Promise<LouvorApp> => {
 };
 
 export const criarLouvor = async (
-  louvor: Omit<LouvorApp, "id" | "idNum" | "hasCifra" | "createdAt" | "updatedAt">,
-  cifraFile?: File | null
+  louvor: Omit<LouvorApp, "id" | "idNum" | "createdAt" | "updatedAt">
 ): Promise<LouvorApp> => {
   const body: Partial<LouvorDTO> = {
     titulo: louvor.title.trim(),
@@ -102,22 +91,9 @@ export const criarLouvor = async (
     tempo: louvor.tempo || null,
     tipo: mapTipoToApi(louvor.type),
     youtubeUrl: louvor.youtubeUrl?.trim() || null,
-    cifraUrl: louvor.cifraUrl?.trim() || null,
     observacoes: louvor.notes?.trim() || null,
     ativo: louvor.isActive ?? true,
   };
-
-  if (cifraFile) {
-    const form = new FormData();
-    form.append("louvor", new Blob([JSON.stringify(body)], { type: "application/json" }));
-    form.append("cifra", cifraFile);
-    const created = await requisicaoApi<LouvorDTO>("/api/louvores/com-cifra", {
-      method: "POST",
-      body: form,
-      auth: true,
-    });
-    return mapearLouvor(created);
-  }
 
   const created = await requisicaoApi<LouvorDTO>("/api/louvores", {
     method: "POST",
@@ -129,7 +105,7 @@ export const criarLouvor = async (
 
 export const atualizarLouvor = async (
   id: number,
-  louvor: Omit<LouvorApp, "id" | "idNum" | "hasCifra" | "createdAt" | "updatedAt">
+  louvor: Omit<LouvorApp, "id" | "idNum" | "createdAt" | "updatedAt">
 ): Promise<LouvorApp> => {
   const body: LouvorDTO = {
     id,
@@ -139,7 +115,6 @@ export const atualizarLouvor = async (
     tempo: louvor.tempo || null,
     tipo: mapTipoToApi(louvor.type),
     youtubeUrl: louvor.youtubeUrl?.trim() || null,
-    cifraUrl: louvor.cifraUrl?.trim() || null,
     observacoes: louvor.notes?.trim() || null,
     ativo: louvor.isActive ?? true,
   };
@@ -151,76 +126,8 @@ export const atualizarLouvor = async (
   return mapearLouvor(updated);
 };
 
-export const atualizarCifraLouvor = async (id: number, cifraFile: File): Promise<LouvorApp> => {
-  const form = new FormData();
-  form.append("cifra", cifraFile);
-  const updated = await requisicaoApi<LouvorDTO>(`/api/louvores/${id}/cifra`, {
-    method: "PUT",
-    body: form,
-    auth: true,
-  });
-  return mapearLouvor(updated);
-};
-
 export const excluirLouvor = async (id: number) => {
   await requisicaoApi(`/api/louvores/${id}`, { method: "DELETE", auth: true });
-};
-
-/** URL para download/visualização da cifra (requer auth via header) */
-export const urlCifraLouvor = (id: number): string => {
-  if (!URL_BASE_API) return "#";
-  const base = URL_BASE_API.replace(/\/$/, "");
-  return `${base}/api/louvores/${id}/cifra`;
-};
-
-export type CifraLouvorArquivo = {
-  blob: Blob;
-  contentType: string;
-  fileName: string;
-};
-
-const extrairNomeArquivo = (contentDisposition: string | null, fallback: string): string => {
-  if (!contentDisposition) return fallback;
-  const utf8 = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-  if (utf8?.[1]) {
-    try {
-      return decodeURIComponent(utf8[1]);
-    } catch {
-      return utf8[1];
-    }
-  }
-  const simples = contentDisposition.match(/filename="?([^";]+)"?/i);
-  return simples?.[1]?.trim() || fallback;
-};
-
-/** Busca o arquivo da cifra anexada (para visualização in-app). */
-export const obterCifraLouvor = async (id: number): Promise<CifraLouvorArquivo> => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("semear.token") : null;
-  const url = urlCifraLouvor(id);
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error("Não foi possível carregar a cifra.");
-  const blob = await res.blob();
-  const contentType = res.headers.get("content-type") ?? blob.type ?? "application/octet-stream";
-  const fileName = extrairNomeArquivo(res.headers.get("content-disposition"), `cifra_${id}.pdf`);
-  return { blob, contentType, fileName };
-};
-
-/** Baixa a cifra (usa fetch com auth) */
-export const baixarCifra = async (id: number, filename = "cifra.pdf") => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("semear.token") : null;
-  const url = urlCifraLouvor(id);
-  const res = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) throw new Error("Não foi possível baixar a cifra.");
-  const blob = await res.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
 };
 
 export type LouvorLetraResposta = {

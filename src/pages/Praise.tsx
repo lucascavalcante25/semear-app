@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -43,13 +44,11 @@ import {
   List,
   Loader2,
   X,
-  Eye,
   Mic2,
   FileText,
+  Check,
 } from "lucide-react";
-import { CifraClubIcon } from "@/components/icons/CifraClubIcon";
 import { CampoArtistaLouvor } from "@/components/louvores/CampoArtistaLouvor";
-import { VisualizadorCifraLouvor } from "@/components/louvores/VisualizadorCifraLouvor";
 import { VisualizadorLetraLouvor } from "@/components/louvores/VisualizadorLetraLouvor";
 import { VisualizadorCifraOnlineLouvor } from "@/components/louvores/VisualizadorCifraOnlineLouvor";
 import {
@@ -136,7 +135,6 @@ interface CartaoLouvorProps {
   aoEditar: (louvor: LouvorApp) => void;
   aoExcluir: (louvor: LouvorApp) => void;
   aoVerDetalhes?: (louvor: LouvorApp) => void;
-  aoVisualizarCifra?: (louvor: LouvorApp) => void;
   aoVisualizarLetra?: (louvor: LouvorApp) => void;
   aoVisualizarCifraOnline?: (louvor: LouvorApp) => void;
   showDrag?: boolean;
@@ -150,7 +148,6 @@ function DialogDetalheLouvor({
   aberto,
   onAbertoChange,
   aoEditar,
-  aoVisualizarCifra,
   aoVisualizarLetra,
   aoVisualizarCifraOnline,
   aoLetraManual,
@@ -163,7 +160,6 @@ function DialogDetalheLouvor({
   aberto: boolean;
   onAbertoChange: (aberto: boolean) => void;
   aoEditar: (louvor: LouvorApp) => void;
-  aoVisualizarCifra?: (louvor: LouvorApp) => void;
   aoVisualizarLetra?: (louvor: LouvorApp) => void;
   aoVisualizarCifraOnline?: (louvor: LouvorApp) => void;
   aoLetraManual?: (louvor: LouvorApp) => void;
@@ -279,28 +275,6 @@ function DialogDetalheLouvor({
                 </a>
               </Button>
             )}
-            {louvor.cifraUrl && (
-              <Button variant="outline" size="sm" className="justify-start" asChild>
-                <a href={louvor.cifraUrl} target="_blank" rel="noopener noreferrer">
-                  <CifraClubIcon size={16} className="mr-2" />
-                  Abrir no Cifra Club
-                </a>
-              </Button>
-            )}
-            {louvor.hasCifra && louvor.cifraFileName && (
-              <Button
-                variant="default"
-                size="sm"
-                className="justify-start"
-                onClick={() => {
-                  onAbertoChange(false);
-                  aoVisualizarCifra?.(louvor);
-                }}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Visualizar cifra
-              </Button>
-            )}
           </div>
           <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap">
             <Button
@@ -363,7 +337,6 @@ function CartaoLouvor({
   aoEditar,
   aoExcluir,
   aoVerDetalhes,
-  aoVisualizarCifra,
   aoVisualizarLetra,
   aoVisualizarCifraOnline,
   showDrag,
@@ -372,17 +345,6 @@ function CartaoLouvor({
   dragHandleProps,
 }: CartaoLouvorProps) {
   const config = typeConfig[louvor.type];
-
-  const handleAbrirCifraClub = () => {
-    if (louvor.cifraUrl) {
-      window.open(louvor.cifraUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleVisualizarCifra = () => {
-    if (!louvor.hasCifra || !louvor.cifraFileName) return;
-    aoVisualizarCifra?.(louvor);
-  };
 
   const linksExtras = (
     <>
@@ -396,18 +358,6 @@ function CartaoLouvor({
         Cifra online
         {louvor.temCifraApiSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
       </DropdownMenuItem>
-      {louvor.cifraUrl && (
-        <DropdownMenuItem onClick={handleAbrirCifraClub}>
-          <CifraClubIcon size={16} className="mr-2" />
-          Abrir no Cifra Club
-        </DropdownMenuItem>
-      )}
-      {louvor.hasCifra && louvor.cifraFileName && (
-        <DropdownMenuItem onClick={handleVisualizarCifra}>
-          <Eye className="h-4 w-4 mr-2" />
-          Visualizar cifra (arquivo)
-        </DropdownMenuItem>
-      )}
       {louvor.youtubeUrl && (
         <DropdownMenuItem asChild>
           <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
@@ -493,40 +443,6 @@ function CartaoLouvor({
                   <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
                 </TooltipContent>
               </Tooltip>
-              {louvor.cifraUrl && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleAbrirCifraClub}
-                    >
-                      <CifraClubIcon size={16} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Abrir no Cifra Club</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              {louvor.hasCifra && louvor.cifraFileName && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleVisualizarCifra}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Visualizar cifra</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
               {louvor.youtubeUrl && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -627,6 +543,8 @@ export default function PaginaLouvores() {
   const [nomeNovoGrupo, setNomeNovoGrupo] = useState("");
   const [excluindoGrupo, setExcluindoGrupo] = useState<GrupoLouvorApp | null>(null);
   const [grupoModalAdicionar, setGrupoModalAdicionar] = useState<GrupoLouvorApp | null>(null);
+  const [louvoresSelecionadosGrupo, setLouvoresSelecionadosGrupo] = useState<Set<string>>(new Set());
+  const [adicionandoLouvoresGrupo, setAdicionandoLouvoresGrupo] = useState(false);
   const [louvorDetalhe, setLouvorDetalhe] = useState<{
     louvor: LouvorApp;
     grupo?: GrupoLouvorApp;
@@ -635,7 +553,6 @@ export default function PaginaLouvores() {
     grupo: GrupoLouvorApp;
     louvor: LouvorApp;
   } | null>(null);
-  const [cifraVisualizando, setCifraVisualizando] = useState<LouvorApp | null>(null);
   const [letraVisualizando, setLetraVisualizando] = useState<LouvorApp | null>(null);
   const [letraModoEdicao, setLetraModoEdicao] = useState(false);
   const [cifraOnlineVisualizando, setCifraOnlineVisualizando] = useState<LouvorApp | null>(null);
@@ -683,11 +600,6 @@ export default function PaginaLouvores() {
   useEffect(() => {
     carregarGrupos();
   }, [carregarGrupos]);
-
-  const abrirVisualizadorCifra = (louvor: LouvorApp) => {
-    if (!louvor.hasCifra || !louvor.cifraFileName) return;
-    setCifraVisualizando(louvor);
-  };
 
   const abrirVisualizadorLetra = (louvor: LouvorApp) => {
     setLetraModoEdicao(false);
@@ -809,7 +721,6 @@ export default function PaginaLouvores() {
           tempo: editando.tempo,
           type: tipo,
           youtubeUrl: youtubeUrl.trim() || undefined,
-          cifraUrl: editando.cifraUrl,
           isActive: true,
         });
         toast.success("Louvor atualizado.");
@@ -879,14 +790,60 @@ export default function PaginaLouvores() {
     }
   };
 
-  const adicionarLouvor = async (grupo: GrupoLouvorApp, louvor: LouvorApp) => {
-    if (!louvor.idNum) return;
-    try {
-      const atualizado = await adicionarLouvorAoGrupo(grupo.idNum, louvor.idNum);
-      setGrupos((prev) => prev.map((g) => (g.id === grupo.id ? atualizado : g)));
-      toast.success("Louvor adicionado ao grupo.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Este louvor já está no grupo.");
+  const abrirModalAdicionar = (grupo: GrupoLouvorApp) => {
+    setLouvoresSelecionadosGrupo(new Set());
+    setGrupoModalAdicionar(grupo);
+  };
+
+  const fecharModalAdicionar = () => {
+    setGrupoModalAdicionar(null);
+    setLouvoresSelecionadosGrupo(new Set());
+  };
+
+  const alternarSelecaoLouvor = (louvorId: string) => {
+    setLouvoresSelecionadosGrupo((prev) => {
+      const proximo = new Set(prev);
+      if (proximo.has(louvorId)) {
+        proximo.delete(louvorId);
+      } else {
+        proximo.add(louvorId);
+      }
+      return proximo;
+    });
+  };
+
+  const adicionarLouvoresSelecionados = async (grupo: GrupoLouvorApp) => {
+    const ids = [...louvoresSelecionadosGrupo];
+    const louvoresParaAdicionar = ids
+      .map((id) => obterLouvorPorId(id))
+      .filter((l): l is LouvorApp => l != null && l.idNum != null);
+    if (louvoresParaAdicionar.length === 0) return;
+
+    setAdicionandoLouvoresGrupo(true);
+    let grupoAtualizado: GrupoLouvorApp | null = null;
+    let erros = 0;
+    for (const louvor of louvoresParaAdicionar) {
+      try {
+        grupoAtualizado = await adicionarLouvorAoGrupo(grupo.idNum, louvor.idNum!);
+      } catch {
+        erros += 1;
+      }
+    }
+    if (grupoAtualizado) {
+      const resultado = grupoAtualizado;
+      setGrupos((prev) => prev.map((g) => (g.id === grupo.id ? resultado : g)));
+    }
+    setAdicionandoLouvoresGrupo(false);
+    fecharModalAdicionar();
+
+    const adicionados = louvoresParaAdicionar.length - erros;
+    if (adicionados > 0) {
+      toast.success(
+        adicionados === 1 ? "Louvor adicionado ao grupo." : `${adicionados} louvores adicionados ao grupo.`,
+      );
+    }
+    if (erros > 0) {
+      toast.error(`${erros} louvor(es) não puderam ser adicionados.`);
     }
   };
 
@@ -1088,21 +1045,21 @@ export default function PaginaLouvores() {
                           </CardTitle>
                           <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
                             {podeCadastrar && (
-                              <Dialog open={grupoModalAdicionar?.id === grupo.id} onOpenChange={(open) => !open && setGrupoModalAdicionar(null)}>
+                              <Dialog open={grupoModalAdicionar?.id === grupo.id} onOpenChange={(open) => !open && fecharModalAdicionar()}>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className="gap-1"
-                                  onClick={() => setGrupoModalAdicionar(grupo)}
+                                  onClick={() => abrirModalAdicionar(grupo)}
                                 >
                                   <Plus className="h-4 w-4" />
                                   Adicionar
                                 </Button>
                                 <DialogContent className="max-h-[85vh]">
                                   <DialogHeader>
-                                    <DialogTitle>Adicionar louvor ao grupo</DialogTitle>
+                                    <DialogTitle>Adicionar louvores ao grupo</DialogTitle>
                                     <DialogDescription>
-                                      Selecione o louvor para adicionar ao grupo &quot;{grupo.name}&quot;.
+                                      Selecione um ou mais louvores para adicionar ao grupo &quot;{grupo.name}&quot;.
                                     </DialogDescription>
                                   </DialogHeader>
                                   <Command className="mt-2">
@@ -1112,15 +1069,24 @@ export default function PaginaLouvores() {
                                       <CommandGroup>
                                         {louvoresDisponiveis.map((louvor) => {
                                           const cfg = typeConfig[louvor.type];
+                                          const selecionado = louvoresSelecionadosGrupo.has(louvor.id);
                                           return (
                                             <CommandItem
                                               key={louvor.id}
-                                              onSelect={() => {
-                                                adicionarLouvor(grupo, louvor);
-                                                setGrupoModalAdicionar(null);
-                                              }}
+                                              value={`${louvor.title} ${louvor.artist}`}
+                                              onSelect={() => alternarSelecaoLouvor(louvor.id)}
+                                              className="gap-2"
                                             >
-                                              <Music className="h-4 w-4 mr-2 shrink-0" />
+                                              <div
+                                                className={cn(
+                                                  "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                                                  selecionado
+                                                    ? "bg-primary border-primary text-primary-foreground"
+                                                    : "border-muted-foreground/40",
+                                                )}
+                                              >
+                                                {selecionado && <Check className="h-3 w-3" />}
+                                              </div>
                                               <div className="flex flex-col min-w-0 flex-1">
                                                 <span className="truncate">{louvor.title} — {louvor.artist}</span>
                                                 <span className="text-xs text-muted-foreground">
@@ -1133,6 +1099,24 @@ export default function PaginaLouvores() {
                                       </CommandGroup>
                                     </CommandList>
                                   </Command>
+                                  <DialogFooter className="mt-2 flex-col-reverse gap-2 sm:flex-row sm:justify-between sm:items-center">
+                                    <span className="text-sm text-muted-foreground">
+                                      {louvoresSelecionadosGrupo.size} selecionado(s)
+                                    </span>
+                                    <div className="flex gap-2 sm:justify-end">
+                                      <Button variant="outline" onClick={fecharModalAdicionar} disabled={adicionandoLouvoresGrupo}>
+                                        Cancelar
+                                      </Button>
+                                      <Button
+                                        onClick={() => void adicionarLouvoresSelecionados(grupo)}
+                                        disabled={louvoresSelecionadosGrupo.size === 0 || adicionandoLouvoresGrupo}
+                                      >
+                                        {adicionandoLouvoresGrupo && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                        Adicionar
+                                        {louvoresSelecionadosGrupo.size > 0 ? ` (${louvoresSelecionadosGrupo.size})` : ""}
+                                      </Button>
+                                    </div>
+                                  </DialogFooter>
                                 </DialogContent>
                               </Dialog>
                             )}
@@ -1183,7 +1167,6 @@ export default function PaginaLouvores() {
                                     aoEditar={abrirEditar}
                                     aoExcluir={confirmarExcluir}
                                     aoVerDetalhes={(l) => abrirDetalheLouvor(l, grupo)}
-                                    aoVisualizarCifra={abrirVisualizadorCifra}
                                     aoVisualizarLetra={abrirVisualizadorLetra}
                                     aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
                                     noGrupo
@@ -1255,7 +1238,6 @@ export default function PaginaLouvores() {
                     aoEditar={abrirEditar}
                     aoExcluir={confirmarExcluir}
                     aoVerDetalhes={(l) => abrirDetalheLouvor(l)}
-                    aoVisualizarCifra={abrirVisualizadorCifra}
                     aoVisualizarLetra={abrirVisualizadorLetra}
                     aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
                   />
@@ -1283,7 +1265,6 @@ export default function PaginaLouvores() {
             if (!open) setLouvorDetalhe(null);
           }}
           aoEditar={abrirEditar}
-          aoVisualizarCifra={abrirVisualizadorCifra}
           aoVisualizarLetra={abrirVisualizadorLetra}
           aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
           aoLetraManual={abrirLetraManual}
@@ -1334,12 +1315,6 @@ export default function PaginaLouvores() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        <VisualizadorCifraLouvor
-          louvor={cifraVisualizando}
-          aberto={!!cifraVisualizando}
-          onFechar={() => setCifraVisualizando(null)}
-        />
 
         <VisualizadorLetraLouvor
           louvor={letraVisualizando}
