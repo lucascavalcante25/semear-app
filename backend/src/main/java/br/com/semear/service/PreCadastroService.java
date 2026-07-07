@@ -1,6 +1,7 @@
 package br.com.semear.service;
 
 import br.com.semear.domain.Endereco;
+import br.com.semear.domain.Igreja;
 import br.com.semear.domain.PreCadastro;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.PerfilAcesso;
@@ -29,17 +30,20 @@ public class PreCadastroService {
     private final UserService userService;
     private final EnderecoRepository enderecoRepository;
     private final UserRepository userRepository;
+    private final TenantService tenantService;
 
     public PreCadastroService(
         PreCadastroRepository preCadastroRepository,
         UserService userService,
         EnderecoRepository enderecoRepository,
-        UserRepository userRepository
+        UserRepository userRepository,
+        TenantService tenantService
     ) {
         this.preCadastroRepository = preCadastroRepository;
         this.userService = userService;
         this.enderecoRepository = enderecoRepository;
         this.userRepository = userRepository;
+        this.tenantService = tenantService;
     }
 
     /**
@@ -84,11 +88,23 @@ public class PreCadastroService {
         }
 
         User user = userService.createUserFromPreCadastro(userDTO, preCadastro.getSenha());
+
+        // Vincula o usuário à igreja do pré-cadastro; sem isso ele fica com igreja_id nulo
+        // e não aparece na listagem de membros (que filtra por igreja).
+        Igreja igreja = preCadastro.getIgreja() != null ? preCadastro.getIgreja() : tenantService.resolverIgrejaParaCriacao();
+        boolean precisaSalvar = false;
+        if (igreja != null && user.getIgreja() == null) {
+            user.setIgreja(igreja);
+            precisaSalvar = true;
+        }
         if (user.getBirthDate() == null && preCadastro.getDataNascimento() != null) {
             user.setBirthDate(preCadastro.getDataNascimento());
+            precisaSalvar = true;
+        }
+        if (precisaSalvar) {
             userRepository.save(user);
         }
-        LOG.debug("Usuário criado a partir do pré-cadastro {}: {}", id, user.getLogin());
+        LOG.debug("Usuário criado a partir do pré-cadastro {}: {} (igreja {})", id, user.getLogin(), igreja != null ? igreja.getId() : null);
 
         // Após aprovação e criação do usuário, remove o registro do pré-cadastro
         // para não bloquear novos envios por unicidade e manter a tabela apenas como fila.
