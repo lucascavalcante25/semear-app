@@ -33,6 +33,7 @@ export const MODULES = [
   "oracao",
   "departamentos",
   "escalas",
+  "cultos",
   "eventos",
   "aprovar-pre-cadastros",
   "configuracoes",
@@ -84,6 +85,7 @@ export const ROUTE_TO_MODULE: Record<string, ModuleKey> = {
   "/notificacoes": "dashboard",
   "/departamentos": "departamentos",
   "/escalas": "escalas",
+  "/cultos": "cultos",
   "/eventos": "eventos",
 };
 
@@ -101,6 +103,7 @@ export const MODULE_LABELS: Record<ModuleKey, string> = {
   oracao: "Oração",
   departamentos: "Departamentos",
   escalas: "Escalas",
+  cultos: "Culto",
   eventos: "Eventos",
 };
 
@@ -161,6 +164,7 @@ const SECRETARIA_DEFAULT_PERMISSIONS: ModulePermission[] = writeAll([
   "oracao",
   "departamentos",
   "escalas",
+  "cultos",
   "eventos",
   "aprovar-pre-cadastros",
   "configuracoes",
@@ -185,6 +189,7 @@ const LIDER_DEFAULT_PERMISSIONS: ModulePermission[] = mergePerms(
     "oracao",
     "departamentos",
     "escalas",
+    "cultos",
     "eventos",
     "configuracoes",
     "comunicados",
@@ -193,7 +198,7 @@ const LIDER_DEFAULT_PERMISSIONS: ModulePermission[] = mergePerms(
 );
 
 const MEMBRO_DEFAULT_PERMISSIONS_INTERNAL: ModulePermission[] = mergePerms(
-  readAll(["dashboard", "biblia", "devocionais", "comunicados", "eventos", "configuracoes"]),
+  readAll(["dashboard", "biblia", "devocionais", "comunicados", "eventos", "cultos", "configuracoes"]),
   writeAll(["oracao"]),
 );
 

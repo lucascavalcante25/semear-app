@@ -53,6 +53,7 @@ const Sobre = lazy(() => import("./pages/About"));
 const NotificacoesPagina = lazy(() => import("./pages/Notifications"));
 const Departamentos = lazy(() => import("./pages/Departamentos"));
 const Escalas = lazy(() => import("./pages/Escalas"));
+const Cultos = lazy(() => import("./pages/Cultos"));
 const Eventos = lazy(() => import("./pages/Eventos"));
 const PublicIgreja = lazy(() => import("./pages/PublicIgreja"));
 
@@ -290,6 +291,14 @@ const App = () => (
                 element={
                   <RequerAutenticacao>
                     <Escalas />
+                  </RequerAutenticacao>
+                }
+              />
+              <Route
+                path="/cultos"
+                element={
+                  <RequerAutenticacao>
+                    <Cultos />
                   </RequerAutenticacao>
                 }
               />

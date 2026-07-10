@@ -40,7 +40,8 @@ import {
 
 type Props = {
   geracoes: EscalaGeracaoDTO[];
-  onRecarregar: () => void;
+  onGeracoesChange: (geracoes: EscalaGeracaoDTO[]) => void;
+  onConfigPatch?: (patch: Partial<{ podeGerarProximoCiclo: boolean; motivoBloqueioGeracao: string | null }>) => void;
 };
 
 const ehEscalaLimpeza = (escala: EscalaDTO) => {
@@ -49,7 +50,7 @@ const ehEscalaLimpeza = (escala: EscalaDTO) => {
   return nome.includes("limpeza") || obs.startsWith("__loteLimpeza:");
 };
 
-export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
+export function EscalasCiclosGerados({ geracoes, onGeracoesChange, onConfigPatch }: Props) {
   const { user } = usarAutenticacao();
   const [verGeracaoId, setVerGeracaoId] = useState<number | null>(null);
   const [escalasGeracao, setEscalasGeracao] = useState<EscalaDTO[]>([]);
@@ -76,9 +77,10 @@ export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
 
   const publicar = async (id: number) => {
     try {
-      await publicarGeracaoEscalas(id);
+      const publicada = await publicarGeracaoEscalas(id);
       toast.success("Ciclo publicado! Membros escalados serão avisados ao logar.");
-      onRecarregar();
+      onGeracoesChange(geracoes.map((g) => (g.id === id ? { ...g, ...publicada, status: "PUBLICADA" } : g)));
+      onConfigPatch?.({ podeGerarProximoCiclo: true, motivoBloqueioGeracao: null });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao publicar.");
     }
@@ -86,12 +88,14 @@ export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
 
   const descartarRascunho = async () => {
     if (descartarGeracaoId == null) return;
+    const id = descartarGeracaoId;
     setDescartando(true);
     try {
-      await descartarGeracaoEscalas(descartarGeracaoId);
+      await descartarGeracaoEscalas(id);
       setDescartarGeracaoId(null);
       toast.success("Rascunho descartado.");
-      onRecarregar();
+      onGeracoesChange(geracoes.filter((g) => g.id !== id));
+      onConfigPatch?.({ podeGerarProximoCiclo: true, motivoBloqueioGeracao: null });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao descartar rascunho.");
     } finally {
@@ -101,12 +105,13 @@ export function EscalasCiclosGerados({ geracoes, onRecarregar }: Props) {
 
   const excluirCicloPublicado = async () => {
     if (excluirGeracaoId == null) return;
+    const id = excluirGeracaoId;
     setExcluindo(true);
     try {
-      await excluirEscalasPortariaRecepcao(excluirGeracaoId);
+      await excluirEscalasPortariaRecepcao(id);
       setExcluirGeracaoId(null);
       toast.success("Escalas de portaria e recepção excluídas.");
-      onRecarregar();
+      onGeracoesChange(geracoes.filter((g) => g.id !== id));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir ciclo.");
     } finally {

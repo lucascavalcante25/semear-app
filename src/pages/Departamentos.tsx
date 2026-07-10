@@ -189,14 +189,15 @@ export default function Departamentos() {
     setSalvando(true);
     try {
       if (editandoId) {
-        await atualizarDepartamento(editandoId, form);
+        const atualizado = await atualizarDepartamento(editandoId, form);
+        setLista((prev) => prev.map((d) => (d.id === editandoId ? atualizado : d)));
         toast.success("Departamento atualizado.");
       } else {
-        await criarDepartamento(form);
+        const criado = await criarDepartamento(form);
+        setLista((prev) => [criado, ...prev]);
         toast.success("Departamento criado.");
       }
       setDialogAberto(false);
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
@@ -209,7 +210,8 @@ export default function Departamentos() {
     try {
       await excluirDepartamento(excluirId);
       toast.success("Departamento excluído.");
-      void carregar();
+      setLista((prev) => prev.filter((d) => d.id !== excluirId));
+      if (deptoMembros?.id === excluirId) setDeptoMembros(null);
     } catch {
       toast.error("Não foi possível excluir.");
     } finally {

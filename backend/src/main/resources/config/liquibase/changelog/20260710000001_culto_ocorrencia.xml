@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260710000001-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="culto_registro" columnName="tipo"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="culto_registro">
+            <column name="tipo" type="varchar(20)" defaultValue="RECORRENTE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_especifica" type="date"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260710000001-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="culto_ocorrencia"/>
+            </not>
+        </preConditions>
+        <createTable tableName="culto_ocorrencia">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="igreja_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="culto_registro_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data_evento" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pregador" type="varchar(200)"/>
+            <column name="titulo_mensagem" type="varchar(300)"/>
+            <column name="versiculo_central" type="varchar(500)"/>
+            <column name="observacoes" type="${clobType}"/>
+            <column name="grupo_louvor_origem_id" type="bigint"/>
+            <column name="criado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="atualizado_em" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="culto_ocorrencia"
+            baseColumnNames="igreja_id"
+            constraintName="fk_culto_ocorrencia_igreja"
+            referencedTableName="igreja"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="culto_ocorrencia"
+            baseColumnNames="culto_registro_id"
+            constraintName="fk_culto_ocorrencia_registro"
+            referencedTableName="culto_registro"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="culto_ocorrencia"
+            baseColumnNames="grupo_louvor_origem_id"
+            constraintName="fk_culto_ocorrencia_grupo_louvor"
+            referencedTableName="grupo_louvor"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint
+            tableName="culto_ocorrencia"
+            columnNames="culto_registro_id, data_evento"
+            constraintName="ux_culto_ocorrencia_registro_data"/>
+    </changeSet>
+
+    <changeSet id="20260710000001-3" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="culto_ocorrencia_louvor"/>
+            </not>
+        </preConditions>
+        <createTable tableName="culto_ocorrencia_louvor">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="culto_ocorrencia_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="louvor_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ordem" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="culto_ocorrencia_louvor"
+            baseColumnNames="culto_ocorrencia_id"
+            constraintName="fk_culto_ocorrencia_louvor_ocorrencia"
+            referencedTableName="culto_ocorrencia"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="culto_ocorrencia_louvor"
+            baseColumnNames="louvor_id"
+            constraintName="fk_culto_ocorrencia_louvor_louvor"
+            referencedTableName="louvor"
+            referencedColumnNames="id"/>
+        <addUniqueConstraint
+            tableName="culto_ocorrencia_louvor"
+            columnNames="culto_ocorrencia_id, louvor_id"
+            constraintName="ux_culto_ocorrencia_louvor"/>
+    </changeSet>
+
+    <changeSet id="20260710000001-4" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="culto_ocorrencia_responsavel"/>
+            </not>
+        </preConditions>
+        <createTable tableName="culto_ocorrencia_responsavel">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="culto_ocorrencia_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="papel" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="origem_manual" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="culto_ocorrencia_responsavel"
+            baseColumnNames="culto_ocorrencia_id"
+            constraintName="fk_culto_ocorrencia_resp_ocorrencia"
+            referencedTableName="culto_ocorrencia"
+            referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+            baseTableName="culto_ocorrencia_responsavel"
+            baseColumnNames="user_id"
+            constraintName="fk_culto_ocorrencia_resp_user"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

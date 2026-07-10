@@ -35,7 +35,7 @@ export default function SolicitacoesSuperAdmin() {
     try {
       await aprovarSolicitacao(id, obs[id]);
       toast.success("Solicitação aprovada! Igreja e admin criados.");
-      void carregar();
+      setLista((prev) => prev.filter((s) => s.id !== id));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao aprovar.");
     }
@@ -45,7 +45,7 @@ export default function SolicitacoesSuperAdmin() {
     try {
       await rejeitarSolicitacao(id, obs[id]);
       toast.success("Solicitação rejeitada.");
-      void carregar();
+      setLista((prev) => prev.filter((s) => s.id !== id));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao rejeitar.");
     }

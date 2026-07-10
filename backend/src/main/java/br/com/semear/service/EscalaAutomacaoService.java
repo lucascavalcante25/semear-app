@@ -218,6 +218,8 @@ public class EscalaAutomacaoService {
             culto.setNome(dto.getNome().trim());
             culto.setDiaSemana(dto.getDiaSemana());
             culto.setHorario(dto.getHorario().trim());
+            culto.setTipo(dto.getTipo() != null ? dto.getTipo() : br.com.semear.domain.enumeration.TipoCulto.RECORRENTE);
+            culto.setDataEspecifica(dto.getDataEspecifica());
             culto.setAtivo(dto.getAtivo() == null || dto.getAtivo());
             culto = cultoRegistroRepository.save(culto);
 
@@ -585,6 +587,7 @@ public class EscalaAutomacaoService {
             .findByIgrejaIdOrderByNomeAsc(igrejaIdAtual)
             .stream()
             .filter(c -> Boolean.TRUE.equals(c.getAtivo()))
+            .filter(c -> c.getTipo() == null || c.getTipo() == br.com.semear.domain.enumeration.TipoCulto.RECORRENTE)
             .toList();
 
         if (!somenteLimpeza && cultos.isEmpty()) {
@@ -1259,12 +1262,33 @@ public class EscalaAutomacaoService {
         if (dto.getNome() == null || dto.getNome().isBlank()) {
             throw new BadRequestAlertException("Nome do culto é obrigatório", ENTITY, "nomeobrigatorio");
         }
-        if (dto.getDiaSemana() == null) {
-            throw new BadRequestAlertException("Dia da semana é obrigatório", ENTITY, "diaobrigatorio");
-        }
         if (dto.getHorario() == null || dto.getHorario().isBlank()) {
             throw new BadRequestAlertException("Horário é obrigatório", ENTITY, "horarioobrigatorio");
         }
+        br.com.semear.domain.enumeration.TipoCulto tipo =
+            dto.getTipo() != null ? dto.getTipo() : br.com.semear.domain.enumeration.TipoCulto.RECORRENTE;
+        if (tipo == br.com.semear.domain.enumeration.TipoCulto.EXTRAORDINARIO) {
+            if (dto.getDataEspecifica() == null) {
+                throw new BadRequestAlertException("Data é obrigatória para culto extraordinário", ENTITY, "dataobrigatoria");
+            }
+            if (dto.getDiaSemana() == null) {
+                dto.setDiaSemana(diaSemanaDe(dto.getDataEspecifica()));
+            }
+        } else if (dto.getDiaSemana() == null) {
+            throw new BadRequestAlertException("Dia da semana é obrigatório", ENTITY, "diaobrigatorio");
+        }
+    }
+
+    private DiaSemanaCulto diaSemanaDe(java.time.LocalDate data) {
+        return switch (data.getDayOfWeek()) {
+            case SUNDAY -> DiaSemanaCulto.DOMINGO;
+            case MONDAY -> DiaSemanaCulto.SEGUNDA;
+            case TUESDAY -> DiaSemanaCulto.TERCA;
+            case WEDNESDAY -> DiaSemanaCulto.QUARTA;
+            case THURSDAY -> DiaSemanaCulto.QUINTA;
+            case FRIDAY -> DiaSemanaCulto.SEXTA;
+            case SATURDAY -> DiaSemanaCulto.SABADO;
+        };
     }
 
     private CultoRegistroDTO toCultoDto(CultoRegistro entity) {
@@ -1273,6 +1297,8 @@ public class EscalaAutomacaoService {
         dto.setNome(entity.getNome());
         dto.setDiaSemana(entity.getDiaSemana());
         dto.setHorario(entity.getHorario());
+        dto.setTipo(entity.getTipo() != null ? entity.getTipo() : br.com.semear.domain.enumeration.TipoCulto.RECORRENTE);
+        dto.setDataEspecifica(entity.getDataEspecifica());
         dto.setAtivo(entity.getAtivo());
         dto.setRegras(
             cultoEscalaRegraRepository.findByCultoRegistroId(entity.getId()).stream().map(this::toRegraDto).toList()

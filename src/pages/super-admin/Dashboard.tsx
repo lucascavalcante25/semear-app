@@ -30,7 +30,7 @@ export default function DashboardSuperAdmin() {
   const [suporte, setSuporte] = useState<SuporteResumo | null>(null);
   const [assinaturas, setAssinaturas] = useState<AssinaturaIgreja[]>([]);
 
-  const recarregar = () => {
+  const carregar = () => {
     void Promise.all([
       obterDashboardAdmin().then(setStats).catch(() => setStats(null)),
       obterResumoSuporte().then(setSuporte).catch(() => setSuporte(null)),
@@ -39,8 +39,12 @@ export default function DashboardSuperAdmin() {
   };
 
   useEffect(() => {
-    recarregar();
+    carregar();
   }, []);
+
+  const aplicarAssinatura = (atualizada: AssinaturaIgreja) => {
+    setAssinaturas((prev) => prev.map((a) => (a.id === atualizada.id ? atualizada : a)));
+  };
 
   const emTeste = assinaturas.filter((a) => a.statusAssinatura === "EM_TESTE");
 
@@ -161,9 +165,9 @@ export default function DashboardSuperAdmin() {
                             variant="outline"
                             onClick={() =>
                               ativarAssinaturaAdmin(a.id)
-                                .then(() => {
+                                .then((atualizada) => {
                                   toast.success("Assinatura ativada");
-                                  recarregar();
+                                  aplicarAssinatura(atualizada);
                                 })
                                 .catch(() => toast.error("Erro ao ativar"))
                             }
@@ -175,9 +179,9 @@ export default function DashboardSuperAdmin() {
                             variant="ghost"
                             onClick={() =>
                               prorrogarTesteAdmin(a.id, 7)
-                                .then(() => {
+                                .then((atualizada) => {
                                   toast.success("Teste prorrogado");
-                                  recarregar();
+                                  aplicarAssinatura(atualizada);
                                 })
                                 .catch(() => toast.error("Erro ao prorrogar"))
                             }

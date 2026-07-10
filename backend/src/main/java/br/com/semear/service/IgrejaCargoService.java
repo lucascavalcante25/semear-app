@@ -499,7 +499,7 @@ public class IgrejaCargoService {
     private List<String> modulosSecretaria() {
         return List.of(
             "dashboard", "biblia", "devocionais", "louvores", "membros", "visitantes", "comunicados",
-            "oracao", "departamentos", "escalas", "eventos", "aprovar-pre-cadastros", "configuracoes"
+            "oracao", "departamentos", "escalas", "cultos", "eventos", "aprovar-pre-cadastros", "configuracoes"
         );
     }
 
@@ -509,7 +509,7 @@ public class IgrejaCargoService {
 
     private List<String> modulosLiderWrite() {
         return List.of(
-            "dashboard", "biblia", "devocionais", "louvores", "oracao", "departamentos", "escalas", "eventos", "configuracoes", "comunicados"
+            "dashboard", "biblia", "devocionais", "louvores", "oracao", "departamentos", "escalas", "cultos", "eventos", "configuracoes", "comunicados"
         );
     }
 
@@ -539,7 +539,7 @@ public class IgrejaCargoService {
                 "Acesso padrão de membros da igreja",
                 6,
                 merge(
-                    readList(List.of("dashboard", "biblia", "devocionais", "comunicados", "eventos", "configuracoes")),
+                    readList(List.of("dashboard", "biblia", "devocionais", "comunicados", "eventos", "cultos", "configuracoes")),
                     writeList(List.of("oracao"))
                 )
             )

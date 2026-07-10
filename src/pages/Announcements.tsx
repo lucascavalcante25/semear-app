@@ -256,14 +256,16 @@ export default function PaginaAvisos() {
     setSalvando(true);
     try {
       if (!avisoEmEdicao) {
-        await criarAviso({
-          title: formTitulo,
-          content: formConteudo,
-          type: formTipo,
-          startDate: new Date(`${formInicio}T00:00:00`),
-          endDate: formFim ? new Date(`${formFim}T00:00:00`) : undefined,
-          isActive: formAtivo,
-        });
+        const dto: AvisoDTO = {
+          titulo: formTitulo.trim(),
+          conteudo: formConteudo.trim(),
+          tipo: tipoUiParaApi(formTipo),
+          dataInicio: formInicio,
+          dataFim: formFim || null,
+          ativo: formAtivo,
+        };
+        const criado = await criarAviso(dto);
+        setAvisos((prev) => [criado, ...prev]);
         toast.success("Aviso criado.");
       } else if (avisoEmEdicao.idNum) {
         const dto: AvisoDTO = {
@@ -275,11 +277,15 @@ export default function PaginaAvisos() {
           dataFim: formFim || null,
           ativo: formAtivo,
         };
-        await apiAtualizarAviso(dto);
+        const atualizado = await apiAtualizarAviso(dto);
+        setAvisos((prev) =>
+          prev.map((a) =>
+            a.idNum === atualizado.idNum || a.id === atualizado.id ? atualizado : a,
+          ),
+        );
         toast.success("Aviso atualizado.");
       }
       setDialogAberto(false);
-      await carregar();
       await refreshNotificacoes();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar aviso.");
@@ -290,11 +296,12 @@ export default function PaginaAvisos() {
 
   const confirmarExcluir = async () => {
     if (!confirmarExclusao?.idNum) return;
+    const id = confirmarExclusao.idNum;
     try {
-      await apiExcluirAviso(confirmarExclusao.idNum);
+      await apiExcluirAviso(id);
       toast.success("Aviso excluído.");
       setConfirmarExclusao(null);
-      await carregar();
+      setAvisos((prev) => prev.filter((a) => a.idNum !== id));
       await refreshNotificacoes();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir aviso.");

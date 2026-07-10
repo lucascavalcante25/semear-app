@@ -288,14 +288,15 @@ export default function Escalas() {
     setSalvando(true);
     try {
       if (editandoId) {
-        await atualizarEscala(editandoId, form);
+        const atualizada = await atualizarEscala(editandoId, form);
+        setLista((prev) => prev.map((e) => (e.id === editandoId ? atualizada : e)));
         toast.success("Escala atualizada.");
       } else {
-        await criarEscala(form);
+        const criada = await criarEscala(form);
+        setLista((prev) => [criada, ...prev]);
         toast.success("Escala criada.");
       }
       setDialogAberto(false);
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
@@ -307,8 +308,8 @@ export default function Escalas() {
     if (!excluirId) return;
     try {
       await excluirEscala(excluirId);
+      setLista((prev) => prev.filter((e) => e.id !== excluirId));
       toast.success("Escala excluída.");
-      void carregar();
     } catch {
       toast.error("Não foi possível excluir.");
     } finally {
@@ -321,8 +322,19 @@ export default function Escalas() {
     setConfirmandoItem(chave);
     try {
       await confirmarItemEscala(escalaId, itemId);
+      setLista((prev) =>
+        prev.map((e) =>
+          e.id !== escalaId
+            ? e
+            : {
+                ...e,
+                itens: (e.itens ?? []).map((i) =>
+                  i.id === itemId ? { ...i, confirmado: true } : i,
+                ),
+              },
+        ),
+      );
       toast.success("Presença confirmada.");
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao confirmar.");
     } finally {

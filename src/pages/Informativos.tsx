@@ -118,13 +118,16 @@ export default function Informativos() {
     try {
       if (editandoId) {
         await atualizarInformativo(editandoId, form);
+        setLista((prev) =>
+          prev.map((i) => (i.id === editandoId ? { ...i, ...form, id: editandoId } : i)),
+        );
         toast.success("Informativo atualizado.");
       } else {
-        await criarInformativo(form);
+        const criado = await criarInformativo(form);
+        setLista((prev) => [{ ...form, id: criado.idNum }, ...prev]);
         toast.success("Informativo criado.");
       }
       setDialogAberto(false);
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
@@ -137,7 +140,11 @@ export default function Informativos() {
     try {
       await excluirInformativo(excluirId);
       toast.success("Informativo excluído.");
-      void carregar();
+      setLista((prev) => prev.filter((i) => i.id !== excluirId));
+      if (leiturasId === excluirId) {
+        setLeiturasId(null);
+        setLeituras([]);
+      }
     } catch {
       toast.error("Não foi possível excluir.");
     } finally {

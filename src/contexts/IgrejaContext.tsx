@@ -41,6 +41,8 @@ type ValorContextoIgreja = {
   pix: IgrejaPix | null;
   carregando: boolean;
   recarregar: () => Promise<void>;
+  /** Atualiza o contexto com o retorno da API, sem nova ida ao banco. */
+  aplicarLocal: (cfg?: IgrejaConfiguracao | null, pixData?: IgrejaPix | null) => void;
   nomeExibicao: string;
   subtituloExibicao: string;
   logoUrl: string;
@@ -123,6 +125,20 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
     void recarregar();
   }, [recarregar]);
 
+  const aplicarLocal = useCallback((cfg?: IgrejaConfiguracao | null, pixData?: IgrejaPix | null) => {
+    if (cfg) {
+      setConfiguracao(cfg);
+      setPublica((prev) => ({
+        ...prev,
+        ...cfg,
+        logoUrl: cfg.logoUrl || prev.logoUrl,
+      }));
+      limparCoresIgreja();
+      definirInicioPlanoIgreja(cfg.dataInicioPlanoLeitura ?? null);
+    }
+    if (pixData) setPix(pixData);
+  }, []);
+
   useEffect(() => {
     definirInicioPlanoIgreja(configuracao?.dataInicioPlanoLeitura ?? null);
   }, [configuracao?.dataInicioPlanoLeitura]);
@@ -161,11 +177,12 @@ export function ProvedorIgreja({ children }: { children: React.ReactNode }) {
       pix,
       carregando,
       recarregar,
+      aplicarLocal,
       nomeExibicao,
       subtituloExibicao,
       logoUrl,
     }),
-    [configuracao, publica, pix, carregando, recarregar, nomeExibicao, subtituloExibicao, logoUrl],
+    [configuracao, publica, pix, carregando, recarregar, aplicarLocal, nomeExibicao, subtituloExibicao, logoUrl],
   );
 
   return <IgrejaContext.Provider value={valor}>{children}</IgrejaContext.Provider>;

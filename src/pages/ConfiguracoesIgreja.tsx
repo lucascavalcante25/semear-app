@@ -49,7 +49,7 @@ type AbaConfig = (typeof ABAS)[number];
 export default function ConfiguracoesIgreja() {
   const { user } = usarAutenticacao();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { configuracao, recarregar, logoUrl: logoUrlAtual } = useIgrejaConfiguracao();
+  const { configuracao, aplicarLocal, logoUrl: logoUrlAtual } = useIgrejaConfiguracao();
   const abaParam = searchParams.get("aba");
   const abaSolicitada = ABAS.includes(abaParam as AbaConfig) ? (abaParam as AbaConfig) : "dados";
   const podeDocumentos = podeGerenciarDocumentosIgreja(user);
@@ -125,8 +125,9 @@ export default function ConfiguracoesIgreja() {
   const salvarGeral = async () => {
     setSalvando(true);
     try {
-      await atualizarIgrejaAtual(form);
-      await recarregar();
+      const atualizado = await atualizarIgrejaAtual(form);
+      setForm(atualizado);
+      aplicarLocal(atualizado);
       toast.success("Dados salvos!");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
@@ -138,8 +139,9 @@ export default function ConfiguracoesIgreja() {
   const salvarPix = async () => {
     setSalvando(true);
     try {
-      await atualizarPixIgreja(form);
-      await recarregar();
+      const pix = await atualizarPixIgreja(form);
+      setForm((f) => ({ ...f, ...pix }));
+      aplicarLocal(undefined, pix);
       toast.success("PIX atualizado!");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar PIX.");
@@ -157,7 +159,7 @@ export default function ConfiguracoesIgreja() {
         logoUrl: atualizado.logoUrl,
         dataAtualizacao: atualizado.dataAtualizacao,
       }));
-      await recarregar();
+      aplicarLocal(atualizado);
       toast.success("Logo enviado!");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao enviar logo.");
@@ -201,8 +203,9 @@ export default function ConfiguracoesIgreja() {
     }
     setSalvandoPlano(true);
     try {
-      await atualizarPlanoLeitura(dataPlano);
-      await recarregar();
+      const atualizado = await atualizarPlanoLeitura(dataPlano);
+      setForm((f) => ({ ...f, ...atualizado }));
+      aplicarLocal(atualizado);
       toast.success("Plano de leitura salvo!");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar plano.");
@@ -214,8 +217,9 @@ export default function ConfiguracoesIgreja() {
   const confirmarReinicioPlano = async () => {
     setReiniciandoPlano(true);
     try {
-      await reiniciarPlanoLeitura(dataReinicioPlano || undefined);
-      await recarregar();
+      const atualizado = await reiniciarPlanoLeitura(dataReinicioPlano || undefined);
+      setForm((f) => ({ ...f, ...atualizado }));
+      aplicarLocal(atualizado);
       toast.success("Plano reiniciado! O calendário coletivo foi atualizado.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao reiniciar plano.");
@@ -227,8 +231,9 @@ export default function ConfiguracoesIgreja() {
   const salvarVisual = async () => {
     setSalvando(true);
     try {
-      await atualizarIdentidadeVisual({ logoUrl: form.logoUrl });
-      await recarregar();
+      const atualizado = await atualizarIdentidadeVisual({ logoUrl: form.logoUrl });
+      setForm((f) => ({ ...f, ...atualizado }));
+      aplicarLocal(atualizado);
       toast.success("Logo atualizado!");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");

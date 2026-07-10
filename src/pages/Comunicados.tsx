@@ -308,14 +308,17 @@ export default function Comunicados() {
     try {
       const dto = dtoFromApp({ ...form, idNum: emEdicao?.idNum });
       if (!emEdicao) {
-        await criarComunicado(dto);
+        const criado = await criarComunicado(dto);
+        setLista((prev) => [criado, ...prev]);
         toast.success("Comunicado criado.");
       } else {
-        await atualizarComunicado(dto);
+        const atualizado = await atualizarComunicado(dto);
+        setLista((prev) =>
+          prev.map((c) => (c.idNum === atualizado.idNum || c.id === atualizado.id ? atualizado : c)),
+        );
         toast.success("Comunicado atualizado.");
       }
       setDialogAberto(false);
-      await carregar();
       await refreshNotificacoes();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
@@ -335,7 +338,7 @@ export default function Comunicados() {
       await excluirComunicado(id);
       toast.success("Comunicado excluído.");
       setConfirmarExclusao(null);
-      await carregar();
+      setLista((prev) => prev.filter((c) => c.idNum !== id && Number(c.id) !== id));
       await refreshNotificacoes();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir.");

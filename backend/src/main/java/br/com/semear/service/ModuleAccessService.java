@@ -36,6 +36,7 @@ public class ModuleAccessService {
         "configuracoes",
         "departamentos",
         "escalas",
+        "cultos",
         "eventos"
     );
 
@@ -57,6 +58,7 @@ public class ModuleAccessService {
         "oracao",
         "departamentos",
         "escalas",
+        "cultos",
         "eventos",
         "aprovar-pre-cadastros",
         "configuracoes"
@@ -80,6 +82,7 @@ public class ModuleAccessService {
         "oracao",
         "departamentos",
         "escalas",
+        "cultos",
         "eventos",
         "configuracoes",
         "comunicados"
@@ -93,6 +96,7 @@ public class ModuleAccessService {
         "devocionais",
         "comunicados",
         "eventos",
+        "cultos",
         "configuracoes"
     );
 

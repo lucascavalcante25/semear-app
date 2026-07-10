@@ -1021,17 +1021,20 @@ export default function Financeiro() {
       };
 
       if (lancamentoEditando) {
-        await atualizarLancamento({ ...lancamentoEditando, ...payload });
+        const atualizado = await atualizarLancamento({ ...lancamentoEditando, ...payload });
+        setLancamentos((prev) =>
+          prev.map((l) => (l.idNum === atualizado.idNum || l.id === atualizado.id ? atualizado : l)),
+        );
         toast.success("Lançamento atualizado.");
       } else {
-        await criarLancamento(payload);
+        const criado = await criarLancamento(payload);
+        setLancamentos((prev) => [criado, ...prev]);
         toast.success("Lançamento registrado.");
       }
 
       setDialogAberto(false);
       setLancamentoEditando(null);
       resetForm();
-      carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
@@ -1043,8 +1046,11 @@ export default function Financeiro() {
     if (!confirm("Excluir este lançamento?")) return;
     try {
       await excluirLancamento(id);
+      setLancamentos((prev) => prev.filter((l) => l.idNum !== id && Number(l.id) !== id));
+      setLancamentoDetalhe((prev) =>
+        prev && (prev.idNum === id || Number(prev.id) === id) ? null : prev,
+      );
       toast.success("Lançamento excluído.");
-      carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir.");
     }

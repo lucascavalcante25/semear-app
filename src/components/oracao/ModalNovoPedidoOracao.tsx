@@ -26,6 +26,7 @@ import {
   LABEL_CATEGORIA,
   LABEL_VISIBILIDADE,
   type CategoriaPedidoOracaoApi,
+  type PedidoOracaoDTO,
   type VisibilidadePedidoOracaoApi,
 } from "@/modules/oracao/api";
 
@@ -34,7 +35,7 @@ const CATEGORIAS = Object.keys(LABEL_CATEGORIA) as CategoriaPedidoOracaoApi[];
 type Props = {
   aberto: boolean;
   onAbertoChange: (aberto: boolean) => void;
-  onCriado?: () => void;
+  onCriado?: (pedido: PedidoOracaoDTO) => void;
 };
 
 export function ModalNovoPedidoOracao({ aberto, onAbertoChange, onCriado }: Props) {
@@ -64,7 +65,7 @@ export function ModalNovoPedidoOracao({ aberto, onAbertoChange, onCriado }: Prop
     }
     setEnviando(true);
     try {
-      await criarPedidoOracao({
+      const criado = await criarPedidoOracao({
         titulo: titulo.trim(),
         descricao: descricao.trim(),
         categoria,
@@ -74,7 +75,7 @@ export function ModalNovoPedidoOracao({ aberto, onAbertoChange, onCriado }: Prop
       toast.success("Obrigado. Seu pedido foi enviado.");
       limpar();
       onAbertoChange(false);
-      onCriado?.();
+      onCriado?.(criado);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível enviar o pedido.");
     } finally {

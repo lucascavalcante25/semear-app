@@ -127,14 +127,15 @@ export function CargosPermissoesPanel({ somenteLeitura = false }: Props) {
     setSalvando(true);
     try {
       if (cargoEdicao?.id) {
-        await atualizarCargo(cargoEdicao.id, form);
+        const atualizado = await atualizarCargo(cargoEdicao.id, form);
+        setCargos((prev) => prev.map((c) => (c.id === atualizado.id ? atualizado : c)));
         toast.success("Cargo atualizado.");
       } else {
-        await criarCargo(form);
+        const criado = await criarCargo(form);
+        setCargos((prev) => [...prev, criado]);
         toast.success("Cargo criado.");
       }
       setDialogAberto(false);
-      await carregar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar cargo.");
     } finally {
@@ -146,9 +147,9 @@ export function CargosPermissoesPanel({ somenteLeitura = false }: Props) {
     if (excluirId == null) return;
     try {
       await excluirCargo(excluirId);
+      setCargos((prev) => prev.filter((c) => c.id !== excluirId));
       toast.success("Cargo excluído.");
       setExcluirId(null);
-      await carregar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir cargo.");
     }

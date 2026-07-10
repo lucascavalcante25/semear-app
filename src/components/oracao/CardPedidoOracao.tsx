@@ -46,7 +46,7 @@ function formatarData(iso?: string) {
 type Props = {
   pedido: PedidoOracaoDTO;
   modoLideranca?: boolean;
-  onAtualizado?: () => void;
+  onAtualizado?: (pedido: PedidoOracaoDTO | null) => void;
 };
 
 export function CardPedidoOracao({ pedido, modoLideranca, onAtualizado }: Props) {
@@ -59,12 +59,18 @@ export function CardPedidoOracao({ pedido, modoLideranca, onAtualizado }: Props)
   const statusLabel = LABEL_STATUS[pedido.status] ?? pedido.status;
   const total = pedido.totalIntercessoes ?? 0;
 
-  const executar = async (acao: () => Promise<unknown>, msg: string) => {
+  const executar = async (acao: () => Promise<PedidoOracaoDTO | void>, msg: string, removido = false) => {
     setCarregando(true);
     try {
-      await acao();
+      const resultado = await acao();
       toast.success(msg);
-      onAtualizado?.();
+      if (removido) {
+        onAtualizado?.(null);
+      } else if (resultado) {
+        onAtualizado?.(resultado);
+      } else {
+        onAtualizado?.(pedido);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível concluir a ação.");
     } finally {
@@ -235,7 +241,7 @@ export function CardPedidoOracao({ pedido, modoLideranca, onAtualizado }: Props)
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
-                void executar(() => excluirPedidoOracao(pedido.id), "Pedido excluído.")
+                void executar(() => excluirPedidoOracao(pedido.id), "Pedido excluído.", true)
               }
             >
               Excluir

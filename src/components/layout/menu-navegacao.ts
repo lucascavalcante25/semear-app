@@ -39,6 +39,7 @@ export const gruposMenuNavegacao: GrupoMenuNavegacao[] = [
     items: [
       { icon: Home, label: "Dashboard", path: "/" },
       { icon: BookOpen, label: "Bíblia", path: "/biblia" },
+      { icon: Church, label: "Culto", path: "/cultos" },
       { icon: BookMarked, label: "Devocionais", path: "/devocionais" },
       { icon: Heart, label: "Oração", path: "/oracao" },
     ],

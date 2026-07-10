@@ -29,7 +29,7 @@ export const montarSubtituloEscalas = (opts: {
 }): string => {
   const { aba, infoCiclo, diasComEscala, totalEscalas, legadoSemCiclo } = opts;
   if (aba === "automacao") {
-    return "Cadastre cultos, gere sorteios e publique portaria e recepção.";
+    return "Gere sorteios e publique portaria e recepção a partir dos cultos cadastrados em Culto.";
   }
   if (aba === "limpeza") {
     return "Configure a frequência e gere as escalas de limpeza.";

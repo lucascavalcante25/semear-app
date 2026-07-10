@@ -56,6 +56,7 @@ import {
   atualizarMembro,
   excluirMembro,
   cadastrarDependente,
+  mapearParaMembro,
   type MembroApi,
   type AtualizarMembroPayload,
 } from "@/modules/members/api";
@@ -206,7 +207,7 @@ interface FormMembroProps {
   membroEdicao?: MembroApi | null;
   aberto: boolean;
   onAbertoChange: (aberto: boolean) => void;
-  onSucesso: () => void;
+  onSucesso: (membro: MembroApi) => void;
 }
 
 const CODIGO_POR_ROLE: Partial<Record<Role, string>> = {
@@ -365,11 +366,11 @@ function FormMembro({
           modules: [],
           cargoIds: cargoIdsSelecionados,
         };
-        await atualizarMembro(payload);
+        const atualizado = await atualizarMembro(payload);
         toast.success("Membro atualizado com sucesso.");
+        onAbertoChange(false);
+        onSucesso(atualizado);
       }
-      onAbertoChange(false);
-      onSucesso();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar membro.");
     } finally {
@@ -538,7 +539,7 @@ function FormMembro({
 interface FormDependenteProps {
   aberto: boolean;
   onAbertoChange: (aberto: boolean) => void;
-  onSucesso: () => void;
+  onSucesso: (membro: MembroApi) => void;
   membrosParaPaiMae: MembroApi[];
 }
 
@@ -584,7 +585,7 @@ function FormDependente({
 
     setSalvando(true);
     try {
-      await cadastrarDependente({
+      const criado = await cadastrarDependente({
         nome: nomeTrim,
         birthDate: dataNascimento,
         paiId: paiId && paiId !== "__nenhum__" ? Number(paiId) : undefined,
@@ -592,7 +593,7 @@ function FormDependente({
       });
       toast.success("Criança/jovem cadastrado com sucesso.");
       onAbertoChange(false);
-      onSucesso();
+      onSucesso(mapearParaMembro(criado));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao cadastrar.");
     } finally {
@@ -683,7 +684,7 @@ interface FormDependenteEdicaoProps {
   dependente: MembroApi | null;
   aberto: boolean;
   onAbertoChange: (aberto: boolean) => void;
-  onSucesso: () => void;
+  onSucesso: (membro: MembroApi) => void;
   membrosParaPaiMae: MembroApi[];
 }
 
@@ -733,7 +734,7 @@ function FormDependenteEdicao({
 
     setSalvando(true);
     try {
-      await atualizarMembro({
+      const atualizado = await atualizarMembro({
         id: dependente.idNum,
         login: dependente.login,
         firstName,
@@ -746,7 +747,7 @@ function FormDependenteEdicao({
       });
       toast.success("Criança/jovem atualizado com sucesso.");
       onAbertoChange(false);
-      onSucesso();
+      onSucesso(atualizado);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar.");
     } finally {
@@ -899,11 +900,21 @@ export default function Members() {
     try {
       await excluirMembro(membroParaExcluir.login);
       toast.success("Membro excluído com sucesso.");
+      setMembros((prev) => prev.filter((m) => m.login !== membroParaExcluir.login));
       setMembroParaExcluir(null);
-      void carregarMembros();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir membro.");
     }
+  };
+
+  const upsertMembroLocal = (membro: MembroApi) => {
+    setMembros((prev) => {
+      const idx = prev.findIndex((m) => m.id === membro.id || m.login === membro.login);
+      if (idx < 0) return [membro, ...prev];
+      const next = [...prev];
+      next[idx] = membro;
+      return next;
+    });
   };
 
   if (!canAccess(user, "/membros")) {
@@ -1000,13 +1011,13 @@ export default function Members() {
           setDialogEditarAberto(aberto);
           if (!aberto) setMembroEmEdicao(null);
         }}
-        onSucesso={carregarMembros}
+        onSucesso={upsertMembroLocal}
       />
 
       <FormDependente
         aberto={dialogDependenteAberto}
         onAbertoChange={setDialogDependenteAberto}
-        onSucesso={carregarMembros}
+        onSucesso={upsertMembroLocal}
         membrosParaPaiMae={membros}
       />
 
@@ -1017,7 +1028,7 @@ export default function Members() {
           setDialogEditarDependenteAberto(aberto);
           if (!aberto) setDependenteEmEdicao(null);
         }}
-        onSucesso={carregarMembros}
+        onSucesso={upsertMembroLocal}
         membrosParaPaiMae={membros}
       />
 

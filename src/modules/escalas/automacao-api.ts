@@ -43,6 +43,8 @@ export type CultoRegistroDTO = {
   nome: string;
   diaSemana: DiaSemanaCulto;
   horario: string;
+  tipo?: "RECORRENTE" | "EXTRAORDINARIO";
+  dataEspecifica?: string | null;
   ativo?: boolean;
   regras?: CultoEscalaRegraDTO[];
 };

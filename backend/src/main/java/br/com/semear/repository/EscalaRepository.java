@@ -18,6 +18,24 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
     List<Escala> findByGeracaoId(Long geracaoId);
 
     @Query(
+        """
+        SELECT e FROM Escala e
+        LEFT JOIN FETCH e.departamento
+        LEFT JOIN FETCH e.cultoRegistro
+        WHERE e.igreja.id = :igrejaId
+        AND e.cultoRegistro.id IN :cultoIds
+        AND e.dataEvento >= :inicio
+        AND e.dataEvento < :fim
+        """
+    )
+    List<Escala> findByIgrejaCultosAndPeriodo(
+        @Param("igrejaId") Long igrejaId,
+        @Param("cultoIds") List<Long> cultoIds,
+        @Param("inicio") Instant inicio,
+        @Param("fim") Instant fim
+    );
+
+    @Query(
         "SELECT COUNT(ei) FROM EscalaItem ei JOIN ei.escala e WHERE e.departamento.id = :departamentoId " +
         "AND e.status = :status AND e.dataEvento >= :desde AND ei.user.id = :userId"
     )

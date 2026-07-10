@@ -359,15 +359,19 @@ export default function Eventos() {
       const eventoId = editandoId ?? eventoSalvo.id;
       if (eventoId) {
         if (bannerArquivo) {
-          await uploadBannerEvento(eventoId, bannerArquivo);
+          eventoSalvo = await uploadBannerEvento(eventoId, bannerArquivo);
         } else if (removerBanner && editandoId) {
-          await removerBannerEvento(eventoId);
+          eventoSalvo = await removerBannerEvento(eventoId);
         }
       }
       resetBanner();
       toast.success(editandoId ? "Evento atualizado." : "Evento criado.");
       setDialogAberto(false);
-      void carregar();
+      if (editandoId) {
+        setLista((prev) => prev.map((e) => (e.id === editandoId ? { ...e, ...eventoSalvo } : e)));
+      } else {
+        setLista((prev) => [eventoSalvo, ...prev]);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {
@@ -380,7 +384,7 @@ export default function Eventos() {
     try {
       await excluirEvento(excluirId);
       toast.success("Evento excluído.");
-      void carregar();
+      setLista((prev) => prev.filter((e) => e.id !== excluirId));
     } catch {
       toast.error("Não foi possível excluir.");
     } finally {
@@ -403,11 +407,37 @@ export default function Eventos() {
       if (item.inscrito) {
         await cancelarInscricaoEvento(item.id);
         toast.success("Inscrição cancelada.");
+        setLista((prev) =>
+          prev.map((e) =>
+            e.id === item.id
+              ? {
+                  ...e,
+                  inscrito: false,
+                  situacaoInscricao: null,
+                  totalInscritos: Math.max(0, (e.totalInscritos ?? 1) - 1),
+                  lotado: false,
+                }
+              : e,
+          ),
+        );
       } else {
         await inscreverEvento(item.id);
         toast.success("Inscrição realizada!");
+        setLista((prev) =>
+          prev.map((e) => {
+            if (e.id !== item.id) return e;
+            const total = (e.totalInscritos ?? 0) + 1;
+            const lotado = e.capacidade != null ? total >= e.capacidade : false;
+            return {
+              ...e,
+              inscrito: true,
+              situacaoInscricao: "ATIVA",
+              totalInscritos: total,
+              lotado,
+            };
+          }),
+        );
       }
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro na inscrição.");
     } finally {
@@ -453,7 +483,6 @@ export default function Eventos() {
       await confirmarCheckInInscricao(inscritosEvento.id, inscricao.id);
       toast.success("Check-in confirmado.");
       await recarregarInscritos();
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro no check-in.");
     } finally {
@@ -469,7 +498,6 @@ export default function Eventos() {
       toast.success("Check-in em lote realizado.");
       setSelecionadosCheckIn([]);
       await recarregarInscritos();
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro no check-in em lote.");
     } finally {

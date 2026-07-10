@@ -94,10 +94,11 @@ export function EscalasLimpezaHistorico({ onRecarregar }: Props) {
 
   const publicar = async (chave: string) => {
     try {
-      await publicarLoteLimpeza(chave);
+      const publicado = await publicarLoteLimpeza(chave);
       toast.success("Lote publicado! Membros escalados serão avisados ao logar.");
-      await carregar();
-      onRecarregar?.();
+      setLotes((prev) =>
+        prev.map((l) => (l.chave === chave ? { ...l, ...publicado, status: "PUBLICADA" } : l)),
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao publicar lote.");
     }
@@ -108,10 +109,10 @@ export function EscalasLimpezaHistorico({ onRecarregar }: Props) {
     setDescartando(true);
     try {
       await excluirLoteLimpeza(descartarChave);
+      const chave = descartarChave;
       setDescartarChave(null);
       toast.success("Rascunho descartado.");
-      await carregar();
-      onRecarregar?.();
+      setLotes((prev) => prev.filter((l) => l.chave !== chave));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao descartar rascunho.");
     } finally {
@@ -124,10 +125,10 @@ export function EscalasLimpezaHistorico({ onRecarregar }: Props) {
     setExcluindo(true);
     try {
       await excluirLoteLimpeza(excluirChave);
+      const chave = excluirChave;
       setExcluirChave(null);
       toast.success("Lote de limpeza excluído.");
-      await carregar();
-      onRecarregar?.();
+      setLotes((prev) => prev.filter((l) => l.chave !== chave));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao excluir lote.");
     } finally {

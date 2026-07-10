@@ -108,9 +108,17 @@ export function EscalasLimpezaPanel() {
   const salvarLimpeza = async () => {
     setSalvando(true);
     try {
-      await salvarConfigAutomacao(payloadLimpeza());
+      const salva = await salvarConfigAutomacao(payloadLimpeza());
+      setConfig({
+        mesesCiclo: 3,
+        diasAntecedencia: 14,
+        ativo: true,
+        gerarLimpeza: true,
+        diaSemanaLimpeza: "DOMINGO",
+        ...salva,
+        modoLimpeza: normalizarModoLimpeza(salva),
+      });
       toast.success("Configuração de limpeza salva.");
-      void carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
     } finally {

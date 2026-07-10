@@ -81,8 +81,11 @@ import {
   atualizarLouvor,
   excluirLouvor,
   atualizarTomLouvor,
+  salvarLetraManualLouvor,
+  salvarCifraManualLouvor,
   type LouvorApp,
 } from "@/modules/louvores/api";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DndContext,
   closestCenter,
@@ -565,6 +568,8 @@ export default function PaginaLouvores() {
   const [tonalidade, setTonalidade] = useState("");
   const [tipo, setTipo] = useState<LouvorApp["type"]>("adoracao");
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [letraManual, setLetraManual] = useState("");
+  const [cifraManual, setCifraManual] = useState("");
   const [salvando, setSalvando] = useState(false);
 
   const carregarLouvores = useCallback(async () => {
@@ -687,6 +692,8 @@ export default function PaginaLouvores() {
     setTonalidade("");
     setTipo("adoracao");
     setYoutubeUrl("");
+    setLetraManual("");
+    setCifraManual("");
     setEditando(null);
   };
 
@@ -703,6 +710,8 @@ export default function PaginaLouvores() {
     setTonalidade(louvor.key);
     setTipo(louvor.type);
     setYoutubeUrl(louvor.youtubeUrl ?? "");
+    setLetraManual("");
+    setCifraManual("");
     setDialogAberto(true);
   };
 
@@ -713,8 +722,9 @@ export default function PaginaLouvores() {
     }
     setSalvando(true);
     try {
+      let salvo: LouvorApp;
       if (editando?.idNum) {
-        await atualizarLouvor(editando.idNum, {
+        salvo = await atualizarLouvor(editando.idNum, {
           title: titulo.trim(),
           artist: artista.trim(),
           key: tonalidade,
@@ -722,22 +732,38 @@ export default function PaginaLouvores() {
           type: tipo,
           youtubeUrl: youtubeUrl.trim() || undefined,
           isActive: true,
+          temLetraSalva: editando.temLetraSalva,
+          temCifraApiSalva: editando.temCifraApiSalva,
         });
         toast.success("Louvor atualizado.");
       } else {
-        await criarLouvor({
+        salvo = await criarLouvor({
           title: titulo.trim(),
           artist: artista.trim(),
           key: tonalidade,
           type: tipo,
           youtubeUrl: youtubeUrl.trim() || undefined,
           isActive: true,
+          temLetraSalva: false,
+          temCifraApiSalva: false,
         });
         toast.success("Louvor cadastrado.");
       }
+      if (salvo.idNum && letraManual.trim()) {
+        await salvarLetraManualLouvor(salvo.idNum, letraManual.trim());
+        salvo = { ...salvo, temLetraSalva: true };
+      }
+      if (salvo.idNum && cifraManual.trim()) {
+        await salvarCifraManualLouvor(salvo.idNum, cifraManual.trim());
+        salvo = { ...salvo, temCifraApiSalva: true };
+      }
+      if (editando?.idNum) {
+        atualizarLouvorNaLista(salvo);
+      } else {
+        setLouvores((prev) => [salvo, ...prev]);
+      }
       setDialogAberto(false);
       resetForm();
-      carregarLouvores();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar louvor.");
     } finally {
@@ -751,12 +777,20 @@ export default function PaginaLouvores() {
 
   const executarExcluir = async () => {
     if (!excluindo?.idNum) return;
+    const idExcluido = excluindo.id;
+    const idNumExcluido = excluindo.idNum;
     try {
-      await excluirLouvor(excluindo.idNum);
+      await excluirLouvor(idNumExcluido);
       toast.success("Louvor excluído.");
       setExcluindo(null);
-      carregarLouvores();
-      carregarGrupos();
+      setLouvores((prev) => prev.filter((l) => l.idNum !== idNumExcluido));
+      setGrupos((prev) =>
+        prev.map((g) => ({
+          ...g,
+          louvorIds: g.louvorIds.filter((id) => id !== idExcluido),
+        })),
+      );
+      setLouvorDetalhe((prev) => (prev?.louvor.idNum === idNumExcluido ? null : prev));
     } catch (e) {
       toast.error("Erro ao excluir louvor.");
     }
@@ -768,11 +802,11 @@ export default function PaginaLouvores() {
       return;
     }
     try {
-      await criarGrupo(nomeNovoGrupo.trim());
+      const criado = await criarGrupo(nomeNovoGrupo.trim());
       toast.success("Grupo criado.");
       setNomeNovoGrupo("");
       setDialogGrupoAberto(false);
-      carregarGrupos();
+      setGrupos((prev) => [...prev, criado]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao criar grupo.");
     }
@@ -780,11 +814,12 @@ export default function PaginaLouvores() {
 
   const executarExcluirGrupo = async () => {
     if (!excluindoGrupo?.idNum) return;
+    const idExcluido = excluindoGrupo.idNum;
     try {
-      await excluirGrupo(excluindoGrupo.idNum);
+      await excluirGrupo(idExcluido);
       toast.success("Grupo excluído.");
       setExcluindoGrupo(null);
-      carregarGrupos();
+      setGrupos((prev) => prev.filter((g) => g.idNum !== idExcluido));
     } catch (e) {
       toast.error("Erro ao excluir grupo.");
     }
@@ -955,6 +990,28 @@ export default function PaginaLouvores() {
                       placeholder="https://youtube.com/..."
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="letra-manual">Letra (opcional)</Label>
+                    <Textarea
+                      id="letra-manual"
+                      placeholder="Cole a letra aqui, se já tiver. Também pode buscar depois pela API."
+                      value={letraManual}
+                      onChange={(e) => setLetraManual(e.target.value)}
+                      rows={4}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cifra-manual">Cifra (opcional)</Label>
+                    <Textarea
+                      id="cifra-manual"
+                      placeholder="Cole a cifra aqui, se já tiver. Também pode buscar depois pela API."
+                      value={cifraManual}
+                      onChange={(e) => setCifraManual(e.target.value)}
+                      rows={4}
+                      className="font-mono text-sm whitespace-pre"
                     />
                   </div>
                   <div className="flex justify-end gap-2 pt-4">
@@ -1323,7 +1380,11 @@ export default function PaginaLouvores() {
             setLetraVisualizando(null);
             setLetraModoEdicao(false);
           }}
-          onCacheAtualizado={carregarLouvores}
+          onCacheAtualizado={() => {
+            if (letraVisualizando) {
+              atualizarLouvorNaLista({ ...letraVisualizando, temLetraSalva: true });
+            }
+          }}
           modoEdicaoInicial={letraModoEdicao}
         />
 
@@ -1334,7 +1395,11 @@ export default function PaginaLouvores() {
             setCifraOnlineVisualizando(null);
             setCifraOnlineModoEdicao(false);
           }}
-          onCacheAtualizado={carregarLouvores}
+          onCacheAtualizado={() => {
+            if (cifraOnlineVisualizando) {
+              atualizarLouvorNaLista({ ...cifraOnlineVisualizando, temCifraApiSalva: true });
+            }
+          }}
           modoEdicaoInicial={cifraOnlineModoEdicao}
         />
       </div>

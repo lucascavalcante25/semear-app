@@ -197,7 +197,7 @@ export function DocumentosIgrejaTab() {
 
     setEnviando(true);
     try {
-      await enviarDocumentoIgreja({
+      const criado = await enviarDocumentoIgreja({
         nome: form.nome.trim(),
         categoria: form.categoria,
         descricao: form.descricao.trim() || undefined,
@@ -208,7 +208,7 @@ export function DocumentosIgrejaTab() {
       toast.success("Documento enviado com sucesso.");
       setFormAberto(false);
       limparFormulario();
-      await carregar();
+      setDocumentos((prev) => [criado, ...prev]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível enviar o documento.");
     } finally {
@@ -238,7 +238,7 @@ export function DocumentosIgrejaTab() {
 
     setSalvandoEdicao(true);
     try {
-      await atualizarDocumentoIgreja(editando.id, {
+      const atualizado = await atualizarDocumentoIgreja(editando.id, {
         nome: formEdicao.nome.trim(),
         categoria: formEdicao.categoria,
         descricao: formEdicao.descricao.trim() || undefined,
@@ -246,7 +246,7 @@ export function DocumentosIgrejaTab() {
       });
       toast.success("Informações do documento atualizadas.");
       setEditando(null);
-      await carregar();
+      setDocumentos((prev) => prev.map((d) => (d.id === atualizado.id ? atualizado : d)));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível salvar as alterações.");
     } finally {
@@ -260,8 +260,8 @@ export function DocumentosIgrejaTab() {
     try {
       await excluirDocumentoIgreja(excluirId);
       toast.success("Documento removido.");
+      setDocumentos((prev) => prev.filter((d) => d.id !== excluirId));
       setExcluirId(null);
-      await carregar();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível excluir o documento.");
     } finally {

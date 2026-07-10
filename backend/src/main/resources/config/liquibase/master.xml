@@ -128,4 +128,5 @@
     <include file="config/liquibase/changelog/20260630000004_louvor_letra_cache.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260628000001_igreja_cargo.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260707000001_louvor_remove_cifra_arquivo.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260710000001_culto_ocorrencia.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

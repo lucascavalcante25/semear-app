@@ -295,7 +295,7 @@ export default function Visitantes() {
         : {};
 
       if (!visitanteEmEdicao) {
-        await criarVisitante({
+        const criado = await criarVisitante({
           nome: formNome,
           comoConheceu: formComoConheceu,
           observacoes: formObservacoes,
@@ -304,6 +304,7 @@ export default function Visitantes() {
           dataProximoContato: formDataProximoContato || undefined,
           ...camposChegada,
         });
+        setVisitantes((prev) => [criado, ...prev]);
         toast.success("Visitante cadastrado.");
       } else {
         const dto: VisitanteDTO = {
@@ -323,11 +324,13 @@ export default function Visitantes() {
           estadoFunil: formEstadoFunil || null,
           dataProximoContato: formDataProximoContato || null,
         };
-        await atualizarVisitante(dto);
+        const atualizado = await atualizarVisitante(dto);
+        setVisitantes((prev) =>
+          prev.map((v) => (v.id === visitanteEmEdicao.id || v.id === atualizado.id ? atualizado : v)),
+        );
         toast.success("Visitante atualizado.");
       }
       setDialogAberto(false);
-      await carregar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar visitante.");
     } finally {
@@ -337,11 +340,12 @@ export default function Visitantes() {
 
   const confirmarExcluirVisitante = async () => {
     if (!confirmarExclusao) return;
+    const id = Number(confirmarExclusao.id);
     try {
-      await excluirVisitante(Number(confirmarExclusao.id));
+      await excluirVisitante(id);
       toast.success("Visitante excluído.");
       setConfirmarExclusao(null);
-      await carregar();
+      setVisitantes((prev) => prev.filter((v) => Number(v.id) !== id));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir visitante.");
     }

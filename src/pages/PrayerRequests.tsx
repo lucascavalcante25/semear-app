@@ -92,6 +92,33 @@ export default function PedidosOracao() {
     void carregar();
   }, [carregar]);
 
+  const atualizarPedidoNasListas = (pedidoId: number, atualizado: PedidoOracaoDTO | null) => {
+    const aplicar = (lista: PedidoOracaoDTO[]) => {
+      if (atualizado == null) return lista.filter((p) => p.id !== pedidoId);
+      const existe = lista.some((p) => p.id === pedidoId);
+      if (!existe) return lista;
+      return lista.map((p) => (p.id === pedidoId ? atualizado : p));
+    };
+    setMural((prev) => aplicar(prev));
+    setMeus((prev) => aplicar(prev));
+    setLideranca((prev) => aplicar(prev));
+
+    // Aprovado para mural: incluir no mural se ainda não estiver
+    if (
+      atualizado &&
+      atualizado.visibilidade === "PUBLICA" &&
+      (atualizado.aprovado || !atualizado.requerAprovacao) &&
+      atualizado.status !== "REJEITADO" &&
+      atualizado.status !== "ENCERRADO"
+    ) {
+      setMural((prev) => {
+        if (prev.some((p) => p.id === atualizado.id)) return prev;
+        if (atualizado.status === "AGUARDANDO_APROVACAO") return prev;
+        return [atualizado, ...prev];
+      });
+    }
+  };
+
   const filtrar = (lista: PedidoOracaoDTO[]) => {
     const q = busca.trim().toLowerCase();
     if (!q) return lista;
@@ -127,7 +154,7 @@ export default function PedidosOracao() {
             key={p.id}
             pedido={p}
             modoLideranca={modoLideranca}
-            onAtualizado={() => void carregar()}
+            onAtualizado={(atualizado) => atualizarPedidoNasListas(p.id, atualizado)}
           />
         ))}
       </div>
@@ -234,7 +261,20 @@ export default function PedidosOracao() {
       <ModalNovoPedidoOracao
         aberto={modalAberto}
         onAbertoChange={setModalAberto}
-        onCriado={() => void carregar()}
+        onCriado={(criado) => {
+          setMeus((prev) => [criado, ...prev]);
+          if (
+            criado.visibilidade === "PUBLICA" &&
+            (criado.aprovado || !criado.requerAprovacao) &&
+            criado.status !== "AGUARDANDO_APROVACAO"
+          ) {
+            setMural((prev) => [criado, ...prev]);
+          }
+          if (mostrarLideranca) {
+            setLideranca((prev) => [criado, ...prev]);
+          }
+          void refreshNotificacoes();
+        }}
       />
     </LayoutApp>
   );

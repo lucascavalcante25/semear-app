@@ -47,7 +47,7 @@ export default function FinanceiroSuperAdmin() {
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<"TODOS" | "EM_TESTE" | "VENCENDO" | "ATRASADAS">("TODOS");
 
-  const recarregar = async () => {
+  const carregar = async () => {
     setCarregando(true);
     try {
       const [r, a] = await Promise.all([obterResumoFinanceiroAdmin(), listarAssinaturasAdmin()]);
@@ -62,8 +62,12 @@ export default function FinanceiroSuperAdmin() {
   };
 
   useEffect(() => {
-    void recarregar();
+    void carregar();
   }, []);
+
+  const aplicarAssinatura = (atualizada: AssinaturaIgreja) => {
+    setAssinaturas((prev) => prev.map((a) => (a.id === atualizada.id ? atualizada : a)));
+  };
 
   const filtradas = useMemo(() => {
     return assinaturas.filter((a) => {
@@ -181,7 +185,10 @@ export default function FinanceiroSuperAdmin() {
                                 variant="outline"
                                 onClick={() =>
                                   marcarImplantacaoPagaAdmin(a.id)
-                                    .then(() => { toast.success("Implantação marcada"); void recarregar(); })
+                                    .then((atualizada) => {
+                                      toast.success("Implantação marcada");
+                                      aplicarAssinatura(atualizada);
+                                    })
                                     .catch(() => toast.error("Erro"))
                                 }
                               >
@@ -192,7 +199,10 @@ export default function FinanceiroSuperAdmin() {
                                 variant="outline"
                                 onClick={() =>
                                   marcarMensalidadePagaAdmin(a.id)
-                                    .then(() => { toast.success("Mensalidade marcada"); void recarregar(); })
+                                    .then((atualizada) => {
+                                      toast.success("Mensalidade marcada");
+                                      aplicarAssinatura(atualizada);
+                                    })
                                     .catch(() => toast.error("Erro"))
                                 }
                               >
@@ -203,7 +213,10 @@ export default function FinanceiroSuperAdmin() {
                                 variant="ghost"
                                 onClick={() =>
                                   registrarPagamentoAnualAdmin(a.id)
-                                    .then(() => { toast.success("Anual registrado"); void recarregar(); })
+                                    .then((atualizada) => {
+                                      toast.success("Anual registrado");
+                                      aplicarAssinatura(atualizada);
+                                    })
                                     .catch(() => toast.error("Erro"))
                                 }
                               >
@@ -214,7 +227,10 @@ export default function FinanceiroSuperAdmin() {
                                 variant="ghost"
                                 onClick={() =>
                                   ativarAssinaturaAdmin(a.id)
-                                    .then(() => { toast.success("Ativada"); void recarregar(); })
+                                    .then((atualizada) => {
+                                      toast.success("Ativada");
+                                      aplicarAssinatura(atualizada);
+                                    })
                                     .catch(() => toast.error("Erro"))
                                 }
                               >
@@ -225,7 +241,10 @@ export default function FinanceiroSuperAdmin() {
                                 variant="ghost"
                                 onClick={() =>
                                   prorrogarTesteAdmin(a.id)
-                                    .then(() => { toast.success("Prorrogado"); void recarregar(); })
+                                    .then((atualizada) => {
+                                      toast.success("Prorrogado");
+                                      aplicarAssinatura(atualizada);
+                                    })
                                     .catch(() => toast.error("Erro"))
                                 }
                               >
@@ -237,7 +256,10 @@ export default function FinanceiroSuperAdmin() {
                                 className="text-destructive"
                                 onClick={() =>
                                   suspenderAssinaturaAdmin(a.id)
-                                    .then(() => { toast.success("Suspensa"); void recarregar(); })
+                                    .then((atualizada) => {
+                                      toast.success("Suspensa");
+                                      aplicarAssinatura(atualizada);
+                                    })
                                     .catch(() => toast.error("Erro"))
                                 }
                               >

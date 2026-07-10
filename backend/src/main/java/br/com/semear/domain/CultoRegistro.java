@@ -1,11 +1,13 @@
 package br.com.semear.domain;
 
 import br.com.semear.domain.enumeration.DiaSemanaCulto;
+import br.com.semear.domain.enumeration.TipoCulto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "culto_registro")
@@ -38,6 +40,14 @@ public class CultoRegistro implements Serializable {
     private String horario;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 20)
+    private TipoCulto tipo = TipoCulto.RECORRENTE;
+
+    @Column(name = "data_especifica")
+    private LocalDate dataEspecifica;
+
+    @NotNull
     @Column(name = "ativo", nullable = false)
     private Boolean ativo = true;
 
@@ -55,6 +65,10 @@ public class CultoRegistro implements Serializable {
     public void setDiaSemana(DiaSemanaCulto diaSemana) { this.diaSemana = diaSemana; }
     public String getHorario() { return horario; }
     public void setHorario(String horario) { this.horario = horario; }
+    public TipoCulto getTipo() { return tipo; }
+    public void setTipo(TipoCulto tipo) { this.tipo = tipo; }
+    public LocalDate getDataEspecifica() { return dataEspecifica; }
+    public void setDataEspecifica(LocalDate dataEspecifica) { this.dataEspecifica = dataEspecifica; }
     public Boolean getAtivo() { return ativo; }
     public void setAtivo(Boolean ativo) { this.ativo = ativo; }
     public Instant getCriadoEm() { return criadoEm; }

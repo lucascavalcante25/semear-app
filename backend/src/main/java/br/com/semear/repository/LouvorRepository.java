@@ -22,7 +22,7 @@ public interface LouvorRepository extends JpaRepository<Louvor, Long> {
         CASE WHEN l.letraConteudo IS NOT NULL AND TRIM(l.letraConteudo) <> '' THEN true ELSE false END AS temLetraSalva,
         CASE WHEN l.cifraApiCacheEm IS NOT NULL THEN true ELSE false END AS temCifraApiSalva,
         l.createdAt AS createdAt, l.updatedAt AS updatedAt
-        FROM Louvor l WHERE l.igreja.id = :igrejaId ORDER BY l.titulo ASC
+        FROM Louvor l WHERE l.igreja.id = :igrejaId ORDER BY l.createdAt DESC, l.titulo ASC
         """
     )
     List<LouvorListagemProjection> findResumoByIgrejaIdOrderByTituloAsc(@Param("igrejaId") Long igrejaId);
@@ -37,7 +37,7 @@ public interface LouvorRepository extends JpaRepository<Louvor, Long> {
         FROM Louvor l
         WHERE l.igreja.id = :igrejaId
         AND (LOWER(l.titulo) LIKE LOWER(CONCAT('%', :q, '%')) OR LOWER(l.artista) LIKE LOWER(CONCAT('%', :q, '%')))
-        ORDER BY l.titulo ASC
+        ORDER BY l.createdAt DESC, l.titulo ASC
         """
     )
     List<LouvorListagemProjection> searchResumoByIgrejaAndTituloOrArtista(@Param("igrejaId") Long igrejaId, @Param("q") String query);

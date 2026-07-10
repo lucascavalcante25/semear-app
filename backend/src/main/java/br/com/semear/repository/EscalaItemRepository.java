@@ -17,6 +17,12 @@ public interface EscalaItemRepository extends JpaRepository<EscalaItem, Long> {
     List<EscalaItem> findByUserIdAndConfirmadoFalse(Long userId);
 
     @Query(
+        "SELECT ei FROM EscalaItem ei JOIN FETCH ei.user JOIN FETCH ei.escala e " +
+        "WHERE e.id IN :escalaIds"
+    )
+    List<EscalaItem> findByEscalaIdInWithUser(@Param("escalaIds") List<Long> escalaIds);
+
+    @Query(
         "SELECT ei FROM EscalaItem ei JOIN FETCH ei.escala e LEFT JOIN FETCH e.departamento d LEFT JOIN FETCH e.cultoRegistro " +
         "WHERE ei.user.id = :userId AND e.status = :status AND e.dataEvento >= :desde AND e.dataEvento <= :ate"
     )
