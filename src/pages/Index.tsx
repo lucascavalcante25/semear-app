@@ -9,6 +9,7 @@ import {
   DestaqueAvisos,
   DestaqueEventosProximos,
   DestaqueMinhasEscalas,
+  DestaqueProximoCulto,
 } from "@/components/dashboard";
 import { BannerInformativoDashboard } from "@/components/dashboard/BannerInformativoDashboard";
 import { AlertasSecretariaEscalas } from "@/components/escalas/AlertasSecretariaEscalas";
@@ -70,6 +71,8 @@ const Inicio = () => {
         </div>
 
         <BannerInformativoDashboard />
+
+        <DestaqueProximoCulto />
 
         {visaoGerencial && <DestaqueVisitantesHoje />}
         {visaoGerencial && <DestaqueAniversariantesSemana />}

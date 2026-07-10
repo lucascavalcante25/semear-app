@@ -49,11 +49,22 @@ const ordemDepartamento = (nome: string) => {
 const chaveDiaEscala = (escala: EscalaDTO) => {
   const iso = escala.dataEvento ?? escala.data;
   if (!iso) return `${escala.titulo}-${escala.id}`;
-  const d = new Date(iso);
+  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+};
+
+/** Mantém escalas de hoje em diante (calendário local). */
+export const escalaNaoPassou = (escala: EscalaDTO) => {
+  const iso = escala.dataEvento ?? escala.data;
+  if (!iso) return true;
+  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const dia = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return dia.getTime() >= hoje.getTime();
 };
 
 export const agruparEscalasPorCulto = (escalas: EscalaDTO[]): GrupoEscalasCulto[] => {

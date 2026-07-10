@@ -129,11 +129,9 @@ export function EscalasLimpezaPanel() {
   const confirmarGerar = async () => {
     setGerando(true);
     try {
-      await salvarConfigAutomacao({
-        ...payloadLimpeza(),
-        gerarPortaria: false,
-        gerarRecepcao: false,
-      });
+      // Não desliga portaria/recepção: a config é compartilhada e o escopo LIMPEZA
+      // já ignora esses departamentos na geração.
+      await salvarConfigAutomacao(payloadLimpeza());
       await gerarProximoCicloEscalas({
         escopo: "LIMPEZA",
         substituirLimpezaExistente: substituirLimpeza,

@@ -65,12 +65,23 @@ export function EscalasAutomacaoPanel() {
   }, [carregar]);
 
   const confirmarGerar = async () => {
+    const gerarPortaria = config.gerarPortaria !== false;
+    const gerarRecepcao = config.gerarRecepcao !== false;
+    if (!gerarPortaria && !gerarRecepcao) {
+      toast.error("Ative Portaria e/ou Recepção no sorteio.");
+      return;
+    }
     setGerando(true);
     try {
       const cfgSalva = await salvarConfigAutomacao({
         ...config,
+        gerarPortaria,
+        gerarRecepcao,
         gerarLimpeza: false,
       });
+      const geracao = await gerarProximoCicloEscalas({ escopo: "PORTARIA_RECEPCAO" });
+      setModalGerarAberto(false);
+      const cfgAtual = await obterConfigAutomacao().catch(() => cfgSalva);
       setConfig({
         mesesCiclo: 3,
         diasAntecedencia: 14,
@@ -79,18 +90,15 @@ export function EscalasAutomacaoPanel() {
         gerarRecepcao: true,
         gerarLimpeza: false,
         agruparPortariaRecepcao: false,
-        ...cfgSalva,
+        ...cfgAtual,
       });
-      const geracao = await gerarProximoCicloEscalas({ escopo: "PORTARIA_RECEPCAO" });
-      setModalGerarAberto(false);
-      toast.success("Ciclo gerado em rascunho. Revise e publique.");
       if (geracao) {
         setGeracoes((prev) => [geracao, ...prev.filter((g) => g.id !== geracao.id)]);
-        setConfig((c) => ({
-          ...c,
-          podeGerarProximoCiclo: false,
-          motivoBloqueioGeracao: "Há um ciclo em rascunho. Publique ou descarte antes de gerar outro.",
-        }));
+      }
+      if (geracao?.status === "RASCUNHO") {
+        toast.success("Ciclo gerado em rascunho. Revise e publique.");
+      } else {
+        toast.success("Ciclo gerado.");
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao gerar ciclo.");
@@ -146,7 +154,15 @@ export function EscalasAutomacaoPanel() {
               type="button"
               size="sm"
               disabled={cultos.length === 0 || geracaoBloqueada || gerando}
-              onClick={() => setModalGerarAberto(true)}
+              onClick={() => {
+                // Se limpeza (ou outro fluxo) desligou os dois, reativa ao abrir o modal desta aba.
+                setConfig((c) =>
+                  c.gerarPortaria === false && c.gerarRecepcao === false
+                    ? { ...c, gerarPortaria: true, gerarRecepcao: true }
+                    : c,
+                );
+                setModalGerarAberto(true);
+              }}
             >
               Gerar próximo ciclo
             </Button>

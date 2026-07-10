@@ -96,23 +96,20 @@ public class EscalaAutomacaoService {
         int diasAntecedencia = dto.getDiasAntecedencia() != null ? dto.getDiasAntecedencia() : 14;
         LocalDate hoje = LocalDate.now(FUSO);
 
-        Optional<EscalaGeracao> rascunho = geracaoRepository.findFirstByIgrejaIdAndStatusOrderByCriadoEmDesc(
-            igrejaId,
-            StatusEscalaPublicacao.RASCUNHO
-        );
+        Optional<EscalaGeracao> rascunho = geracaoRepository
+            .findFirstByIgrejaIdAndStatusOrderByCriadoEmDesc(igrejaId, StatusEscalaPublicacao.RASCUNHO)
+            .filter(g -> possuiEscalasPortariaRecepcao(g.getId()));
         if (rascunho.isPresent()) {
             dto.setPodeGerarProximoCiclo(false);
             dto.setMotivoBloqueioGeracao("Existe um ciclo em rascunho. Publique-o ou descarte-o antes de gerar outro.");
             return;
         }
 
-        Optional<EscalaGeracao> vigente = geracaoRepository.findFirstByIgrejaIdAndStatusOrderByDataFimDesc(
-            igrejaId,
-            StatusEscalaPublicacao.PUBLICADA
-        );
+        Optional<EscalaGeracao> vigente = encontrarUltimaGeracaoPortariaRecepcao(igrejaId, StatusEscalaPublicacao.PUBLICADA);
         if (vigente.isEmpty()) {
             dto.setPodeGerarProximoCiclo(true);
             dto.setMotivoBloqueioGeracao(null);
+            dto.setProximaDataGeracao(null);
             return;
         }
 
@@ -133,6 +130,16 @@ public class EscalaAutomacaoService {
             dto.setPodeGerarProximoCiclo(true);
             dto.setMotivoBloqueioGeracao(null);
         }
+    }
+
+    /** Última geração (por data fim) que ainda tem escalas de portaria/recepção. */
+    private Optional<EscalaGeracao> encontrarUltimaGeracaoPortariaRecepcao(Long igrejaId, StatusEscalaPublicacao status) {
+        return geracaoRepository
+            .findByIgrejaIdOrderByDataInicioDesc(igrejaId)
+            .stream()
+            .filter(g -> g.getStatus() == status)
+            .filter(g -> possuiEscalasPortariaRecepcao(g.getId()))
+            .max(Comparator.comparing(EscalaGeracao::getDataFim, Comparator.nullsLast(Comparator.naturalOrder())));
     }
 
     public EscalaConfigAutomaticaDTO salvarConfig(EscalaConfigAutomaticaDTO dto) {
@@ -474,11 +481,12 @@ public class EscalaAutomacaoService {
             alertas.add(a);
         });
 
-        geracaoRepository.findFirstByIgrejaIdAndStatusOrderByDataFimDesc(igrejaId, StatusEscalaPublicacao.PUBLICADA).ifPresent(vigente -> {
+        encontrarUltimaGeracaoPortariaRecepcao(igrejaId, StatusEscalaPublicacao.PUBLICADA).ifPresent(vigente -> {
             long dias = ChronoUnit.DAYS.between(hoje, vigente.getDataFim());
             if (dias <= config.getDiasAntecedencia()) {
                 boolean temRascunhoFuturo = geracaoRepository
                     .findFirstByIgrejaIdAndStatusOrderByCriadoEmDesc(igrejaId, StatusEscalaPublicacao.RASCUNHO)
+                    .filter(g -> possuiEscalasPortariaRecepcao(g.getId()))
                     .isPresent();
                 if (!temRascunhoFuturo) {
                     EscalaAlertaSecretariaDTO a = new EscalaAlertaSecretariaDTO();
@@ -495,7 +503,7 @@ public class EscalaAutomacaoService {
             }
         });
 
-        if (geracaoRepository.findFirstByIgrejaIdAndStatusOrderByDataFimDesc(igrejaId, StatusEscalaPublicacao.PUBLICADA).isEmpty()) {
+        if (encontrarUltimaGeracaoPortariaRecepcao(igrejaId, StatusEscalaPublicacao.PUBLICADA).isEmpty()) {
             EscalaAlertaSecretariaDTO a = new EscalaAlertaSecretariaDTO();
             a.setTipo("SEM_CICLO");
             a.setTitulo("Configure e gere o primeiro ciclo");
@@ -542,10 +550,7 @@ public class EscalaAutomacaoService {
             return;
         }
         LocalDate hoje = LocalDate.now(FUSO);
-        Optional<EscalaGeracao> vigente = geracaoRepository.findFirstByIgrejaIdAndStatusOrderByDataFimDesc(
-            igrejaId,
-            StatusEscalaPublicacao.PUBLICADA
-        );
+        Optional<EscalaGeracao> vigente = encontrarUltimaGeracaoPortariaRecepcao(igrejaId, StatusEscalaPublicacao.PUBLICADA);
         if (vigente.isEmpty()) {
             return;
         }
@@ -555,6 +560,7 @@ public class EscalaAutomacaoService {
         }
         boolean jaTemRascunho = geracaoRepository
             .findFirstByIgrejaIdAndStatusOrderByCriadoEmDesc(igrejaId, StatusEscalaPublicacao.RASCUNHO)
+            .filter(g -> possuiEscalasPortariaRecepcao(g.getId()))
             .isPresent();
         if (jaTemRascunho) {
             return;
@@ -598,12 +604,22 @@ public class EscalaAutomacaoService {
         boolean geraLimpeza = geracaoCompleta || somenteLimpeza;
 
         if (geraPortariaRecep) {
-            boolean temRegraCulto = cultos.stream().anyMatch(c -> !filtrarRegrasAtivas(c.getId(), config, true, false).isEmpty());
-            if (
-                !temRegraCulto ||
-                (!Boolean.TRUE.equals(config.getGerarPortaria()) && !Boolean.TRUE.equals(config.getGerarRecepcao()))
-            ) {
-                throw new BadRequestAlertException("Configure cultos com portaria e/ou recepção", ENTITY, "semregras");
+            if (!Boolean.TRUE.equals(config.getGerarPortaria()) && !Boolean.TRUE.equals(config.getGerarRecepcao())) {
+                throw new BadRequestAlertException(
+                    "Ative Portaria e/ou Recepção no sorteio",
+                    ENTITY,
+                    "semopcoes"
+                );
+            }
+            boolean temRegraCulto = cultos
+                .stream()
+                .anyMatch(c -> !filtrarRegrasAtivas(c.getId(), config, true, false).isEmpty());
+            if (!temRegraCulto) {
+                throw new BadRequestAlertException(
+                    "Configure cultos com portaria e/ou recepção",
+                    ENTITY,
+                    "semregras"
+                );
             }
         }
 
@@ -631,12 +647,18 @@ public class EscalaAutomacaoService {
             .filter(g -> g.getDataInicio().equals(inicio) && g.getDataFim().equals(fim))
             .findFirst();
 
+        // Se houver mais de uma publicada no mesmo período (ex.: limpeza e portaria separadas),
+        // prefere a que já tem portaria/recepção; senão a mais recente.
         Optional<EscalaGeracao> publicadaMesmoPeriodo = geracaoRepository
             .findByIgrejaIdOrderByDataInicioDesc(igrejaIdAtual)
             .stream()
             .filter(g -> g.getStatus() == StatusEscalaPublicacao.PUBLICADA)
             .filter(g -> g.getDataInicio().equals(inicio) && g.getDataFim().equals(fim))
-            .findFirst();
+            .max(
+                Comparator
+                    .comparing((EscalaGeracao g) -> possuiEscalasPortariaRecepcao(g.getId()))
+                    .thenComparing(EscalaGeracao::getId)
+            );
 
         if (somenteLimpeza && Boolean.TRUE.equals(req != null ? req.getSubstituirLimpezaExistente() : null)) {
             rascunhoMesmoPeriodo.ifPresent(this::removerEscalasLimpezaDaGeracao);
@@ -657,6 +679,44 @@ public class EscalaAutomacaoService {
             Instant historicoDesde = Instant.now().minus(365, ChronoUnit.DAYS);
             gerarEscalasLimpeza(geracao, inicio, fim, igrejaIdAtual, config, cultos, cargaGeracao, historicoDesde);
             return geracao;
+        }
+
+        // Reusa só rascunho do mesmo período (sem portaria ainda). Nunca injeta em ciclo
+        // já PUBLICADO — isso publicava na hora e pulava a revisão.
+        if (somentePortariaRecepcao && rascunhoMesmoPeriodo.isPresent()) {
+            EscalaGeracao geracao = rascunhoMesmoPeriodo.get();
+            if (possuiEscalasPortariaRecepcao(geracao.getId())) {
+                throw new BadRequestAlertException(
+                    "Já existe rascunho de portaria/recepção neste período. Publique ou descarte antes de gerar de novo.",
+                    ENTITY,
+                    "rascunhoexistente"
+                );
+            }
+            Map<Long, Integer> cargaGeracao = new HashMap<>();
+            Instant historicoDesde = Instant.now().minus(365, ChronoUnit.DAYS);
+            gerarEscalasPortariaRecepcao(
+                geracao,
+                inicio,
+                fim,
+                igrejaIdAtual,
+                config,
+                cultos,
+                cargaGeracao,
+                historicoDesde
+            );
+            return geracao;
+        }
+
+        if (
+            somentePortariaRecepcao &&
+            publicadaMesmoPeriodo.isPresent() &&
+            possuiEscalasPortariaRecepcao(publicadaMesmoPeriodo.get().getId())
+        ) {
+            throw new BadRequestAlertException(
+                "Já existem escalas de portaria/recepção neste período. Exclua-as antes de gerar de novo.",
+                ENTITY,
+                "portariaexistente"
+            );
         }
 
         if (!somenteLimpeza && rascunhoMesmoPeriodo.isPresent()) {
@@ -692,66 +752,16 @@ public class EscalaAutomacaoService {
         Instant historicoDesde = Instant.now().minus(365, ChronoUnit.DAYS);
 
         if (geraPortariaRecep) {
-            for (LocalDate data = inicio; !data.isAfter(fim); data = data.plusDays(1)) {
-                for (CultoRegistro culto : cultos) {
-                    if (!diaCompativel(data, culto.getDiaSemana())) {
-                        continue;
-                    }
-                    List<CultoEscalaRegra> regras = filtrarRegrasAtivas(culto.getId(), config, true, false);
-                    if (regras.isEmpty()) {
-                        continue;
-                    }
-
-                    if (Boolean.TRUE.equals(config.getAgruparPortariaRecepcao())) {
-                        Optional<CultoEscalaRegra> portaria = regras
-                            .stream()
-                            .filter(r -> departamentoEhCodigo(r.getDepartamento(), CodigoDepartamento.PORTARIA))
-                            .findFirst();
-                        Optional<CultoEscalaRegra> recepcao = regras
-                            .stream()
-                            .filter(r -> departamentoEhCodigo(r.getDepartamento(), CodigoDepartamento.RECEPCAO))
-                            .findFirst();
-                        boolean agrupou = false;
-                        if (
-                            portaria.isPresent() &&
-                            recepcao.isPresent() &&
-                            Boolean.TRUE.equals(config.getGerarPortaria()) &&
-                            Boolean.TRUE.equals(config.getGerarRecepcao())
-                        ) {
-                            Departamento deptPortaria = departamentoRepository
-                                .findByIdAndIgrejaId(portaria.get().getDepartamento().getId(), igrejaIdAtual)
-                                .orElse(null);
-                            Departamento deptRecepcao = departamentoRepository
-                                .findByIdAndIgrejaId(recepcao.get().getDepartamento().getId(), igrejaIdAtual)
-                                .orElse(null);
-                            if (deptPortaria != null && deptRecepcao != null) {
-                                criarEscalaAgrupadaPortariaRecepcao(
-                                    geracao,
-                                    culto,
-                                    portaria.get(),
-                                    recepcao.get(),
-                                    deptPortaria,
-                                    deptRecepcao,
-                                    data,
-                                    cargaGeracao,
-                                    historicoDesde
-                                );
-                                agrupou = true;
-                            }
-                        }
-                        for (CultoEscalaRegra regra : regras) {
-                            if (agrupou && (departamentoEhCodigo(regra.getDepartamento(), CodigoDepartamento.PORTARIA) || departamentoEhCodigo(regra.getDepartamento(), CodigoDepartamento.RECEPCAO))) {
-                                continue;
-                            }
-                            processarRegraIndividual(geracao, culto, regra, igrejaIdAtual, data, cargaGeracao, historicoDesde, config, true, false);
-                        }
-                    } else {
-                        for (CultoEscalaRegra regra : regras) {
-                            processarRegraIndividual(geracao, culto, regra, igrejaIdAtual, data, cargaGeracao, historicoDesde, config, true, false);
-                        }
-                    }
-                }
-            }
+            gerarEscalasPortariaRecepcao(
+                geracao,
+                inicio,
+                fim,
+                igrejaIdAtual,
+                config,
+                cultos,
+                cargaGeracao,
+                historicoDesde
+            );
         }
 
         if (geraLimpeza && Boolean.TRUE.equals(config.getGerarLimpeza())) {
@@ -759,6 +769,104 @@ public class EscalaAutomacaoService {
         }
 
         return geracao;
+    }
+
+    private void gerarEscalasPortariaRecepcao(
+        EscalaGeracao geracao,
+        LocalDate inicio,
+        LocalDate fim,
+        Long igrejaId,
+        EscalaConfigAutomatica config,
+        List<CultoRegistro> cultos,
+        Map<Long, Integer> cargaGeracao,
+        Instant historicoDesde
+    ) {
+        for (LocalDate data = inicio; !data.isAfter(fim); data = data.plusDays(1)) {
+            for (CultoRegistro culto : cultos) {
+                if (!diaCompativel(data, culto.getDiaSemana())) {
+                    continue;
+                }
+                List<CultoEscalaRegra> regras = filtrarRegrasAtivas(culto.getId(), config, true, false);
+                if (regras.isEmpty()) {
+                    continue;
+                }
+
+                if (Boolean.TRUE.equals(config.getAgruparPortariaRecepcao())) {
+                    Optional<CultoEscalaRegra> portaria = regras
+                        .stream()
+                        .filter(r -> departamentoEhCodigo(r.getDepartamento(), CodigoDepartamento.PORTARIA))
+                        .findFirst();
+                    Optional<CultoEscalaRegra> recepcao = regras
+                        .stream()
+                        .filter(r -> departamentoEhCodigo(r.getDepartamento(), CodigoDepartamento.RECEPCAO))
+                        .findFirst();
+                    boolean agrupou = false;
+                    if (
+                        portaria.isPresent() &&
+                        recepcao.isPresent() &&
+                        Boolean.TRUE.equals(config.getGerarPortaria()) &&
+                        Boolean.TRUE.equals(config.getGerarRecepcao())
+                    ) {
+                        Departamento deptPortaria = departamentoRepository
+                            .findByIdAndIgrejaId(portaria.get().getDepartamento().getId(), igrejaId)
+                            .orElse(null);
+                        Departamento deptRecepcao = departamentoRepository
+                            .findByIdAndIgrejaId(recepcao.get().getDepartamento().getId(), igrejaId)
+                            .orElse(null);
+                        if (deptPortaria != null && deptRecepcao != null) {
+                            criarEscalaAgrupadaPortariaRecepcao(
+                                geracao,
+                                culto,
+                                portaria.get(),
+                                recepcao.get(),
+                                deptPortaria,
+                                deptRecepcao,
+                                data,
+                                cargaGeracao,
+                                historicoDesde
+                            );
+                            agrupou = true;
+                        }
+                    }
+                    for (CultoEscalaRegra regra : regras) {
+                        if (
+                            agrupou &&
+                            (departamentoEhCodigo(regra.getDepartamento(), CodigoDepartamento.PORTARIA) ||
+                                departamentoEhCodigo(regra.getDepartamento(), CodigoDepartamento.RECEPCAO))
+                        ) {
+                            continue;
+                        }
+                        processarRegraIndividual(
+                            geracao,
+                            culto,
+                            regra,
+                            igrejaId,
+                            data,
+                            cargaGeracao,
+                            historicoDesde,
+                            config,
+                            true,
+                            false
+                        );
+                    }
+                } else {
+                    for (CultoEscalaRegra regra : regras) {
+                        processarRegraIndividual(
+                            geracao,
+                            culto,
+                            regra,
+                            igrejaId,
+                            data,
+                            cargaGeracao,
+                            historicoDesde,
+                            config,
+                            true,
+                            false
+                        );
+                    }
+                }
+            }
+        }
     }
 
     private void processarRegraIndividual(
@@ -1117,11 +1225,8 @@ public class EscalaAutomacaoService {
             escala.setCultoRegistro(culto);
         }
         escala.setGeracao(geracao);
-        if (loteLimpezaChave != null) {
-            escala.setStatus(StatusEscalaPublicacao.RASCUNHO);
-        } else {
-            escala.setStatus(geracao.getStatus() != null ? geracao.getStatus() : StatusEscalaPublicacao.RASCUNHO);
-        }
+        // Sorteio sempre nasce em rascunho; publicação (ciclo ou lote) é que libera.
+        escala.setStatus(StatusEscalaPublicacao.RASCUNHO);
         escala.setTitulo(departamento.getNome() + " — " + culto.getNome() + " " + data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         escala.setDataEvento(combinarDataHorario(data, culto.getHorario()));
         if (loteLimpezaChave != null) {
@@ -1178,7 +1283,7 @@ public class EscalaAutomacaoService {
 
     private LocalDate[] calcularProximoPeriodo(Long igrejaId, int mesesCiclo) {
         LocalDate hoje = LocalDate.now(FUSO);
-        Optional<EscalaGeracao> ultimaPublicada = geracaoRepository.findFirstByIgrejaIdAndStatusOrderByDataFimDesc(
+        Optional<EscalaGeracao> ultimaPublicada = encontrarUltimaGeracaoPortariaRecepcao(
             igrejaId,
             StatusEscalaPublicacao.PUBLICADA
         );

@@ -58,6 +58,7 @@ import {
 } from "@/modules/escalas/automacao-api";
 import {
   agruparEscalasPorCulto,
+  escalaNaoPassou,
   formatarDataEscala,
   nomesCoincidem,
   usuarioEstaNoGrupo,
@@ -180,7 +181,8 @@ export default function Escalas() {
   }, [dialogAberto, form.departamentoId, carregarMembrosDepartamento]);
 
   const grupos = useMemo(() => {
-    const agrupados = agruparEscalasPorCulto(lista);
+    const vigentes = lista.filter(escalaNaoPassou);
+    const agrupados = agruparEscalasPorCulto(vigentes);
     const t = busca.trim().toLowerCase();
     if (!t) return agrupados;
     return agrupados.filter(
@@ -192,6 +194,11 @@ export default function Escalas() {
     );
   }, [lista, busca]);
 
+  const totalEscalasVigentes = useMemo(
+    () => lista.filter(escalaNaoPassou).length,
+    [lista],
+  );
+
   const legadoSemCiclo = lista.length > 0 && lista.every((e) => e.geracaoId == null);
 
   const subtitulo = useMemo(
@@ -200,10 +207,10 @@ export default function Escalas() {
         aba,
         infoCiclo,
         diasComEscala: grupos.length,
-        totalEscalas: lista.length,
+        totalEscalas: totalEscalasVigentes,
         legadoSemCiclo,
       }),
-    [aba, infoCiclo, grupos.length, lista.length, legadoSemCiclo],
+    [aba, infoCiclo, grupos.length, totalEscalasVigentes, legadoSemCiclo],
   );
 
   const idsEscalados = useMemo(
@@ -533,8 +540,8 @@ export default function Escalas() {
             ) : grupos.length === 0 ? (
               <p className="text-center text-muted-foreground py-12">
                 {infoCiclo
-                  ? "Nenhuma escala neste período. Gere portaria e recepção na aba correspondente."
-                  : "Nenhuma escala cadastrada."}
+                  ? "Nenhuma escala futura neste período. As que já passaram ficam ocultas."
+                  : "Nenhuma escala futura para exibir."}
               </p>
             ) : (
               <div className="flex w-full flex-col gap-3">

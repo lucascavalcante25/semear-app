@@ -1,8 +1,10 @@
 package br.com.semear.service;
 
 import br.com.semear.domain.*;
+import br.com.semear.domain.enumeration.CodigoDepartamento;
 import br.com.semear.domain.enumeration.DiaSemanaCulto;
 import br.com.semear.domain.enumeration.PapelCultoResponsavel;
+import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
 import br.com.semear.domain.enumeration.TipoCulto;
 import br.com.semear.repository.*;
 import br.com.semear.service.dto.CultoAgendaItemDTO;
@@ -14,6 +16,8 @@ import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -91,30 +95,45 @@ public class CultoAgendaService {
         List<Long> cultoIds = cultos.stream().map(CultoRegistro::getId).toList();
         Map<String, List<Escala>> escalasPorSlot = new HashMap<>();
         Map<Long, List<EscalaItem>> itensPorEscala = new HashMap<>();
+        Instant inicioInst = inicio.atStartOfDay(ZONE).toInstant();
+        Instant fimInst = fim.plusDays(1).atStartOfDay(ZONE).toInstant();
         if (!cultoIds.isEmpty()) {
-            Instant inicioInst = inicio.atStartOfDay(ZONE).toInstant();
-            Instant fimInst = fim.plusDays(1).atStartOfDay(ZONE).toInstant();
-            List<Escala> escalas = escalaRepository.findByIgrejaCultosAndPeriodo(igrejaId, cultoIds, inicioInst, fimInst);
+            List<Escala> escalas = escalaRepository.findByIgrejaCultosAndPeriodo(
+                igrejaId,
+                cultoIds,
+                inicioInst,
+                fimInst,
+                StatusEscalaPublicacao.PUBLICADA
+            );
             for (Escala e : escalas) {
                 if (e.getCultoRegistro() == null || e.getDataEvento() == null) continue;
                 LocalDate data = e.getDataEvento().atZone(ZONE).toLocalDate();
                 String k = chave(e.getCultoRegistro().getId(), data);
                 escalasPorSlot.computeIfAbsent(k, x -> new ArrayList<>()).add(e);
             }
-            List<Long> escalaIds = escalas.stream().map(Escala::getId).toList();
-            if (!escalaIds.isEmpty()) {
-                for (EscalaItem item : escalaItemRepository.findByEscalaIdInWithUser(escalaIds)) {
-                    itensPorEscala.computeIfAbsent(item.getEscala().getId(), x -> new ArrayList<>()).add(item);
-                }
-            }
+            carregarItens(escalas, itensPorEscala);
         }
+
+        // Limpeza semanal/mensal não tem cultoRegistro — anexa pela semana do culto.
+        Instant limpezaInicio = inicio.minusDays(7).atStartOfDay(ZONE).toInstant();
+        Instant limpezaFim = fim.plusDays(8).atStartOfDay(ZONE).toInstant();
+        List<Escala> limpezas = escalaRepository.findLimpezaNoPeriodo(
+            igrejaId,
+            limpezaInicio,
+            limpezaFim,
+            StatusEscalaPublicacao.PUBLICADA,
+            CodigoDepartamento.LIMPEZA
+        );
+        carregarItens(limpezas, itensPorEscala);
 
         List<CultoAgendaItemDTO> todos = new ArrayList<>();
         for (Slot slot : slots) {
             String k = chave(slot.culto.getId(), slot.data);
             CultoOcorrencia oc = ocorrencias.get(k);
             List<Escala> escalasSlot = escalasPorSlot.getOrDefault(k, List.of());
-            todos.add(montarItem(slot, oc, escalasSlot, itensPorEscala));
+            CultoAgendaItemDTO item = montarItem(slot, oc, escalasSlot, itensPorEscala);
+            anexarLimpezaDaSemana(item, slot.data, limpezas, itensPorEscala);
+            todos.add(item);
         }
 
         CultoAgendaListaDTO lista = new CultoAgendaListaDTO();
@@ -140,15 +159,28 @@ public class CultoAgendaService {
         CultoOcorrencia oc = cultoOcorrenciaRepository.findByCultoRegistroIdAndDataEvento(cultoRegistroId, data).orElse(null);
         Instant inicio = data.atStartOfDay(ZONE).toInstant();
         Instant fim = data.plusDays(1).atStartOfDay(ZONE).toInstant();
-        List<Escala> escalas = escalaRepository.findByIgrejaCultosAndPeriodo(igrejaId, List.of(cultoRegistroId), inicio, fim);
+        List<Escala> escalas = escalaRepository.findByIgrejaCultosAndPeriodo(
+            igrejaId,
+            List.of(cultoRegistroId),
+            inicio,
+            fim,
+            StatusEscalaPublicacao.PUBLICADA
+        );
         Map<Long, List<EscalaItem>> itens = new HashMap<>();
-        List<Long> ids = escalas.stream().map(Escala::getId).toList();
-        if (!ids.isEmpty()) {
-            for (EscalaItem item : escalaItemRepository.findByEscalaIdInWithUser(ids)) {
-                itens.computeIfAbsent(item.getEscala().getId(), x -> new ArrayList<>()).add(item);
-            }
-        }
-        return montarItem(new Slot(culto, data), oc, escalas, itens);
+        carregarItens(escalas, itens);
+
+        List<Escala> limpezas = escalaRepository.findLimpezaNoPeriodo(
+            igrejaId,
+            data.minusDays(7).atStartOfDay(ZONE).toInstant(),
+            data.plusDays(8).atStartOfDay(ZONE).toInstant(),
+            StatusEscalaPublicacao.PUBLICADA,
+            CodigoDepartamento.LIMPEZA
+        );
+        carregarItens(limpezas, itens);
+
+        CultoAgendaItemDTO item = montarItem(new Slot(culto, data), oc, escalas, itens);
+        anexarLimpezaDaSemana(item, data, limpezas, itens);
+        return item;
     }
 
     public CultoAgendaItemDTO salvarOcorrencia(CultoOcorrenciaSalvarDTO dto) {
@@ -246,15 +278,22 @@ public class CultoAgendaService {
         for (Long louvorId : ids) {
             Optional<Louvor> opt = louvorRepository.findById(louvorId);
             if (opt.isEmpty()) continue;
-            Louvor l = opt.get();
-            CultoAgendaItemDTO.CultoLouvorItemDTO item = new CultoAgendaItemDTO.CultoLouvorItemDTO();
-            item.setLouvorId(l.getId());
-            item.setTitulo(l.getTitulo());
-            item.setArtista(l.getArtista());
-            item.setOrdem(ordem++);
-            out.add(item);
+            out.add(mapearLouvorItem(opt.get(), ordem++));
         }
         return out;
+    }
+
+    private CultoAgendaItemDTO.CultoLouvorItemDTO mapearLouvorItem(Louvor l, int ordem) {
+        CultoAgendaItemDTO.CultoLouvorItemDTO item = new CultoAgendaItemDTO.CultoLouvorItemDTO();
+        item.setLouvorId(l.getId());
+        item.setTitulo(l.getTitulo());
+        item.setArtista(l.getArtista());
+        item.setOrdem(ordem);
+        item.setYoutubeUrl(l.getYoutubeUrl());
+        item.setTonalidade(l.getTonalidade());
+        item.setTemLetraSalva(l.getLetraConteudo() != null && !l.getLetraConteudo().isBlank());
+        item.setTemCifraApiSalva(l.getCifraConteudo() != null && !l.getCifraConteudo().isBlank());
+        return item;
     }
 
     private CultoAgendaItemDTO montarItem(
@@ -283,12 +322,7 @@ public class CultoAgendaService {
             }
             List<CultoAgendaItemDTO.CultoLouvorItemDTO> louvores = new ArrayList<>();
             for (CultoOcorrenciaLouvor item : cultoOcorrenciaLouvorRepository.findByCultoOcorrenciaIdOrderByOrdemAsc(oc.getId())) {
-                CultoAgendaItemDTO.CultoLouvorItemDTO l = new CultoAgendaItemDTO.CultoLouvorItemDTO();
-                l.setLouvorId(item.getLouvor().getId());
-                l.setTitulo(item.getLouvor().getTitulo());
-                l.setArtista(item.getLouvor().getArtista());
-                l.setOrdem(item.getOrdem());
-                louvores.add(l);
+                louvores.add(mapearLouvorItem(item.getLouvor(), item.getOrdem() != null ? item.getOrdem() : louvores.size()));
             }
             dto.setLouvores(louvores);
 
@@ -317,15 +351,82 @@ public class CultoAgendaService {
         return dto;
     }
 
+    private void carregarItens(List<Escala> escalas, Map<Long, List<EscalaItem>> itensPorEscala) {
+        List<Long> ids = escalas.stream().map(Escala::getId).filter(Objects::nonNull).toList();
+        if (ids.isEmpty()) return;
+        for (EscalaItem item : escalaItemRepository.findByEscalaIdInWithUser(ids)) {
+            itensPorEscala.computeIfAbsent(item.getEscala().getId(), x -> new ArrayList<>()).add(item);
+        }
+    }
+
+    /**
+     * Limpeza semanal/mensal não vincula ao culto: associa a da mesma semana ISO (seg–dom).
+     */
+    private void anexarLimpezaDaSemana(
+        CultoAgendaItemDTO dto,
+        LocalDate dataCulto,
+        List<Escala> limpezas,
+        Map<Long, List<EscalaItem>> itensPorEscala
+    ) {
+        if (dto.isTemOverrideResponsaveis()) return;
+        boolean jaTemLimpeza = dto
+            .getResponsaveis()
+            .stream()
+            .anyMatch(r -> r.getPapel() == PapelCultoResponsavel.LIMPEZA);
+        if (jaTemLimpeza) return;
+
+        WeekFields semana = WeekFields.ISO;
+        int week = dataCulto.get(semana.weekOfWeekBasedYear());
+        int year = dataCulto.get(semana.weekBasedYear());
+
+        Escala limpeza = limpezas
+            .stream()
+            .filter(e -> e.getDataEvento() != null)
+            .filter(e -> {
+                LocalDate d = e.getDataEvento().atZone(ZONE).toLocalDate();
+                return d.get(semana.weekOfWeekBasedYear()) == week && d.get(semana.weekBasedYear()) == year;
+            })
+            .min(
+                Comparator.comparingLong((Escala e) ->
+                    Math.abs(ChronoUnit.DAYS.between(dataCulto, e.getDataEvento().atZone(ZONE).toLocalDate()))
+                )
+            )
+            .orElse(null);
+        if (limpeza == null) return;
+
+        List<CultoAgendaItemDTO.CultoResponsavelDTO> responsaveis = new ArrayList<>(dto.getResponsaveis());
+        for (EscalaItem item : itensPorEscala.getOrDefault(limpeza.getId(), List.of())) {
+            if (item.getUser() == null) continue;
+            CultoAgendaItemDTO.CultoResponsavelDTO rd = new CultoAgendaItemDTO.CultoResponsavelDTO();
+            rd.setPapel(PapelCultoResponsavel.LIMPEZA);
+            rd.setUserId(item.getUser().getId());
+            rd.setNome(nomeUser(item.getUser()));
+            rd.setOrigemManual(false);
+            responsaveis.add(rd);
+            break;
+        }
+        dto.setResponsaveis(responsaveis);
+        if (!responsaveis.isEmpty()) {
+            dto.setTemEscalaGerada(true);
+        }
+    }
+
     private List<CultoAgendaItemDTO.CultoResponsavelDTO> responsaveisDaEscala(
         List<Escala> escalas,
         Map<Long, List<EscalaItem>> itensPorEscala
     ) {
         List<CultoAgendaItemDTO.CultoResponsavelDTO> out = new ArrayList<>();
+        Set<PapelCultoResponsavel> papeisJaIncluidos = EnumSet.noneOf(PapelCultoResponsavel.class);
         for (Escala e : escalas) {
-            PapelCultoResponsavel papel = papelDoDepartamento(e.getDepartamento());
-            if (papel == null) continue;
             for (EscalaItem item : itensPorEscala.getOrDefault(e.getId(), List.of())) {
+                if (item.getUser() == null) continue;
+                // Em escala agrupada (portaria+recepção), o departamento da escala é Portaria;
+                // o papel correto vem da função do item.
+                PapelCultoResponsavel papel = papelPorNome(item.getFuncao());
+                if (papel == null) {
+                    papel = papelDoDepartamento(e.getDepartamento());
+                }
+                if (papel == null || !papeisJaIncluidos.add(papel)) continue;
                 CultoAgendaItemDTO.CultoResponsavelDTO rd = new CultoAgendaItemDTO.CultoResponsavelDTO();
                 rd.setPapel(papel);
                 rd.setUserId(item.getUser().getId());
@@ -347,10 +448,15 @@ public class CultoAgendaService {
                 default -> null;
             };
         }
-        String nome = d.getNome() != null ? d.getNome().toLowerCase(Locale.ROOT) : "";
-        if (nome.contains("portaria")) return PapelCultoResponsavel.PORTARIA;
-        if (nome.contains("recep")) return PapelCultoResponsavel.RECEPCAO;
-        if (nome.contains("limpeza")) return PapelCultoResponsavel.LIMPEZA;
+        return papelPorNome(d.getNome());
+    }
+
+    private PapelCultoResponsavel papelPorNome(String nome) {
+        if (nome == null || nome.isBlank()) return null;
+        String n = nome.toLowerCase(Locale.ROOT);
+        if (n.contains("portaria")) return PapelCultoResponsavel.PORTARIA;
+        if (n.contains("recep")) return PapelCultoResponsavel.RECEPCAO;
+        if (n.contains("limpeza")) return PapelCultoResponsavel.LIMPEZA;
         return null;
     }
 

@@ -784,8 +784,8 @@ public class DevSeedService {
                 continue;
             }
             if (cultoEscalaRegraRepository.findByCultoRegistroId(culto.getId()).isEmpty()) {
-                vincularRegraCulto(culto, portaria, RegraGeneroEscala.MASCULINO);
-                vincularRegraCulto(culto, recepcao, RegraGeneroEscala.FEMININO);
+                vincularRegraCulto(culto, portaria, RegraGeneroEscala.QUALQUER);
+                vincularRegraCulto(culto, recepcao, RegraGeneroEscala.QUALQUER);
             }
         }
     }
@@ -827,8 +827,8 @@ public class DevSeedService {
         culto.setAtivo(true);
         culto.setCriadoEm(Instant.now());
         culto = cultoRegistroRepository.save(culto);
-        vincularRegraCulto(culto, portaria, RegraGeneroEscala.MASCULINO);
-        vincularRegraCulto(culto, recepcao, RegraGeneroEscala.FEMININO);
+        vincularRegraCulto(culto, portaria, RegraGeneroEscala.QUALQUER);
+        vincularRegraCulto(culto, recepcao, RegraGeneroEscala.QUALQUER);
     }
 
     private void vincularRegraCulto(CultoRegistro culto, Departamento departamento, RegraGeneroEscala genero) {

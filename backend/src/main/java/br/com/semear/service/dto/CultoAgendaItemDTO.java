@@ -66,6 +66,10 @@ public class CultoAgendaItemDTO implements Serializable {
         private String titulo;
         private String artista;
         private Integer ordem;
+        private String youtubeUrl;
+        private String tonalidade;
+        private Boolean temLetraSalva;
+        private Boolean temCifraApiSalva;
 
         public Long getLouvorId() { return louvorId; }
         public void setLouvorId(Long louvorId) { this.louvorId = louvorId; }
@@ -75,6 +79,14 @@ public class CultoAgendaItemDTO implements Serializable {
         public void setArtista(String artista) { this.artista = artista; }
         public Integer getOrdem() { return ordem; }
         public void setOrdem(Integer ordem) { this.ordem = ordem; }
+        public String getYoutubeUrl() { return youtubeUrl; }
+        public void setYoutubeUrl(String youtubeUrl) { this.youtubeUrl = youtubeUrl; }
+        public String getTonalidade() { return tonalidade; }
+        public void setTonalidade(String tonalidade) { this.tonalidade = tonalidade; }
+        public Boolean getTemLetraSalva() { return temLetraSalva; }
+        public void setTemLetraSalva(Boolean temLetraSalva) { this.temLetraSalva = temLetraSalva; }
+        public Boolean getTemCifraApiSalva() { return temCifraApiSalva; }
+        public void setTemCifraApiSalva(Boolean temCifraApiSalva) { this.temCifraApiSalva = temCifraApiSalva; }
     }
 
     public static class CultoResponsavelDTO implements Serializable {

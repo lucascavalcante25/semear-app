@@ -14,6 +14,10 @@ export type CultoLouvorItemDTO = {
   titulo: string;
   artista?: string;
   ordem: number;
+  youtubeUrl?: string | null;
+  tonalidade?: string | null;
+  temLetraSalva?: boolean | null;
+  temCifraApiSalva?: boolean | null;
 };
 
 export type CultoResponsavelDTO = {

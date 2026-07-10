@@ -61,13 +61,14 @@ public class EscalaService {
     @Transactional(readOnly = true)
     public List<EscalaDTO> listar() {
         Long igrejaId = tenantService.getIgrejaIdAtual();
-        Optional<EscalaGeracao> geracaoVigente = resolverGeracaoVigente(igrejaId);
+        List<EscalaGeracao> geracoes = resolverGeracoesParaListagem(igrejaId);
 
-        if (geracaoVigente.isPresent()) {
-            return escalaRepository
-                .findByGeracaoId(geracaoVigente.get().getId())
+        if (!geracoes.isEmpty()) {
+            // Escalas do ciclo = só o publicado. Rascunhos ficam nas abas Portaria/Limpeza.
+            return geracoes
                 .stream()
-                .filter(e -> e.getStatus() == StatusEscalaPublicacao.PUBLICADA || usuarioPodeGerenciarEscalas())
+                .flatMap(g -> escalaRepository.findByGeracaoId(g.getId()).stream())
+                .filter(e -> e.getStatus() == StatusEscalaPublicacao.PUBLICADA)
                 .sorted(Comparator.comparing(Escala::getDataEvento, Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(this::toDtoComItens)
                 .toList();
@@ -77,34 +78,43 @@ public class EscalaService {
             .findByIgrejaIdOrderByDataEventoDesc(igrejaId)
             .stream()
             .filter(e -> e.getGeracao() == null)
-            .filter(e -> e.getStatus() == StatusEscalaPublicacao.PUBLICADA || usuarioPodeGerenciarEscalas())
+            .filter(e -> e.getStatus() == StatusEscalaPublicacao.PUBLICADA)
             .map(this::toDtoComItens)
             .toList();
     }
 
-    private Optional<EscalaGeracao> resolverGeracaoVigente(Long igrejaId) {
-        if (usuarioPodeGerenciarEscalas()) {
-            Optional<EscalaGeracao> rascunho = geracaoRepository.findFirstByIgrejaIdAndStatusOrderByCriadoEmDesc(
-                igrejaId,
-                StatusEscalaPublicacao.RASCUNHO
-            );
-            if (rascunho.isPresent()) {
-                return rascunho;
-            }
-        }
-
+    /**
+     * Une todas as gerações publicadas do ciclo vigente (mesmo dataInicio).
+     * Evita sumir portaria/recepção quando limpeza ficou em outra geração do mesmo período.
+     */
+    private List<EscalaGeracao> resolverGeracoesParaListagem(Long igrejaId) {
         LocalDate hoje = LocalDate.now(FUSO);
-        Optional<EscalaGeracao> vigente = geracaoRepository
-            .findByIgrejaIdOrderByDataInicioDesc(igrejaId)
+        List<EscalaGeracao> todas = geracaoRepository.findByIgrejaIdOrderByDataInicioDesc(igrejaId);
+
+        List<EscalaGeracao> publicadasNoPeriodo = todas
             .stream()
             .filter(g -> g.getStatus() == StatusEscalaPublicacao.PUBLICADA)
             .filter(g -> !hoje.isBefore(g.getDataInicio()) && !hoje.isAfter(g.getDataFim()))
-            .findFirst();
-        if (vigente.isPresent()) {
-            return vigente;
+            .toList();
+
+        if (!publicadasNoPeriodo.isEmpty()) {
+            LocalDate inicioRef = publicadasNoPeriodo
+                .stream()
+                .map(EscalaGeracao::getDataInicio)
+                .max(Comparator.naturalOrder())
+                .orElse(hoje);
+            return publicadasNoPeriodo
+                .stream()
+                .filter(g -> Objects.equals(g.getDataInicio(), inicioRef))
+                .toList();
         }
 
-        return geracaoRepository.findFirstByIgrejaIdAndStatusOrderByDataFimDesc(igrejaId, StatusEscalaPublicacao.PUBLICADA);
+        return todas
+            .stream()
+            .filter(g -> g.getStatus() == StatusEscalaPublicacao.PUBLICADA)
+            .max(Comparator.comparing(EscalaGeracao::getDataFim, Comparator.nullsLast(Comparator.naturalOrder())))
+            .map(List::of)
+            .orElse(List.of());
     }
 
     @Transactional(readOnly = true)

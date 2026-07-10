@@ -112,7 +112,7 @@ export function ModalGerarCicloEscalas({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <Label>Portaria</Label>
-                  <p className="text-xs text-muted-foreground">Homens nos cultos cadastrados</p>
+                  <p className="text-xs text-muted-foreground">Membros do departamento Portaria</p>
                 </div>
                 <Switch
                   checked={config.gerarPortaria ?? true}
@@ -122,7 +122,7 @@ export function ModalGerarCicloEscalas({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <Label>Recepção</Label>
-                  <p className="text-xs text-muted-foreground">Mulheres nos cultos cadastrados</p>
+                  <p className="text-xs text-muted-foreground">Membros do departamento Recepção</p>
                 </div>
                 <Switch
                   checked={config.gerarRecepcao ?? true}
@@ -133,7 +133,7 @@ export function ModalGerarCicloEscalas({
                 <div>
                   <Label>Escalas combinadas</Label>
                   <p className="text-xs text-muted-foreground">
-                    Portaria e recepção no mesmo card (homem + mulher)
+                    Portaria e recepção no mesmo card
                   </p>
                 </div>
                 <Switch

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useSearchParams } from "react-router-dom";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,15 +50,14 @@ import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canWrite } from "@/auth/permissions";
 import { cn } from "@/lib/utils";
+import { ModalResumoCulto } from "@/components/cultos/ModalResumoCulto";
 import { listarDepartamentos, type DepartamentoDTO } from "@/modules/departamentos/api";
 import { listarGrupos, type GrupoLouvorApp } from "@/modules/grupos-louvor/api";
 import { listarMembros, type MembroApi } from "@/modules/members/api";
 import { listarLouvores, type LouvorApp } from "@/modules/louvores/api";
 import {
   LABEL_DIA_SEMANA,
-  LABEL_REGRA_GENERO,
   type DiaSemanaCulto,
-  type RegraGeneroEscala,
 } from "@/modules/escalas/automacao-api";
 import {
   listarAgendaCultos,
@@ -198,6 +198,7 @@ function SeletorMembro({
 
 export default function Cultos() {
   const { user } = usarAutenticacao();
+  const [searchParams, setSearchParams] = useSearchParams();
   const podeEditar = canWrite(user, "/cultos");
   const podeLouvores = canWrite(user, "/louvores");
 
@@ -220,6 +221,7 @@ export default function Cultos() {
   const [mesesAbertosProximos, setMesesAbertosProximos] = useState<Set<string>>(() => new Set([mesAtualChave]));
   const [mesesAbertosPassados, setMesesAbertosPassados] = useState<Set<string>>(() => new Set());
 
+  const [resumo, setResumo] = useState<CultoAgendaItemDTO | null>(null);
   const [detalhe, setDetalhe] = useState<CultoAgendaItemDTO | null>(null);
   const [salvandoDetalhe, setSalvandoDetalhe] = useState(false);
   const [editPregador, setEditPregador] = useState("");
@@ -312,7 +314,11 @@ export default function Cultos() {
     });
   };
 
-  const abrirDetalhe = (item: CultoAgendaItemDTO) => {
+  const abrirResumo = (item: CultoAgendaItemDTO) => {
+    setResumo(item);
+  };
+
+  const preencherFormEdicao = useCallback((item: CultoAgendaItemDTO) => {
     setDetalhe(item);
     setEditPregador(item.pregador ?? "");
     setEditTitulo(item.tituloMensagem ?? "");
@@ -328,6 +334,29 @@ export default function Cultos() {
       })),
     );
     setResponsaveisAlterados(Boolean(item.temOverrideResponsaveis));
+  }, []);
+
+  useEffect(() => {
+    if (carregando || !podeEditar) return;
+    const cultoId = searchParams.get("editar");
+    const data = searchParams.get("data");
+    if (!cultoId || !data) return;
+    const idNum = Number(cultoId);
+    if (!Number.isFinite(idNum)) return;
+    const item = [...proximos, ...passados].find(
+      (i) => i.cultoRegistroId === idNum && i.data === data,
+    );
+    if (!item) return;
+    setResumo(null);
+    preencherFormEdicao(item);
+    setSearchParams({}, { replace: true });
+  }, [carregando, podeEditar, proximos, passados, searchParams, setSearchParams, preencherFormEdicao]);
+
+  const abrirEdicaoDoResumo = () => {
+    if (!resumo) return;
+    const item = resumo;
+    setResumo(null);
+    preencherFormEdicao(item);
   };
 
   const puxarGrupo = async (grupoId: string) => {
@@ -377,6 +406,33 @@ export default function Cultos() {
       i.cultoRegistroId === atualizado.cultoRegistroId && i.data === atualizado.data;
     setProximos((prev) => prev.map((i) => (mesmaOcorrencia(i) ? atualizado : i)));
     setPassados((prev) => prev.map((i) => (mesmaOcorrencia(i) ? atualizado : i)));
+    setResumo((prev) =>
+      prev && mesmaOcorrencia(prev) ? atualizado : prev,
+    );
+  };
+
+  const salvarOrdemLouvoresResumo = async (louvores: CultoLouvorItemDTO[]) => {
+    if (!resumo || !podeEditar) return;
+    try {
+      const atualizado = await salvarOcorrenciaCulto({
+        cultoRegistroId: resumo.cultoRegistroId,
+        data: resumo.data,
+        pregador: resumo.pregador ?? null,
+        tituloMensagem: resumo.tituloMensagem ?? null,
+        versiculoCentral: resumo.versiculoCentral ?? null,
+        observacoes: resumo.observacoes ?? null,
+        grupoLouvorOrigemId: resumo.grupoLouvorOrigemId ?? null,
+        louvorIds: louvores.map((l) => l.louvorId),
+        responsaveisManuais: resumo.temOverrideResponsaveis
+          ? (resumo.responsaveis ?? []).map((r) => ({ papel: r.papel, userId: r.userId }))
+          : undefined,
+      });
+      atualizarItemNaLista(atualizado);
+      toast.success("Ordem dos louvores atualizada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao reordenar.");
+      throw e;
+    }
   };
 
   const salvarDetalhe = async () => {
@@ -409,7 +465,12 @@ export default function Cultos() {
   const salvarModelos = async () => {
     setSalvandoModelos(true);
     try {
-      const salvos = await salvarModelosCulto(modelos);
+      // Sorteio usa quem está no departamento; filtro por sexo não é configurado aqui.
+      const payload = modelos.map((m) => ({
+        ...m,
+        regras: (m.regras ?? []).map((r) => ({ ...r, regraGenero: "QUALQUER" as const })),
+      }));
+      const salvos = await salvarModelosCulto(payload);
       setModelos(salvos ?? []);
       toast.success("Modelos de culto salvos.");
       // Só a agenda precisa ser recalculada (datas projetadas); sem spinner de tela cheia.
@@ -428,8 +489,8 @@ export default function Cultos() {
     const recepcao = deptosPortariaRecep.find((d) => d.nome.toLowerCase().includes("recep"));
     const regras = () => {
       const r: CultoModeloDTO["regras"] = [];
-      if (portaria?.id) r.push({ departamentoId: portaria.id, regraGenero: "MASCULINO", ativo: true });
-      if (recepcao?.id) r.push({ departamentoId: recepcao.id, regraGenero: "FEMININO", ativo: true });
+      if (portaria?.id) r.push({ departamentoId: portaria.id, regraGenero: "QUALQUER", ativo: true });
+      if (recepcao?.id) r.push({ departamentoId: recepcao.id, regraGenero: "QUALQUER", ativo: true });
       return r;
     };
     const sugeridos: CultoModeloDTO[] = [
@@ -447,6 +508,14 @@ export default function Cultos() {
   const CardAgenda = ({ item, destacar }: { item: CultoAgendaItemDTO; destacar?: boolean }) => {
     const portaria = item.responsaveis.find((r) => r.papel === "PORTARIA");
     const recepcao = item.responsaveis.find((r) => r.papel === "RECEPCAO");
+    const limpeza = item.responsaveis.find((r) => r.papel === "LIMPEZA");
+    const linhaResponsaveis = [
+      portaria ? `Portaria: ${portaria.nome}` : null,
+      recepcao ? `Recepção: ${recepcao.nome}` : null,
+      limpeza ? `Limpeza: ${limpeza.nome}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
     return (
       <button
         type="button"
@@ -456,7 +525,7 @@ export default function Cultos() {
             ? "bg-olive/10 border-olive/40 ring-1 ring-olive/30 shadow-sm"
             : "bg-card hover:bg-muted/40 active:bg-muted/60",
         )}
-        onClick={() => abrirDetalhe(item)}
+        onClick={() => abrirResumo(item)}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1 space-y-1">
@@ -486,12 +555,8 @@ export default function Cultos() {
                 {item.versiculoCentral}
               </p>
             )}
-            {(portaria || recepcao) && (
-              <p className="text-[11px] text-muted-foreground break-words pt-0.5">
-                {portaria ? `Portaria: ${portaria.nome}` : ""}
-                {portaria && recepcao ? " · " : ""}
-                {recepcao ? `Recepção: ${recepcao.nome}` : ""}
-              </p>
+            {linhaResponsaveis && (
+              <p className="text-[11px] text-muted-foreground break-words pt-0.5">{linhaResponsaveis}</p>
             )}
             {(item.louvores?.length ?? 0) > 0 && (
               <p className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -630,7 +695,7 @@ export default function Cultos() {
 
             <TabsContent value="agenda" className="space-y-3 mt-4">
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Cultos dos próximos 2 meses. Toque em um card para ver ou editar os detalhes.
+                Cultos dos próximos 2 meses. Toque em um card para ver o resumo; use Editar culto para alterar.
               </p>
               <ListaPorMes
                 grupos={gruposProximos}
@@ -764,60 +829,44 @@ export default function Cultos() {
                           )}
                           <div className="space-y-2">
                             <Label className="text-xs">Portaria / Recepção (para gerar escalas)</Label>
+                            <p className="text-[11px] text-muted-foreground">
+                              O sorteio usa os membros do departamento escolhido (sem filtro por sexo).
+                            </p>
                             {(culto.regras ?? []).map((regra, rIdx) => (
-                              <div key={rIdx} className="flex flex-col sm:flex-row gap-2">
+                              <div key={rIdx} className="flex gap-2">
                                 <Select
                                   value={regra.departamentoId != null ? String(regra.departamentoId) : ""}
                                   onValueChange={(v) => {
                                     const copia = [...modelos];
                                     const regras = [...(culto.regras ?? [])];
-                                    regras[rIdx] = { ...regra, departamentoId: Number(v) };
+                                    regras[rIdx] = { ...regra, departamentoId: Number(v), regraGenero: "QUALQUER" };
                                     copia[idx] = { ...culto, regras };
                                     setModelos(copia);
                                   }}
                                 >
-                                  <SelectTrigger className="sm:flex-1"><SelectValue placeholder="Depto" /></SelectTrigger>
+                                  <SelectTrigger className="flex-1"><SelectValue placeholder="Departamento" /></SelectTrigger>
                                   <SelectContent>
                                     {deptosPortariaRecep.map((d) => (
                                       <SelectItem key={d.id} value={String(d.id)}>{d.nome}</SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                <div className="flex gap-2">
-                                  <Select
-                                    value={regra.regraGenero ?? "QUALQUER"}
-                                    onValueChange={(v) => {
-                                      const copia = [...modelos];
-                                      const regras = [...(culto.regras ?? [])];
-                                      regras[rIdx] = { ...regra, regraGenero: v as RegraGeneroEscala };
-                                      copia[idx] = { ...culto, regras };
-                                      setModelos(copia);
-                                    }}
-                                  >
-                                    <SelectTrigger className="flex-1 sm:w-32"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      {(Object.keys(LABEL_REGRA_GENERO) as RegraGeneroEscala[]).map((g) => (
-                                        <SelectItem key={g} value={g}>{LABEL_REGRA_GENERO[g]}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="shrink-0"
-                                    onClick={() => {
-                                      const copia = [...modelos];
-                                      copia[idx] = {
-                                        ...culto,
-                                        regras: (culto.regras ?? []).filter((_, i) => i !== rIdx),
-                                      };
-                                      setModelos(copia);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="shrink-0"
+                                  onClick={() => {
+                                    const copia = [...modelos];
+                                    copia[idx] = {
+                                      ...culto,
+                                      regras: (culto.regras ?? []).filter((_, i) => i !== rIdx),
+                                    };
+                                    setModelos(copia);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             ))}
                             <Button
@@ -850,6 +899,18 @@ export default function Cultos() {
             )}
           </Tabs>
         )}
+
+        <ModalResumoCulto
+          item={resumo}
+          aberto={!!resumo}
+          onFechar={() => setResumo(null)}
+          podeEditar={podeEditar}
+          onEditar={abrirEdicaoDoResumo}
+          onReordenarLouvores={podeEditar ? salvarOrdemLouvoresResumo : undefined}
+          destacandoProximo={
+            !!resumo && `${resumo.cultoRegistroId}-${resumo.data}` === proximoCultoChave
+          }
+        />
 
         <Dialog open={!!detalhe} onOpenChange={(o) => !o && setDetalhe(null)}>
           <DialogContent className="max-h-[90dvh] overflow-y-auto w-[calc(100vw-1.5rem)] max-w-lg p-4 sm:p-6">
@@ -986,7 +1047,13 @@ export default function Cultos() {
                     <Label>Responsáveis</Label>
                     {!detalhe.temOverrideResponsaveis && detalhe.temEscalaGerada && (
                       <p className="text-xs text-muted-foreground">
-                        Exibindo da escala gerada. Ao alterar e salvar, fica o ajuste manual deste culto.
+                        Nomes vindos da escala gerada (portaria, recepção e limpeza). Ao alterar e salvar,
+                        o ajuste fica só neste culto — a escala original não muda.
+                      </p>
+                    )}
+                    {detalhe.temOverrideResponsaveis && (
+                      <p className="text-xs text-muted-foreground">
+                        Este culto tem ajuste manual de responsáveis (não altera a escala gerada).
                       </p>
                     )}
                     {podeEditar ? (

@@ -1,6 +1,7 @@
 package br.com.semear.repository;
 
 import br.com.semear.domain.Escala;
+import br.com.semear.domain.enumeration.CodigoDepartamento;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
 import java.time.Instant;
 import java.util.List;
@@ -24,6 +25,7 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
         LEFT JOIN FETCH e.cultoRegistro
         WHERE e.igreja.id = :igrejaId
         AND e.cultoRegistro.id IN :cultoIds
+        AND e.status = :status
         AND e.dataEvento >= :inicio
         AND e.dataEvento < :fim
         """
@@ -32,7 +34,31 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
         @Param("igrejaId") Long igrejaId,
         @Param("cultoIds") List<Long> cultoIds,
         @Param("inicio") Instant inicio,
-        @Param("fim") Instant fim
+        @Param("fim") Instant fim,
+        @Param("status") StatusEscalaPublicacao status
+    );
+
+    @Query(
+        """
+        SELECT e FROM Escala e
+        LEFT JOIN FETCH e.departamento
+        WHERE e.igreja.id = :igrejaId
+        AND e.status = :status
+        AND e.dataEvento >= :inicio
+        AND e.dataEvento < :fim
+        AND e.departamento IS NOT NULL
+        AND (
+            e.departamento.codigo = :codigoLimpeza
+            OR LOWER(e.departamento.nome) LIKE '%limpeza%'
+        )
+        """
+    )
+    List<Escala> findLimpezaNoPeriodo(
+        @Param("igrejaId") Long igrejaId,
+        @Param("inicio") Instant inicio,
+        @Param("fim") Instant fim,
+        @Param("status") StatusEscalaPublicacao status,
+        @Param("codigoLimpeza") CodigoDepartamento codigoLimpeza
     );
 
     @Query(
