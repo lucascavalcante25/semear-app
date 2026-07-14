@@ -18,6 +18,17 @@ import { toast } from "sonner";
 
 type CampoPreferencia = keyof PreferenciasNotificacao;
 
+/** Flags cobertos por "Avisos gerais" (eventos, cultos, escalas, departamentos). */
+function payloadAvisosGerais(valor: boolean): PreferenciasNotificacao {
+  return {
+    avisosGeraisAtivo: valor,
+    eventosAtivo: valor,
+    escalasAtivo: valor,
+    cultosAtivo: valor,
+    departamentosAtivo: valor,
+  };
+}
+
 function mensagemSalvando(campo: CampoPreferencia, ativando: boolean): string {
   if (campo === "pushAtivo") {
     return ativando ? "Ativando notificações push…" : "Desativando notificações push…";
@@ -40,6 +51,16 @@ export function PushPreferenciasCard() {
         setDisponivel(suporte);
         if (suporte) {
           const dados = await obterPreferenciasNotificacao();
+          // Alinha bundling: se avisos gerais ligados, cultos/eventos/etc. também.
+          if (dados.pushAtivo && dados.avisosGeraisAtivo && !dados.cultosAtivo) {
+            try {
+              const sincronizado = await atualizarPreferenciasNotificacao(payloadAvisosGerais(true));
+              setPrefs(sincronizado);
+              return;
+            } catch {
+              /* mantém o que veio */
+            }
+          }
           setPrefs(dados);
         }
       } catch {
@@ -85,9 +106,13 @@ export function PushPreferenciasCard() {
       if (campo === "pushAtivo") {
         if (valor) {
           await ativarPushCompleto();
-          const dados = await obterPreferenciasNotificacao();
-          setPrefs(dados);
-          if (dados.dispositivoRegistrado && dados.pushAtivo) {
+          // Ao ativar, liga avisos (inclui culto) por padrão; deixa o usuário só escolher o opp. do diario.
+          const sincronizado = await atualizarPreferenciasNotificacao({
+            ...payloadAvisosGerais(true),
+            // não força o diário — permanece como estiver / false
+          });
+          setPrefs(sincronizado);
+          if (sincronizado.dispositivoRegistrado && sincronizado.pushAtivo) {
             toast.success("Dispositivo registrado para receber notificações.");
           } else {
             toast.warning("Push ativado, mas o registro do dispositivo não foi confirmado.");
@@ -98,6 +123,12 @@ export function PushPreferenciasCard() {
         const dados = await obterPreferenciasNotificacao();
         setPrefs(dados);
         toast.success("Notificações push desativadas neste dispositivo.");
+        return;
+      }
+      if (campo === "avisosGeraisAtivo") {
+        const atualizado = await atualizarPreferenciasNotificacao(payloadAvisosGerais(valor));
+        setPrefs(atualizado);
+        toast.success("Preferências atualizadas.");
         return;
       }
       const atualizado = await atualizarPreferenciasNotificacao({ [campo]: valor });
@@ -118,13 +149,13 @@ export function PushPreferenciasCard() {
     }
   };
 
-  const campos: { key: CampoPreferencia; label: string }[] = [
-    { key: "eventosAtivo", label: "Eventos" },
-    { key: "escalasAtivo", label: "Escalas" },
-    { key: "cultosAtivo", label: "Lembretes de culto" },
+  const campos: { key: CampoPreferencia; label: string; descricao?: string }[] = [
+    {
+      key: "avisosGeraisAtivo",
+      label: "Avisos gerais",
+      descricao: "Inclui eventos, cultos, escalas e ministérios.",
+    },
     { key: "devocionalAtivo", label: "Devocional diário" },
-    { key: "avisosGeraisAtivo", label: "Avisos gerais" },
-    { key: "departamentosAtivo", label: "Ministérios / departamentos" },
   ];
 
   return (
@@ -148,8 +179,7 @@ export function PushPreferenciasCard() {
           Lembretes no celular
         </CardTitle>
         <CardDescription>
-          As notificações serão usadas apenas para lembretes importantes, como eventos, cultos, escalas e
-          avisos da igreja.
+          Notificações importantes da igreja. Lembretes de culto ficam ativos junto com os avisos gerais.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -187,11 +217,19 @@ export function PushPreferenciasCard() {
 
         {prefs.pushAtivo && (
           <div className="space-y-4 pl-1 border-l-2 border-muted ml-1">
-            {campos.map(({ key, label }) => (
+            {campos.map(({ key, label, descricao }) => (
               <div key={key} className="flex items-center justify-between gap-4 pl-3">
-                <Label htmlFor={key} className={salvando && campoSalvando === key ? "opacity-70" : ""}>
-                  {label}
-                </Label>
+                <div className="min-w-0 flex-1">
+                  <Label
+                    htmlFor={key}
+                    className={salvando && campoSalvando === key ? "opacity-70" : ""}
+                  >
+                    {label}
+                  </Label>
+                  {descricao && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{descricao}</p>
+                  )}
+                </div>
                 <Switch
                   id={key}
                   checked={Boolean(prefs[key])}

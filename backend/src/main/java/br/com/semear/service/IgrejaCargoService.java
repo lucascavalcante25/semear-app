@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class IgrejaCargoService {
 
     private static final String ENTITY = "igrejaCargo";
+    /** Evita reparar módulos de cargos de sistema a cada listagem de membros. */
+    private static final Set<Long> IGREJAS_CARGOS_REPARADOS = ConcurrentHashMap.newKeySet();
 
     public static final List<String> MODULOS = List.of(
         "dashboard",
@@ -272,8 +275,12 @@ public class IgrejaCargoService {
                 }
                 cargoRepository.save(cargo);
             }
+            IGREJAS_CARGOS_REPARADOS.add(igrejaId);
+            return;
         }
-        repararModulosCargosSistema(igrejaId);
+        if (IGREJAS_CARGOS_REPARADOS.add(igrejaId)) {
+            repararModulosCargosSistema(igrejaId);
+        }
     }
 
     /** Cargos de sistema criados antes de novos módulos (ex.: departamentos, escalas) não recebiam atualização automática. */

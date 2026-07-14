@@ -129,9 +129,9 @@ export default function Departamentos() {
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
-      const [deptos, listaMembros] = await Promise.all([listarDepartamentos(), listarMembros()]);
+      // Lista leve (sem membros embutidos); membros só ao editar / gerenciar.
+      const deptos = await listarDepartamentos({ resumo: true });
       setLista(deptos ?? []);
-      setMembros(listaMembros.filter((m) => !m.isDependente && m.activated));
     } catch {
       setLista([]);
     } finally {
@@ -139,9 +139,25 @@ export default function Departamentos() {
     }
   }, []);
 
+  const garantirMembros = useCallback(async () => {
+    if (membros.length > 0) return;
+    try {
+      const listaMembros = await listarMembros();
+      setMembros(listaMembros.filter((m) => !m.isDependente && m.activated));
+    } catch {
+      setMembros([]);
+    }
+  }, [membros.length]);
+
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  useEffect(() => {
+    if (dialogAberto || deptoMembros != null) {
+      void garantirMembros();
+    }
+  }, [dialogAberto, deptoMembros, garantirMembros]);
 
   const filtrados = useMemo(() => {
     const t = busca.trim().toLowerCase();

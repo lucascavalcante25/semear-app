@@ -432,38 +432,25 @@ public class PushNotificationService {
 
     private boolean tipoPermitido(UsuarioPreferenciaNotificacao pref, String tipo) {
         if (tipo == null) return true;
-        if (tipo.startsWith("EVENTO") || "EVENTO".equals(tipo)) {
-            return Boolean.TRUE.equals(pref.getEventosAtivo());
-        }
-        if (tipo.startsWith("ESCALA") || "ESCALA".equals(tipo)) {
-            return Boolean.TRUE.equals(pref.getEscalasAtivo());
-        }
         if (tipo.startsWith("DEVOCIONAL")) {
             return Boolean.TRUE.equals(pref.getDevocionalAtivo());
         }
-        if (tipo.startsWith("VERSICULO")) {
+        if (tipo.startsWith("VERSICULO") || tipo.startsWith("LEITURA_COLETIVA")) {
             return Boolean.TRUE.equals(pref.getDevocionalAtivo()) || Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
         }
-        if (tipo.startsWith("COMUNICADO") || tipo.startsWith("AVISO")) {
+        if ("PUSH_TESTE".equals(tipo) || tipo.startsWith("ANIVERSARIO") || tipo.startsWith("CADASTRO")) {
+            return true;
+        }
+        // Eventos, escalas, cultos, departamentos e comunicados → "Avisos gerais"
+        if (
+            tipo.startsWith("EVENTO") ||
+            tipo.startsWith("ESCALA") ||
+            tipo.startsWith("CULTO") ||
+            tipo.startsWith("DEPARTAMENTO") ||
+            tipo.startsWith("COMUNICADO") ||
+            tipo.startsWith("AVISO")
+        ) {
             return Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
-        }
-        if (tipo.startsWith("DEPARTAMENTO")) {
-            return Boolean.TRUE.equals(pref.getDepartamentosAtivo());
-        }
-        if ("PUSH_TESTE".equals(tipo)) {
-            return true;
-        }
-        if (tipo.startsWith("ANIVERSARIO")) {
-            return true;
-        }
-        if (tipo.startsWith("CADASTRO") || "CADASTRO_APROVADO".equals(tipo)) {
-            return true;
-        }
-        if (tipo.startsWith("CULTO")) {
-            return Boolean.TRUE.equals(pref.getCultosAtivo());
-        }
-        if (tipo.startsWith("LEITURA_COLETIVA")) {
-            return Boolean.TRUE.equals(pref.getDevocionalAtivo()) || Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
         }
         return Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
     }

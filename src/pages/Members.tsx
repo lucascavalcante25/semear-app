@@ -862,11 +862,14 @@ export default function Members() {
     } finally {
       setCarregando(false);
     }
-  }, [user?.role]);
+  }, [user]);
 
   useEffect(() => {
+    if (!canAccess(user, "/membros")) return;
     void carregarMembros();
-  }, [carregarMembros]);
+    // Intencional: só reexecuta quando o papel do usuário muda (evita 2× /membros no boot).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- user.role
+  }, [user?.role]);
 
   const membrosFiltrados = membros.filter(
     (m) =>

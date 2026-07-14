@@ -345,7 +345,7 @@ public class PushLembreteScheduler {
 
         for (Igreja igreja : igrejaRepository.findAll()) {
             List<UsuarioPreferenciaNotificacao> prefs =
-                preferenciaRepository.findByIgrejaIdAndPushAtivoTrueAndCultosAtivoTrue(igreja.getId());
+                preferenciaRepository.findByIgrejaIdAndPushAtivoTrueAndAvisosGeraisAtivoTrue(igreja.getId());
             if (prefs.isEmpty()) {
                 continue;
             }
