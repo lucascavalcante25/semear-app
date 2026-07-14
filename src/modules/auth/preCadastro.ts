@@ -29,6 +29,10 @@ export type PreCadastroPayload = {
   perfilSolicitado: Role; // admin, pastor, copastor, secretaria, tesouraria, lider, membro, visitante
   igrejaId?: number;
   observacoes?: string;
+  receberNotificacoes?: boolean;
+  pushToken?: string | null;
+  pushPlataforma?: string | null;
+  pushNavegador?: string | null;
   endereco: EnderecoPayload;
 };
 
@@ -275,6 +279,10 @@ export const enviarPreCadastro = async (payload: PreCadastroPayload) => {
         telefoneSecundario: payload.telefoneSecundario,
         telefoneEmergencia: payload.telefoneEmergencia,
         nomeContatoEmergencia: payload.nomeContatoEmergencia,
+        receberNotificacoes: Boolean(payload.receberNotificacoes),
+        pushToken: payload.pushToken || null,
+        pushPlataforma: payload.pushPlataforma || null,
+        pushNavegador: payload.pushNavegador || null,
         igreja: payload.igrejaId ? { id: payload.igrejaId } : undefined,
       }),
     });

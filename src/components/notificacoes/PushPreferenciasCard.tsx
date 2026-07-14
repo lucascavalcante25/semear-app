@@ -121,6 +121,7 @@ export function PushPreferenciasCard() {
   const campos: { key: CampoPreferencia; label: string }[] = [
     { key: "eventosAtivo", label: "Eventos" },
     { key: "escalasAtivo", label: "Escalas" },
+    { key: "cultosAtivo", label: "Lembretes de culto" },
     { key: "devocionalAtivo", label: "Devocional diário" },
     { key: "avisosGeraisAtivo", label: "Avisos gerais" },
     { key: "departamentosAtivo", label: "Ministérios / departamentos" },
@@ -147,7 +148,7 @@ export function PushPreferenciasCard() {
           Lembretes no celular
         </CardTitle>
         <CardDescription>
-          As notificações serão usadas apenas para lembretes importantes, como eventos, escalas e
+          As notificações serão usadas apenas para lembretes importantes, como eventos, cultos, escalas e
           avisos da igreja.
         </CardDescription>
       </CardHeader>

@@ -23,4 +23,10 @@ public interface UsuarioPreferenciaNotificacaoRepository extends JpaRepository<U
         "WHERE p.igreja.id = :igrejaId AND p.pushAtivo = true"
     )
     List<UsuarioPreferenciaNotificacao> findByIgrejaIdAndPushAtivoTrue(@Param("igrejaId") Long igrejaId);
+
+    @Query(
+        "SELECT p FROM UsuarioPreferenciaNotificacao p JOIN FETCH p.user " +
+        "WHERE p.igreja.id = :igrejaId AND p.pushAtivo = true AND p.cultosAtivo = true"
+    )
+    List<UsuarioPreferenciaNotificacao> findByIgrejaIdAndPushAtivoTrueAndCultosAtivoTrue(@Param("igrejaId") Long igrejaId);
 }

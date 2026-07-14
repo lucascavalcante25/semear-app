@@ -11,6 +11,7 @@ public class UsuarioPreferenciaNotificacaoDTO implements Serializable {
     private Boolean devocionalAtivo;
     private Boolean avisosGeraisAtivo;
     private Boolean departamentosAtivo;
+    private Boolean cultosAtivo;
     private LocalTime horarioSilenciosoInicio;
     private LocalTime horarioSilenciosoFim;
     private boolean dispositivoRegistrado;
@@ -27,6 +28,8 @@ public class UsuarioPreferenciaNotificacaoDTO implements Serializable {
     public void setAvisosGeraisAtivo(Boolean avisosGeraisAtivo) { this.avisosGeraisAtivo = avisosGeraisAtivo; }
     public Boolean getDepartamentosAtivo() { return departamentosAtivo; }
     public void setDepartamentosAtivo(Boolean departamentosAtivo) { this.departamentosAtivo = departamentosAtivo; }
+    public Boolean getCultosAtivo() { return cultosAtivo; }
+    public void setCultosAtivo(Boolean cultosAtivo) { this.cultosAtivo = cultosAtivo; }
     public LocalTime getHorarioSilenciosoInicio() { return horarioSilenciosoInicio; }
     public void setHorarioSilenciosoInicio(LocalTime horarioSilenciosoInicio) { this.horarioSilenciosoInicio = horarioSilenciosoInicio; }
     public LocalTime getHorarioSilenciosoFim() { return horarioSilenciosoFim; }

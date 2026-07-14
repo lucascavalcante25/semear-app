@@ -130,4 +130,5 @@
     <include file="config/liquibase/changelog/20260707000001_louvor_remove_cifra_arquivo.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260710000001_culto_ocorrencia.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260714000001_culto_frequencia.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260714000002_pre_cadastro_push_cultos.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

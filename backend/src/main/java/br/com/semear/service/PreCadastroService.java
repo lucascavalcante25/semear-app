@@ -9,6 +9,7 @@ import br.com.semear.repository.EnderecoRepository;
 import br.com.semear.repository.PreCadastroRepository;
 import br.com.semear.repository.UserRepository;
 import br.com.semear.service.dto.AdminUserDTO;
+import br.com.semear.service.dto.NotificacaoPayloadDTO;
 import br.com.semear.service.util.NomePessoaUtils;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,19 +32,25 @@ public class PreCadastroService {
     private final EnderecoRepository enderecoRepository;
     private final UserRepository userRepository;
     private final TenantService tenantService;
+    private final PushNotificationService pushNotificationService;
+    private final NotificacaoEnvioService notificacaoEnvioService;
 
     public PreCadastroService(
         PreCadastroRepository preCadastroRepository,
         UserService userService,
         EnderecoRepository enderecoRepository,
         UserRepository userRepository,
-        TenantService tenantService
+        TenantService tenantService,
+        PushNotificationService pushNotificationService,
+        NotificacaoEnvioService notificacaoEnvioService
     ) {
         this.preCadastroRepository = preCadastroRepository;
         this.userService = userService;
         this.enderecoRepository = enderecoRepository;
         this.userRepository = userRepository;
         this.tenantService = tenantService;
+        this.pushNotificationService = pushNotificationService;
+        this.notificacaoEnvioService = notificacaoEnvioService;
     }
 
     /**
@@ -54,6 +61,12 @@ public class PreCadastroService {
         PreCadastro preCadastro = preCadastroRepository
             .findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Pré-cadastro não encontrado: " + id));
+
+        boolean receberNotificacoes = Boolean.TRUE.equals(preCadastro.getReceberNotificacoes());
+        String pushToken = preCadastro.getPushToken();
+        String pushPlataforma = preCadastro.getPushPlataforma();
+        String pushNavegador = preCadastro.getPushNavegador();
+        String nomeCompleto = preCadastro.getNomeCompleto();
 
         preCadastro.setStatus(br.com.semear.domain.enumeration.StatusCadastro.APROVADO);
         preCadastro.setPerfilAprovado(perfilAprovado);
@@ -102,9 +115,29 @@ public class PreCadastroService {
             precisaSalvar = true;
         }
         if (precisaSalvar) {
-            userRepository.save(user);
+            user = userRepository.save(user);
         }
         LOG.debug("Usuário criado a partir do pré-cadastro {}: {} (igreja {})", id, user.getLogin(), igreja != null ? igreja.getId() : null);
+
+        if (receberNotificacoes && igreja != null) {
+            try {
+                pushNotificationService.ativarPushAPartirDoPreCadastro(
+                    user,
+                    igreja,
+                    pushToken,
+                    pushPlataforma,
+                    pushNavegador
+                );
+                notificarCadastroAprovado(user, igreja, nomeCompleto);
+            } catch (Exception e) {
+                LOG.warn(
+                    "Falha ao preparar/enviar notificação de aprovação do pré-cadastro {} (user {}): {}",
+                    id,
+                    user.getId(),
+                    e.getMessage()
+                );
+            }
+        }
 
         // Após aprovação e criação do usuário, remove o registro do pré-cadastro
         // para não bloquear novos envios por unicidade e manter a tabela apenas como fila.
@@ -115,5 +148,32 @@ public class PreCadastroService {
         }
 
         return preCadastro;
+    }
+
+    private void notificarCadastroAprovado(User user, Igreja igreja, String nomeCompleto) {
+        String primeiroNome = primeiroNome(nomeCompleto != null ? nomeCompleto : user.getFirstName());
+        NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+        payload.setIgrejaId(igreja.getId());
+        payload.setTipo("CADASTRO_APROVADO");
+        payload.setEntidadeTipo("USUARIO");
+        payload.setEntidadeId(user.getId());
+        payload.setTitulo("Cadastro aprovado!");
+        payload.setMensagem(
+            "Olá" +
+            (primeiroNome.isBlank() ? "" : ", " + primeiroNome) +
+            "! Seu cadastro foi aprovado. Você já pode entrar no app com seu CPF e senha."
+        );
+        payload.setRotaDestino("/");
+        payload.setRespeitarHorarioSilencioso(false);
+        payload.setRegistrarDeduplicacao(true);
+        payload.setContextoDestinatarios("pré-cadastro aprovado");
+        notificacaoEnvioService.enviarParaUsuario(user.getId(), payload);
+    }
+
+    private String primeiroNome(String nome) {
+        if (nome == null || nome.isBlank()) return "";
+        String t = nome.trim();
+        int espaco = t.indexOf(' ');
+        return espaco > 0 ? t.substring(0, espaco) : t;
     }
 }

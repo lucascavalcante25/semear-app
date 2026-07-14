@@ -13,6 +13,7 @@ export interface PreferenciasNotificacao {
   devocionalAtivo?: boolean;
   avisosGeraisAtivo?: boolean;
   departamentosAtivo?: boolean;
+  cultosAtivo?: boolean;
   horarioSilenciosoInicio?: string;
   horarioSilenciosoFim?: string;
   dispositivoRegistrado?: boolean;

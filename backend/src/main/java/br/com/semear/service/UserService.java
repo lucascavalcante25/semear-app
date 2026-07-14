@@ -685,13 +685,23 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<AdminUserDTO> getAllManagedUsers(Pageable pageable) {
-        return userRepository
-            .findAllByIgrejaId(tenantService.getIgrejaIdAtual(), pageable)
-            .map(user -> {
-                AdminUserDTO dto = new AdminUserDTO(user);
-                igrejaCargoService.enriquecerAdminUserDto(user, dto);
-                return dto;
-            });
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        // Uma vez por listagem — não a cada usuário (era N× queries pesadas).
+        igrejaCargoService.garantirCargosPadrao(igrejaId);
+        Page<User> page = userRepository.findAllByIgrejaId(igrejaId, pageable);
+        List<User> users = page.getContent();
+        Map<Long, AdminUserDTO> dtosPorId = new LinkedHashMap<>();
+        for (User user : users) {
+            if (user.getId() == null) continue;
+            dtosPorId.put(user.getId(), new AdminUserDTO(user));
+        }
+        igrejaCargoService.enriquecerAdminUserDtosEmLote(users, dtosPorId);
+        List<AdminUserDTO> content = users
+            .stream()
+            .map(u -> dtosPorId.get(u.getId()))
+            .filter(Objects::nonNull)
+            .toList();
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, page.getTotalElements());
     }
 
     @Transactional(readOnly = true)

@@ -264,16 +264,12 @@ export default function Cultos() {
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
-      const [mods, agenda, deptos] = await Promise.all([
-        listarModelosCulto(),
-        listarAgendaCultos(),
-        listarDepartamentos().catch(() => [] as DepartamentoDTO[]),
-      ]);
+      // Agenda + modelos liberam a tela; o resto carrega em background.
+      const [mods, agenda] = await Promise.all([listarModelosCulto(), listarAgendaCultos()]);
       setModelos(mods ?? []);
       const prox = agenda?.proximos ?? [];
       setProximos(prox);
       setPassados(agenda?.passados ?? []);
-      setDepartamentos(deptos ?? []);
       if (prox.length > 0) {
         const hoje = new Date();
         const chaveAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
@@ -286,23 +282,42 @@ export default function Cultos() {
         }
         setMesesAbertosProximos(abertos.size > 0 ? abertos : new Set([chaveMes(prox[0].data)]));
       }
-      if (podeLouvores) {
-        const [g, louvores] = await Promise.all([
-          listarGrupos().catch(() => [] as GrupoLouvorApp[]),
-          listarLouvores().catch(() => [] as LouvorApp[]),
-        ]);
-        setGrupos(g ?? []);
-        setRepertorio(louvores ?? []);
-      }
-      if (podeEditar) {
-        const m = await listarMembros().catch(() => [] as MembroApi[]);
-        setMembros((m ?? []).filter((x) => x.activated !== false && x.idNum != null));
-      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao carregar cultos.");
     } finally {
       setCarregando(false);
     }
+
+    void (async () => {
+      try {
+        const secundarios: Promise<void>[] = [
+          listarDepartamentos({ resumo: true })
+            .catch(() => [] as DepartamentoDTO[])
+            .then((deptos) => setDepartamentos(deptos ?? [])),
+        ];
+        if (podeLouvores) {
+          secundarios.push(
+            Promise.all([
+              listarGrupos().catch(() => [] as GrupoLouvorApp[]),
+              listarLouvores().catch(() => [] as LouvorApp[]),
+            ]).then(([g, louvores]) => {
+              setGrupos(g ?? []);
+              setRepertorio(louvores ?? []);
+            }),
+          );
+        }
+        if (podeEditar) {
+          secundarios.push(
+            listarMembros()
+              .catch(() => [] as MembroApi[])
+              .then((m) => setMembros((m ?? []).filter((x) => x.activated !== false && x.idNum != null))),
+          );
+        }
+        await Promise.all(secundarios);
+      } catch {
+        /* secundário: não bloqueia a tela */
+      }
+    })();
   }, [podeEditar, podeLouvores]);
 
   useEffect(() => {

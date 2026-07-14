@@ -29,8 +29,9 @@ public class CultoAgendaService {
 
     private static final String ENTITY = "culto";
     private static final ZoneId ZONE = ZoneId.of("America/Fortaleza");
-    private static final int DIAS_PASSADOS = 90;
-    private static final int DIAS_FUTUROS = 90;
+    /** Janela alinhada à UI (mês atual + próximo) com folga para passados. */
+    private static final int DIAS_PASSADOS = 62;
+    private static final int DIAS_FUTUROS = 62;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -125,14 +126,33 @@ public class CultoAgendaService {
             CodigoDepartamento.LIMPEZA
         );
         carregarItens(limpezas, itensPorEscala);
+        Map<String, List<Escala>> limpezasPorSemanaIso = indexarLimpezasPorSemana(limpezas);
+
+        List<Long> ocorrenciaIds = ocorrencias
+            .values()
+            .stream()
+            .map(CultoOcorrencia::getId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
+        Map<Long, List<CultoAgendaItemDTO.CultoLouvorItemDTO>> louvoresPorOcorrencia = carregarLouvoresAgenda(ocorrenciaIds);
+        Map<Long, List<CultoAgendaItemDTO.CultoResponsavelDTO>> responsaveisManuaisPorOcorrencia =
+            carregarResponsaveisManuais(ocorrenciaIds);
 
         List<CultoAgendaItemDTO> todos = new ArrayList<>();
         for (Slot slot : slots) {
             String k = chave(slot.culto.getId(), slot.data);
             CultoOcorrencia oc = ocorrencias.get(k);
             List<Escala> escalasSlot = escalasPorSlot.getOrDefault(k, List.of());
-            CultoAgendaItemDTO item = montarItem(slot, oc, escalasSlot, itensPorEscala);
-            anexarLimpezaDaSemana(item, slot.data, limpezas, itensPorEscala);
+            CultoAgendaItemDTO item = montarItem(
+                slot,
+                oc,
+                escalasSlot,
+                itensPorEscala,
+                louvoresPorOcorrencia,
+                responsaveisManuaisPorOcorrencia
+            );
+            anexarLimpezaDaSemana(item, slot.data, limpezasPorSemanaIso, itensPorEscala);
             todos.add(item);
         }
 
@@ -178,8 +198,21 @@ public class CultoAgendaService {
         );
         carregarItens(limpezas, itens);
 
-        CultoAgendaItemDTO item = montarItem(new Slot(culto, data), oc, escalas, itens);
-        anexarLimpezaDaSemana(item, data, limpezas, itens);
+        Map<Long, List<CultoAgendaItemDTO.CultoLouvorItemDTO>> louvoresPorOcorrencia = Map.of();
+        Map<Long, List<CultoAgendaItemDTO.CultoResponsavelDTO>> responsaveisManuaisPorOcorrencia = Map.of();
+        if (oc != null && oc.getId() != null) {
+            louvoresPorOcorrencia = carregarLouvoresAgenda(List.of(oc.getId()));
+            responsaveisManuaisPorOcorrencia = carregarResponsaveisManuais(List.of(oc.getId()));
+        }
+        CultoAgendaItemDTO item = montarItem(
+            new Slot(culto, data),
+            oc,
+            escalas,
+            itens,
+            louvoresPorOcorrencia,
+            responsaveisManuaisPorOcorrencia
+        );
+        anexarLimpezaDaSemana(item, data, indexarLimpezasPorSemana(limpezas), itens);
         return item;
     }
 
@@ -300,7 +333,9 @@ public class CultoAgendaService {
         Slot slot,
         CultoOcorrencia oc,
         List<Escala> escalas,
-        Map<Long, List<EscalaItem>> itensPorEscala
+        Map<Long, List<EscalaItem>> itensPorEscala,
+        Map<Long, List<CultoAgendaItemDTO.CultoLouvorItemDTO>> louvoresPorOcorrencia,
+        Map<Long, List<CultoAgendaItemDTO.CultoResponsavelDTO>> responsaveisManuaisPorOcorrencia
     ) {
         CultoAgendaItemDTO dto = new CultoAgendaItemDTO();
         dto.setCultoRegistroId(slot.culto.getId());
@@ -320,28 +355,13 @@ public class CultoAgendaService {
                 dto.setGrupoLouvorOrigemId(oc.getGrupoLouvorOrigem().getId());
                 dto.setGrupoLouvorOrigemNome(oc.getGrupoLouvorOrigem().getNome());
             }
-            List<CultoAgendaItemDTO.CultoLouvorItemDTO> louvores = new ArrayList<>();
-            for (CultoOcorrenciaLouvor item : cultoOcorrenciaLouvorRepository.findByCultoOcorrenciaIdOrderByOrdemAsc(oc.getId())) {
-                louvores.add(mapearLouvorItem(item.getLouvor(), item.getOrdem() != null ? item.getOrdem() : louvores.size()));
-            }
-            dto.setLouvores(louvores);
+            dto.setLouvores(louvoresPorOcorrencia.getOrDefault(oc.getId(), List.of()));
 
-            List<CultoOcorrenciaResponsavel> manuais = cultoOcorrenciaResponsavelRepository.findByCultoOcorrenciaId(oc.getId());
+            List<CultoAgendaItemDTO.CultoResponsavelDTO> manuais =
+                responsaveisManuaisPorOcorrencia.getOrDefault(oc.getId(), List.of());
             if (!manuais.isEmpty()) {
                 dto.setTemOverrideResponsaveis(true);
-                dto.setResponsaveis(
-                    manuais
-                        .stream()
-                        .map(r -> {
-                            CultoAgendaItemDTO.CultoResponsavelDTO rd = new CultoAgendaItemDTO.CultoResponsavelDTO();
-                            rd.setPapel(r.getPapel());
-                            rd.setUserId(r.getUser().getId());
-                            rd.setNome(nomeUser(r.getUser()));
-                            rd.setOrigemManual(true);
-                            return rd;
-                        })
-                        .toList()
-                );
+                dto.setResponsaveis(manuais);
             }
         }
 
@@ -349,6 +369,41 @@ public class CultoAgendaService {
             dto.setResponsaveis(responsaveisDaEscala(escalas, itensPorEscala));
         }
         return dto;
+    }
+
+    private Map<Long, List<CultoAgendaItemDTO.CultoLouvorItemDTO>> carregarLouvoresAgenda(Collection<Long> ocorrenciaIds) {
+        if (ocorrenciaIds == null || ocorrenciaIds.isEmpty()) return Map.of();
+        Map<Long, List<CultoAgendaItemDTO.CultoLouvorItemDTO>> porOc = new HashMap<>();
+        for (CultoOcorrenciaLouvorRepository.CultoLouvorAgendaProjection row : cultoOcorrenciaLouvorRepository.findAgendaByOcorrenciaIdIn(
+            ocorrenciaIds
+        )) {
+            CultoAgendaItemDTO.CultoLouvorItemDTO item = new CultoAgendaItemDTO.CultoLouvorItemDTO();
+            item.setLouvorId(row.getLouvorId());
+            item.setTitulo(row.getTitulo());
+            item.setArtista(row.getArtista());
+            item.setOrdem(row.getOrdem());
+            item.setYoutubeUrl(row.getYoutubeUrl());
+            item.setTonalidade(row.getTonalidade());
+            item.setTemLetraSalva(Boolean.TRUE.equals(row.getTemLetra()));
+            item.setTemCifraApiSalva(Boolean.TRUE.equals(row.getTemCifra()));
+            porOc.computeIfAbsent(row.getOcorrenciaId(), x -> new ArrayList<>()).add(item);
+        }
+        return porOc;
+    }
+
+    private Map<Long, List<CultoAgendaItemDTO.CultoResponsavelDTO>> carregarResponsaveisManuais(Collection<Long> ocorrenciaIds) {
+        if (ocorrenciaIds == null || ocorrenciaIds.isEmpty()) return Map.of();
+        Map<Long, List<CultoAgendaItemDTO.CultoResponsavelDTO>> porOc = new HashMap<>();
+        for (CultoOcorrenciaResponsavel r : cultoOcorrenciaResponsavelRepository.findByCultoOcorrenciaIdInWithUser(ocorrenciaIds)) {
+            if (r.getCultoOcorrencia() == null || r.getUser() == null) continue;
+            CultoAgendaItemDTO.CultoResponsavelDTO rd = new CultoAgendaItemDTO.CultoResponsavelDTO();
+            rd.setPapel(r.getPapel());
+            rd.setUserId(r.getUser().getId());
+            rd.setNome(nomeUser(r.getUser()));
+            rd.setOrigemManual(true);
+            porOc.computeIfAbsent(r.getCultoOcorrencia().getId(), x -> new ArrayList<>()).add(rd);
+        }
+        return porOc;
     }
 
     private void carregarItens(List<Escala> escalas, Map<Long, List<EscalaItem>> itensPorEscala) {
@@ -359,13 +414,28 @@ public class CultoAgendaService {
         }
     }
 
+    private Map<String, List<Escala>> indexarLimpezasPorSemana(List<Escala> limpezas) {
+        Map<String, List<Escala>> porSemana = new HashMap<>();
+        for (Escala e : limpezas) {
+            if (e.getDataEvento() == null) continue;
+            LocalDate d = e.getDataEvento().atZone(ZONE).toLocalDate();
+            porSemana.computeIfAbsent(chaveSemanaIso(d), x -> new ArrayList<>()).add(e);
+        }
+        return porSemana;
+    }
+
+    private String chaveSemanaIso(LocalDate data) {
+        WeekFields semana = WeekFields.ISO;
+        return data.get(semana.weekBasedYear()) + "-W" + data.get(semana.weekOfWeekBasedYear());
+    }
+
     /**
      * Limpeza semanal/mensal não vincula ao culto: associa a da mesma semana ISO (seg–dom).
      */
     private void anexarLimpezaDaSemana(
         CultoAgendaItemDTO dto,
         LocalDate dataCulto,
-        List<Escala> limpezas,
+        Map<String, List<Escala>> limpezasPorSemanaIso,
         Map<Long, List<EscalaItem>> itensPorEscala
     ) {
         if (dto.isTemOverrideResponsaveis()) return;
@@ -375,17 +445,10 @@ public class CultoAgendaService {
             .anyMatch(r -> r.getPapel() == PapelCultoResponsavel.LIMPEZA);
         if (jaTemLimpeza) return;
 
-        WeekFields semana = WeekFields.ISO;
-        int week = dataCulto.get(semana.weekOfWeekBasedYear());
-        int year = dataCulto.get(semana.weekBasedYear());
-
-        Escala limpeza = limpezas
+        List<Escala> candidatas = limpezasPorSemanaIso.getOrDefault(chaveSemanaIso(dataCulto), List.of());
+        Escala limpeza = candidatas
             .stream()
             .filter(e -> e.getDataEvento() != null)
-            .filter(e -> {
-                LocalDate d = e.getDataEvento().atZone(ZONE).toLocalDate();
-                return d.get(semana.weekOfWeekBasedYear()) == week && d.get(semana.weekBasedYear()) == year;
-            })
             .min(
                 Comparator.comparingLong((Escala e) ->
                     Math.abs(ChronoUnit.DAYS.between(dataCulto, e.getDataEvento().atZone(ZONE).toLocalDate()))

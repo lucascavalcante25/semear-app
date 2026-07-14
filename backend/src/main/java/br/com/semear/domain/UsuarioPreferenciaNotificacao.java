@@ -57,6 +57,10 @@ public class UsuarioPreferenciaNotificacao implements Serializable {
     @Column(name = "departamentos_ativo", nullable = false)
     private Boolean departamentosAtivo = true;
 
+    @NotNull
+    @Column(name = "cultos_ativo", nullable = false)
+    private Boolean cultosAtivo = true;
+
     @Column(name = "horario_silencioso_inicio")
     private LocalTime horarioSilenciosoInicio;
 
@@ -89,6 +93,8 @@ public class UsuarioPreferenciaNotificacao implements Serializable {
     public void setAvisosGeraisAtivo(Boolean avisosGeraisAtivo) { this.avisosGeraisAtivo = avisosGeraisAtivo; }
     public Boolean getDepartamentosAtivo() { return departamentosAtivo; }
     public void setDepartamentosAtivo(Boolean departamentosAtivo) { this.departamentosAtivo = departamentosAtivo; }
+    public Boolean getCultosAtivo() { return cultosAtivo; }
+    public void setCultosAtivo(Boolean cultosAtivo) { this.cultosAtivo = cultosAtivo; }
     public LocalTime getHorarioSilenciosoInicio() { return horarioSilenciosoInicio; }
     public void setHorarioSilenciosoInicio(LocalTime horarioSilenciosoInicio) { this.horarioSilenciosoInicio = horarioSilenciosoInicio; }
     public LocalTime getHorarioSilenciosoFim() { return horarioSilenciosoFim; }

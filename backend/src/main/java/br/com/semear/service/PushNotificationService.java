@@ -164,6 +164,52 @@ public class PushNotificationService {
         return salvo;
     }
 
+    /**
+     * Ativa preferências e (se houver) o token FCM coletado no pré-cadastro — sem usuário autenticado.
+     */
+    public void ativarPushAPartirDoPreCadastro(
+        User user,
+        Igreja igreja,
+        String token,
+        String plataforma,
+        String navegador
+    ) {
+        if (user == null || user.getId() == null || igreja == null || igreja.getId() == null) {
+            return;
+        }
+        UsuarioPreferenciaNotificacao pref = obterOuCriarPreferencias(user, igreja);
+        pref.setPushAtivo(true);
+        pref.setCultosAtivo(true);
+        pref.setAvisosGeraisAtivo(true);
+        pref.setAtualizadoEm(Instant.now());
+        preferenciaRepository.save(pref);
+
+        if (token == null || token.isBlank() || !pushProperties.isEnabled()) {
+            return;
+        }
+        UsuarioDispositivoPush dispositivo = dispositivoRepository
+            .findByUserIdAndToken(user.getId(), token.trim())
+            .orElseGet(UsuarioDispositivoPush::new);
+        dispositivo.setIgreja(igreja);
+        dispositivo.setUser(user);
+        dispositivo.setToken(token.trim());
+        dispositivo.setPlataforma(resolverPlataforma(plataforma));
+        dispositivo.setNavegador(navegador);
+        dispositivo.setAtivo(true);
+        dispositivo.setDesativadoEm(null);
+        dispositivo.setAtualizadoEm(Instant.now());
+        if (dispositivo.getCriadoEm() == null) {
+            dispositivo.setCriadoEm(Instant.now());
+        }
+        dispositivo.setUltimoUso(Instant.now());
+        dispositivoRepository.save(dispositivo);
+        LOG.info(
+            "[PUSH] Ativado via pré-cadastro — userId={}, igrejaId={}, temToken=true",
+            user.getId(),
+            igreja.getId()
+        );
+    }
+
     public void desativarDispositivo(String token) {
         User user = tenantService.getUsuarioAtual();
         Long igrejaId = tenantService.getIgrejaIdAtual();
@@ -228,6 +274,7 @@ public class PushNotificationService {
         if (dto.getDevocionalAtivo() != null) pref.setDevocionalAtivo(dto.getDevocionalAtivo());
         if (dto.getAvisosGeraisAtivo() != null) pref.setAvisosGeraisAtivo(dto.getAvisosGeraisAtivo());
         if (dto.getDepartamentosAtivo() != null) pref.setDepartamentosAtivo(dto.getDepartamentosAtivo());
+        if (dto.getCultosAtivo() != null) pref.setCultosAtivo(dto.getCultosAtivo());
         if (dto.getHorarioSilenciosoInicio() != null) pref.setHorarioSilenciosoInicio(dto.getHorarioSilenciosoInicio());
         if (dto.getHorarioSilenciosoFim() != null) pref.setHorarioSilenciosoFim(dto.getHorarioSilenciosoFim());
         pref.setAtualizadoEm(Instant.now());
@@ -409,6 +456,12 @@ public class PushNotificationService {
         if (tipo.startsWith("ANIVERSARIO")) {
             return true;
         }
+        if (tipo.startsWith("CADASTRO") || "CADASTRO_APROVADO".equals(tipo)) {
+            return true;
+        }
+        if (tipo.startsWith("CULTO")) {
+            return Boolean.TRUE.equals(pref.getCultosAtivo());
+        }
         if (tipo.startsWith("LEITURA_COLETIVA")) {
             return Boolean.TRUE.equals(pref.getDevocionalAtivo()) || Boolean.TRUE.equals(pref.getAvisosGeraisAtivo());
         }
@@ -458,6 +511,7 @@ public class PushNotificationService {
         dto.setDevocionalAtivo(false);
         dto.setAvisosGeraisAtivo(true);
         dto.setDepartamentosAtivo(true);
+        dto.setCultosAtivo(true);
         dto.setDispositivoRegistrado(dispositivoRegistrado);
         return dto;
     }
@@ -473,6 +527,7 @@ public class PushNotificationService {
             pref.setDevocionalAtivo(false);
             pref.setAvisosGeraisAtivo(true);
             pref.setDepartamentosAtivo(true);
+            pref.setCultosAtivo(true);
             pref.setCriadoEm(Instant.now());
             pref.setAtualizadoEm(Instant.now());
             return preferenciaRepository.save(pref);
@@ -498,6 +553,7 @@ public class PushNotificationService {
         dto.setDevocionalAtivo(pref.getDevocionalAtivo());
         dto.setAvisosGeraisAtivo(pref.getAvisosGeraisAtivo());
         dto.setDepartamentosAtivo(pref.getDepartamentosAtivo());
+        dto.setCultosAtivo(pref.getCultosAtivo());
         dto.setHorarioSilenciosoInicio(pref.getHorarioSilenciosoInicio());
         dto.setHorarioSilenciosoFim(pref.getHorarioSilenciosoFim());
         dto.setDispositivoRegistrado(dispositivoRegistrado);

@@ -35,9 +35,9 @@ public class DepartamentoResource {
         AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
-    public List<DepartamentoDTO> listar() {
+    public List<DepartamentoDTO> listar(@RequestParam(name = "resumo", defaultValue = "false") boolean resumo) {
         moduleAccessService.assertModuleAccess("departamentos", NivelAcessoModulo.READ);
-        return departamentoService.listar();
+        return resumo ? departamentoService.listarResumo() : departamentoService.listar();
     }
 
     @GetMapping("/{id}")

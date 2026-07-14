@@ -21,16 +21,14 @@ export type DepartamentoDTO = {
   criadoEm?: string;
 };
 
-const paramsListagem = () => {
+export const listarDepartamentos = (opts?: { resumo?: boolean }) => {
   const p = new URLSearchParams();
   p.set("page", "0");
   p.set("size", "500");
   p.set("sort", "nome,asc");
-  return p.toString();
+  if (opts?.resumo) p.set("resumo", "true");
+  return requisicaoApi<DepartamentoDTO[]>(`/api/departamentos?${p.toString()}`, { auth: true });
 };
-
-export const listarDepartamentos = () =>
-  requisicaoApi<DepartamentoDTO[]>(`/api/departamentos?${paramsListagem()}`, { auth: true });
 
 export const obterDepartamento = (id: number) =>
   requisicaoApi<DepartamentoDTO>(`/api/departamentos/${id}`, { auth: true });

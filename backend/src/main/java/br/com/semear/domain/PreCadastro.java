@@ -89,6 +89,22 @@ public class PreCadastro implements Serializable {
     @Column(name = "observacoes", columnDefinition = "text")
     private String observacoes;
 
+    @NotNull
+    @Column(name = "receber_notificacoes", nullable = false)
+    private Boolean receberNotificacoes = false;
+
+    @Size(max = 500)
+    @Column(name = "push_token", length = 500)
+    private String pushToken;
+
+    @Size(max = 20)
+    @Column(name = "push_plataforma", length = 20)
+    private String pushPlataforma;
+
+    @Size(max = 80)
+    @Column(name = "push_navegador", length = 80)
+    private String pushNavegador;
+
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
 
@@ -312,6 +328,38 @@ public class PreCadastro implements Serializable {
 
     public void setObservacoes(String observacoes) {
         this.observacoes = observacoes;
+    }
+
+    public Boolean getReceberNotificacoes() {
+        return receberNotificacoes;
+    }
+
+    public void setReceberNotificacoes(Boolean receberNotificacoes) {
+        this.receberNotificacoes = receberNotificacoes != null ? receberNotificacoes : false;
+    }
+
+    public String getPushToken() {
+        return pushToken;
+    }
+
+    public void setPushToken(String pushToken) {
+        this.pushToken = pushToken;
+    }
+
+    public String getPushPlataforma() {
+        return pushPlataforma;
+    }
+
+    public void setPushPlataforma(String pushPlataforma) {
+        this.pushPlataforma = pushPlataforma;
+    }
+
+    public String getPushNavegador() {
+        return pushNavegador;
+    }
+
+    public void setPushNavegador(String pushNavegador) {
+        this.pushNavegador = pushNavegador;
     }
 
     public Instant getCriadoEm() {

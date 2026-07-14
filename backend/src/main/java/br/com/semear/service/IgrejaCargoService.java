@@ -17,6 +17,7 @@ import br.com.semear.service.dto.ModuloPermissaoDTO;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -310,18 +311,79 @@ public class IgrejaCargoService {
         enriquecerAdminUserDto(user, dto, false);
     }
 
-    /** Migra cargos a partir das authorities — usar apenas em transações de escrita (ex.: login). */
-    public void enriquecerAdminUserDtoComMigracao(User user, AdminUserDTO dto) {
-        enriquecerAdminUserDto(user, dto, true);
+    /**
+     * @param garantirCargos se true, garante cargos padrão da igreja (caro — prefira uma vez na listagem).
+     */
+    public void enriquecerAdminUserDto(User user, AdminUserDTO dto, boolean garantirCargos) {
+        if (user == null || dto == null || user.getId() == null) return;
+        if (garantirCargos && user.getIgreja() != null) {
+            garantirCargosPadrao(user.getIgreja().getId());
+        }
+        dto.setCargoIds(new HashSet<>(obterCargoIdsUsuario(user.getId())));
+        dto.setPermissoesEfetivas(new HashSet<>(formatarPermissoesMap(obterPermissoesEfetivasUsuario(user))));
     }
 
-    private void enriquecerAdminUserDto(User user, AdminUserDTO dto, boolean migrarCargos) {
+    /**
+     * Enriquecimento em lote para listagens (evita N× queries de cargos/módulos).
+     */
+    @Transactional(readOnly = true)
+    public void enriquecerAdminUserDtosEmLote(Collection<User> users, Map<Long, AdminUserDTO> dtosPorUserId) {
+        if (users == null || users.isEmpty() || dtosPorUserId == null || dtosPorUserId.isEmpty()) return;
+        Set<Long> ids = dtosPorUserId.keySet();
+        Map<Long, List<UserIgrejaCargo>> atribuicoesPorUser = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (UserIgrejaCargo uic : userCargoRepository.findByUserIdIn(ids)) {
+                if (uic.getUser() == null || uic.getUser().getId() == null) continue;
+                atribuicoesPorUser.computeIfAbsent(uic.getUser().getId(), x -> new ArrayList<>()).add(uic);
+            }
+        }
+        for (User user : users) {
+            if (user == null || user.getId() == null) continue;
+            AdminUserDTO dto = dtosPorUserId.get(user.getId());
+            if (dto == null) continue;
+            List<UserIgrejaCargo> atribuicoes = atribuicoesPorUser.getOrDefault(user.getId(), List.of());
+            dto.setCargoIds(
+                atribuicoes
+                    .stream()
+                    .map(a -> a.getCargo() != null ? a.getCargo().getId() : null)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toCollection(HashSet::new))
+            );
+            Map<String, NivelAcessoModulo> merged = mergePermissoesDeAtribuicoes(atribuicoes);
+            aplicarMergeMap(merged, parseModulos(user.getModules()));
+            Map<String, NivelAcessoModulo> fromAuthorities = permissoesLegadoPorAuthorities(user);
+            if (merged.isEmpty() || temAuthorityAcessoTotal(user) || temAuthorityComDefaultsMerge(user)) {
+                aplicarMergeMap(merged, fromAuthorities);
+            }
+            dto.setPermissoesEfetivas(new HashSet<>(formatarPermissoesMap(merged)));
+        }
+    }
+
+    private Map<String, NivelAcessoModulo> mergePermissoesDeAtribuicoes(List<UserIgrejaCargo> atribuicoes) {
+        Map<String, NivelAcessoModulo> merged = new HashMap<>();
+        if (atribuicoes == null) return merged;
+        for (UserIgrejaCargo atribuicao : atribuicoes) {
+            if (atribuicao.getCargo() == null || atribuicao.getCargo().getModulos() == null) continue;
+            for (IgrejaCargoModulo mod : atribuicao.getCargo().getModulos()) {
+                merged.merge(
+                    mod.getModulo(),
+                    mod.getNivel(),
+                    (atual, novo) ->
+                        atual == NivelAcessoModulo.WRITE || novo == NivelAcessoModulo.WRITE
+                            ? NivelAcessoModulo.WRITE
+                            : NivelAcessoModulo.READ
+                );
+            }
+        }
+        return merged;
+    }
+
+    /** Migra cargos a partir das authorities — usar apenas em transações de escrita (ex.: login). */
+    public void enriquecerAdminUserDtoComMigracao(User user, AdminUserDTO dto) {
         if (user == null || dto == null || user.getId() == null) return;
         if (user.getIgreja() != null) {
             garantirCargosPadrao(user.getIgreja().getId());
-            if (migrarCargos) {
-                sincronizarCargosDeAutoridades(user);
-            }
+            sincronizarCargosDeAutoridades(user);
         }
         dto.setCargoIds(new HashSet<>(obterCargoIdsUsuario(user.getId())));
         dto.setPermissoesEfetivas(new HashSet<>(formatarPermissoesMap(obterPermissoesEfetivasUsuario(user))));

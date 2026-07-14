@@ -1,12 +1,15 @@
 package br.com.semear.service;
 
 import br.com.semear.config.PushNotificationProperties;
+import br.com.semear.domain.CultoRegistro;
 import br.com.semear.domain.Escala;
 import br.com.semear.domain.EscalaItem;
 import br.com.semear.domain.Evento;
 import br.com.semear.domain.Igreja;
+import br.com.semear.domain.UsuarioPreferenciaNotificacao;
 import br.com.semear.domain.enumeration.StatusEvento;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
+import br.com.semear.repository.CultoRegistroRepository;
 import br.com.semear.repository.EscalaItemRepository;
 import br.com.semear.repository.EscalaRepository;
 import br.com.semear.repository.EventoRepository;
@@ -15,6 +18,8 @@ import br.com.semear.repository.UserRepository;
 import br.com.semear.repository.UsuarioPreferenciaNotificacaoRepository;
 import br.com.semear.domain.User;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
+import br.com.semear.service.util.CultoLembreteUtils;
+import br.com.semear.service.util.CultoRecorrenciaUtils;
 import br.com.semear.service.util.EscalaNotificacaoUtils;
 import br.com.semear.service.util.PlanoLeituraColetivoUtils;
 import br.com.semear.service.util.PlanoLeituraColetivoUtils.LeituraDoDia;
@@ -22,6 +27,7 @@ import br.com.semear.service.util.VersiculoDoDiaUtils;
 import br.com.semear.service.util.VersiculoDoDiaUtils.Versiculo;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -50,6 +56,7 @@ public class PushLembreteScheduler {
     private final UsuarioPreferenciaNotificacaoRepository preferenciaRepository;
     private final NotificacaoProgramadaService notificacaoProgramadaService;
     private final UserRepository userRepository;
+    private final CultoRegistroRepository cultoRegistroRepository;
 
     public PushLembreteScheduler(
         PushNotificationProperties pushProperties,
@@ -60,7 +67,8 @@ public class PushLembreteScheduler {
         IgrejaRepository igrejaRepository,
         UsuarioPreferenciaNotificacaoRepository preferenciaRepository,
         NotificacaoProgramadaService notificacaoProgramadaService,
-        UserRepository userRepository
+        UserRepository userRepository,
+        CultoRegistroRepository cultoRegistroRepository
     ) {
         this.pushProperties = pushProperties;
         this.notificacaoEnvioService = notificacaoEnvioService;
@@ -71,6 +79,7 @@ public class PushLembreteScheduler {
         this.preferenciaRepository = preferenciaRepository;
         this.notificacaoProgramadaService = notificacaoProgramadaService;
         this.userRepository = userRepository;
+        this.cultoRegistroRepository = cultoRegistroRepository;
     }
 
     /** Lembretes configurados por evento — a cada hora (independente do flag push). */
@@ -320,6 +329,82 @@ public class PushLembreteScheduler {
             totalIgrejas,
             totalUsuarios
         );
+    }
+
+    /** Lembrete de culto: algumas horas antes — a cada 15 minutos. */
+    @Scheduled(cron = "0 */15 * * * ?", zone = "America/Sao_Paulo")
+    @Transactional
+    public void lembreteCultosProximos() {
+        if (!pushProperties.isEnabled()) {
+            return;
+        }
+        Instant agora = Instant.now();
+        LocalDate hoje = LocalDate.now(ZONE_BR);
+        LocalDate amanha = hoje.plusDays(1);
+        int enviados = 0;
+
+        for (Igreja igreja : igrejaRepository.findAll()) {
+            List<UsuarioPreferenciaNotificacao> prefs =
+                preferenciaRepository.findByIgrejaIdAndPushAtivoTrueAndCultosAtivoTrue(igreja.getId());
+            if (prefs.isEmpty()) {
+                continue;
+            }
+            List<Long> usuarioIds = prefs
+                .stream()
+                .map(p -> p.getUser())
+                .filter(u -> u != null && u.getId() != null && u.isActivated())
+                .map(User::getId)
+                .distinct()
+                .toList();
+            if (usuarioIds.isEmpty()) {
+                continue;
+            }
+
+            List<CultoRegistro> cultos = cultoRegistroRepository.findByIgrejaIdOrderByNomeAsc(igreja.getId());
+            for (CultoRegistro culto : cultos) {
+                if (!Boolean.TRUE.equals(culto.getAtivo())) {
+                    continue;
+                }
+                for (LocalDate data : List.of(hoje, amanha)) {
+                    if (!CultoRecorrenciaUtils.cultoOcorreNaData(culto, data)) {
+                        continue;
+                    }
+                    LocalTime horario = CultoLembreteUtils.parseHorario(culto.getHorario());
+                    if (horario == null) {
+                        continue;
+                    }
+                    if (!CultoLembreteUtils.estaNaJanelaLembretePadrao(agora, data, horario)) {
+                        continue;
+                    }
+
+                    String horaFmt = HORA_FMT.format(horario);
+                    NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+                    payload.setIgrejaId(igreja.getId());
+                    payload.setTipo("CULTO_LEMBRETE");
+                    payload.setEntidadeTipo("CULTO");
+                    payload.setEntidadeId(culto.getId());
+                    payload.setTitulo("Culto em breve");
+                    payload.setMensagem(
+                        "\"" +
+                        culto.getNome() +
+                        "\" começa às " +
+                        horaFmt +
+                        " (em cerca de " +
+                        CultoLembreteUtils.HORAS_ANTES_PADRAO +
+                        " horas)."
+                    );
+                    payload.setRotaDestino("/cultos");
+                    payload.setRespeitarHorarioSilencioso(false);
+                    payload.setRegistrarDeduplicacao(true);
+                    payload.setContextoDestinatarios("lembrete de culto — " + usuarioIds.size() + " usuário(s)");
+                    notificacaoEnvioService.enviarParaUsuarios(usuarioIds, payload);
+                    enviados += usuarioIds.size();
+                }
+            }
+        }
+        if (enviados > 0) {
+            LOG.info("Job lembrete de cultos concluído | {} notificação(ões)", enviados);
+        }
     }
 
     private void executarLembreteEventos(LocalDate data, String tipo, String tituloPrefixo) {

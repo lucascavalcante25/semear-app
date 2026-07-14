@@ -192,11 +192,23 @@ public class EscalaAutomacaoService {
     @Transactional(readOnly = true)
     public List<CultoRegistroDTO> listarCultos() {
         Long igrejaId = tenantService.getIgrejaIdAtual();
-        return cultoRegistroRepository
+        List<CultoRegistro> cultos = cultoRegistroRepository
             .findByIgrejaIdOrderByNomeAsc(igrejaId)
             .stream()
             .filter(c -> Boolean.TRUE.equals(c.getAtivo()))
-            .map(this::toCultoDto)
+            .toList();
+        if (cultos.isEmpty()) return List.of();
+
+        List<Long> cultoIds = cultos.stream().map(CultoRegistro::getId).toList();
+        Map<Long, List<CultoEscalaRegra>> regrasPorCulto = new HashMap<>();
+        for (CultoEscalaRegra regra : cultoEscalaRegraRepository.findByCultoRegistroIdInWithDepartamento(cultoIds)) {
+            if (regra.getCultoRegistro() == null || regra.getCultoRegistro().getId() == null) continue;
+            regrasPorCulto.computeIfAbsent(regra.getCultoRegistro().getId(), x -> new ArrayList<>()).add(regra);
+        }
+
+        return cultos
+            .stream()
+            .map(c -> toCultoDto(c, regrasPorCulto.getOrDefault(c.getId(), List.of())))
             .toList();
     }
 
@@ -1410,6 +1422,13 @@ public class EscalaAutomacaoService {
     }
 
     private CultoRegistroDTO toCultoDto(CultoRegistro entity) {
+        return toCultoDto(
+            entity,
+            cultoEscalaRegraRepository.findByCultoRegistroId(entity.getId())
+        );
+    }
+
+    private CultoRegistroDTO toCultoDto(CultoRegistro entity, List<CultoEscalaRegra> regras) {
         CultoRegistroDTO dto = new CultoRegistroDTO();
         dto.setId(entity.getId());
         dto.setNome(entity.getNome());
@@ -1420,18 +1439,16 @@ public class EscalaAutomacaoService {
         dto.setFrequencia(entity.getFrequencia() != null ? entity.getFrequencia() : FrequenciaCulto.TODA_SEMANA);
         dto.setDataAncora(entity.getDataAncora());
         dto.setAtivo(entity.getAtivo());
-        dto.setRegras(
-            cultoEscalaRegraRepository.findByCultoRegistroId(entity.getId()).stream().map(this::toRegraDto).toList()
-        );
+        dto.setRegras(regras.stream().map(this::toRegraDto).toList());
         return dto;
     }
 
     private CultoEscalaRegraDTO toRegraDto(CultoEscalaRegra entity) {
         CultoEscalaRegraDTO dto = new CultoEscalaRegraDTO();
         dto.setId(entity.getId());
-        if (entity.getDepartamento() != null && entity.getDepartamento().getId() != null) {
+        if (entity.getDepartamento() != null) {
             dto.setDepartamentoId(entity.getDepartamento().getId());
-            departamentoRepository.findById(entity.getDepartamento().getId()).ifPresent(d -> dto.setDepartamentoNome(d.getNome()));
+            dto.setDepartamentoNome(entity.getDepartamento().getNome());
         }
         dto.setRegraGenero(entity.getRegraGenero());
         dto.setAtivo(entity.getAtivo());

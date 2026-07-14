@@ -138,6 +138,10 @@ public class PreCadastroResource {
                 atual.setLogin(preCadastro.getLogin());
                 atual.setSenha(preCadastro.getSenha());
                 atual.setObservacoes(preCadastro.getObservacoes());
+                atual.setReceberNotificacoes(Boolean.TRUE.equals(preCadastro.getReceberNotificacoes()));
+                atual.setPushToken(preCadastro.getPushToken());
+                atual.setPushPlataforma(preCadastro.getPushPlataforma());
+                atual.setPushNavegador(preCadastro.getPushNavegador());
                 atual.setAtualizadoEm(Instant.now());
 
                 // Regra do negócio: todo pré-cadastro entra como MEMBRO; admin define o perfil na aprovação.
@@ -177,6 +181,9 @@ public class PreCadastroResource {
         preCadastro.setPerfilSolicitado(PerfilAcesso.MEMBRO);
         preCadastro.setPerfilAprovado(null);
         preCadastro.setStatus(StatusCadastro.PRIMEIROACESSO);
+        if (preCadastro.getReceberNotificacoes() == null) {
+            preCadastro.setReceberNotificacoes(false);
+        }
         preCadastro.setIgreja(resolverIgreja(preCadastro));
         if (preCadastro.getCriadoEm() == null) {
             preCadastro.setCriadoEm(Instant.now());

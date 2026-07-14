@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260714000002-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="pre_cadastro" columnName="receber_notificacoes"/></not>
+        </preConditions>
+        <addColumn tableName="pre_cadastro">
+            <column name="receber_notificacoes" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="push_token" type="varchar(500)"/>
+            <column name="push_plataforma" type="varchar(20)"/>
+            <column name="push_navegador" type="varchar(80)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260714000002-2" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="usuario_preferencia_notificacao" columnName="cultos_ativo"/></not>
+        </preConditions>
+        <addColumn tableName="usuario_preferencia_notificacao">
+            <column name="cultos_ativo" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

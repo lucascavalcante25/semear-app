@@ -48,6 +48,16 @@ public class DepartamentoService {
             .toList();
     }
 
+    /** Lista sem membros — leve para selects (ex.: Cultos). */
+    @Transactional(readOnly = true)
+    public List<DepartamentoDTO> listarResumo() {
+        return departamentoRepository
+            .findByIgrejaIdOrderByNomeAsc(tenantService.getIgrejaIdAtual())
+            .stream()
+            .map(this::toDtoResumo)
+            .toList();
+    }
+
     @Transactional(readOnly = true)
     public Optional<DepartamentoDTO> obter(Long id) {
         return obterEntidade(id).map(this::toDtoComMembros);
@@ -145,6 +155,24 @@ public class DepartamentoService {
         User lider = userRepository.findById(dto.getLiderId()).orElseThrow(this::naoEncontrado);
         tenantService.validarMesmaIgreja(lider.getIgreja());
         departamento.setLider(lider);
+    }
+
+    private DepartamentoDTO toDtoResumo(Departamento entity) {
+        DepartamentoDTO dto = new DepartamentoDTO();
+        dto.setId(entity.getId());
+        if (entity.getIgreja() != null) {
+            dto.setIgrejaId(entity.getIgreja().getId());
+        }
+        dto.setNome(entity.getNome());
+        dto.setDescricao(entity.getDescricao());
+        dto.setCodigo(entity.getCodigo());
+        dto.setAtivo(entity.getAtivo());
+        dto.setCriadoEm(entity.getCriadoEm());
+        if (entity.getLider() != null) {
+            dto.setLiderId(entity.getLider().getId());
+            dto.setLiderNome(montarNome(entity.getLider()));
+        }
+        return dto;
     }
 
     private DepartamentoDTO toDtoComMembros(Departamento entity) {

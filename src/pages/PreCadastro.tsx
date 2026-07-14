@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
+  Bell,
   Church,
   KeyRound,
   Loader2,
@@ -56,6 +57,12 @@ import { UFS_BRASIL } from "@/lib/ufs-brasil";
 import { toast } from "sonner";
 import { SeletorIgreja } from "@/components/igreja/SeletorIgreja";
 import { listarIgrejasPublicas, type IgrejaPublica } from "@/modules/igreja/api";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  obterTokenFCM,
+  solicitarPermissaoPush,
+  verificarSuportePush,
+} from "@/modules/notificacoes/push";
 
 type ErrosPreCadastro = Partial<Record<keyof PreCadastroPayload | "confirmarSenha", string>>;
 
@@ -74,6 +81,7 @@ const FORM_INICIAL: PreCadastroPayload & { confirmarSenha: string } = {
   perfilSolicitado: "membro",
   igrejaId: undefined,
   observacoes: "",
+  receberNotificacoes: false,
   endereco: {
     logradouro: "",
     numero: "",
@@ -253,13 +261,50 @@ export default function PreCadastro() {
 
     setEnviando(true);
     try {
-      const { confirmarSenha: _, ...payload } = form;
+      const { confirmarSenha: _, ...payloadBase } = form;
+      let pushToken: string | null = null;
+      let pushPlataforma: string | null = null;
+      let pushNavegador: string | null = null;
+
+      if (form.receberNotificacoes) {
+        try {
+          const suporte = await verificarSuportePush();
+          if (suporte) {
+            const permissao = await solicitarPermissaoPush();
+            if (permissao === "granted") {
+              pushToken = await obterTokenFCM();
+              const ua = navigator.userAgent.toLowerCase();
+              pushPlataforma = /iphone|ipad|ipod|android/.test(ua) ? "WEB_PWA" : "WEB_PWA";
+              pushNavegador = navigator.userAgent.includes("Edg/")
+                ? "Edge"
+                : navigator.userAgent.includes("Chrome/")
+                  ? "Chrome"
+                  : navigator.userAgent.includes("Firefox/")
+                    ? "Firefox"
+                    : "Outro";
+            } else {
+              toast.message(
+                "Permissão de notificação não concedida. Seu pré-cadastro será enviado sem ativar o alerta no aparelho.",
+              );
+            }
+          }
+        } catch {
+          toast.message(
+            "Não foi possível ativar as notificações agora. Seu pré-cadastro será enviado normalmente.",
+          );
+        }
+      }
+
       await enviarPreCadastro({
-        ...payload,
+        ...payloadBase,
         cpf: form.cpf.replace(/\D/g, ""),
         email: form.email.trim().toLowerCase(),
         dataNascimento: dataMascaraParaApi(form.dataNascimento),
         perfilSolicitado: "membro",
+        receberNotificacoes: Boolean(form.receberNotificacoes),
+        pushToken,
+        pushPlataforma,
+        pushNavegador,
       });
       setEnviado(true);
       toast.success("Pré-cadastro enviado com sucesso!");
@@ -609,6 +654,40 @@ export default function PreCadastro() {
             <div className="sm:col-span-2">
               <IndicadorValidacaoSenha senha={form.senha} confirmarSenha={form.confirmarSenha} />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-olive" />
+              <CardTitle className="text-lg">Notificações</CardTitle>
+            </div>
+            <CardDescription>
+              Ative para receber avisos no celular, como a aprovação do cadastro e lembretes de culto.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <label
+              htmlFor="receberNotificacoes"
+              className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/40"
+            >
+              <Checkbox
+                id="receberNotificacoes"
+                checked={Boolean(form.receberNotificacoes)}
+                onCheckedChange={(v) => set("receberNotificacoes", v === true)}
+                className="mt-0.5"
+              />
+              <span className="space-y-1">
+                <span className="block text-sm font-medium text-foreground">
+                  Quero receber notificações neste dispositivo
+                </span>
+                <span className="block text-xs text-muted-foreground">
+                  Ao marcar, o navegador pedirá permissão. Você será avisado quando o cadastro for aprovado e
+                  antes dos cultos.
+                </span>
+              </span>
+            </label>
           </CardContent>
         </Card>
 

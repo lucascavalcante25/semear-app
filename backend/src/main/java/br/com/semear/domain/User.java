@@ -73,6 +73,7 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
     private String imageUrl;
 
     @Column(name = "image_data", columnDefinition = "bytea")
+    @Basic(fetch = FetchType.LAZY)
     @JsonIgnore
     private byte[] imageData;
 
@@ -170,10 +171,12 @@ public class User extends AbstractAuditingEntity<Long> implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pai_id")
+    @BatchSize(size = 25)
     private User pai;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mae_id")
+    @BatchSize(size = 25)
     private User mae;
 
     @ManyToOne(fetch = FetchType.LAZY)
