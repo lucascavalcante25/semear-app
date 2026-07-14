@@ -55,10 +55,23 @@ const LABEL_PAPEL: Record<PapelCultoResponsavel, string> = {
   LIMPEZA: "Limpeza",
 };
 
+const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
 const formatarData = (iso: string) => {
-  const [y, m, d] = iso.split("-");
+  const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return iso;
-  return `${d}/${m}/${y}`;
+  const data = new Date(y, m - 1, d);
+  const diaSemana = DIAS_SEMANA[data.getDay()] ?? "";
+  const dataFmt = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+  return diaSemana ? `${diaSemana}, ${dataFmt}` : dataFmt;
 };
 
 export function louvorAppDoItem(item: CultoLouvorItemDTO): LouvorApp {
