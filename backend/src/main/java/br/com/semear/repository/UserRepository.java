@@ -78,7 +78,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findAllByIgrejaIdAndActivatedIsTrue(Long igrejaId, Pageable pageable);
 
-    @EntityGraph(attributePaths = { "authorities", "pai", "mae" })
+    /** Sem EntityGraph: join de authorities + Page quebra a paginação/consulta no Hibernate. */
     Page<User> findAllByIgrejaId(Long igrejaId, Pageable pageable);
 
     long countByIgrejaId(Long igrejaId);
