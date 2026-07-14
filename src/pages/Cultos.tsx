@@ -229,6 +229,10 @@ export default function Cultos() {
   const [grupos, setGrupos] = useState<GrupoLouvorApp[]>([]);
   const [membros, setMembros] = useState<MembroApi[]>([]);
   const [repertorio, setRepertorio] = useState<LouvorApp[]>([]);
+  const [modelosProntos, setModelosProntos] = useState(false);
+  const [carregandoModelos, setCarregandoModelos] = useState(false);
+  const [auxiliaresEdicaoProntos, setAuxiliaresEdicaoProntos] = useState(false);
+  const [carregandoAuxiliaresEdicao, setCarregandoAuxiliaresEdicao] = useState(false);
 
   const mesAtualChave = useMemo(() => {
     const d = new Date();
@@ -274,12 +278,11 @@ export default function Cultos() {
   const recepcaoAtual = editResponsaveis.find((r) => r.papel === "RECEPCAO") ?? null;
   const limpezaAtual = editResponsaveis.find((r) => r.papel === "LIMPEZA") ?? null;
 
-  const carregar = useCallback(async () => {
+  /** Só a agenda libera a listagem — nada de membros/louvores/modelos no caminho crítico. */
+  const carregarAgenda = useCallback(async () => {
     setCarregando(true);
     try {
-      // Agenda + modelos liberam a tela; o resto carrega em background.
-      const [mods, agenda] = await Promise.all([listarModelosCulto(), listarAgendaCultos()]);
-      setModelos(mods ?? []);
+      const agenda = await listarAgendaCultos();
       const prox = agenda?.proximos ?? [];
       setProximos(prox);
       setPassados(agenda?.passados ?? []);
@@ -300,42 +303,69 @@ export default function Cultos() {
     } finally {
       setCarregando(false);
     }
-
-    void (async () => {
-      try {
-        const secundarios: Promise<void>[] = [
-          listarDepartamentos({ resumo: true })
-            .catch(() => [] as DepartamentoDTO[])
-            .then((deptos) => setDepartamentos(deptos ?? [])),
-        ];
-        if (podeLouvores) {
-          secundarios.push(
-            Promise.all([
-              listarGrupos().catch(() => [] as GrupoLouvorApp[]),
-              listarLouvores().catch(() => [] as LouvorApp[]),
-            ]).then(([g, louvores]) => {
-              setGrupos(g ?? []);
-              setRepertorio(louvores ?? []);
-            }),
-          );
-        }
-        if (podeEditar) {
-          secundarios.push(
-            listarMembros()
-              .catch(() => [] as MembroApi[])
-              .then((m) => setMembros((m ?? []).filter((x) => x.activated !== false && x.idNum != null))),
-          );
-        }
-        await Promise.all(secundarios);
-      } catch {
-        /* secundário: não bloqueia a tela */
-      }
-    })();
-  }, [podeEditar, podeLouvores]);
+  }, []);
 
   useEffect(() => {
-    void carregar();
-  }, [carregar]);
+    void carregarAgenda();
+  }, [carregarAgenda]);
+
+  /** Cadastro de modelos — só ao abrir a aba. */
+  const garantirModelos = useCallback(async () => {
+    if (!podeEditar || modelosProntos || carregandoModelos) return;
+    setCarregandoModelos(true);
+    try {
+      const [mods, deptos] = await Promise.all([
+        listarModelosCulto().catch(() => [] as CultoModeloDTO[]),
+        listarDepartamentos({ resumo: true }).catch(() => [] as DepartamentoDTO[]),
+      ]);
+      setModelos(mods ?? []);
+      setDepartamentos(deptos ?? []);
+      setModelosProntos(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao carregar cadastro de cultos.");
+    } finally {
+      setCarregandoModelos(false);
+    }
+  }, [podeEditar, modelosProntos, carregandoModelos]);
+
+  useEffect(() => {
+    if (aba === "modelos") void garantirModelos();
+  }, [aba, garantirModelos]);
+
+  /** Membros/grupos/louvores — só ao editar um culto. */
+  const garantirAuxiliaresEdicao = useCallback(async () => {
+    if (auxiliaresEdicaoProntos || carregandoAuxiliaresEdicao) return;
+    setCarregandoAuxiliaresEdicao(true);
+    try {
+      const tasks: Promise<void>[] = [];
+      if (podeEditar) {
+        tasks.push(
+          listarMembros()
+            .catch(() => [] as MembroApi[])
+            .then((m) => setMembros((m ?? []).filter((x) => x.activated !== false && x.idNum != null))),
+        );
+      }
+      if (podeLouvores) {
+        tasks.push(
+          Promise.all([
+            listarGrupos().catch(() => [] as GrupoLouvorApp[]),
+            listarLouvores().catch(() => [] as LouvorApp[]),
+          ]).then(([g, louvores]) => {
+            setGrupos(g ?? []);
+            setRepertorio(louvores ?? []);
+          }),
+        );
+      }
+      await Promise.all(tasks);
+      setAuxiliaresEdicaoProntos(true);
+    } finally {
+      setCarregandoAuxiliaresEdicao(false);
+    }
+  }, [auxiliaresEdicaoProntos, carregandoAuxiliaresEdicao, podeEditar, podeLouvores]);
+
+  useEffect(() => {
+    if (detalhe) void garantirAuxiliaresEdicao();
+  }, [detalhe, garantirAuxiliaresEdicao]);
 
   const toggleMes = (set: Dispatch<SetStateAction<Set<string>>>, chave: string) => {
     set((prev) => {
@@ -783,6 +813,11 @@ export default function Cultos() {
 
             {podeEditar && (
               <TabsContent value="modelos" className="mt-4 space-y-4">
+                {carregandoModelos && !modelosProntos ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
                 <Card className="min-w-0 overflow-hidden">
                   <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-3 sm:px-6">
                     <div className="min-w-0">
@@ -1006,6 +1041,7 @@ export default function Cultos() {
                     </Button>
                   </CardContent>
                 </Card>
+                )}
               </TabsContent>
             )}
           </Tabs>
@@ -1169,6 +1205,12 @@ export default function Cultos() {
                     )}
                     {podeEditar ? (
                       <div className="space-y-3">
+                        {carregandoAuxiliaresEdicao && !auxiliaresEdicaoProntos && (
+                          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Carregando lista de membros…
+                          </p>
+                        )}
                         <SeletorMembro
                           label="Portaria"
                           valor={portariaAtual}
