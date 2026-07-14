@@ -2,7 +2,6 @@ package br.com.semear.service;
 
 import br.com.semear.domain.*;
 import br.com.semear.domain.enumeration.CodigoDepartamento;
-import br.com.semear.domain.enumeration.DiaSemanaCulto;
 import br.com.semear.domain.enumeration.PapelCultoResponsavel;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
 import br.com.semear.domain.enumeration.TipoCulto;
@@ -10,6 +9,7 @@ import br.com.semear.repository.*;
 import br.com.semear.service.dto.CultoAgendaItemDTO;
 import br.com.semear.service.dto.CultoAgendaListaDTO;
 import br.com.semear.service.dto.CultoOcorrenciaSalvarDTO;
+import br.com.semear.service.util.CultoRecorrenciaUtils;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -471,25 +471,12 @@ public class CultoAgendaService {
                 continue;
             }
             for (LocalDate d = inicio; !d.isAfter(fim); d = d.plusDays(1)) {
-                if (diaCompativel(d, culto.getDiaSemana())) {
+                if (CultoRecorrenciaUtils.cultoOcorreNaData(culto, d)) {
                     slots.add(new Slot(culto, d));
                 }
             }
         }
         return slots;
-    }
-
-    private boolean diaCompativel(LocalDate data, DiaSemanaCulto diaSemana) {
-        if (diaSemana == null) return false;
-        return switch (data.getDayOfWeek()) {
-            case SUNDAY -> diaSemana == DiaSemanaCulto.DOMINGO;
-            case MONDAY -> diaSemana == DiaSemanaCulto.SEGUNDA;
-            case TUESDAY -> diaSemana == DiaSemanaCulto.TERCA;
-            case WEDNESDAY -> diaSemana == DiaSemanaCulto.QUARTA;
-            case THURSDAY -> diaSemana == DiaSemanaCulto.QUINTA;
-            case FRIDAY -> diaSemana == DiaSemanaCulto.SEXTA;
-            case SATURDAY -> diaSemana == DiaSemanaCulto.SABADO;
-        };
     }
 
     private String chave(Long cultoId, LocalDate data) {

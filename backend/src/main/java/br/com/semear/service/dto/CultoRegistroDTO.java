@@ -1,6 +1,7 @@
 package br.com.semear.service.dto;
 
 import br.com.semear.domain.enumeration.DiaSemanaCulto;
+import br.com.semear.domain.enumeration.FrequenciaCulto;
 import br.com.semear.domain.enumeration.TipoCulto;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -15,6 +16,8 @@ public class CultoRegistroDTO implements Serializable {
     private String horario;
     private TipoCulto tipo = TipoCulto.RECORRENTE;
     private LocalDate dataEspecifica;
+    private FrequenciaCulto frequencia = FrequenciaCulto.TODA_SEMANA;
+    private LocalDate dataAncora;
     private Boolean ativo;
     private List<CultoEscalaRegraDTO> regras = new ArrayList<>();
 
@@ -30,6 +33,10 @@ public class CultoRegistroDTO implements Serializable {
     public void setTipo(TipoCulto tipo) { this.tipo = tipo; }
     public LocalDate getDataEspecifica() { return dataEspecifica; }
     public void setDataEspecifica(LocalDate dataEspecifica) { this.dataEspecifica = dataEspecifica; }
+    public FrequenciaCulto getFrequencia() { return frequencia; }
+    public void setFrequencia(FrequenciaCulto frequencia) { this.frequencia = frequencia; }
+    public LocalDate getDataAncora() { return dataAncora; }
+    public void setDataAncora(LocalDate dataAncora) { this.dataAncora = dataAncora; }
     public Boolean getAtivo() { return ativo; }
     public void setAtivo(Boolean ativo) { this.ativo = ativo; }
     public List<CultoEscalaRegraDTO> getRegras() { return regras; }

@@ -45,8 +45,17 @@ export type CultoRegistroDTO = {
   horario: string;
   tipo?: "RECORRENTE" | "EXTRAORDINARIO";
   dataEspecifica?: string | null;
+  frequencia?: "TODA_SEMANA" | "SEMANAS_ALTERNADAS";
+  dataAncora?: string | null;
   ativo?: boolean;
   regras?: CultoEscalaRegraDTO[];
+};
+
+export type FrequenciaCulto = "TODA_SEMANA" | "SEMANAS_ALTERNADAS";
+
+export const LABEL_FREQUENCIA_CULTO: Record<FrequenciaCulto, string> = {
+  TODA_SEMANA: "Toda semana",
+  SEMANAS_ALTERNADAS: "Semanas alternadas",
 };
 
 export type EscalaConfigAutomaticaDTO = {

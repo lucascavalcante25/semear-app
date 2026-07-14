@@ -1,6 +1,7 @@
 package br.com.semear.domain;
 
 import br.com.semear.domain.enumeration.DiaSemanaCulto;
+import br.com.semear.domain.enumeration.FrequenciaCulto;
 import br.com.semear.domain.enumeration.TipoCulto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -48,6 +49,15 @@ public class CultoRegistro implements Serializable {
     private LocalDate dataEspecifica;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "frequencia", nullable = false, length = 30)
+    private FrequenciaCulto frequencia = FrequenciaCulto.TODA_SEMANA;
+
+    /** Primeira ocorrência da série (obrigatória se frequência = SEMANAS_ALTERNADAS). */
+    @Column(name = "data_ancora")
+    private LocalDate dataAncora;
+
+    @NotNull
     @Column(name = "ativo", nullable = false)
     private Boolean ativo = true;
 
@@ -69,6 +79,10 @@ public class CultoRegistro implements Serializable {
     public void setTipo(TipoCulto tipo) { this.tipo = tipo; }
     public LocalDate getDataEspecifica() { return dataEspecifica; }
     public void setDataEspecifica(LocalDate dataEspecifica) { this.dataEspecifica = dataEspecifica; }
+    public FrequenciaCulto getFrequencia() { return frequencia; }
+    public void setFrequencia(FrequenciaCulto frequencia) { this.frequencia = frequencia; }
+    public LocalDate getDataAncora() { return dataAncora; }
+    public void setDataAncora(LocalDate dataAncora) { this.dataAncora = dataAncora; }
     public Boolean getAtivo() { return ativo; }
     public void setAtivo(Boolean ativo) { this.ativo = ativo; }
     public Instant getCriadoEm() { return criadoEm; }

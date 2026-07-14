@@ -5,6 +5,7 @@ import br.com.semear.domain.enumeration.*;
 import br.com.semear.repository.*;
 import br.com.semear.security.AuthoritiesConstants;
 import br.com.semear.service.dto.*;
+import br.com.semear.service.util.CultoRecorrenciaUtils;
 import br.com.semear.service.util.EscalaNotificacaoUtils;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.time.*;
@@ -227,6 +228,13 @@ public class EscalaAutomacaoService {
             culto.setHorario(dto.getHorario().trim());
             culto.setTipo(dto.getTipo() != null ? dto.getTipo() : br.com.semear.domain.enumeration.TipoCulto.RECORRENTE);
             culto.setDataEspecifica(dto.getDataEspecifica());
+            FrequenciaCulto freq =
+                dto.getFrequencia() != null ? dto.getFrequencia() : FrequenciaCulto.TODA_SEMANA;
+            if (culto.getTipo() == br.com.semear.domain.enumeration.TipoCulto.EXTRAORDINARIO) {
+                freq = FrequenciaCulto.TODA_SEMANA;
+            }
+            culto.setFrequencia(freq);
+            culto.setDataAncora(freq == FrequenciaCulto.SEMANAS_ALTERNADAS ? dto.getDataAncora() : null);
             culto.setAtivo(dto.getAtivo() == null || dto.getAtivo());
             culto = cultoRegistroRepository.save(culto);
 
@@ -783,7 +791,7 @@ public class EscalaAutomacaoService {
     ) {
         for (LocalDate data = inicio; !data.isAfter(fim); data = data.plusDays(1)) {
             for (CultoRegistro culto : cultos) {
-                if (!diaCompativel(data, culto.getDiaSemana())) {
+                if (!CultoRecorrenciaUtils.cultoOcorreNaData(culto, data)) {
                     continue;
                 }
                 List<CultoEscalaRegra> regras = filtrarRegrasAtivas(culto.getId(), config, true, false);
@@ -1034,7 +1042,7 @@ public class EscalaAutomacaoService {
 
         for (LocalDate data = inicio; !data.isAfter(fim); data = data.plusDays(1)) {
             for (CultoRegistro culto : cultos) {
-                if (!diaCompativel(data, culto.getDiaSemana())) {
+                if (!CultoRecorrenciaUtils.cultoOcorreNaData(culto, data)) {
                     continue;
                 }
                 criarEscalaSorteada(geracao, culto, regraLimpeza, limpeza, data, cargaGeracao, historicoDesde, loteChave);
@@ -1312,16 +1320,7 @@ public class EscalaAutomacaoService {
     }
 
     private boolean diaCompativel(LocalDate data, DiaSemanaCulto diaSemana) {
-        DayOfWeek dow = data.getDayOfWeek();
-        return switch (diaSemana) {
-            case DOMINGO -> dow == DayOfWeek.SUNDAY;
-            case SEGUNDA -> dow == DayOfWeek.MONDAY;
-            case TERCA -> dow == DayOfWeek.TUESDAY;
-            case QUARTA -> dow == DayOfWeek.WEDNESDAY;
-            case QUINTA -> dow == DayOfWeek.THURSDAY;
-            case SEXTA -> dow == DayOfWeek.FRIDAY;
-            case SABADO -> dow == DayOfWeek.SATURDAY;
-        };
+        return CultoRecorrenciaUtils.diaCompativel(data, diaSemana);
     }
 
     private Instant combinarDataHorario(LocalDate data, String horario) {
@@ -1377,23 +1376,37 @@ public class EscalaAutomacaoService {
                 throw new BadRequestAlertException("Data é obrigatória para culto extraordinário", ENTITY, "dataobrigatoria");
             }
             if (dto.getDiaSemana() == null) {
-                dto.setDiaSemana(diaSemanaDe(dto.getDataEspecifica()));
+                dto.setDiaSemana(CultoRecorrenciaUtils.diaSemanaDe(dto.getDataEspecifica()));
             }
-        } else if (dto.getDiaSemana() == null) {
+            return;
+        }
+        if (dto.getDiaSemana() == null) {
             throw new BadRequestAlertException("Dia da semana é obrigatório", ENTITY, "diaobrigatorio");
+        }
+        FrequenciaCulto freq = dto.getFrequencia() != null ? dto.getFrequencia() : FrequenciaCulto.TODA_SEMANA;
+        dto.setFrequencia(freq);
+        if (freq == FrequenciaCulto.SEMANAS_ALTERNADAS) {
+            if (dto.getDataAncora() == null) {
+                throw new BadRequestAlertException(
+                    "Informe a primeira ocorrência para cultos em semanas alternadas",
+                    ENTITY,
+                    "ancoraobrigatoria"
+                );
+            }
+            if (!CultoRecorrenciaUtils.diaCompativel(dto.getDataAncora(), dto.getDiaSemana())) {
+                throw new BadRequestAlertException(
+                    "A data da primeira ocorrência deve cair no dia da semana do culto",
+                    ENTITY,
+                    "ancorainvalida"
+                );
+            }
+        } else {
+            dto.setDataAncora(null);
         }
     }
 
     private DiaSemanaCulto diaSemanaDe(java.time.LocalDate data) {
-        return switch (data.getDayOfWeek()) {
-            case SUNDAY -> DiaSemanaCulto.DOMINGO;
-            case MONDAY -> DiaSemanaCulto.SEGUNDA;
-            case TUESDAY -> DiaSemanaCulto.TERCA;
-            case WEDNESDAY -> DiaSemanaCulto.QUARTA;
-            case THURSDAY -> DiaSemanaCulto.QUINTA;
-            case FRIDAY -> DiaSemanaCulto.SEXTA;
-            case SATURDAY -> DiaSemanaCulto.SABADO;
-        };
+        return CultoRecorrenciaUtils.diaSemanaDe(data);
     }
 
     private CultoRegistroDTO toCultoDto(CultoRegistro entity) {
@@ -1404,6 +1417,8 @@ public class EscalaAutomacaoService {
         dto.setHorario(entity.getHorario());
         dto.setTipo(entity.getTipo() != null ? entity.getTipo() : br.com.semear.domain.enumeration.TipoCulto.RECORRENTE);
         dto.setDataEspecifica(entity.getDataEspecifica());
+        dto.setFrequencia(entity.getFrequencia() != null ? entity.getFrequencia() : FrequenciaCulto.TODA_SEMANA);
+        dto.setDataAncora(entity.getDataAncora());
         dto.setAtivo(entity.getAtivo());
         dto.setRegras(
             cultoEscalaRegraRepository.findByCultoRegistroId(entity.getId()).stream().map(this::toRegraDto).toList()

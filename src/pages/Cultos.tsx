@@ -57,7 +57,9 @@ import { listarMembros, type MembroApi } from "@/modules/members/api";
 import { listarLouvores, type LouvorApp } from "@/modules/louvores/api";
 import {
   LABEL_DIA_SEMANA,
+  LABEL_FREQUENCIA_CULTO,
   type DiaSemanaCulto,
+  type FrequenciaCulto,
 } from "@/modules/escalas/automacao-api";
 import {
   listarAgendaCultos,
@@ -83,6 +85,8 @@ const cultoVazio = (): CultoModeloDTO => ({
   diaSemana: "DOMINGO",
   horario: "09:00",
   tipo: "RECORRENTE",
+  frequencia: "TODA_SEMANA",
+  dataAncora: null,
   ativo: true,
   regras: [],
 });
@@ -463,11 +467,40 @@ export default function Cultos() {
   };
 
   const salvarModelos = async () => {
+    for (const m of modelos) {
+      if ((m.tipo ?? "RECORRENTE") !== "RECORRENTE") continue;
+      if ((m.frequencia ?? "TODA_SEMANA") !== "SEMANAS_ALTERNADAS") continue;
+      if (!m.dataAncora) {
+        toast.error(`Informe a primeira ocorrência de "${m.nome || "culto"}".`);
+        return;
+      }
+      const d = new Date(`${m.dataAncora}T12:00:00`);
+      const map: Record<number, DiaSemanaCulto> = {
+        0: "DOMINGO",
+        1: "SEGUNDA",
+        2: "TERCA",
+        3: "QUARTA",
+        4: "QUINTA",
+        5: "SEXTA",
+        6: "SABADO",
+      };
+      if (map[d.getDay()] !== m.diaSemana) {
+        toast.error(
+          `A primeira ocorrência de "${m.nome || "culto"}" precisa ser em ${LABEL_DIA_SEMANA[m.diaSemana]}.`,
+        );
+        return;
+      }
+    }
     setSalvandoModelos(true);
     try {
       // Sorteio usa quem está no departamento; filtro por sexo não é configurado aqui.
       const payload = modelos.map((m) => ({
         ...m,
+        frequencia: (m.tipo ?? "RECORRENTE") === "RECORRENTE" ? (m.frequencia ?? "TODA_SEMANA") : "TODA_SEMANA",
+        dataAncora:
+          (m.tipo ?? "RECORRENTE") === "RECORRENTE" && (m.frequencia ?? "TODA_SEMANA") === "SEMANAS_ALTERNADAS"
+            ? m.dataAncora
+            : null,
         regras: (m.regras ?? []).map((r) => ({ ...r, regraGenero: "QUALQUER" as const })),
       }));
       const salvos = await salvarModelosCulto(payload);
@@ -770,8 +803,15 @@ export default function Cultos() {
                               <Select
                                 value={culto.tipo ?? "RECORRENTE"}
                                 onValueChange={(v) => {
+                                  const tipo = v as TipoCulto;
                                   const copia = [...modelos];
-                                  copia[idx] = { ...culto, tipo: v as TipoCulto };
+                                  copia[idx] = {
+                                    ...culto,
+                                    tipo,
+                                    ...(tipo === "EXTRAORDINARIO"
+                                      ? { frequencia: "TODA_SEMANA", dataAncora: null }
+                                      : {}),
+                                  };
                                   setModelos(copia);
                                 }}
                               >
@@ -795,24 +835,67 @@ export default function Cultos() {
                             </div>
                           </div>
                           {(culto.tipo ?? "RECORRENTE") === "RECORRENTE" ? (
-                            <div className="space-y-1">
-                              <Label className="text-xs">Dia da semana</Label>
-                              <Select
-                                value={culto.diaSemana}
-                                onValueChange={(v) => {
-                                  const copia = [...modelos];
-                                  copia[idx] = { ...culto, diaSemana: v as DiaSemanaCulto };
-                                  setModelos(copia);
-                                }}
-                              >
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  {DIAS.map((d) => (
-                                    <SelectItem key={d} value={d}>{LABEL_DIA_SEMANA[d]}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                            <>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Dia da semana</Label>
+                                <Select
+                                  value={culto.diaSemana}
+                                  onValueChange={(v) => {
+                                    const copia = [...modelos];
+                                    copia[idx] = { ...culto, diaSemana: v as DiaSemanaCulto };
+                                    setModelos(copia);
+                                  }}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {DIAS.map((d) => (
+                                      <SelectItem key={d} value={d}>{LABEL_DIA_SEMANA[d]}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Frequência</Label>
+                                <Select
+                                  value={culto.frequencia ?? "TODA_SEMANA"}
+                                  onValueChange={(v) => {
+                                    const freq = v as FrequenciaCulto;
+                                    const copia = [...modelos];
+                                    copia[idx] = {
+                                      ...culto,
+                                      frequencia: freq,
+                                      dataAncora: freq === "SEMANAS_ALTERNADAS" ? (culto.dataAncora ?? null) : null,
+                                    };
+                                    setModelos(copia);
+                                  }}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {(Object.keys(LABEL_FREQUENCIA_CULTO) as FrequenciaCulto[]).map((f) => (
+                                      <SelectItem key={f} value={f}>{LABEL_FREQUENCIA_CULTO[f]}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {(culto.frequencia ?? "TODA_SEMANA") === "SEMANAS_ALTERNADAS" && (
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Primeira ocorrência</Label>
+                                  <Input
+                                    type="date"
+                                    value={culto.dataAncora ?? ""}
+                                    onChange={(e) => {
+                                      const copia = [...modelos];
+                                      copia[idx] = { ...culto, dataAncora: e.target.value || null };
+                                      setModelos(copia);
+                                    }}
+                                  />
+                                  <p className="text-[11px] text-muted-foreground">
+                                    Informe a primeira {LABEL_DIA_SEMANA[culto.diaSemana].toLowerCase()} deste culto.
+                                    A outra série (semana seguinte) fica para o culto alternado.
+                                  </p>
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <div className="space-y-1">
                               <Label className="text-xs">Data</Label>
