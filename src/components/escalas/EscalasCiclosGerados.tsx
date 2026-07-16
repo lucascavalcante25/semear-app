@@ -75,14 +75,24 @@ export function EscalasCiclosGerados({ geracoes, onGeracoesChange, onConfigPatch
     }
   };
 
+  const [publicandoId, setPublicandoId] = useState<number | null>(null);
+
   const publicar = async (id: number) => {
+    setPublicandoId(id);
+    const snapshot = geracoes;
+    onGeracoesChange(snapshot.map((g) => (g.id === id ? { ...g, status: "PUBLICADA" as const } : g)));
     try {
       const publicada = await publicarGeracaoEscalas(id);
-      toast.success("Ciclo publicado! Membros escalados serão avisados ao logar.");
-      onGeracoesChange(geracoes.map((g) => (g.id === id ? { ...g, ...publicada, status: "PUBLICADA" } : g)));
+      toast.success("Ciclo publicado! Os avisos aos membros seguem em segundo plano.");
+      onGeracoesChange(
+        snapshot.map((g) => (g.id === id ? { ...g, ...publicada, status: "PUBLICADA" as const } : g)),
+      );
       onConfigPatch?.({ podeGerarProximoCiclo: true, motivoBloqueioGeracao: null });
     } catch (e) {
+      onGeracoesChange(snapshot);
       toast.error(e instanceof Error ? e.message : "Erro ao publicar.");
+    } finally {
+      setPublicandoId(null);
     }
   };
 
@@ -169,7 +179,10 @@ export function EscalasCiclosGerados({ geracoes, onGeracoesChange, onConfigPatch
                         <Trash2 className="h-4 w-4 mr-1" />
                         Descartar
                       </Button>
-                      <Button size="sm" onClick={() => void publicar(g.id!)}>
+                      <Button size="sm" disabled={publicandoId === g.id} onClick={() => void publicar(g.id!)}>
+                        {publicandoId === g.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : null}
                         Publicar
                       </Button>
                     </>

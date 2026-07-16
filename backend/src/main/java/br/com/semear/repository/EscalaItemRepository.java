@@ -23,8 +23,15 @@ public interface EscalaItemRepository extends JpaRepository<EscalaItem, Long> {
     int deleteByEscalaIdIn(@Param("escalaIds") Collection<Long> escalaIds);
 
     @Query(
-        "SELECT ei FROM EscalaItem ei JOIN FETCH ei.user JOIN FETCH ei.escala e " +
-        "WHERE e.id IN :escalaIds"
+        """
+        SELECT ei FROM EscalaItem ei
+        JOIN FETCH ei.user
+        JOIN FETCH ei.escala e
+        LEFT JOIN FETCH e.igreja
+        LEFT JOIN FETCH e.departamento
+        LEFT JOIN FETCH e.cultoRegistro
+        WHERE e.id IN :escalaIds
+        """
     )
     List<EscalaItem> findByEscalaIdInWithUser(@Param("escalaIds") List<Long> escalaIds);
 

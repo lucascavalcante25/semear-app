@@ -17,6 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @Transactional
@@ -39,6 +41,7 @@ public class EscalaAutomacaoService {
     private final EscalaLoginAvisoVistoRepository avisoVistoRepository;
     private final TenantService tenantService;
     private final NotificacaoService notificacaoService;
+    private final EscalaPublicacaoAsyncService escalaPublicacaoAsyncService;
 
     public EscalaAutomacaoService(
         CultoRegistroRepository cultoRegistroRepository,
@@ -52,7 +55,8 @@ public class EscalaAutomacaoService {
         IgrejaRepository igrejaRepository,
         EscalaLoginAvisoVistoRepository avisoVistoRepository,
         TenantService tenantService,
-        NotificacaoService notificacaoService
+        NotificacaoService notificacaoService,
+        EscalaPublicacaoAsyncService escalaPublicacaoAsyncService
     ) {
         this.cultoRegistroRepository = cultoRegistroRepository;
         this.cultoEscalaRegraRepository = cultoEscalaRegraRepository;
@@ -66,6 +70,7 @@ public class EscalaAutomacaoService {
         this.avisoVistoRepository = avisoVistoRepository;
         this.tenantService = tenantService;
         this.notificacaoService = notificacaoService;
+        this.escalaPublicacaoAsyncService = escalaPublicacaoAsyncService;
     }
 
     @Transactional(readOnly = true)
@@ -327,16 +332,55 @@ public class EscalaAutomacaoService {
         }
         geracao.setStatus(StatusEscalaPublicacao.PUBLICADA);
         geracao.setPublicadoEm(Instant.now());
-        geracaoRepository.save(geracao);
+        geracaoRepository.saveAndFlush(geracao);
 
-        for (Escala escala : escalaRepository.findByGeracaoId(geracao.getId())) {
-            escala.setStatus(StatusEscalaPublicacao.PUBLICADA);
-            escalaRepository.save(escala);
-            for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
-                notificacaoService.notificarEscalaItemAtribuido(escala, item);
-            }
-        }
+        escalaRepository.atualizarStatusPorGeracao(geracao.getId(), StatusEscalaPublicacao.PUBLICADA);
+        List<Long> escalaIds = escalaRepository.findIdsByGeracaoId(geracao.getId());
+        agendarNotificacoesPublicacao(escalaIds);
+
         return toGeracaoDto(geracao);
+    }
+
+    public EscalaLimpezaLoteDTO publicarLoteLimpeza(String chave) {
+        if (chave == null || chave.isBlank()) {
+            throw new BadRequestAlertException("Lote inválido", ENTITY, "loteinvalido");
+        }
+        List<Escala> alvo = buscarEscalasDoLoteLimpeza(chave);
+        if (alvo.isEmpty()) {
+            throw new BadRequestAlertException("Lote de limpeza não encontrado", ENTITY, "lotenaoencontrado");
+        }
+        boolean temRascunho = alvo.stream().anyMatch(e -> e.getStatus() == StatusEscalaPublicacao.RASCUNHO);
+        if (!temRascunho) {
+            throw new BadRequestAlertException("Este lote já foi publicado", ENTITY, "statusinvalido");
+        }
+        List<Long> ids = alvo.stream().map(Escala::getId).filter(Objects::nonNull).toList();
+        if (!ids.isEmpty()) {
+            escalaRepository.atualizarStatusPorIds(ids, StatusEscalaPublicacao.PUBLICADA);
+        }
+        for (Escala escala : alvo) {
+            escala.setStatus(StatusEscalaPublicacao.PUBLICADA);
+        }
+        agendarNotificacoesPublicacao(ids);
+        return toLoteLimpezaDto(chave, alvo);
+    }
+
+    private void agendarNotificacoesPublicacao(List<Long> escalaIds) {
+        if (escalaIds == null || escalaIds.isEmpty()) {
+            return;
+        }
+        List<Long> ids = List.copyOf(escalaIds);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        escalaPublicacaoAsyncService.notificarAtribuicoesAposPublicacao(ids);
+                    }
+                }
+            );
+        } else {
+            escalaPublicacaoAsyncService.notificarAtribuicoesAposPublicacao(ids);
+        }
     }
 
     public void descartarGeracaoRascunho(Long id) {
@@ -411,28 +455,6 @@ public class EscalaAutomacaoService {
             throw new BadRequestAlertException("Lote de limpeza não encontrado", ENTITY, "lotenaoencontrado");
         }
         removerEscalas(alvo);
-    }
-
-    public EscalaLimpezaLoteDTO publicarLoteLimpeza(String chave) {
-        if (chave == null || chave.isBlank()) {
-            throw new BadRequestAlertException("Lote inválido", ENTITY, "loteinvalido");
-        }
-        List<Escala> alvo = buscarEscalasDoLoteLimpeza(chave);
-        if (alvo.isEmpty()) {
-            throw new BadRequestAlertException("Lote de limpeza não encontrado", ENTITY, "lotenaoencontrado");
-        }
-        boolean temRascunho = alvo.stream().anyMatch(e -> e.getStatus() == StatusEscalaPublicacao.RASCUNHO);
-        if (!temRascunho) {
-            throw new BadRequestAlertException("Este lote já foi publicado", ENTITY, "statusinvalido");
-        }
-        for (Escala escala : alvo) {
-            escala.setStatus(StatusEscalaPublicacao.PUBLICADA);
-            escalaRepository.save(escala);
-            for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
-                notificacaoService.notificarEscalaItemAtribuido(escala, item);
-            }
-        }
-        return toLoteLimpezaDto(chave, alvo);
     }
 
     @Transactional(readOnly = true)

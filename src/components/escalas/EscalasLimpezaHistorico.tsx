@@ -92,15 +92,26 @@ export function EscalasLimpezaHistorico({ onRecarregar }: Props) {
     }
   };
 
+  const [publicandoChave, setPublicandoChave] = useState<string | null>(null);
+
   const publicar = async (chave: string) => {
+    setPublicandoChave(chave);
+    setLotes((prev) =>
+      prev.map((l) => (l.chave === chave ? { ...l, status: "PUBLICADA" as const } : l)),
+    );
     try {
       const publicado = await publicarLoteLimpeza(chave);
-      toast.success("Lote publicado! Membros escalados serão avisados ao logar.");
+      toast.success("Lote publicado! Os avisos aos membros seguem em segundo plano.");
       setLotes((prev) =>
-        prev.map((l) => (l.chave === chave ? { ...l, ...publicado, status: "PUBLICADA" } : l)),
+        prev.map((l) => (l.chave === chave ? { ...l, ...publicado, status: "PUBLICADA" as const } : l)),
       );
     } catch (e) {
+      setLotes((prev) =>
+        prev.map((l) => (l.chave === chave ? { ...l, status: "RASCUNHO" as const } : l)),
+      );
       toast.error(e instanceof Error ? e.message : "Erro ao publicar lote.");
+    } finally {
+      setPublicandoChave(null);
     }
   };
 
@@ -197,7 +208,14 @@ export function EscalasLimpezaHistorico({ onRecarregar }: Props) {
                         <Trash2 className="h-4 w-4 mr-1" />
                         Descartar
                       </Button>
-                      <Button size="sm" onClick={() => void publicar(lote.chave)}>
+                      <Button
+                        size="sm"
+                        disabled={publicandoChave === lote.chave}
+                        onClick={() => void publicar(lote.chave)}
+                      >
+                        {publicandoChave === lote.chave ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : null}
                         Publicar
                       </Button>
                     </>

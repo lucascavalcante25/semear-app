@@ -26,6 +26,23 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
     @Query("DELETE FROM Escala e WHERE e.id IN :ids")
     int deleteByIdIn(@Param("ids") Collection<Long> ids);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Escala e SET e.status = :status WHERE e.geracao.id = :geracaoId")
+    int atualizarStatusPorGeracao(
+        @Param("geracaoId") Long geracaoId,
+        @Param("status") StatusEscalaPublicacao status
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Escala e SET e.status = :status WHERE e.id IN :ids")
+    int atualizarStatusPorIds(
+        @Param("ids") Collection<Long> ids,
+        @Param("status") StatusEscalaPublicacao status
+    );
+
+    @Query("SELECT e.id FROM Escala e WHERE e.geracao.id = :geracaoId")
+    List<Long> findIdsByGeracaoId(@Param("geracaoId") Long geracaoId);
+
     @Query(
         """
         SELECT e FROM Escala e
