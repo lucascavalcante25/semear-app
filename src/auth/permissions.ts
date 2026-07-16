@@ -190,11 +190,10 @@ const LIDER_DEFAULT_PERMISSIONS: ModulePermission[] = mergePerms(
     "departamentos",
     "escalas",
     "cultos",
-    "eventos",
     "configuracoes",
     "comunicados",
   ]),
-  readAll(["membros", "visitantes", "comunicados"]),
+  readAll(["membros", "visitantes", "comunicados", "eventos"]),
 );
 
 const MEMBRO_DEFAULT_PERMISSIONS_INTERNAL: ModulePermission[] = mergePerms(
@@ -415,6 +414,22 @@ export const podeVerVisaoGerencial = (user: UserAccess | null | undefined): bool
     "lider",
   ];
   return rolesGerenciais.includes(user.role);
+};
+
+/** Criar/editar/excluir eventos e ver inscritos — admin, pastor, co-pastor e secretaria. */
+export const podeGerenciarEventos = (user: UserAccess | null | undefined): boolean => {
+  if (!user) return false;
+  if (usuarioEhSuperAdmin(user)) return true;
+  const roles: Role[] = ["admin", "admin_igreja", "pastor", "copastor", "secretaria"];
+  if (roles.includes(user.role)) return true;
+  const authorities = [
+    "ROLE_ADMIN",
+    "ROLE_ADMIN_IGREJA",
+    "ROLE_PASTOR",
+    "ROLE_COPASTOR",
+    "ROLE_SECRETARIA",
+  ] as const;
+  return user.authorities?.some((a) => authorities.includes(a as (typeof authorities)[number])) ?? false;
 };
 
 /** Liderança que modera pedidos de oração (badge no menu). */

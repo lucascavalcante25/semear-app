@@ -50,7 +50,6 @@ import {
   MapPin,
   Plus,
   Search,
-  Share2,
   Trash2,
   UserCheck,
   Users,
@@ -59,8 +58,8 @@ import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { resolverUrlApi } from "@/modules/api/client";
-import { compartilharEvento } from "@/lib/compartilhar-evento";
-import { canWrite } from "@/auth/permissions";
+import { podeGerenciarEventos } from "@/auth/permissions";
+import { BotoesCompartilharEvento } from "@/components/eventos/BotoesCompartilharEvento";
 import {
   atualizarEvento,
   cancelarInscricaoEvento,
@@ -122,7 +121,7 @@ export default function Eventos() {
   const { user } = usarAutenticacao();
   const { nomeExibicao } = useIgrejaConfiguracao();
   const userId = user?.id ? Number(user.id) : undefined;
-  const podeEditar = canWrite(user, "/eventos");
+  const podeEditar = podeGerenciarEventos(user);
 
   const [aba, setAba] = useState<AbaEventos>("proximos");
   const [lista, setLista] = useState<EventoDTO[]>([]);
@@ -402,21 +401,6 @@ export default function Eventos() {
     item.dataInicio &&
     new Date(item.dataInicio) > new Date();
 
-  const compartilharNoWhatsApp = async (item: EventoDTO) => {
-    if (!item.id) return;
-    try {
-      const modo = await compartilharEvento(item, { nomeIgreja: nomeExibicao });
-      if (modo === "imagem") {
-        toast.success("Evento compartilhado com a imagem.");
-      } else {
-        toast.success("Abrindo WhatsApp com o convite do evento.");
-      }
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      toast.error("Não foi possível compartilhar o evento.");
-    }
-  };
-
   const toggleInscricao = async (item: EventoDTO) => {
     if (!item.id) return;
     setInscrevendoId(item.id);
@@ -611,15 +595,10 @@ export default function Eventos() {
             </Button>
           )}
           {item.id && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1 w-full"
-              onClick={() => void compartilharNoWhatsApp(item)}
-            >
-              <Share2 className="h-3.5 w-3.5" />
-              Compartilhar no WhatsApp
-            </Button>
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <span className="text-xs text-muted-foreground">Compartilhar</span>
+              <BotoesCompartilharEvento evento={item} nomeIgreja={nomeExibicao} />
+            </div>
           )}
           {podeEditar && item.id && (
             <div className="flex flex-wrap gap-2">

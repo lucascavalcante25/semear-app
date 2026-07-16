@@ -119,7 +119,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public List<EventoInscricaoDTO> listarInscritos(
@@ -137,7 +136,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<String> exportarInscritos(@PathVariable Long id) {
@@ -155,7 +153,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<EventoDTO> criar(@RequestBody EventoDTO dto) {
@@ -170,7 +167,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<EventoDTO> atualizar(@PathVariable Long id, @RequestBody EventoDTO dto) {
@@ -184,7 +180,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
@@ -230,7 +225,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<EventoInscricaoDTO> checkIn(@PathVariable Long id, @PathVariable Long inscricaoId) {
@@ -244,7 +238,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<List<EventoInscricaoDTO>> checkInLote(@PathVariable Long id, @RequestBody Map<String, List<Long>> body) {
@@ -259,7 +252,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<EventoDTO> uploadBanner(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
@@ -286,7 +278,6 @@ public class EventoResource {
         AuthoritiesConstants.ADMIN_IGREJA,
         AuthoritiesConstants.PASTOR,
         AuthoritiesConstants.COPASTOR,
-        AuthoritiesConstants.LIDER,
         AuthoritiesConstants.SECRETARIA,
     })
     public ResponseEntity<EventoDTO> removerBanner(@PathVariable Long id) {
