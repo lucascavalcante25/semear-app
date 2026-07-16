@@ -359,6 +359,7 @@ export default function Eventos() {
       return;
     }
     setSalvando(true);
+    const idEmEdicao = editandoId;
     try {
       const payload: FormEvento = {
         ...form,
@@ -368,24 +369,37 @@ export default function Eventos() {
           : null,
       };
       let eventoSalvo: EventoDTO;
-      if (editandoId) {
-        eventoSalvo = await atualizarEvento(editandoId, payload);
+      if (idEmEdicao) {
+        eventoSalvo = await atualizarEvento(idEmEdicao, payload);
       } else {
         eventoSalvo = await criarEvento({ ...payload, imagemUrl: null });
       }
-      const eventoId = editandoId ?? eventoSalvo.id;
+
+      // Fecha o modal assim que o evento for persistido (mesmo se o banner falhar depois).
+      resetBanner();
+      setEditandoId(null);
+      setDialogAberto(false);
+      toast.success(idEmEdicao ? "Evento atualizado." : "Evento criado.");
+
+      const eventoId = idEmEdicao ?? eventoSalvo.id;
       if (eventoId) {
-        if (bannerArquivo) {
-          eventoSalvo = await uploadBannerEvento(eventoId, bannerArquivo);
-        } else if (removerBanner && editandoId) {
-          eventoSalvo = await removerBannerEvento(eventoId);
+        try {
+          if (bannerArquivo) {
+            eventoSalvo = await uploadBannerEvento(eventoId, bannerArquivo);
+          } else if (removerBanner && idEmEdicao) {
+            eventoSalvo = await removerBannerEvento(eventoId);
+          }
+        } catch (bannerErro) {
+          toast.error(
+            bannerErro instanceof Error
+              ? `Evento salvo, mas o banner falhou: ${bannerErro.message}`
+              : "Evento salvo, mas não foi possível atualizar o banner.",
+          );
         }
       }
-      resetBanner();
-      toast.success(editandoId ? "Evento atualizado." : "Evento criado.");
-      setDialogAberto(false);
-      if (editandoId) {
-        setLista((prev) => prev.map((e) => (e.id === editandoId ? { ...e, ...eventoSalvo } : e)));
+
+      if (idEmEdicao) {
+        setLista((prev) => prev.map((e) => (e.id === idEmEdicao ? { ...e, ...eventoSalvo } : e)));
       } else {
         setLista((prev) => [eventoSalvo, ...prev]);
       }
