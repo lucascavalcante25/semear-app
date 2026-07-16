@@ -186,7 +186,7 @@ public class PublicEventoCompartilharResource {
             .map(banner ->
                 ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(banner.contentType()))
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=300, must-revalidate")
                     .body(banner.bytes())
             )
             .orElse(ResponseEntity.notFound().build());

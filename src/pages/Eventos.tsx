@@ -116,12 +116,22 @@ const badgeStatusVariant = (status?: StatusEvento) => {
 
 function BannerEventoCard({ imagemUrl, titulo }: { imagemUrl?: string | null; titulo: string }) {
   const [erro, setErro] = useState(false);
-  const src = resolverUrlApi(imagemUrl);
-  if (!imagemUrl || erro || !src) return null;
+  const caminho = imagemUrl?.split("?")[0] ?? null;
+  const src = resolverUrlApi(caminho);
+  const srcFinal = src && imagemUrl
+    ? `${src}${imagemUrl.includes("?") ? `?${imagemUrl.split("?")[1]}` : ""}`
+    : src;
+
+  useEffect(() => {
+    setErro(false);
+  }, [imagemUrl]);
+
+  if (!imagemUrl || erro || !srcFinal) return null;
   return (
     <div className="aspect-[16/7] w-full overflow-hidden bg-muted">
       <img
-        src={src}
+        key={srcFinal}
+        src={srcFinal}
         alt={titulo}
         className="h-full w-full object-cover"
         onError={() => setErro(true)}
@@ -383,34 +393,26 @@ export default function Eventos() {
         eventoSalvo = await criarEvento({ ...payload, imagemUrl: null });
       }
 
-      // Fecha imediatamente após persistir o evento e volta à listagem.
+      const eventoId = idEmEdicao ?? eventoSalvo.id;
+      if (eventoId && (arquivoBanner || (deveRemoverBanner && idEmEdicao))) {
+        if (arquivoBanner) {
+          eventoSalvo = await uploadBannerEvento(eventoId, arquivoBanner);
+          if (eventoSalvo.imagemUrl) {
+            const base = eventoSalvo.imagemUrl.split("?")[0];
+            eventoSalvo = { ...eventoSalvo, imagemUrl: `${base}?v=${Date.now()}` };
+          }
+        } else if (deveRemoverBanner && idEmEdicao) {
+          eventoSalvo = await removerBannerEvento(eventoId);
+        }
+      }
+
+      // Só fecha após evento + banner persistirem com sucesso.
       fecharFormulario();
       toast.success(idEmEdicao ? "Evento atualizado." : "Evento criado.");
-
       if (idEmEdicao) {
         setLista((prev) => prev.map((e) => (e.id === idEmEdicao ? { ...e, ...eventoSalvo } : e)));
       } else {
         setLista((prev) => [eventoSalvo, ...prev]);
-      }
-
-      const eventoId = idEmEdicao ?? eventoSalvo.id;
-      if (eventoId && (arquivoBanner || (deveRemoverBanner && idEmEdicao))) {
-        try {
-          if (arquivoBanner) {
-            eventoSalvo = await uploadBannerEvento(eventoId, arquivoBanner);
-          } else if (deveRemoverBanner && idEmEdicao) {
-            eventoSalvo = await removerBannerEvento(eventoId);
-          }
-          setLista((prev) =>
-            prev.map((e) => (e.id === eventoId ? { ...e, ...eventoSalvo } : e)),
-          );
-        } catch (bannerErro) {
-          toast.error(
-            bannerErro instanceof Error
-              ? `Evento salvo, mas o banner falhou: ${bannerErro.message}`
-              : "Evento salvo, mas não foi possível atualizar o banner.",
-          );
-        }
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");

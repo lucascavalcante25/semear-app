@@ -199,33 +199,45 @@ public class EventoService {
             throw new BadRequestAlertException("Use JPEG, PNG, GIF ou WebP", ENTITY, "tipoinvalido");
         }
         Evento entity = obterEntidade(id).orElseThrow(this::naoEncontrado);
+        final byte[] bytes;
         try {
-            byte[] bytes = file.getBytes();
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            LOG.error("Erro ao ler bytes do banner do evento {}", entity.getId(), e);
+            throw new BadRequestAlertException("Erro ao ler o arquivo do banner", ENTITY, "errosalvar");
+        }
+
+        try {
             EventoBanner banner = eventoBannerRepository.findById(entity.getId()).orElseGet(EventoBanner::new);
-            banner.setEvento(entity);
+            banner.setEventoId(entity.getId());
             banner.setContentType(contentType);
             banner.setDados(bytes);
             banner.setAtualizadoEm(Instant.now());
-            eventoBannerRepository.save(banner);
-
-            // Mantém cópia em disco quando possível (dev/local); o banco é a fonte da verdade.
-            try {
-                removerArquivoBanner(entity.getId());
-                String ext = extensaoPorContentType(contentType);
-                Path dir = diretorioBanner(entity.getId());
-                Files.createDirectories(dir);
-                Files.write(dir.resolve("banner." + ext), bytes);
-            } catch (IOException e) {
-                LOG.warn("Banner salvo no banco, mas falhou cópia em disco do evento {}: {}", entity.getId(), e.getMessage());
-            }
-
-            entity.setImagemUrl("/api/eventos/" + entity.getId() + "/banner");
-            Evento salvo = eventoRepository.save(entity);
-            return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
-        } catch (IOException e) {
-            LOG.error("Erro ao salvar banner do evento {}", entity.getId(), e);
-            throw new BadRequestAlertException("Erro ao salvar banner", ENTITY, "errosalvar");
+            eventoBannerRepository.saveAndFlush(banner);
+        } catch (RuntimeException e) {
+            LOG.error("Falha ao persistir banner do evento {}", id, e);
+            throw new BadRequestAlertException(
+                "Não foi possível gravar o banner. Tente outra imagem (JPEG/PNG, até 3 MB).",
+                ENTITY,
+                "errosalvar"
+            );
         }
+
+        // Mantém cópia em disco quando possível (dev/local); o banco é a fonte da verdade.
+        try {
+            removerArquivoBanner(entity.getId());
+            String ext = extensaoPorContentType(contentType);
+            Path dir = diretorioBanner(entity.getId());
+            Files.createDirectories(dir);
+            Files.write(dir.resolve("banner." + ext), bytes);
+        } catch (IOException e) {
+            LOG.warn("Banner salvo no banco, mas falhou cópia em disco do evento {}: {}", entity.getId(), e.getMessage());
+        }
+
+        entity.setImagemUrl("/api/eventos/" + entity.getId() + "/banner");
+        Evento salvo = eventoRepository.saveAndFlush(entity);
+        LOG.info("Banner do evento {} persistido ({} bytes, {})", entity.getId(), bytes.length, contentType);
+        return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
     }
 
     @Transactional(readOnly = true)
