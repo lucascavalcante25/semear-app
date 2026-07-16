@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -54,6 +56,7 @@ public class EventoService {
     private final TenantService tenantService;
     private final EventoNotificacaoService eventoNotificacaoService;
     private final NotificacaoProgramadaService notificacaoProgramadaService;
+    private final EventoNotificacaoAsyncService eventoNotificacaoAsyncService;
 
     public EventoService(
         EventoRepository eventoRepository,
@@ -61,7 +64,8 @@ public class EventoService {
         EventoInscricaoRepository eventoInscricaoRepository,
         TenantService tenantService,
         EventoNotificacaoService eventoNotificacaoService,
-        NotificacaoProgramadaService notificacaoProgramadaService
+        NotificacaoProgramadaService notificacaoProgramadaService,
+        EventoNotificacaoAsyncService eventoNotificacaoAsyncService
     ) {
         this.eventoRepository = eventoRepository;
         this.eventoBannerRepository = eventoBannerRepository;
@@ -69,6 +73,7 @@ public class EventoService {
         this.tenantService = tenantService;
         this.eventoNotificacaoService = eventoNotificacaoService;
         this.notificacaoProgramadaService = notificacaoProgramadaService;
+        this.eventoNotificacaoAsyncService = eventoNotificacaoAsyncService;
     }
 
     @Transactional(readOnly = true)
@@ -128,6 +133,7 @@ public class EventoService {
 
     public EventoDTO criar(EventoDTO dto) {
         validarDados(dto);
+        validarConfigNotificacao(dto.getConfigNotificacao());
         Evento entity = new Evento();
         entity.setIgreja(tenantService.resolverIgrejaParaCriacao());
         aplicarDados(entity, dto);
@@ -138,20 +144,15 @@ public class EventoService {
         if (entity.getCategoria() == null) {
             entity.setCategoria(CategoriaEvento.OUTRO);
         }
-        Evento salvo = eventoRepository.save(entity);
-        try {
-            ConfigNotificacaoDTO config = dto.getConfigNotificacao();
-            notificacaoProgramadaService.sincronizarEvento(salvo, config, true);
-        } catch (BadRequestAlertException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            LOG.warn("Evento {} criado, mas falhou sincronizar notificações: {}", salvo.getId(), e.getMessage());
-        }
+        Evento salvo = eventoRepository.saveAndFlush(entity);
+        ConfigNotificacaoDTO config = dto.getConfigNotificacao();
+        executarAposCommit(() -> eventoNotificacaoAsyncService.processarAposCriar(salvo.getId(), config));
         return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
     }
 
     public EventoDTO atualizar(Long id, EventoDTO dto) {
         validarDados(dto);
+        validarConfigNotificacao(dto.getConfigNotificacao());
         Evento entity = obterEntidade(id).orElseThrow(this::naoEncontrado);
         EventoSnapshot antes = EventoSnapshot.from(entity);
         String imagemAnterior = entity.getImagemUrl();
@@ -166,20 +167,18 @@ public class EventoService {
             entity.setImagemUrl(limpa);
         }
         Evento salvo = eventoRepository.saveAndFlush(entity);
-        try {
-            notificarAlteracoesImportantes(antes, salvo);
-        } catch (BadRequestAlertException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            LOG.warn("Evento {} atualizado, mas falhou notificar alterações: {}", salvo.getId(), e.getMessage());
-        }
-        try {
-            notificacaoProgramadaService.sincronizarEvento(salvo, dto.getConfigNotificacao(), false);
-        } catch (BadRequestAlertException e) {
-            throw e;
-        } catch (RuntimeException e) {
-            LOG.warn("Evento {} atualizado, mas falhou sincronizar notificações: {}", salvo.getId(), e.getMessage());
-        }
+        ConfigNotificacaoDTO config = dto.getConfigNotificacao();
+        executarAposCommit(() ->
+            eventoNotificacaoAsyncService.processarAposAtualizar(
+                salvo.getId(),
+                antes.titulo(),
+                antes.dataInicio(),
+                antes.dataFim(),
+                antes.local(),
+                antes.status(),
+                config
+            )
+        );
         return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
     }
 
@@ -486,11 +485,13 @@ public class EventoService {
     }
 
     private void notificarAlteracoesImportantes(EventoSnapshot antes, Evento depois) {
+        // Mantido apenas para exclusão / caminhos síncronos legados.
+        // Create/update usam EventoNotificacaoAsyncService (não bloqueia a API).
         List<String> alteracoes = new ArrayList<>();
         if (!Objects.equals(antes.titulo, depois.getTitulo())) {
             alteracoes.add("título");
         }
-        if (!Objects.equals(antes.dataInicio, depois.getDataInicio()) || !Objects.equals(antes.dataFim, depois.getDataFim())) {
+        if (!mesmoMinuto(antes.dataInicio, depois.getDataInicio()) || !mesmoMinuto(antes.dataFim, depois.getDataFim())) {
             alteracoes.add("data/horário");
         }
         if (!Objects.equals(antes.local, depois.getLocal())) {
@@ -528,6 +529,31 @@ public class EventoService {
         }
     }
 
+    private static boolean mesmoMinuto(Instant a, Instant b) {
+        if (a == null && b == null) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        return a.truncatedTo(java.time.temporal.ChronoUnit.MINUTES).equals(b.truncatedTo(java.time.temporal.ChronoUnit.MINUTES));
+    }
+
+    private void executarAposCommit(Runnable tarefa) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        tarefa.run();
+                    }
+                }
+            );
+        } else {
+            tarefa.run();
+        }
+    }
+
     private void aplicarDados(Evento entity, EventoDTO dto) {
         entity.setTitulo(dto.getTitulo().trim());
         entity.setDescricao(dto.getDescricao());
@@ -543,6 +569,22 @@ public class EventoService {
         entity.setLinkExterno(dto.getLinkExterno());
         entity.setPrazoCancelamentoInscricao(dto.getPrazoCancelamentoInscricao());
         entity.setConfigNotificacao(ConfigNotificacaoJsonUtil.serializar(dto.getConfigNotificacao()));
+    }
+
+    private void validarConfigNotificacao(ConfigNotificacaoDTO config) {
+        if (config == null || !config.isEfetivamenteAtivo()) {
+            return;
+        }
+        if (
+            config.getAudiencia() == br.com.semear.domain.enumeration.TipoAudienciaNotificacao.DEPARTAMENTOS &&
+            (config.getDepartamentoIds() == null || config.getDepartamentoIds().isEmpty())
+        ) {
+            throw new BadRequestAlertException(
+                "Selecione ao menos um departamento para a audiência.",
+                ENTITY,
+                "departamentosobrigatorios"
+            );
+        }
     }
 
     private void validarDados(EventoDTO dto) {
