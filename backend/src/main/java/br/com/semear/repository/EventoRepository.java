@@ -35,6 +35,9 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Optional<Evento> findByIdAndIgrejaId(Long id, Long igrejaId);
 
+    @Query("SELECT e FROM Evento e JOIN FETCH e.igreja WHERE e.id = :id")
+    Optional<Evento> findByIdWithIgreja(@Param("id") Long id);
+
     List<Evento> findByIgrejaIdAndPublicoAndDataInicioAfterOrderByDataInicioAsc(Long igrejaId, PublicoEvento publico, Instant after);
 
     List<Evento> findByIgrejaIdAndDataInicioAfterOrderByDataInicioAsc(Long igrejaId, Instant after);

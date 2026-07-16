@@ -405,9 +405,14 @@ export default function Eventos() {
   const compartilharNoWhatsApp = async (item: EventoDTO) => {
     if (!item.id) return;
     try {
-      await compartilharEvento(item, { nomeIgreja: nomeExibicao });
-      toast.success("Abrindo WhatsApp com os dados do evento.");
-    } catch {
+      const modo = await compartilharEvento(item, { nomeIgreja: nomeExibicao });
+      if (modo === "imagem") {
+        toast.success("Evento compartilhado com a imagem.");
+      } else {
+        toast.success("Abrindo WhatsApp com o convite do evento.");
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
       toast.error("Não foi possível compartilhar o evento.");
     }
   };

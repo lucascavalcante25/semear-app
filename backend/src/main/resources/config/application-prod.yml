@@ -120,7 +120,7 @@ jhipster:
         token-validity-in-seconds-for-remember-me: 2592000
   mail: # specific JHipster mail property, for standard properties see MailProperties
     from: ${SEMEAR_MAIL_FROM:semear@localhost}
-    base-url: ${SEMEAR_MAIL_BASE_URL:https://semear-app.vercel.app}
+    base-url: ${SEMEAR_MAIL_BASE_URL:https://minha-igreja-digital-app.vercel.app}
   logging:
     use-json-format: false # By default, logs are not in Json format
     logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
