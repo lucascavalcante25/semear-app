@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { BannerTesteGratis } from "@/components/comercial/BannerTesteGratis";
 import { BotaoFlutuanteSuporte } from "@/components/suporte/BotaoFlutuanteSuporte";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
@@ -10,10 +9,6 @@ import { BarraLateral } from "./Sidebar";
 import { usarEhMobile } from "@/hooks/use-mobile";
 import { ModalInformativoLogin } from "@/components/informativo/ModalInformativoLogin";
 import { ModalAvisoEscalaLogin } from "@/components/escalas/ModalAvisoEscalaLogin";
-import { HandHeart } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canAccess } from "@/auth/permissions";
 
 interface LayoutAppProps {
   children: ReactNode;
@@ -21,12 +16,8 @@ interface LayoutAppProps {
 
 export function LayoutApp({ children }: LayoutAppProps) {
   const isMobile = usarEhMobile();
-  const { user } = usarAutenticacao();
-  const location = useLocation();
   const { nomeExibicao } = useIgrejaConfiguracao();
   useTituloDocumento({ igreja: nomeExibicao, area: "produto" });
-  const mostrarFabOracao =
-    isMobile && canAccess(user, "/oracao") && !location.pathname.startsWith("/oracao");
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -47,22 +38,6 @@ export function LayoutApp({ children }: LayoutAppProps) {
 
       {/* Mobile Bottom Navigation */}
       {isMobile && <NavegacaoInferior />}
-
-      {mostrarFabOracao && (
-        <Link
-          to="/oracao"
-          className={cn(
-            "fab-mobile fixed z-40 flex h-12 w-12 items-center justify-center rounded-full md:bottom-6",
-            "bg-olive text-olive-foreground shadow-lg ring-2 ring-background",
-            "transition-transform hover:scale-105 active:scale-95",
-            "right-4 md:right-6",
-          )}
-          aria-label="Pedidos de oração"
-          title="Oração"
-        >
-          <HandHeart className="h-5 w-5" />
-        </Link>
-      )}
 
       <BotaoFlutuanteSuporte />
       <ModalInformativoLogin />

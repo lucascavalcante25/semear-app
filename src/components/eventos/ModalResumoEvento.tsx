@@ -169,16 +169,22 @@ export function ModalResumoEvento({ evento, aberto, onFechar, nomeIgreja, onAtua
             </p>
           )}
 
-          {(evento.totalInscritos != null || evento.capacidade != null) && (
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Users className="h-3.5 w-3.5" />
-              {evento.totalInscritos ?? 0}
-              {evento.capacidade ? ` / ${evento.capacidade} vagas` : " inscrito(s)"}
-              {evento.vagasDisponiveis != null && evento.capacidade
-                ? ` · ${evento.vagasDisponiveis} disponível(is)`
-                : ""}
-            </p>
-          )}
+          {(evento.totalInscritos != null || evento.capacidade != null) && (() => {
+            const total = evento.totalInscritos ?? 0;
+            const capacidade = evento.capacidade;
+            const vagas =
+              capacidade != null
+                ? Math.max(0, evento.vagasDisponiveis ?? capacidade - total)
+                : null;
+            return (
+              <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Users className="h-3.5 w-3.5" />
+                {total}
+                {capacidade ? ` / ${capacidade} vagas` : " inscrito(s)"}
+                {vagas != null ? ` · ${vagas} disponível(is)` : ""}
+              </p>
+            );
+          })()}
 
           {evento.linkExterno && (
             <Button size="sm" variant="outline" className="gap-1.5 w-full sm:w-auto" asChild>

@@ -14,8 +14,18 @@ const esc = (valor: string) =>
 
 const rotuloStatus = (inscricao: EventoInscricaoDTO) => {
   if (inscricao.status === "CANCELADA") return "Cancelada";
-  return inscricao.confirmado ? "Check-in feito" : "Check-in pendente";
+  return "Ativa";
 };
+
+export const ordenarInscritosRelatorio = (inscritos: EventoInscricaoDTO[]) =>
+  [...inscritos].sort((a, b) => {
+    const aCancelada = a.status === "CANCELADA" ? 1 : 0;
+    const bCancelada = b.status === "CANCELADA" ? 1 : 0;
+    if (aCancelada !== bCancelada) return aCancelada - bCancelada;
+    const aCriado = a.criadoEm ? new Date(a.criadoEm).getTime() : 0;
+    const bCriado = b.criadoEm ? new Date(b.criadoEm).getTime() : 0;
+    return bCriado - aCriado;
+  });
 
 const nomeArquivo = (titulo?: string) =>
   `inscritos-${titulo?.replace(/\s+/g, "-").toLowerCase() ?? "evento"}.pdf`;
@@ -24,7 +34,8 @@ export function montarHtmlRelatorioInscritos(
   dados: DadosRelatorioInscritos,
   inscritos: EventoInscricaoDTO[],
 ): string {
-  const linhas = inscritos
+  const lista = ordenarInscritosRelatorio(inscritos);
+  const linhas = lista
     .map(
       (inscricao, indice) => `
         <tr>
@@ -66,7 +77,7 @@ export function montarHtmlRelatorioInscritos(
     <div class="resumo">
       ${dataEvento ? `<div><strong>Data do evento:</strong> ${dataEvento}</div>` : ""}
       ${local ? `<div><strong>Local:</strong> ${local}</div>` : ""}
-      <div><strong>Total de inscrições:</strong> ${inscritos.length}</div>
+      <div><strong>Total de inscrições:</strong> ${lista.length}</div>
     </div>
     <table>
       <thead>
@@ -81,7 +92,7 @@ export function montarHtmlRelatorioInscritos(
       </thead>
       <tbody>
         ${
-          inscritos.length > 0
+          lista.length > 0
             ? linhas
             : `<tr><td colspan="6" style="text-align:center;color:#6b7280;">Nenhuma inscrição</td></tr>`
         }
@@ -96,6 +107,7 @@ export function gerarPdfInscritosEvento(
   dados: DadosRelatorioInscritos,
   inscritos: EventoInscricaoDTO[],
 ): jsPDF {
+  const lista = ordenarInscritosRelatorio(inscritos);
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const largura = doc.internal.pageSize.getWidth();
   const margem = 14;
@@ -117,11 +129,11 @@ export function gerarPdfInscritosEvento(
     doc.text(`Local: ${dados.local}`, margem, y);
     y += 5;
   }
-  doc.text(`Total: ${inscritos.length} inscrição(ões)`, margem, y);
+  doc.text(`Total: ${lista.length} inscrição(ões)`, margem, y);
   y += 8;
 
   doc.setFontSize(9);
-  inscritos.forEach((inscricao, indice) => {
+  lista.forEach((inscricao, indice) => {
     if (y > 275) {
       doc.addPage();
       y = 18;

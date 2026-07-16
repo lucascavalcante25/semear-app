@@ -159,7 +159,7 @@ const MODULOS = [
   {
     titulo: "Eventos",
     descricao:
-      "Cadastre eventos com banner, inscrições, check-in e lembretes. Eventos públicos podem aparecer no site da igreja.",
+      "Cadastre eventos com banner, inscrições e lembretes. Eventos públicos podem aparecer no site da igreja.",
     icon: Sparkles,
   },
   {

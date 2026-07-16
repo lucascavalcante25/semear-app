@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import type { EventoInscricaoDTO } from "@/modules/eventos/api";
 import {
   imprimirRelatorioInscritos,
+  ordenarInscritosRelatorio,
   salvarOuCompartilharPdfInscritos,
   type DadosRelatorioInscritos,
 } from "@/lib/relatorio-inscritos-evento";
@@ -31,16 +32,17 @@ export function ModalRelatorioInscritosEvento({
   inscritos,
 }: ModalRelatorioInscritosEventoProps) {
   const [exportando, setExportando] = useState(false);
+  const lista = ordenarInscritosRelatorio(inscritos);
 
   const rotuloStatus = (inscricao: EventoInscricaoDTO) => {
     if (inscricao.status === "CANCELADA") return "Cancelada";
-    return inscricao.confirmado ? "Check-in feito" : "Check-in pendente";
+    return "Ativa";
   };
 
   const handlePdfOuCompartilhar = async () => {
     setExportando(true);
     try {
-      const resultado = await salvarOuCompartilharPdfInscritos(dados, inscritos);
+      const resultado = await salvarOuCompartilharPdfInscritos(dados, lista);
       toast.success(resultado === "compartilhado" ? "Relatório compartilhado." : "PDF salvo com sucesso.");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
@@ -52,7 +54,7 @@ export function ModalRelatorioInscritosEvento({
 
   const handleImprimir = () => {
     try {
-      imprimirRelatorioInscritos(dados, inscritos);
+      imprimirRelatorioInscritos(dados, lista);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Não foi possível imprimir.");
     }
@@ -64,7 +66,7 @@ export function ModalRelatorioInscritosEvento({
         <DialogHeader className="shrink-0 border-b p-4">
           <DialogTitle>Relatório de inscritos</DialogTitle>
           <DialogDescription>
-            {dados.tituloEvento} · {inscritos.length} inscrição(ões)
+            {dados.tituloEvento} · {lista.length} inscrição(ões)
           </DialogDescription>
         </DialogHeader>
 
@@ -102,7 +104,7 @@ export function ModalRelatorioInscritosEvento({
                 </tr>
               </thead>
               <tbody>
-                {inscritos.map((inscricao, indice) => (
+                {lista.map((inscricao, indice) => (
                   <tr key={inscricao.id ?? `${inscricao.userNome}-${indice}`} className="border-t">
                     <td className="px-3 py-2 text-muted-foreground">{indice + 1}</td>
                     <td className="px-3 py-2 font-medium">{inscricao.userNome ?? "Participante"}</td>

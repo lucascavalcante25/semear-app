@@ -128,6 +128,25 @@ public class EventoService {
             .map(this::toInscricaoDto)
             .filter(i -> filtrarInscricaoPorStatus(i, filtroStatus))
             .filter(i -> filtrarInscricaoPorBusca(i, busca))
+            .sorted((a, b) -> {
+                boolean aCancelada = a.getStatus() == StatusInscricaoEvento.CANCELADA;
+                boolean bCancelada = b.getStatus() == StatusInscricaoEvento.CANCELADA;
+                if (aCancelada != bCancelada) {
+                    return aCancelada ? 1 : -1;
+                }
+                Instant aCriado = a.getCriadoEm();
+                Instant bCriado = b.getCriadoEm();
+                if (aCriado == null && bCriado == null) {
+                    return 0;
+                }
+                if (aCriado == null) {
+                    return 1;
+                }
+                if (bCriado == null) {
+                    return -1;
+                }
+                return bCriado.compareTo(aCriado);
+            })
             .toList();
     }
 
@@ -705,8 +724,7 @@ public class EventoService {
             return true;
         }
         return switch (filtroStatus.toUpperCase(Locale.ROOT)) {
-            case "CONFIRMADOS" -> Boolean.TRUE.equals(inscricao.getConfirmado()) && inscricao.getStatus() == StatusInscricaoEvento.ATIVA;
-            case "PENDENTES" -> !Boolean.TRUE.equals(inscricao.getConfirmado()) && inscricao.getStatus() == StatusInscricaoEvento.ATIVA;
+            case "ATIVOS", "ATIVAS", "CONFIRMADOS", "PENDENTES" -> inscricao.getStatus() == StatusInscricaoEvento.ATIVA;
             case "CANCELADOS" -> inscricao.getStatus() == StatusInscricaoEvento.CANCELADA;
             default -> true;
         };

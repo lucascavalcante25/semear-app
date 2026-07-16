@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -42,7 +42,6 @@ import { ModalRelatorioInscritosEvento } from "@/components/eventos/ModalRelator
 import {
   Calendar,
   Camera,
-  CheckCircle2,
   ExternalLink,
   Eye,
   Loader2,
@@ -59,11 +58,10 @@ import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { resolverUrlApi } from "@/modules/api/client";
 import { podeGerenciarEventos } from "@/auth/permissions";
 import { BotoesCompartilharEvento } from "@/components/eventos/BotoesCompartilharEvento";
+import { useAvatarUrlByUserId } from "@/hooks/use-avatar-url";
 import {
   atualizarEvento,
   cancelarInscricaoEvento,
-  confirmarCheckInInscricao,
-  confirmarCheckInLote,
   criarEvento,
   excluirEvento,
   extrairData,
@@ -113,6 +111,35 @@ const badgeStatusVariant = (status?: StatusEvento) => {
   if (status === "CANCELADO") return "destructive" as const;
   return "secondary" as const;
 };
+
+const iniciaisNome = (nome?: string) => {
+  if (!nome?.trim()) return "?";
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return `${partes[0][0]}${partes[partes.length - 1][0]}`.toUpperCase();
+};
+
+const ordenarInscritos = (lista: EventoInscricaoDTO[]) =>
+  [...lista].sort((a, b) => {
+    const aCancelada = a.status === "CANCELADA" ? 1 : 0;
+    const bCancelada = b.status === "CANCELADA" ? 1 : 0;
+    if (aCancelada !== bCancelada) return aCancelada - bCancelada;
+    const aCriado = a.criadoEm ? new Date(a.criadoEm).getTime() : 0;
+    const bCriado = b.criadoEm ? new Date(b.criadoEm).getTime() : 0;
+    return bCriado - aCriado;
+  });
+
+function AvatarInscrito({ userId, nome }: { userId?: number; nome?: string }) {
+  const avatarUrl = useAvatarUrlByUserId(userId);
+  return (
+    <Avatar className="h-10 w-10 shrink-0">
+      <AvatarImage src={avatarUrl ?? undefined} alt={nome ?? "Participante"} />
+      <AvatarFallback className="bg-olive-light text-olive-dark text-xs font-medium">
+        {iniciaisNome(nome)}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
 
 function BannerEventoCard({ imagemUrl, titulo }: { imagemUrl?: string | null; titulo: string }) {
   const [erro, setErro] = useState(false);
@@ -169,9 +196,6 @@ export default function Eventos() {
   const [carregandoInscritos, setCarregandoInscritos] = useState(false);
   const [buscaInscritos, setBuscaInscritos] = useState("");
   const [filtroInscritos, setFiltroInscritos] = useState("TODOS");
-  const [selecionadosCheckIn, setSelecionadosCheckIn] = useState<number[]>([]);
-  const [checkInId, setCheckInId] = useState<number | null>(null);
-  const [checkInLote, setCheckInLote] = useState(false);
   const [relatorioInscritosAberto, setRelatorioInscritosAberto] = useState(false);
 
   const inputBannerRef = useRef<HTMLInputElement>(null);
@@ -490,12 +514,11 @@ export default function Eventos() {
     if (!evento.id) return;
     setCarregandoInscritos(true);
     setInscritosEvento(evento);
-    setSelecionadosCheckIn([]);
     setBuscaInscritos("");
     setFiltroInscritos("TODOS");
     try {
       const inscritos = await listarInscritosEvento(evento.id);
-      setInscritosLista(inscritos ?? []);
+      setInscritosLista(ordenarInscritos(inscritos ?? []));
     } catch {
       toast.error("Não foi possível carregar inscritos.");
       setInscritosEvento(null);
@@ -507,7 +530,7 @@ export default function Eventos() {
   const recarregarInscritos = async () => {
     if (!inscritosEvento?.id) return;
     const inscritos = await listarInscritosEvento(inscritosEvento.id, filtroInscritos, buscaInscritos);
-    setInscritosLista(inscritos ?? []);
+    setInscritosLista(ordenarInscritos(inscritos ?? []));
   };
 
   useEffect(() => {
@@ -516,39 +539,6 @@ export default function Eventos() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtroInscritos, buscaInscritos, inscritosEvento?.id]);
-
-  const fazerCheckIn = async (inscricao: EventoInscricaoDTO) => {
-    if (!inscritosEvento?.id || !inscricao.id) return;
-    setCheckInId(inscricao.id);
-    try {
-      await confirmarCheckInInscricao(inscritosEvento.id, inscricao.id);
-      toast.success("Check-in confirmado.");
-      await recarregarInscritos();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro no check-in.");
-    } finally {
-      setCheckInId(null);
-    }
-  };
-
-  const fazerCheckInLote = async () => {
-    if (!inscritosEvento?.id || selecionadosCheckIn.length === 0) return;
-    setCheckInLote(true);
-    try {
-      await confirmarCheckInLote(inscritosEvento.id, selecionadosCheckIn);
-      toast.success("Check-in em lote realizado.");
-      setSelecionadosCheckIn([]);
-      await recarregarInscritos();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Erro no check-in em lote.");
-    } finally {
-      setCheckInLote(false);
-    }
-  };
-
-  const toggleSelecaoCheckIn = (id: number) => {
-    setSelecionadosCheckIn((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
 
   const renderCard = (item: EventoDTO) => (
     <Card key={item.id} className="overflow-hidden flex flex-col h-full">
@@ -591,15 +581,21 @@ export default function Eventos() {
           {item.descricao && (
             <p className="text-sm text-muted-foreground line-clamp-2">{item.descricao}</p>
           )}
-          {(item.totalInscritos != null || item.capacidade != null) && (
-            <p className="text-xs text-muted-foreground">
-              {item.totalInscritos ?? 0}
-              {item.capacidade ? ` / ${item.capacidade} vagas` : " inscrito(s)"}
-              {item.vagasDisponiveis != null && item.capacidade
-                ? ` · ${item.vagasDisponiveis} disponível(is)`
-                : ""}
-            </p>
-          )}
+          {(item.totalInscritos != null || item.capacidade != null) && (() => {
+            const total = item.totalInscritos ?? 0;
+            const capacidade = item.capacidade;
+            const vagas =
+              capacidade != null
+                ? Math.max(0, item.vagasDisponiveis ?? capacidade - total)
+                : null;
+            return (
+              <p className="text-xs text-muted-foreground">
+                {total}
+                {capacidade ? ` / ${capacidade} vagas` : " inscrito(s)"}
+                {vagas != null ? ` · ${vagas} disponível(is)` : ""}
+              </p>
+            );
+          })()}
         </div>
 
         <div className="flex flex-col gap-2 pt-1">
@@ -1029,14 +1025,15 @@ export default function Eventos() {
       </div>
 
       <Dialog open={inscritosEvento != null} onOpenChange={() => setInscritosEvento(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Inscritos — {inscritosEvento?.titulo}</DialogTitle>
+        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-4 pr-12 text-left sm:px-6">
+            <DialogTitle className="pr-2">Inscritos — {inscritosEvento?.titulo}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+          <div className="shrink-0 space-y-3 border-b px-4 py-3 sm:px-6">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Buscar inscrito..."
                   className="pl-10"
@@ -1045,102 +1042,73 @@ export default function Eventos() {
                 />
               </div>
               <Select value={filtroInscritos} onValueChange={setFiltroInscritos}>
-                <SelectTrigger className="sm:w-44">
+                <SelectTrigger className="w-full sm:w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="TODOS">Todos</SelectItem>
-                  <SelectItem value="CONFIRMADOS">Confirmados</SelectItem>
-                  <SelectItem value="PENDENTES">Pendentes</SelectItem>
+                  <SelectItem value="ATIVOS">Ativos</SelectItem>
                   <SelectItem value="CANCELADOS">Cancelados</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {selecionadosCheckIn.length > 0 && (
-                <Button size="sm" disabled={checkInLote} onClick={() => void fazerCheckInLote()}>
-                  {checkInLote ? <Loader2 className="h-4 w-4 animate-spin" /> : `Check-in (${selecionadosCheckIn.length})`}
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1"
-                disabled={inscritosLista.length === 0}
-                onClick={() => setRelatorioInscritosAberto(true)}
-              >
-                <Eye className="h-3.5 w-3.5" />
-                Visualizar relatório
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full gap-1 sm:w-auto"
+              disabled={inscritosLista.length === 0}
+              onClick={() => setRelatorioInscritosAberto(true)}
+            >
+              <Eye className="h-3.5 w-3.5" />
+              Visualizar relatório
+            </Button>
           </div>
-          {carregandoInscritos ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : inscritosLista.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">Nenhuma inscrição encontrada.</p>
-          ) : (
-            <ul className="space-y-2">
-              {inscritosLista.map((inscricao) => (
-                <li
-                  key={inscricao.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border p-3 text-sm"
-                >
-                  <div className="flex items-start gap-2 min-w-0">
-                    {inscricao.status === "ATIVA" && !inscricao.confirmado && inscricao.id && (
-                      <Checkbox
-                        checked={selecionadosCheckIn.includes(inscricao.id)}
-                        onCheckedChange={() => toggleSelecaoCheckIn(inscricao.id!)}
-                        className="mt-0.5"
-                      />
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-medium">{inscricao.userNome ?? "Participante"}</p>
-                      {inscricao.userEmail && (
-                        <p className="text-xs text-muted-foreground truncate">{inscricao.userEmail}</p>
-                      )}
-                      {inscricao.userTelefone && (
-                        <p className="text-xs text-muted-foreground">{inscricao.userTelefone}</p>
-                      )}
-                      {inscricao.criadoEm && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Inscrito em {new Date(inscricao.criadoEm).toLocaleString("pt-BR")}
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6">
+            {carregandoInscritos ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : inscritosLista.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">Nenhuma inscrição encontrada.</p>
+            ) : (
+              <ul className="space-y-2">
+                {inscritosLista.map((inscricao) => (
+                  <li
+                    key={inscricao.id}
+                    className="rounded-xl border p-3 text-sm"
+                  >
+                    <div className="flex items-start gap-3">
+                      <AvatarInscrito userId={inscricao.userId} nome={inscricao.userNome} />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium leading-snug break-words">
+                          {inscricao.userNome ?? "Participante"}
                         </p>
-                      )}
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant={inscricao.status === "CANCELADA" ? "outline" : "secondary"}>
-                          {inscricao.status === "CANCELADA" ? "Cancelada" : "Ativa"}
-                        </Badge>
-                        {inscricao.status === "ATIVA" && (
-                          <Badge variant={inscricao.confirmado ? "default" : "outline"}>
-                            {inscricao.confirmado ? "Check-in feito" : "Check-in pendente"}
-                          </Badge>
+                        {inscricao.userEmail && (
+                          <p className="mt-0.5 break-all text-xs text-muted-foreground">
+                            {inscricao.userEmail}
+                          </p>
                         )}
+                        {inscricao.userTelefone && (
+                          <p className="text-xs text-muted-foreground">{inscricao.userTelefone}</p>
+                        )}
+                        {inscricao.criadoEm && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Inscrito em {new Date(inscricao.criadoEm).toLocaleString("pt-BR")}
+                          </p>
+                        )}
+                        <div className="mt-2">
+                          <Badge variant={inscricao.status === "CANCELADA" ? "outline" : "secondary"}>
+                            {inscricao.status === "CANCELADA" ? "Cancelada" : "Ativa"}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  {inscricao.status === "ATIVA" && !inscricao.confirmado && inscricao.id && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={checkInId === inscricao.id}
-                      onClick={() => void fazerCheckIn(inscricao)}
-                    >
-                      {checkInId === inscricao.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                          Check-in
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

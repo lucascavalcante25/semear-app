@@ -233,16 +233,3 @@ export const inscreverEvento = (id: number) =>
 
 export const cancelarInscricaoEvento = (id: number) =>
   requisicaoApi<void>(`/api/eventos/${id}/inscrever`, { method: "DELETE", auth: true });
-
-export const confirmarCheckInInscricao = (eventoId: number, inscricaoId: number) =>
-  requisicaoApi<EventoInscricaoDTO>(`/api/eventos/${eventoId}/inscricoes/${inscricaoId}/check-in`, {
-    method: "PATCH",
-    auth: true,
-  });
-
-export const confirmarCheckInLote = (eventoId: number, ids: number[]) =>
-  requisicaoApi<EventoInscricaoDTO[]>(`/api/eventos/${eventoId}/inscricoes/check-in-lote`, {
-    method: "PATCH",
-    auth: true,
-    body: JSON.stringify({ ids }),
-  });
