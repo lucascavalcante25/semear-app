@@ -1,5 +1,5 @@
 import { Icon } from "@iconify/react";
-import { ImageIcon, Loader2 } from "lucide-react";
+import { ChevronDown, ImageIcon, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -90,61 +88,85 @@ export function BotoesCompartilharEvento({ evento, nomeIgreja, className }: Prop
     }
   };
 
+  const ocupado = !!carregando;
+
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div
+      className={cn(
+        "grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border",
+        className,
+      )}
+      role="group"
+      aria-label="Compartilhar evento"
+    >
       <Button
         type="button"
-        size="icon"
-        variant="outline"
-        className="h-9 w-9 shrink-0 text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10"
-        disabled={!!carregando}
+        variant="ghost"
+        size="sm"
+        disabled={ocupado}
         aria-label="Compartilhar no WhatsApp"
-        title="WhatsApp"
         onClick={() => void noWhatsApp()}
+        className={cn(
+          "h-10 rounded-none bg-background gap-2 font-medium touch-manipulation",
+          "text-[#128C7E] hover:bg-[#25D366]/10 hover:text-[#075E54]",
+        )}
       >
         {carregando === "whatsapp" ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Icon icon="mdi:whatsapp" className="h-5 w-5" />
+          <Icon icon="mdi:whatsapp" className="h-[18px] w-[18px] shrink-0" />
         )}
+        WhatsApp
       </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
-            size="icon"
-            variant="outline"
-            className="h-9 w-9 shrink-0 text-[#E1306C] hover:text-[#E1306C] hover:bg-[#E1306C]/10"
-            disabled={!!carregando}
+            variant="ghost"
+            size="sm"
+            disabled={ocupado}
             aria-label="Compartilhar no Instagram"
-            title="Instagram"
+            className={cn(
+              "h-10 rounded-none bg-background gap-1.5 font-medium touch-manipulation",
+              "text-[#C13584] hover:bg-[#E1306C]/10 hover:text-[#833AB4]",
+            )}
           >
             {carregando === "stories" || carregando === "feed" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Icon icon="mdi:instagram" className="h-5 w-5" />
+              <Icon icon="mdi:instagram" className="h-[18px] w-[18px] shrink-0" />
             )}
+            Instagram
+            <ChevronDown className="h-3.5 w-3.5 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Instagram</DropdownMenuLabel>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem
             className="gap-2 cursor-pointer"
-            disabled={!!carregando}
+            disabled={ocupado}
             onSelect={() => void noStories()}
           >
-            <ImageIcon className="h-4 w-4" />
-            Stories / Status
+            <ImageIcon className="h-4 w-4 text-[#C13584]" />
+            <div className="flex flex-col gap-0.5">
+              <span className="font-medium">Stories</span>
+              <span className="text-[11px] text-muted-foreground leading-none">
+                Status / stories da igreja
+              </span>
+            </div>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="gap-2 cursor-pointer"
-            disabled={!!carregando}
+            disabled={ocupado}
             onSelect={() => void noFeed()}
           >
-            <Icon icon="mdi:instagram" className="h-4 w-4" />
-            Feed da igreja
+            <Icon icon="mdi:instagram" className="h-4 w-4 text-[#C13584]" />
+            <div className="flex flex-col gap-0.5">
+              <span className="font-medium">Feed</span>
+              <span className="text-[11px] text-muted-foreground leading-none">
+                Publicação no feed
+              </span>
+            </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -595,10 +595,7 @@ export default function Eventos() {
             </Button>
           )}
           {item.id && (
-            <div className="flex items-center justify-between gap-2 pt-0.5">
-              <span className="text-xs text-muted-foreground">Compartilhar</span>
-              <BotoesCompartilharEvento evento={item} nomeIgreja={nomeExibicao} />
-            </div>
+            <BotoesCompartilharEvento evento={item} nomeIgreja={nomeExibicao} />
           )}
           {podeEditar && item.id && (
             <div className="flex flex-wrap gap-2">
