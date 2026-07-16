@@ -151,15 +151,14 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
   }
 
   body {
-    @apply bg-background text-foreground antialiased overflow-x-hidden;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
-  }
-
-  html {
-    overflow-x: hidden;
+    /* clip evita scroll container (hidden força overflow-y:auto e quebra position:fixed) */
+    overflow-x: clip;
   }
 
   h1, h2, h3, h4, h5, h6 {

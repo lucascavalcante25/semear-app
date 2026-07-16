@@ -24,8 +24,8 @@ export function NavegacaoInferior() {
   const filteredItems = navItems.filter((item) => canAccess(user, item.path));
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass safe-bottom">
-      <div className="flex items-center justify-around h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 glass safe-bottom border-t border-border/40">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {filteredItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
