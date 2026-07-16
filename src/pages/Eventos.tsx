@@ -50,6 +50,7 @@ import {
   MapPin,
   Plus,
   Search,
+  Share2,
   Trash2,
   UserCheck,
   Users,
@@ -58,6 +59,7 @@ import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
 import { resolverUrlApi } from "@/modules/api/client";
+import { compartilharEvento } from "@/lib/compartilhar-evento";
 import { canWrite } from "@/auth/permissions";
 import {
   atualizarEvento,
@@ -400,6 +402,16 @@ export default function Eventos() {
     item.dataInicio &&
     new Date(item.dataInicio) > new Date();
 
+  const compartilharNoWhatsApp = async (item: EventoDTO) => {
+    if (!item.id) return;
+    try {
+      await compartilharEvento(item, { nomeIgreja: nomeExibicao });
+      toast.success("Abrindo WhatsApp com os dados do evento.");
+    } catch {
+      toast.error("Não foi possível compartilhar o evento.");
+    }
+  };
+
   const toggleInscricao = async (item: EventoDTO) => {
     if (!item.id) return;
     setInscrevendoId(item.id);
@@ -591,6 +603,17 @@ export default function Eventos() {
                 <ExternalLink className="h-3.5 w-3.5" />
                 Saiba mais
               </a>
+            </Button>
+          )}
+          {item.id && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1 w-full"
+              onClick={() => void compartilharNoWhatsApp(item)}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Compartilhar no WhatsApp
             </Button>
           )}
           {podeEditar && item.id && (
