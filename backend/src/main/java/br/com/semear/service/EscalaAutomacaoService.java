@@ -374,18 +374,9 @@ public class EscalaAutomacaoService {
             throw new BadRequestAlertException("Nenhuma escala de portaria ou recepção encontrada neste ciclo", ENTITY, "semescalas");
         }
 
-        for (Escala escala : alvo) {
-            if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
-                notificacaoService.notificarEscalasExcluidas(escala);
-            }
-            for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
-                escalaItemRepository.delete(item);
-            }
-            escalaRepository.delete(escala);
-        }
+        removerEscalas(alvo);
 
-        boolean restamEscalas = !escalaRepository.findByGeracaoId(geracao.getId()).isEmpty();
-        if (!restamEscalas) {
+        if (!escalaRepository.existsByGeracaoId(geracao.getId())) {
             geracaoRepository.delete(geracao);
         }
     }
@@ -467,15 +458,23 @@ public class EscalaAutomacaoService {
     }
 
     private void removerEscalas(List<Escala> escalas) {
+        if (escalas == null || escalas.isEmpty()) {
+            return;
+        }
+
+        // Notifica só escalas já publicadas (rascunho não avisa ninguém).
         for (Escala escala : escalas) {
             if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
                 notificacaoService.notificarEscalasExcluidas(escala);
             }
-            for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
-                escalaItemRepository.delete(item);
-            }
-            escalaRepository.delete(escala);
         }
+
+        List<Long> ids = escalas.stream().map(Escala::getId).filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        escalaItemRepository.deleteByEscalaIdIn(ids);
+        escalaRepository.deleteByIdIn(ids);
     }
 
     @Transactional(readOnly = true)
@@ -1632,18 +1631,12 @@ public class EscalaAutomacaoService {
     }
 
     private void removerEscalasLimpezaDaGeracao(EscalaGeracao geracao) {
-        for (Escala escala : escalaRepository.findByGeracaoId(geracao.getId())) {
-            if (!escalaEhLimpeza(escala)) {
-                continue;
-            }
-            if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
-                notificacaoService.notificarEscalasExcluidas(escala);
-            }
-            for (EscalaItem item : escalaItemRepository.findByEscalaId(escala.getId())) {
-                escalaItemRepository.delete(item);
-            }
-            escalaRepository.delete(escala);
-        }
+        List<Escala> limpezas = escalaRepository
+            .findByGeracaoId(geracao.getId())
+            .stream()
+            .filter(this::escalaEhLimpeza)
+            .toList();
+        removerEscalas(limpezas);
     }
 
     private boolean escalaEhLimpeza(Escala escala) {

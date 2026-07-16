@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -18,6 +19,12 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
     List<Escala> findByIgrejaIdAndStatusOrderByDataEventoDesc(Long igrejaId, StatusEscalaPublicacao status);
     Optional<Escala> findByIdAndIgrejaId(Long id, Long igrejaId);
     List<Escala> findByGeracaoId(Long geracaoId);
+
+    boolean existsByGeracaoId(Long geracaoId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Escala e WHERE e.id IN :ids")
+    int deleteByIdIn(@Param("ids") Collection<Long> ids);
 
     @Query(
         """

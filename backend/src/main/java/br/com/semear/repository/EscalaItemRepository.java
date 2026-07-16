@@ -3,9 +3,11 @@ package br.com.semear.repository;
 import br.com.semear.domain.EscalaItem;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,10 @@ public interface EscalaItemRepository extends JpaRepository<EscalaItem, Long> {
     List<EscalaItem> findByEscalaId(Long escalaId);
     Optional<EscalaItem> findByIdAndEscalaId(Long id, Long escalaId);
     List<EscalaItem> findByUserIdAndConfirmadoFalse(Long userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM EscalaItem ei WHERE ei.escala.id IN :escalaIds")
+    int deleteByEscalaIdIn(@Param("escalaIds") Collection<Long> escalaIds);
 
     @Query(
         "SELECT ei FROM EscalaItem ei JOIN FETCH ei.user JOIN FETCH ei.escala e " +
