@@ -15,6 +15,8 @@ public interface NotificacaoAgendamentoRepository extends JpaRepository<Notifica
         StatusNotificacaoAgendamento status
     );
 
+    List<NotificacaoAgendamento> findByEntidadeTipoAndEntidadeId(String entidadeTipo, Long entidadeId);
+
     List<NotificacaoAgendamento> findByStatusAndAgendadoParaLessThanEqual(
         StatusNotificacaoAgendamento status,
         Instant limite

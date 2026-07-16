@@ -10,6 +10,7 @@ import br.com.semear.repository.NotificacaoAgendamentoRepository;
 import br.com.semear.service.dto.ConfigNotificacaoDTO;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
 import br.com.semear.service.util.ConfigNotificacaoJsonUtil;
+import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -305,15 +306,17 @@ public class NotificacaoProgramadaService {
     }
 
     private void cancelarPendentes(String entidadeTipo, Long entidadeId) {
-        List<NotificacaoAgendamento> pendentes = agendamentoRepository.findByEntidadeTipoAndEntidadeIdAndStatus(
+        // Remove agendamentos da entidade para liberar chave_unica (unique).
+        // Soft-cancel mantinha a chave e o próximo save quebrava com 500.
+        List<NotificacaoAgendamento> existentes = agendamentoRepository.findByEntidadeTipoAndEntidadeId(
             entidadeTipo,
-            entidadeId,
-            StatusNotificacaoAgendamento.PENDENTE
+            entidadeId
         );
-        for (NotificacaoAgendamento ag : pendentes) {
-            ag.setStatus(StatusNotificacaoAgendamento.CANCELADO);
+        if (existentes.isEmpty()) {
+            return;
         }
-        agendamentoRepository.saveAll(pendentes);
+        agendamentoRepository.deleteAllInBatch(existentes);
+        agendamentoRepository.flush();
     }
 
     private void validarConfig(ConfigNotificacaoDTO config) {
@@ -321,7 +324,11 @@ public class NotificacaoProgramadaService {
             config.getAudiencia() == br.com.semear.domain.enumeration.TipoAudienciaNotificacao.DEPARTAMENTOS &&
             (config.getDepartamentoIds() == null || config.getDepartamentoIds().isEmpty())
         ) {
-            throw new IllegalArgumentException("Selecione ao menos um departamento para a audiência.");
+            throw new BadRequestAlertException(
+                "Selecione ao menos um departamento para a audiência.",
+                "notificacao",
+                "departamentosobrigatorios"
+            );
         }
     }
 

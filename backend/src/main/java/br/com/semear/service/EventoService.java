@@ -139,8 +139,14 @@ public class EventoService {
             entity.setCategoria(CategoriaEvento.OUTRO);
         }
         Evento salvo = eventoRepository.save(entity);
-        ConfigNotificacaoDTO config = dto.getConfigNotificacao();
-        notificacaoProgramadaService.sincronizarEvento(salvo, config, true);
+        try {
+            ConfigNotificacaoDTO config = dto.getConfigNotificacao();
+            notificacaoProgramadaService.sincronizarEvento(salvo, config, true);
+        } catch (BadRequestAlertException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            LOG.warn("Evento {} criado, mas falhou sincronizar notificações: {}", salvo.getId(), e.getMessage());
+        }
         return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
     }
 
@@ -151,12 +157,29 @@ public class EventoService {
         String imagemAnterior = entity.getImagemUrl();
         aplicarDados(entity, dto);
         if (dto.getImagemUrl() == null && ehBannerInterno(imagemAnterior)) {
+            eventoBannerRepository.deleteById(entity.getId());
             removerArquivoBanner(entity.getId());
             entity.setImagemUrl(null);
+        } else if (dto.getImagemUrl() != null) {
+            // Remove querystring de cache-bust acidental (?v=...) antes de persistir.
+            String limpa = dto.getImagemUrl().split("\\?")[0];
+            entity.setImagemUrl(limpa);
         }
-        Evento salvo = eventoRepository.save(entity);
-        notificarAlteracoesImportantes(antes, salvo);
-        notificacaoProgramadaService.sincronizarEvento(salvo, dto.getConfigNotificacao(), false);
+        Evento salvo = eventoRepository.saveAndFlush(entity);
+        try {
+            notificarAlteracoesImportantes(antes, salvo);
+        } catch (BadRequestAlertException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            LOG.warn("Evento {} atualizado, mas falhou notificar alterações: {}", salvo.getId(), e.getMessage());
+        }
+        try {
+            notificacaoProgramadaService.sincronizarEvento(salvo, dto.getConfigNotificacao(), false);
+        } catch (BadRequestAlertException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            LOG.warn("Evento {} atualizado, mas falhou sincronizar notificações: {}", salvo.getId(), e.getMessage());
+        }
         return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
     }
 
