@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -182,6 +181,13 @@ export default function Eventos() {
       return null;
     });
   }, []);
+
+  const fecharFormulario = useCallback(() => {
+    setDialogAberto(false);
+    setEditandoId(null);
+    setSalvando(false);
+    resetBanner();
+  }, [resetBanner]);
 
   const previewBanner = useMemo(
     () => (removerBanner ? null : bannerPreviewLocal ?? resolverUrlApi(form.imagemUrl) ?? null),
@@ -377,14 +383,27 @@ export default function Eventos() {
         eventoSalvo = await criarEvento({ ...payload, imagemUrl: null });
       }
 
+      // Fecha imediatamente após persistir o evento e volta à listagem.
+      fecharFormulario();
+      toast.success(idEmEdicao ? "Evento atualizado." : "Evento criado.");
+
+      if (idEmEdicao) {
+        setLista((prev) => prev.map((e) => (e.id === idEmEdicao ? { ...e, ...eventoSalvo } : e)));
+      } else {
+        setLista((prev) => [eventoSalvo, ...prev]);
+      }
+
       const eventoId = idEmEdicao ?? eventoSalvo.id;
-      if (eventoId) {
+      if (eventoId && (arquivoBanner || (deveRemoverBanner && idEmEdicao))) {
         try {
           if (arquivoBanner) {
             eventoSalvo = await uploadBannerEvento(eventoId, arquivoBanner);
           } else if (deveRemoverBanner && idEmEdicao) {
             eventoSalvo = await removerBannerEvento(eventoId);
           }
+          setLista((prev) =>
+            prev.map((e) => (e.id === eventoId ? { ...e, ...eventoSalvo } : e)),
+          );
         } catch (bannerErro) {
           toast.error(
             bannerErro instanceof Error
@@ -393,20 +412,8 @@ export default function Eventos() {
           );
         }
       }
-
-      resetBanner();
-      setEditandoId(null);
-      setDialogAberto(false);
-      toast.success(idEmEdicao ? "Evento atualizado." : "Evento criado.");
-
-      if (idEmEdicao) {
-        setLista((prev) => prev.map((e) => (e.id === idEmEdicao ? { ...e, ...eventoSalvo } : e)));
-      } else {
-        setLista((prev) => [eventoSalvo, ...prev]);
-      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar.");
-    } finally {
       setSalvando(false);
     }
   };
@@ -662,19 +669,18 @@ export default function Eventos() {
             </div>
           </div>
           {podeEditar && (
-            <Dialog
-              open={dialogAberto}
-              onOpenChange={(open) => {
-                setDialogAberto(open);
-                if (!open) resetBanner();
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button onClick={abrirNovo} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Novo evento
-                </Button>
-              </DialogTrigger>
+            <>
+              <Button onClick={abrirNovo} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo evento
+              </Button>
+              <Dialog
+                open={dialogAberto}
+                onOpenChange={(open) => {
+                  if (!open) fecharFormulario();
+                  else setDialogAberto(true);
+                }}
+              >
               <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>{editandoId ? "Editar" : "Novo"} evento</DialogTitle>
@@ -908,7 +914,7 @@ export default function Eventos() {
                   />
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setDialogAberto(false)}>
+                  <Button variant="outline" onClick={fecharFormulario} disabled={salvando}>
                     Cancelar
                   </Button>
                   <Button onClick={() => void salvar()} disabled={salvando}>
@@ -917,7 +923,8 @@ export default function Eventos() {
                   </Button>
                 </DialogFooter>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </>
           )}
         </div>
 
