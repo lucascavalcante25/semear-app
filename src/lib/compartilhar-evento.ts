@@ -12,11 +12,13 @@ const truncar = (texto: string, max: number) => {
 
 /** Link amigável no app (Vercel faz proxy para a página OG do backend). */
 export function linkCompartilharEvento(eventoId: number): string {
+  // ?v= força o WhatsApp a rebuscar a prévia (cache agressivo do crawler).
+  const v = Math.floor(Date.now() / 60_000);
   if (typeof window !== "undefined" && import.meta.env.PROD) {
-    return `${window.location.origin}/e/${eventoId}`;
+    return `${window.location.origin}/e/${eventoId}?v=${v}`;
   }
   const api = URL_BASE_API?.replace(/\/$/, "") ?? "";
-  return `${api}/api/public/eventos/${eventoId}/compartilhar`;
+  return `${api}/api/public/eventos/${eventoId}/compartilhar?v=${v}`;
 }
 
 /** Texto limpo: sem URLs de API/banner — só um link no final. */

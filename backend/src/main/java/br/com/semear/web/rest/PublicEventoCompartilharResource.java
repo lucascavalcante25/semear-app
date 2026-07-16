@@ -4,9 +4,12 @@ import br.com.semear.domain.Evento;
 import br.com.semear.domain.Igreja;
 import br.com.semear.domain.enumeration.StatusEvento;
 import br.com.semear.repository.EventoRepository;
+import br.com.semear.service.EventoService;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,10 +34,20 @@ public class PublicEventoCompartilharResource {
     );
 
     private final EventoRepository eventoRepository;
+    private final EventoService eventoService;
     private final JHipsterProperties jHipsterProperties;
 
-    public PublicEventoCompartilharResource(EventoRepository eventoRepository, JHipsterProperties jHipsterProperties) {
+    /** URL pública da API (Render). Necessária quando a página é acessada via proxy da Vercel. */
+    @Value("${semear.public-api-url:https://semear-api-pl65.onrender.com}")
+    private String publicApiUrl;
+
+    public PublicEventoCompartilharResource(
+        EventoRepository eventoRepository,
+        EventoService eventoService,
+        JHipsterProperties jHipsterProperties
+    ) {
         this.eventoRepository = eventoRepository;
+        this.eventoService = eventoService;
         this.jHipsterProperties = jHipsterProperties;
     }
 
@@ -45,7 +58,7 @@ public class PublicEventoCompartilharResource {
             return ResponseEntity.notFound().build();
         }
 
-        String apiBase = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString().replaceAll("/$", "");
+        String apiBase = resolverApiBasePublica();
         String appBase = trimSlash(jHipsterProperties.getMail().getBaseUrl());
         if (appBase == null || appBase.isBlank()) {
             appBase = "https://minha-igreja-digital-app.vercel.app";
@@ -53,8 +66,10 @@ public class PublicEventoCompartilharResource {
         String linkApp = appBase + "/eventos?eventoId=" + id;
         String paginaUrl = appBase + "/e/" + id;
 
-        boolean temBanner = evento.getImagemUrl() != null && !evento.getImagemUrl().isBlank();
-        String imagemUrl = temBanner ? apiBase + "/api/eventos/" + id + "/banner" : "";
+        // Só marca banner se o arquivo existir de fato (evita og:image quebrado).
+        boolean temBanner = eventoService.obterBanner(id).isPresent();
+        // Cache-bust ajuda o WhatsApp a atualizar a prévia após reenvio do banner.
+        String imagemUrl = temBanner ? apiBase + "/api/public/eventos/" + id + "/banner?v=" + System.currentTimeMillis() / 60_000 : "";
 
         Igreja igreja = evento.getIgreja();
         String nomeIgreja = igreja != null
@@ -73,10 +88,14 @@ public class PublicEventoCompartilharResource {
         String metaImagem = temBanner
             ? """
               <meta property="og:image" content="%s" />
+              <meta property="og:image:secure_url" content="%s" />
+              <meta property="og:image:type" content="image/jpeg" />
+              <meta property="og:image:width" content="1200" />
+              <meta property="og:image:height" content="630" />
               <meta property="og:image:alt" content="%s" />
               <meta name="twitter:card" content="summary_large_image" />
               <meta name="twitter:image" content="%s" />
-              """.formatted(esc(imagemUrl), esc(titulo), esc(imagemUrl))
+              """.formatted(esc(imagemUrl), esc(imagemUrl), esc(titulo), esc(imagemUrl))
             : """
               <meta name="twitter:card" content="summary" />
               """;
@@ -153,7 +172,32 @@ public class PublicEventoCompartilharResource {
             esc(linkApp)
         );
 
-        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
+        return ResponseEntity.ok()
+            .contentType(MediaType.TEXT_HTML)
+            .header(HttpHeaders.CACHE_CONTROL, "public, max-age=300")
+            .body(html);
+    }
+
+    /** Banner público para og:image (WhatsApp/crawlers). */
+    @GetMapping("/{id}/banner")
+    public ResponseEntity<byte[]> bannerPublico(@PathVariable Long id) {
+        return eventoService
+            .obterBanner(id)
+            .map(banner ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(banner.contentType()))
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+                    .body(banner.bytes())
+            )
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    private String resolverApiBasePublica() {
+        String configurada = trimSlash(publicApiUrl);
+        if (configurada != null && !configurada.isBlank()) {
+            return configurada;
+        }
+        return ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString().replaceAll("/$", "");
     }
 
     private static String montarDescricaoOg(Evento evento, String nomeIgreja) {

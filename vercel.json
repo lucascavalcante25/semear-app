@@ -7,6 +7,14 @@
       "source": "/e/:id",
       "destination": "https://semear-api-pl65.onrender.com/api/public/eventos/:id/compartilhar"
     },
+    {
+      "source": "/api/public/eventos/:id/banner",
+      "destination": "https://semear-api-pl65.onrender.com/api/public/eventos/:id/banner"
+    },
+    {
+      "source": "/api/eventos/:id/banner",
+      "destination": "https://semear-api-pl65.onrender.com/api/eventos/:id/banner"
+    },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ],
   "headers": [

@@ -233,6 +233,7 @@ jhipster:
 # application:
 
 semear:
+  public-api-url: ${SEMEAR_PUBLIC_API_URL:}
   letras:
     lrclib-user-agent: SemearApp/1.0 (https://github.com/lucascavalcante25/semear-app)
   genius:
