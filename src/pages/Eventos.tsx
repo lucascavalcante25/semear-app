@@ -360,10 +360,12 @@ export default function Eventos() {
     }
     setSalvando(true);
     const idEmEdicao = editandoId;
+    const arquivoBanner = bannerArquivo;
+    const deveRemoverBanner = removerBanner;
     try {
       const payload: FormEvento = {
         ...form,
-        imagemUrl: removerBanner ? null : form.imagemUrl,
+        imagemUrl: deveRemoverBanner ? null : form.imagemUrl,
         prazoCancelamentoInscricao: form.prazoCancelamentoInscricao
           ? `${form.prazoCancelamentoInscricao}T${form.horaPrazoCancelamento ?? "23:59"}:00`
           : null,
@@ -375,18 +377,12 @@ export default function Eventos() {
         eventoSalvo = await criarEvento({ ...payload, imagemUrl: null });
       }
 
-      // Fecha o modal assim que o evento for persistido (mesmo se o banner falhar depois).
-      resetBanner();
-      setEditandoId(null);
-      setDialogAberto(false);
-      toast.success(idEmEdicao ? "Evento atualizado." : "Evento criado.");
-
       const eventoId = idEmEdicao ?? eventoSalvo.id;
       if (eventoId) {
         try {
-          if (bannerArquivo) {
-            eventoSalvo = await uploadBannerEvento(eventoId, bannerArquivo);
-          } else if (removerBanner && idEmEdicao) {
+          if (arquivoBanner) {
+            eventoSalvo = await uploadBannerEvento(eventoId, arquivoBanner);
+          } else if (deveRemoverBanner && idEmEdicao) {
             eventoSalvo = await removerBannerEvento(eventoId);
           }
         } catch (bannerErro) {
@@ -397,6 +393,11 @@ export default function Eventos() {
           );
         }
       }
+
+      resetBanner();
+      setEditandoId(null);
+      setDialogAberto(false);
+      toast.success(idEmEdicao ? "Evento atualizado." : "Evento criado.");
 
       if (idEmEdicao) {
         setLista((prev) => prev.map((e) => (e.id === idEmEdicao ? { ...e, ...eventoSalvo } : e)));
