@@ -10,6 +10,7 @@ import {
   DestaqueEventosProximos,
   DestaqueMinhasEscalas,
   DestaqueProximoCulto,
+  DestaqueProximoEvento,
 } from "@/components/dashboard";
 import { BannerInformativoDashboard } from "@/components/dashboard/BannerInformativoDashboard";
 import { AlertasSecretariaEscalas } from "@/components/escalas/AlertasSecretariaEscalas";
@@ -80,6 +81,8 @@ const Inicio = () => {
 
         {/* Versiculo do dia */}
         <VersiculoDoDia />
+
+        {mostrarEventos && <DestaqueProximoEvento />}
 
         {/* Progresso espiritual */}
         <ProgressoEspiritual />

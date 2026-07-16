@@ -10,5 +10,6 @@ export { DestaqueAvisos } from "./DestaqueAvisos";
 export { DestaqueEventosProximos } from "./DestaqueEventosProximos";
 export { DestaqueMinhasEscalas } from "./DestaqueMinhasEscalas";
 export { DestaqueProximoCulto } from "./DestaqueProximoCulto";
+export { DestaqueProximoEvento } from "./DestaqueProximoEvento";
 export { ProgressoEspiritual } from "./SpiritualProgress";
 export { BannerInformativoDashboard } from "./BannerInformativoDashboard";
