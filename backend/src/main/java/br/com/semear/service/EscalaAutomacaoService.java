@@ -801,12 +801,13 @@ public class EscalaAutomacaoService {
         Map<Long, Integer> cargaGeracao,
         Instant historicoDesde
     ) {
+        ContextoSorteio ctx = montarContextoSorteio(cultos, igrejaId, config, true, false, cargaGeracao, historicoDesde);
         for (LocalDate data = inicio; !data.isAfter(fim); data = data.plusDays(1)) {
             for (CultoRegistro culto : cultos) {
                 if (!CultoRecorrenciaUtils.cultoOcorreNaData(culto, data)) {
                     continue;
                 }
-                List<CultoEscalaRegra> regras = filtrarRegrasAtivas(culto.getId(), config, true, false);
+                List<CultoEscalaRegra> regras = ctx.regrasAtivasPorCulto.getOrDefault(culto.getId(), List.of());
                 if (regras.isEmpty()) {
                     continue;
                 }
@@ -827,12 +828,8 @@ public class EscalaAutomacaoService {
                         Boolean.TRUE.equals(config.getGerarPortaria()) &&
                         Boolean.TRUE.equals(config.getGerarRecepcao())
                     ) {
-                        Departamento deptPortaria = departamentoRepository
-                            .findByIdAndIgrejaId(portaria.get().getDepartamento().getId(), igrejaId)
-                            .orElse(null);
-                        Departamento deptRecepcao = departamentoRepository
-                            .findByIdAndIgrejaId(recepcao.get().getDepartamento().getId(), igrejaId)
-                            .orElse(null);
+                        Departamento deptPortaria = ctx.departamentos.get(portaria.get().getDepartamento().getId());
+                        Departamento deptRecepcao = ctx.departamentos.get(recepcao.get().getDepartamento().getId());
                         if (deptPortaria != null && deptRecepcao != null) {
                             criarEscalaAgrupadaPortariaRecepcao(
                                 geracao,
@@ -842,8 +839,7 @@ public class EscalaAutomacaoService {
                                 deptPortaria,
                                 deptRecepcao,
                                 data,
-                                cargaGeracao,
-                                historicoDesde
+                                ctx
                             );
                             agrupou = true;
                         }
@@ -856,47 +852,24 @@ public class EscalaAutomacaoService {
                         ) {
                             continue;
                         }
-                        processarRegraIndividual(
-                            geracao,
-                            culto,
-                            regra,
-                            igrejaId,
-                            data,
-                            cargaGeracao,
-                            historicoDesde,
-                            config,
-                            true,
-                            false
-                        );
+                        processarRegraIndividual(geracao, culto, regra, data, ctx, config, true, false);
                     }
                 } else {
                     for (CultoEscalaRegra regra : regras) {
-                        processarRegraIndividual(
-                            geracao,
-                            culto,
-                            regra,
-                            igrejaId,
-                            data,
-                            cargaGeracao,
-                            historicoDesde,
-                            config,
-                            true,
-                            false
-                        );
+                        processarRegraIndividual(geracao, culto, regra, data, ctx, config, true, false);
                     }
                 }
             }
         }
+        persistirPendentes(ctx);
     }
 
     private void processarRegraIndividual(
         EscalaGeracao geracao,
         CultoRegistro culto,
         CultoEscalaRegra regra,
-        Long igrejaId,
         LocalDate data,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde,
+        ContextoSorteio ctx,
         EscalaConfigAutomatica config,
         boolean incluirPortariaRecepcao,
         boolean incluirLimpeza
@@ -905,14 +878,18 @@ public class EscalaAutomacaoService {
         if (deptId == null) {
             return;
         }
-        Departamento departamento = departamentoRepository.findByIdAndIgrejaId(deptId, igrejaId).orElse(null);
+        Departamento departamento = ctx.departamentos.get(deptId);
         if (departamento == null || !regraPermitidaPelaConfig(departamento, config, incluirPortariaRecepcao, incluirLimpeza)) {
             return;
         }
-        if (Boolean.TRUE.equals(config.getGerarLimpeza()) && departamentoEhCodigo(departamento, CodigoDepartamento.LIMPEZA) && resolverModoLimpeza(config) != ModoLimpezaEscala.POR_CULTO) {
+        if (
+            Boolean.TRUE.equals(config.getGerarLimpeza()) &&
+            departamentoEhCodigo(departamento, CodigoDepartamento.LIMPEZA) &&
+            resolverModoLimpeza(config) != ModoLimpezaEscala.POR_CULTO
+        ) {
             return;
         }
-        criarEscalaSorteada(geracao, culto, regra, departamento, data, cargaGeracao, historicoDesde);
+        criarEscalaSorteada(geracao, culto, regra, departamento, data, ctx, null);
     }
 
     private List<CultoEscalaRegra> filtrarRegrasAtivas(
@@ -925,7 +902,10 @@ public class EscalaAutomacaoService {
             .findByCultoRegistroId(cultoId)
             .stream()
             .filter(r -> Boolean.TRUE.equals(r.getAtivo()))
-            .filter(r -> r.getDepartamento() != null && regraPermitidaPelaConfig(r.getDepartamento(), config, incluirPortariaRecepcao, incluirLimpeza))
+            .filter(r ->
+                r.getDepartamento() != null &&
+                regraPermitidaPelaConfig(r.getDepartamento(), config, incluirPortariaRecepcao, incluirLimpeza)
+            )
             .toList();
     }
 
@@ -975,11 +955,13 @@ public class EscalaAutomacaoService {
     ) {
         ModoLimpezaEscala modo = resolverModoLimpeza(config);
         String loteChave = geracao.getId() + "-" + Instant.now().toEpochMilli() + "-" + modo.name();
+        ContextoSorteio ctx = montarContextoSorteio(cultos, igrejaId, config, false, true, cargaGeracao, historicoDesde);
         switch (modo) {
-            case MENSAL -> gerarEscalasLimpezaMensal(geracao, inicio, fim, igrejaId, config, cargaGeracao, historicoDesde, loteChave);
-            case SEMANAL -> gerarEscalasLimpezaSemanal(geracao, inicio, fim, igrejaId, config, cargaGeracao, historicoDesde, loteChave);
-            case POR_CULTO -> gerarEscalasLimpezaPorCulto(geracao, inicio, fim, igrejaId, cultos, cargaGeracao, historicoDesde, loteChave);
+            case MENSAL -> gerarEscalasLimpezaMensal(geracao, inicio, fim, igrejaId, config, ctx, loteChave);
+            case SEMANAL -> gerarEscalasLimpezaSemanal(geracao, inicio, fim, igrejaId, config, ctx, loteChave);
+            case POR_CULTO -> gerarEscalasLimpezaPorCulto(geracao, inicio, fim, igrejaId, cultos, ctx, loteChave);
         }
+        persistirPendentes(ctx);
     }
 
     private ModoLimpezaEscala resolverModoLimpeza(EscalaConfigAutomatica config) {
@@ -995,16 +977,10 @@ public class EscalaAutomacaoService {
         LocalDate fim,
         Long igrejaId,
         EscalaConfigAutomatica config,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde,
+        ContextoSorteio ctx,
         String loteChave
     ) {
-        Departamento limpeza = departamentoRepository
-            .findByIgrejaIdOrderByNomeAsc(igrejaId)
-            .stream()
-            .filter(d -> departamentoEhCodigo(d, CodigoDepartamento.LIMPEZA))
-            .findFirst()
-            .orElse(null);
+        Departamento limpeza = resolverDepartamentoLimpeza(igrejaId, ctx);
         if (limpeza == null) {
             LOG.warn("Limpeza semanal ativada mas departamento Limpeza não encontrado na igreja {}", igrejaId);
             return;
@@ -1013,18 +989,16 @@ public class EscalaAutomacaoService {
         CultoEscalaRegra regraLimpeza = new CultoEscalaRegra();
         regraLimpeza.setRegraGenero(RegraGeneroEscala.QUALQUER);
         DiaSemanaCulto diaLimpeza = config.getDiaSemanaLimpeza() != null ? config.getDiaSemanaLimpeza() : DiaSemanaCulto.DOMINGO;
+        Set<LocalDate> limpezasExistentes = datasLimpezaExistentes(geracao, limpeza.getId());
 
         for (LocalDate data = inicio; !data.isAfter(fim); data = data.plusDays(1)) {
-            if (!diaCompativel(data, diaLimpeza)) {
-                continue;
-            }
-            if (jaExisteLimpezaNaData(geracao, data, limpeza.getId())) {
+            if (!diaCompativel(data, diaLimpeza) || limpezasExistentes.contains(data)) {
                 continue;
             }
             CultoRegistro cultoVirtual = new CultoRegistro();
             cultoVirtual.setNome("Limpeza semanal");
             cultoVirtual.setHorario("08:00");
-            criarEscalaSorteada(geracao, cultoVirtual, regraLimpeza, limpeza, data, cargaGeracao, historicoDesde, loteChave);
+            criarEscalaSorteada(geracao, cultoVirtual, regraLimpeza, limpeza, data, ctx, loteChave);
         }
     }
 
@@ -1034,16 +1008,10 @@ public class EscalaAutomacaoService {
         LocalDate fim,
         Long igrejaId,
         List<CultoRegistro> cultos,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde,
+        ContextoSorteio ctx,
         String loteChave
     ) {
-        Departamento limpeza = departamentoRepository
-            .findByIgrejaIdOrderByNomeAsc(igrejaId)
-            .stream()
-            .filter(d -> departamentoEhCodigo(d, CodigoDepartamento.LIMPEZA))
-            .findFirst()
-            .orElse(null);
+        Departamento limpeza = resolverDepartamentoLimpeza(igrejaId, ctx);
         if (limpeza == null) {
             LOG.warn("Limpeza por culto ativada mas departamento Limpeza não encontrado na igreja {}", igrejaId);
             return;
@@ -1057,7 +1025,7 @@ public class EscalaAutomacaoService {
                 if (!CultoRecorrenciaUtils.cultoOcorreNaData(culto, data)) {
                     continue;
                 }
-                criarEscalaSorteada(geracao, culto, regraLimpeza, limpeza, data, cargaGeracao, historicoDesde, loteChave);
+                criarEscalaSorteada(geracao, culto, regraLimpeza, limpeza, data, ctx, loteChave);
             }
         }
     }
@@ -1068,16 +1036,10 @@ public class EscalaAutomacaoService {
         LocalDate fim,
         Long igrejaId,
         EscalaConfigAutomatica config,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde,
+        ContextoSorteio ctx,
         String loteChave
     ) {
-        Departamento limpeza = departamentoRepository
-            .findByIgrejaIdOrderByNomeAsc(igrejaId)
-            .stream()
-            .filter(d -> departamentoEhCodigo(d, CodigoDepartamento.LIMPEZA))
-            .findFirst()
-            .orElse(null);
+        Departamento limpeza = resolverDepartamentoLimpeza(igrejaId, ctx);
         if (limpeza == null) {
             LOG.warn("Limpeza mensal ativada mas departamento Limpeza não encontrado na igreja {}", igrejaId);
             return;
@@ -1085,6 +1047,7 @@ public class EscalaAutomacaoService {
 
         CultoEscalaRegra regraLimpeza = new CultoEscalaRegra();
         regraLimpeza.setRegraGenero(RegraGeneroEscala.QUALQUER);
+        Set<LocalDate> limpezasExistentes = datasLimpezaExistentes(geracao, limpeza.getId());
 
         YearMonth mesAtual = YearMonth.from(inicio);
         YearMonth mesFim = YearMonth.from(fim);
@@ -1094,29 +1057,51 @@ public class EscalaAutomacaoService {
             if (dataLimpeza.isBefore(inicio)) {
                 dataLimpeza = inicio;
             }
-            if (!dataLimpeza.isAfter(fim) && !jaExisteLimpezaNaData(geracao, dataLimpeza, limpeza.getId())) {
+            if (!dataLimpeza.isAfter(fim) && !limpezasExistentes.contains(dataLimpeza)) {
                 CultoRegistro cultoVirtual = new CultoRegistro();
                 cultoVirtual.setNome("Limpeza mensal");
                 cultoVirtual.setHorario("08:00");
-                criarEscalaSorteada(geracao, cultoVirtual, regraLimpeza, limpeza, dataLimpeza, cargaGeracao, historicoDesde, loteChave);
+                criarEscalaSorteada(geracao, cultoVirtual, regraLimpeza, limpeza, dataLimpeza, ctx, loteChave);
             }
             mesAtual = mesAtual.plusMonths(1);
         }
     }
 
-    private boolean jaExisteLimpezaNaData(EscalaGeracao geracao, LocalDate data, Long departamentoLimpezaId) {
-        Instant desde = data.atStartOfDay(FUSO).toInstant();
-        Instant ate = data.atTime(23, 59, 59).atZone(FUSO).toInstant();
-        return escalaRepository
-            .findByGeracaoId(geracao.getId())
+    private Departamento resolverDepartamentoLimpeza(Long igrejaId, ContextoSorteio ctx) {
+        Optional<Departamento> noCtx = ctx.departamentos
+            .values()
             .stream()
-            .anyMatch(e ->
+            .filter(d -> departamentoEhCodigo(d, CodigoDepartamento.LIMPEZA))
+            .findFirst();
+        if (noCtx.isPresent()) {
+            return noCtx.get();
+        }
+        Departamento limpeza = departamentoRepository
+            .findByIgrejaIdOrderByNomeAsc(igrejaId)
+            .stream()
+            .filter(d -> departamentoEhCodigo(d, CodigoDepartamento.LIMPEZA))
+            .findFirst()
+            .orElse(null);
+        if (limpeza != null) {
+            ctx.departamentos.put(limpeza.getId(), limpeza);
+            carregarMembrosECargas(ctx, List.of(limpeza.getId()));
+        }
+        return limpeza;
+    }
+
+    /** Uma única leitura das escalas da geração — evita findByGeracaoId por data. */
+    private Set<LocalDate> datasLimpezaExistentes(EscalaGeracao geracao, Long departamentoLimpezaId) {
+        Set<LocalDate> datas = new HashSet<>();
+        for (Escala e : escalaRepository.findByGeracaoId(geracao.getId())) {
+            if (
                 e.getDepartamento() != null &&
                 Objects.equals(e.getDepartamento().getId(), departamentoLimpezaId) &&
-                e.getDataEvento() != null &&
-                !e.getDataEvento().isBefore(desde) &&
-                !e.getDataEvento().isAfter(ate)
-            );
+                e.getDataEvento() != null
+            ) {
+                datas.add(e.getDataEvento().atZone(FUSO).toLocalDate());
+            }
+        }
+        return datas;
     }
 
     private LocalDate primeiroDiaSemanaDoMes(YearMonth mes, DiaSemanaCulto diaSemana) {
@@ -1135,17 +1120,16 @@ public class EscalaAutomacaoService {
         Departamento deptPortaria,
         Departamento deptRecepcao,
         LocalDate data,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde
+        ContextoSorteio ctx
     ) {
-        User homem = escolherMembro(deptPortaria, regraPortaria.getRegraGenero(), cargaGeracao, historicoDesde);
-        User mulher = escolherMembro(deptRecepcao, regraRecepcao.getRegraGenero(), cargaGeracao, historicoDesde);
+        User homem = escolherMembro(deptPortaria, regraPortaria.getRegraGenero(), ctx);
+        User mulher = escolherMembro(deptRecepcao, regraRecepcao.getRegraGenero(), ctx);
         if (homem == null || mulher == null) {
             if (homem != null) {
-                criarEscalaSorteada(geracao, culto, regraPortaria, deptPortaria, data, cargaGeracao, historicoDesde);
+                criarEscalaSorteada(geracao, culto, regraPortaria, deptPortaria, data, ctx, null);
             }
             if (mulher != null) {
-                criarEscalaSorteada(geracao, culto, regraRecepcao, deptRecepcao, data, cargaGeracao, historicoDesde);
+                criarEscalaSorteada(geracao, culto, regraRecepcao, deptRecepcao, data, ctx, null);
             }
             return;
         }
@@ -1161,52 +1145,41 @@ public class EscalaAutomacaoService {
         );
         escala.setDataEvento(combinarDataHorario(data, culto.getHorario()));
         escala.setCriadoEm(Instant.now());
-        escala = escalaRepository.save(escala);
+        ctx.escalasPendentes.add(escala);
 
         EscalaItem itemPortaria = new EscalaItem();
         itemPortaria.setEscala(escala);
         itemPortaria.setUser(homem);
         itemPortaria.setFuncao(deptPortaria.getNome());
         itemPortaria.setConfirmado(false);
-        escalaItemRepository.save(itemPortaria);
+        ctx.itensPendentes.add(itemPortaria);
 
         EscalaItem itemRecepcao = new EscalaItem();
         itemRecepcao.setEscala(escala);
         itemRecepcao.setUser(mulher);
         itemRecepcao.setFuncao(deptRecepcao.getNome());
         itemRecepcao.setConfirmado(false);
-        escalaItemRepository.save(itemRecepcao);
+        ctx.itensPendentes.add(itemRecepcao);
     }
 
-    private User escolherMembro(
-        Departamento departamento,
-        RegraGeneroEscala regraGenero,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde
-    ) {
-        List<DepartamentoMembro> membros = departamentoMembroRepository.findByDepartamentoId(departamento.getId());
-        List<User> elegiveis = membros
-            .stream()
-            .map(DepartamentoMembro::getUser)
-            .filter(Objects::nonNull)
-            .filter(u -> Boolean.TRUE.equals(u.isActivated()) && !u.isDependente())
-            .filter(u -> compativelGenero(u, regraGenero))
-            .toList();
+    private User escolherMembro(Departamento departamento, RegraGeneroEscala regraGenero, ContextoSorteio ctx) {
+        List<User> base = ctx.membrosPorDepartamento.getOrDefault(departamento.getId(), List.of());
+        List<User> elegiveis = base.stream().filter(u -> compativelGenero(u, regraGenero)).toList();
         if (elegiveis.isEmpty()) {
             LOG.warn("Sem membros elegíveis para departamento {}", departamento.getId());
             return null;
         }
+        Map<Long, Long> cargasDept = ctx.cargaHistoricaPorDepartamento.getOrDefault(departamento.getId(), Map.of());
         User escolhido = elegiveis
             .stream()
             .min(
                 Comparator.comparingLong((User u) ->
-                    escalaRepository.countServicosUsuarioDesde(departamento.getId(), u.getId(), StatusEscalaPublicacao.PUBLICADA, historicoDesde) +
-                    cargaGeracao.getOrDefault(u.getId(), 0)
+                    cargasDept.getOrDefault(u.getId(), 0L) + ctx.cargaGeracao.getOrDefault(u.getId(), 0)
                 ).thenComparing(User::getId)
             )
             .orElse(null);
         if (escolhido != null) {
-            cargaGeracao.merge(escolhido.getId(), 1, Integer::sum);
+            ctx.cargaGeracao.merge(escolhido.getId(), 1, Integer::sum);
         }
         return escolhido;
     }
@@ -1217,23 +1190,10 @@ public class EscalaAutomacaoService {
         CultoEscalaRegra regra,
         Departamento departamento,
         LocalDate data,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde
-    ) {
-        criarEscalaSorteada(geracao, culto, regra, departamento, data, cargaGeracao, historicoDesde, null);
-    }
-
-    private void criarEscalaSorteada(
-        EscalaGeracao geracao,
-        CultoRegistro culto,
-        CultoEscalaRegra regra,
-        Departamento departamento,
-        LocalDate data,
-        Map<Long, Integer> cargaGeracao,
-        Instant historicoDesde,
+        ContextoSorteio ctx,
         String loteLimpezaChave
     ) {
-        User escolhido = escolherMembro(departamento, regra.getRegraGenero(), cargaGeracao, historicoDesde);
+        User escolhido = escolherMembro(departamento, regra.getRegraGenero(), ctx);
         if (escolhido == null) {
             return;
         }
@@ -1245,7 +1205,6 @@ public class EscalaAutomacaoService {
             escala.setCultoRegistro(culto);
         }
         escala.setGeracao(geracao);
-        // Sorteio sempre nasce em rascunho; publicação (ciclo ou lote) é que libera.
         escala.setStatus(StatusEscalaPublicacao.RASCUNHO);
         escala.setTitulo(departamento.getNome() + " — " + culto.getNome() + " " + data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         escala.setDataEvento(combinarDataHorario(data, culto.getHorario()));
@@ -1253,17 +1212,127 @@ public class EscalaAutomacaoService {
             escala.setObservacao(LOTE_LIMPEZA_PREFIX + loteLimpezaChave);
         }
         escala.setCriadoEm(Instant.now());
-        escala = escalaRepository.save(escala);
+        ctx.escalasPendentes.add(escala);
 
         EscalaItem item = new EscalaItem();
         item.setEscala(escala);
         item.setUser(escolhido);
         item.setFuncao(departamento.getNome());
         item.setConfirmado(false);
-        escalaItemRepository.save(item);
+        ctx.itensPendentes.add(item);
+    }
 
-        if (escala.getStatus() == StatusEscalaPublicacao.PUBLICADA) {
-            notificacaoService.notificarEscalaItemAtribuido(escala, item);
+    private ContextoSorteio montarContextoSorteio(
+        List<CultoRegistro> cultos,
+        Long igrejaId,
+        EscalaConfigAutomatica config,
+        boolean incluirPortariaRecepcao,
+        boolean incluirLimpeza,
+        Map<Long, Integer> cargaGeracao,
+        Instant historicoDesde
+    ) {
+        ContextoSorteio ctx = new ContextoSorteio(cargaGeracao, historicoDesde);
+
+        List<Long> cultoIds = cultos.stream().map(CultoRegistro::getId).filter(Objects::nonNull).toList();
+        if (!cultoIds.isEmpty()) {
+            for (CultoEscalaRegra regra : cultoEscalaRegraRepository.findByCultoRegistroIdInWithDepartamento(cultoIds)) {
+                if (!Boolean.TRUE.equals(regra.getAtivo()) || regra.getDepartamento() == null) {
+                    continue;
+                }
+                if (!regraPermitidaPelaConfig(regra.getDepartamento(), config, incluirPortariaRecepcao, incluirLimpeza)) {
+                    continue;
+                }
+                ctx.regrasAtivasPorCulto
+                    .computeIfAbsent(regra.getCultoRegistro().getId(), ignored -> new ArrayList<>())
+                    .add(regra);
+                ctx.departamentos.put(regra.getDepartamento().getId(), regra.getDepartamento());
+            }
+        }
+
+        if (incluirLimpeza) {
+            departamentoRepository
+                .findByIgrejaIdOrderByNomeAsc(igrejaId)
+                .stream()
+                .filter(d -> departamentoEhCodigo(d, CodigoDepartamento.LIMPEZA))
+                .findFirst()
+                .ifPresent(d -> ctx.departamentos.put(d.getId(), d));
+        }
+
+        // Garante departamentos da igreja mesmo se a regra veio lazy incompleta
+        Set<Long> deptIds = new HashSet<>(ctx.departamentos.keySet());
+        for (Long deptId : deptIds) {
+            if (ctx.departamentos.get(deptId) != null && ctx.departamentos.get(deptId).getIgreja() == null) {
+                departamentoRepository.findByIdAndIgrejaId(deptId, igrejaId).ifPresent(d -> ctx.departamentos.put(deptId, d));
+            }
+        }
+
+        carregarMembrosECargas(ctx, ctx.departamentos.keySet());
+        return ctx;
+    }
+
+    private void carregarMembrosECargas(ContextoSorteio ctx, Collection<Long> departamentoIds) {
+        if (departamentoIds == null || departamentoIds.isEmpty()) {
+            return;
+        }
+        List<Long> ids = departamentoIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+
+        for (DepartamentoMembro dm : departamentoMembroRepository.findByDepartamentoIdInWithUser(ids)) {
+            if (dm.getDepartamento() == null || dm.getUser() == null) {
+                continue;
+            }
+            User u = dm.getUser();
+            if (!Boolean.TRUE.equals(u.isActivated()) || u.isDependente()) {
+                continue;
+            }
+            ctx.membrosPorDepartamento.computeIfAbsent(dm.getDepartamento().getId(), ignored -> new ArrayList<>()).add(u);
+        }
+
+        List<Object[]> agregados = escalaRepository.contarServicosAgrupadosDesde(
+            ids,
+            StatusEscalaPublicacao.PUBLICADA,
+            ctx.historicoDesde
+        );
+        for (Object[] row : agregados) {
+            Long deptId = (Long) row[0];
+            Long userId = (Long) row[1];
+            Long total = (Long) row[2];
+            ctx.cargaHistoricaPorDepartamento
+                .computeIfAbsent(deptId, ignored -> new HashMap<>())
+                .put(userId, total != null ? total : 0L);
+        }
+    }
+
+    private void persistirPendentes(ContextoSorteio ctx) {
+        if (ctx.escalasPendentes.isEmpty()) {
+            return;
+        }
+        escalaRepository.saveAll(ctx.escalasPendentes);
+        if (!ctx.itensPendentes.isEmpty()) {
+            escalaItemRepository.saveAll(ctx.itensPendentes);
+        }
+        ctx.escalasPendentes.clear();
+        ctx.itensPendentes.clear();
+    }
+
+    /**
+     * Cache em memória para o sorteio: regras, membros, cargas históricas e buffers de persistência.
+     */
+    private static final class ContextoSorteio {
+        final Map<Long, Integer> cargaGeracao;
+        final Instant historicoDesde;
+        final Map<Long, List<CultoEscalaRegra>> regrasAtivasPorCulto = new HashMap<>();
+        final Map<Long, Departamento> departamentos = new HashMap<>();
+        final Map<Long, List<User>> membrosPorDepartamento = new HashMap<>();
+        final Map<Long, Map<Long, Long>> cargaHistoricaPorDepartamento = new HashMap<>();
+        final List<Escala> escalasPendentes = new ArrayList<>();
+        final List<EscalaItem> itensPendentes = new ArrayList<>();
+
+        ContextoSorteio(Map<Long, Integer> cargaGeracao, Instant historicoDesde) {
+            this.cargaGeracao = cargaGeracao;
+            this.historicoDesde = historicoDesde;
         }
     }
 

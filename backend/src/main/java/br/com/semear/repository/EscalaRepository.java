@@ -4,6 +4,7 @@ import br.com.semear.domain.Escala;
 import br.com.semear.domain.enumeration.CodigoDepartamento;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -68,6 +69,26 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
     long countServicosUsuarioDesde(
         @Param("departamentoId") Long departamentoId,
         @Param("userId") Long userId,
+        @Param("status") StatusEscalaPublicacao status,
+        @Param("desde") Instant desde
+    );
+
+    /**
+     * Cargas históricas agregadas (departamento × usuário) — evita N+1 no sorteio automático.
+     */
+    @Query(
+        """
+        SELECT e.departamento.id, ei.user.id, COUNT(ei)
+        FROM EscalaItem ei
+        JOIN ei.escala e
+        WHERE e.departamento.id IN :departamentoIds
+          AND e.status = :status
+          AND e.dataEvento >= :desde
+        GROUP BY e.departamento.id, ei.user.id
+        """
+    )
+    List<Object[]> contarServicosAgrupadosDesde(
+        @Param("departamentoIds") Collection<Long> departamentoIds,
         @Param("status") StatusEscalaPublicacao status,
         @Param("desde") Instant desde
     );
