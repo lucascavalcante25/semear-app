@@ -115,6 +115,22 @@ const badgeStatusVariant = (status?: StatusEvento) => {
   return "secondary" as const;
 };
 
+function BannerEventoCard({ imagemUrl, titulo }: { imagemUrl?: string | null; titulo: string }) {
+  const [erro, setErro] = useState(false);
+  const src = resolverUrlApi(imagemUrl);
+  if (!imagemUrl || erro || !src) return null;
+  return (
+    <div className="aspect-[16/7] w-full overflow-hidden bg-muted">
+      <img
+        src={src}
+        alt={titulo}
+        className="h-full w-full object-cover"
+        onError={() => setErro(true)}
+      />
+    </div>
+  );
+}
+
 export default function Eventos() {
   const [searchParams] = useSearchParams();
   const eventoIdParam = searchParams.get("eventoId");
@@ -512,11 +528,7 @@ export default function Eventos() {
 
   const renderCard = (item: EventoDTO) => (
     <Card key={item.id} className="overflow-hidden flex flex-col h-full">
-      {item.imagemUrl && (
-        <div className="aspect-[16/7] w-full overflow-hidden bg-muted">
-          <img src={resolverUrlApi(item.imagemUrl)} alt="" className="h-full w-full object-cover" />
-        </div>
-      )}
+      <BannerEventoCard imagemUrl={item.imagemUrl} titulo={item.titulo} />
       <CardContent className="p-4 flex flex-col gap-3 flex-1">
         <div className="flex flex-wrap gap-1.5">
           {item.categoria && (

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260716000002-1" author="semear">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="evento_banner"/></not>
+        </preConditions>
+        <createTable tableName="evento_banner">
+            <column name="evento_id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="content_type" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dados" type="bytea">
+                <constraints nullable="false"/>
+            </column>
+            <column name="atualizado_em" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+            baseTableName="evento_banner"
+            baseColumnNames="evento_id"
+            constraintName="fk_evento_banner_evento"
+            referencedTableName="evento"
+            referencedColumnNames="id"
+            onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

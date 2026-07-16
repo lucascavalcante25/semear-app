@@ -1,12 +1,14 @@
 package br.com.semear.service;
 
 import br.com.semear.domain.Evento;
+import br.com.semear.domain.EventoBanner;
 import br.com.semear.domain.EventoInscricao;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.CategoriaEvento;
 import br.com.semear.domain.enumeration.PublicoEvento;
 import br.com.semear.domain.enumeration.StatusEvento;
 import br.com.semear.domain.enumeration.StatusInscricaoEvento;
+import br.com.semear.repository.EventoBannerRepository;
 import br.com.semear.repository.EventoInscricaoRepository;
 import br.com.semear.repository.EventoRepository;
 import br.com.semear.security.AuthoritiesConstants;
@@ -41,11 +43,13 @@ public class EventoService {
     private static final Logger LOG = LoggerFactory.getLogger(EventoService.class);
     private static final String ENTITY = "evento";
     private static final Instant LIMITE_DATA_FUTURA = Instant.parse("9999-12-31T23:59:59Z");
+    private static final long TAMANHO_MAX_BANNER_BYTES = 3L * 1024 * 1024;
 
     @Value("${semear.upload-dir:${user.home}/semear-app/uploads}")
     private String uploadDir;
 
     private final EventoRepository eventoRepository;
+    private final EventoBannerRepository eventoBannerRepository;
     private final EventoInscricaoRepository eventoInscricaoRepository;
     private final TenantService tenantService;
     private final EventoNotificacaoService eventoNotificacaoService;
@@ -53,12 +57,14 @@ public class EventoService {
 
     public EventoService(
         EventoRepository eventoRepository,
+        EventoBannerRepository eventoBannerRepository,
         EventoInscricaoRepository eventoInscricaoRepository,
         TenantService tenantService,
         EventoNotificacaoService eventoNotificacaoService,
         NotificacaoProgramadaService notificacaoProgramadaService
     ) {
         this.eventoRepository = eventoRepository;
+        this.eventoBannerRepository = eventoBannerRepository;
         this.eventoInscricaoRepository = eventoInscricaoRepository;
         this.tenantService = tenantService;
         this.eventoNotificacaoService = eventoNotificacaoService;
@@ -185,18 +191,34 @@ public class EventoService {
         if (file == null || file.isEmpty()) {
             throw new BadRequestAlertException("Arquivo vazio", ENTITY, "arquivovazio");
         }
+        if (file.getSize() > TAMANHO_MAX_BANNER_BYTES) {
+            throw new BadRequestAlertException("Banner deve ter no máximo 3 MB", ENTITY, "arquivoGrande");
+        }
         String contentType = file.getContentType();
         if (contentType == null || !isTipoImagemPermitido(contentType)) {
             throw new BadRequestAlertException("Use JPEG, PNG, GIF ou WebP", ENTITY, "tipoinvalido");
         }
         Evento entity = obterEntidade(id).orElseThrow(this::naoEncontrado);
         try {
-            removerArquivoBanner(entity.getId());
-            String ext = extensaoPorContentType(contentType);
-            Path dir = diretorioBanner(entity.getId());
-            Files.createDirectories(dir);
-            Path target = dir.resolve("banner." + ext);
-            Files.write(target, file.getBytes());
+            byte[] bytes = file.getBytes();
+            EventoBanner banner = eventoBannerRepository.findById(entity.getId()).orElseGet(EventoBanner::new);
+            banner.setEvento(entity);
+            banner.setContentType(contentType);
+            banner.setDados(bytes);
+            banner.setAtualizadoEm(Instant.now());
+            eventoBannerRepository.save(banner);
+
+            // Mantém cópia em disco quando possível (dev/local); o banco é a fonte da verdade.
+            try {
+                removerArquivoBanner(entity.getId());
+                String ext = extensaoPorContentType(contentType);
+                Path dir = diretorioBanner(entity.getId());
+                Files.createDirectories(dir);
+                Files.write(dir.resolve("banner." + ext), bytes);
+            } catch (IOException e) {
+                LOG.warn("Banner salvo no banco, mas falhou cópia em disco do evento {}: {}", entity.getId(), e.getMessage());
+            }
+
             entity.setImagemUrl("/api/eventos/" + entity.getId() + "/banner");
             Evento salvo = eventoRepository.save(entity);
             return toDtoComInscricoes(salvo, tenantService.getUsuarioAtual(), null, null);
@@ -208,6 +230,12 @@ public class EventoService {
 
     @Transactional(readOnly = true)
     public Optional<BannerArquivo> obterBanner(Long id) {
+        Optional<EventoBanner> noBanco = eventoBannerRepository.findById(id);
+        if (noBanco.isPresent() && noBanco.get().getDados() != null && noBanco.get().getDados().length > 0) {
+            EventoBanner b = noBanco.get();
+            return Optional.of(new BannerArquivo(b.getDados(), b.getContentType()));
+        }
+
         Path dir = diretorioBanner(id);
         if (!Files.isDirectory(dir)) {
             return Optional.empty();
@@ -232,6 +260,7 @@ public class EventoService {
     public EventoDTO removerBanner(Long id) {
         validarLideranca();
         Evento entity = obterEntidade(id).orElseThrow(this::naoEncontrado);
+        eventoBannerRepository.deleteById(id);
         removerArquivoBanner(entity.getId());
         entity.setImagemUrl(null);
         Evento salvo = eventoRepository.save(entity);
