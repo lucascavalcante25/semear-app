@@ -1,17 +1,10 @@
 import { Icon } from "@iconify/react";
-import { ChevronDown, ImageIcon, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  compartilharEventoInstagramFeed,
-  compartilharEventoInstagramStories,
+  compartilharEventoInstagram,
   compartilharEventoWhatsApp,
 } from "@/lib/compartilhar-evento";
 import type { EventoDTO } from "@/modules/eventos/api";
@@ -24,7 +17,7 @@ type Props = {
 };
 
 export function BotoesCompartilharEvento({ evento, nomeIgreja, className }: Props) {
-  const [carregando, setCarregando] = useState<"whatsapp" | "stories" | "feed" | null>(null);
+  const [carregando, setCarregando] = useState<"whatsapp" | "instagram" | null>(null);
   const opcoes = { nomeIgreja };
 
   if (!evento.id) return null;
@@ -35,7 +28,7 @@ export function BotoesCompartilharEvento({ evento, nomeIgreja, className }: Prop
       const modo = await compartilharEventoWhatsApp(evento, opcoes);
       toast.success(
         modo === "imagem"
-          ? "Escolha o WhatsApp para enviar com a imagem."
+          ? "Escolha o WhatsApp para enviar."
           : "Abrindo WhatsApp com o convite.",
       );
     } catch (e) {
@@ -46,43 +39,22 @@ export function BotoesCompartilharEvento({ evento, nomeIgreja, className }: Prop
     }
   };
 
-  const noStories = async () => {
-    setCarregando("stories");
+  const noInstagram = async () => {
+    setCarregando("instagram");
     try {
-      const modo = await compartilharEventoInstagramStories(evento, opcoes);
+      const modo = await compartilharEventoInstagram(evento, opcoes);
       if (modo === "compartilhado") {
-        toast.success("Escolha o Instagram Stories. A legenda foi copiada.");
+        toast.success("Escolha o Instagram. A legenda foi copiada — é só colar.");
       } else {
         toast.success(
           evento.imagemUrl
-            ? "Banner baixado e legenda copiada. Abra o Instagram → Stories e selecione a imagem."
-            : "Legenda copiada. Cole no Instagram Stories.",
+            ? "Imagem baixada e legenda copiada. Abra o Instagram e publique."
+            : "Legenda copiada. Cole no Instagram.",
         );
       }
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
-      toast.error("Não foi possível preparar o Stories.");
-    } finally {
-      setCarregando(null);
-    }
-  };
-
-  const noFeed = async () => {
-    setCarregando("feed");
-    try {
-      const modo = await compartilharEventoInstagramFeed(evento, opcoes);
-      if (modo === "compartilhado") {
-        toast.success("Escolha o Instagram. A legenda do feed foi copiada.");
-      } else {
-        toast.success(
-          evento.imagemUrl
-            ? "Banner baixado e legenda copiada. Abra o Instagram → Nova publicação e cole a legenda."
-            : "Legenda copiada. Cole na publicação do feed.",
-        );
-      }
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      toast.error("Não foi possível preparar o feed.");
+      toast.error("Não foi possível preparar o compartilhamento no Instagram.");
     } finally {
       setCarregando(null);
     }
@@ -119,57 +91,25 @@ export function BotoesCompartilharEvento({ evento, nomeIgreja, className }: Prop
         WhatsApp
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={ocupado}
-            aria-label="Compartilhar no Instagram"
-            className={cn(
-              "h-10 rounded-none bg-background gap-1.5 font-medium touch-manipulation",
-              "text-[#C13584] hover:bg-[#E1306C]/10 hover:text-[#833AB4]",
-            )}
-          >
-            {carregando === "stories" || carregando === "feed" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Icon icon="mdi:instagram" className="h-[18px] w-[18px] shrink-0" />
-            )}
-            Instagram
-            <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuItem
-            className="gap-2 cursor-pointer"
-            disabled={ocupado}
-            onSelect={() => void noStories()}
-          >
-            <ImageIcon className="h-4 w-4 text-[#C13584]" />
-            <div className="flex flex-col gap-0.5">
-              <span className="font-medium">Stories</span>
-              <span className="text-[11px] text-muted-foreground leading-none">
-                Status / stories da igreja
-              </span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="gap-2 cursor-pointer"
-            disabled={ocupado}
-            onSelect={() => void noFeed()}
-          >
-            <Icon icon="mdi:instagram" className="h-4 w-4 text-[#C13584]" />
-            <div className="flex flex-col gap-0.5">
-              <span className="font-medium">Feed</span>
-              <span className="text-[11px] text-muted-foreground leading-none">
-                Publicação no feed
-              </span>
-            </div>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={ocupado}
+        aria-label="Compartilhar no Instagram"
+        onClick={() => void noInstagram()}
+        className={cn(
+          "h-10 rounded-none bg-background gap-2 font-medium touch-manipulation",
+          "text-[#C13584] hover:bg-[#E1306C]/10 hover:text-[#833AB4]",
+        )}
+      >
+        {carregando === "instagram" ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Icon icon="mdi:instagram" className="h-[18px] w-[18px] shrink-0" />
+        )}
+        Instagram
+      </Button>
     </div>
   );
 }
