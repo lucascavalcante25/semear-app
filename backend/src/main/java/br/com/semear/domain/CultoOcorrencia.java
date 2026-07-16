@@ -52,6 +52,21 @@ public class CultoOcorrencia implements Serializable {
     private GrupoLouvor grupoLouvorOrigem;
 
     @NotNull
+    @Column(name = "cancelado", nullable = false)
+    private Boolean cancelado = false;
+
+    @Column(name = "motivo_cancelamento", columnDefinition = "text")
+    private String motivoCancelamento;
+
+    @Column(name = "cancelado_em")
+    private Instant canceladoEm;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cancelado_por_id")
+    @JsonIgnoreProperties(value = { "hibernateLazyInitializer", "handler", "password", "authorities" }, allowSetters = true)
+    private User canceladoPor;
+
+    @NotNull
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm = Instant.now();
 
@@ -76,6 +91,14 @@ public class CultoOcorrencia implements Serializable {
     public void setObservacoes(String observacoes) { this.observacoes = observacoes; }
     public GrupoLouvor getGrupoLouvorOrigem() { return grupoLouvorOrigem; }
     public void setGrupoLouvorOrigem(GrupoLouvor grupoLouvorOrigem) { this.grupoLouvorOrigem = grupoLouvorOrigem; }
+    public Boolean getCancelado() { return cancelado; }
+    public void setCancelado(Boolean cancelado) { this.cancelado = cancelado != null ? cancelado : false; }
+    public String getMotivoCancelamento() { return motivoCancelamento; }
+    public void setMotivoCancelamento(String motivoCancelamento) { this.motivoCancelamento = motivoCancelamento; }
+    public Instant getCanceladoEm() { return canceladoEm; }
+    public void setCanceladoEm(Instant canceladoEm) { this.canceladoEm = canceladoEm; }
+    public User getCanceladoPor() { return canceladoPor; }
+    public void setCanceladoPor(User canceladoPor) { this.canceladoPor = canceladoPor; }
     public Instant getCriadoEm() { return criadoEm; }
     public void setCriadoEm(Instant criadoEm) { this.criadoEm = criadoEm; }
     public Instant getAtualizadoEm() { return atualizadoEm; }

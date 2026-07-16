@@ -67,6 +67,8 @@ import {
   previewGrupoLouvorCulto,
   salvarModelosCulto,
   salvarOcorrenciaCulto,
+  cancelarCulto,
+  reativarCulto,
   type CultoAgendaItemDTO,
   type CultoLouvorItemDTO,
   type CultoModeloDTO,
@@ -272,7 +274,8 @@ export default function Cultos() {
     return agruparPorMes(filtrados);
   }, [proximos]);
   const gruposPassados = useMemo(() => agruparPorMes(passados), [passados]);
-  const proximoCultoChave = proximos[0] ? `${proximos[0].cultoRegistroId}-${proximos[0].data}` : null;
+  const proximoAtivo = proximos.find((i) => !i.cancelado);
+  const proximoCultoChave = proximoAtivo ? `${proximoAtivo.cultoRegistroId}-${proximoAtivo.data}` : null;
 
   const portariaAtual = editResponsaveis.find((r) => r.papel === "PORTARIA") ?? null;
   const recepcaoAtual = editResponsaveis.find((r) => r.papel === "RECEPCAO") ?? null;
@@ -497,6 +500,37 @@ export default function Cultos() {
     }
   };
 
+  const cancelarCultoResumo = async (motivo: string) => {
+    if (!resumo || !podeEditar) return;
+    try {
+      const atualizado = await cancelarCulto({
+        cultoRegistroId: resumo.cultoRegistroId,
+        data: resumo.data,
+        motivoCancelamento: motivo,
+      });
+      atualizarItemNaLista(atualizado);
+      toast.success("Culto cancelado. A igreja foi notificada.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao cancelar o culto.");
+      throw e;
+    }
+  };
+
+  const reativarCultoResumo = async () => {
+    if (!resumo || !podeEditar) return;
+    try {
+      const atualizado = await reativarCulto({
+        cultoRegistroId: resumo.cultoRegistroId,
+        data: resumo.data,
+      });
+      atualizarItemNaLista(atualizado);
+      toast.success("Culto reativado. A programação volta ao normal.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao reativar o culto.");
+      throw e;
+    }
+  };
+
   const salvarDetalhe = async () => {
     if (!detalhe || !podeEditar) return;
     setSalvandoDetalhe(true);
@@ -612,44 +646,62 @@ export default function Cultos() {
         type="button"
         className={cn(
           "w-full text-left rounded-lg border p-2.5 sm:p-3 transition-colors touch-manipulation",
-          destacar
-            ? "bg-olive/10 border-olive/40 ring-1 ring-olive/30 shadow-sm"
-            : "bg-card hover:bg-muted/40 active:bg-muted/60",
+          item.cancelado
+            ? "bg-muted/50 border-dashed opacity-90 hover:bg-muted/70"
+            : destacar
+              ? "bg-olive/10 border-olive/40 ring-1 ring-olive/30 shadow-sm"
+              : "bg-card hover:bg-muted/40 active:bg-muted/60",
         )}
         onClick={() => abrirResumo(item)}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="font-semibold text-sm sm:text-base leading-snug break-words">{item.nome}</p>
-              {destacar && (
+              <p
+                className={cn(
+                  "font-semibold text-sm sm:text-base leading-snug break-words",
+                  item.cancelado && "line-through text-muted-foreground",
+                )}
+              >
+                {item.nome}
+              </p>
+              {item.cancelado ? (
+                <Badge variant="destructive" className="text-[10px] hover:bg-destructive shrink-0">
+                  Cancelado
+                </Badge>
+              ) : destacar ? (
                 <Badge className="bg-olive text-white text-[10px] hover:bg-olive shrink-0">Próximo</Badge>
-              )}
+              ) : null}
             </div>
             <p className="text-xs text-muted-foreground">
               {formatarData(item.data)} · {item.horario}
             </p>
-            {item.pregador && (
+            {item.cancelado && item.motivoCancelamento?.trim() && (
+              <p className="text-xs text-red-700/90 dark:text-red-400 break-words">
+                {item.motivoCancelamento}
+              </p>
+            )}
+            {!item.cancelado && item.pregador && (
               <p className="text-xs flex items-start gap-1 text-foreground/90">
                 <User className="h-3 w-3 shrink-0 mt-0.5 text-muted-foreground" />
                 <span className="break-words">{item.pregador}</span>
               </p>
             )}
-            {item.tituloMensagem && (
+            {!item.cancelado && item.tituloMensagem && (
               <p className="text-xs flex items-start gap-1 text-muted-foreground">
                 <BookOpen className="h-3 w-3 shrink-0 mt-0.5" />
                 <span className="break-words line-clamp-2">{item.tituloMensagem}</span>
               </p>
             )}
-            {item.versiculoCentral && (
+            {!item.cancelado && item.versiculoCentral && (
               <p className="text-[11px] italic text-muted-foreground line-clamp-2">
                 {item.versiculoCentral}
               </p>
             )}
-            {linhaResponsaveis && (
+            {!item.cancelado && linhaResponsaveis && (
               <p className="text-[11px] text-muted-foreground break-words pt-0.5">{linhaResponsaveis}</p>
             )}
-            {(item.louvores?.length ?? 0) > 0 && (
+            {!item.cancelado && (item.louvores?.length ?? 0) > 0 && (
               <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                 <Music className="h-3 w-3 shrink-0" />
                 {item.louvores.length} louvor{item.louvores.length !== 1 ? "es" : ""}
@@ -1053,9 +1105,13 @@ export default function Cultos() {
           onFechar={() => setResumo(null)}
           podeEditar={podeEditar}
           onEditar={abrirEdicaoDoResumo}
+          onCancelar={podeEditar ? cancelarCultoResumo : undefined}
+          onReativar={podeEditar ? reativarCultoResumo : undefined}
           onReordenarLouvores={podeEditar ? salvarOrdemLouvoresResumo : undefined}
           destacandoProximo={
-            !!resumo && `${resumo.cultoRegistroId}-${resumo.data}` === proximoCultoChave
+            !!resumo &&
+            !resumo.cancelado &&
+            `${resumo.cultoRegistroId}-${resumo.data}` === proximoCultoChave
           }
         />
 

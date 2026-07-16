@@ -44,6 +44,9 @@ export type CultoAgendaItemDTO = {
   responsaveis: CultoResponsavelDTO[];
   temOverrideResponsaveis: boolean;
   temEscalaGerada: boolean;
+  cancelado?: boolean;
+  motivoCancelamento?: string | null;
+  canceladoEm?: string | null;
 };
 
 export type CultoAgendaListaDTO = {
@@ -61,6 +64,12 @@ export type CultoOcorrenciaSalvarDTO = {
   grupoLouvorOrigemId?: number | null;
   louvorIds?: number[];
   responsaveisManuais?: { papel: PapelCultoResponsavel; userId: number }[];
+};
+
+export type CultoCancelarDTO = {
+  cultoRegistroId: number;
+  data: string;
+  motivoCancelamento?: string;
 };
 
 export const listarModelosCulto = () =>
@@ -85,6 +94,20 @@ export const obterDetalheCulto = (cultoRegistroId: number, data: string) =>
 export const salvarOcorrenciaCulto = (body: CultoOcorrenciaSalvarDTO) =>
   requisicaoApi<CultoAgendaItemDTO>("/api/cultos/agenda", {
     method: "PUT",
+    body: JSON.stringify(body),
+    auth: true,
+  });
+
+export const cancelarCulto = (body: CultoCancelarDTO) =>
+  requisicaoApi<CultoAgendaItemDTO>("/api/cultos/agenda/cancelar", {
+    method: "POST",
+    body: JSON.stringify(body),
+    auth: true,
+  });
+
+export const reativarCulto = (body: Pick<CultoCancelarDTO, "cultoRegistroId" | "data">) =>
+  requisicaoApi<CultoAgendaItemDTO>("/api/cultos/agenda/reativar", {
+    method: "POST",
     body: JSON.stringify(body),
     auth: true,
   });

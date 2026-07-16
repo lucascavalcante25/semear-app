@@ -8,7 +8,9 @@ import br.com.semear.domain.enumeration.TipoCulto;
 import br.com.semear.repository.*;
 import br.com.semear.service.dto.CultoAgendaItemDTO;
 import br.com.semear.service.dto.CultoAgendaListaDTO;
+import br.com.semear.service.dto.CultoCancelarDTO;
 import br.com.semear.service.dto.CultoOcorrenciaSalvarDTO;
+import br.com.semear.service.dto.NotificacaoPayloadDTO;
 import br.com.semear.service.util.CultoRecorrenciaUtils;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import jakarta.persistence.EntityManager;
@@ -16,6 +18,7 @@ import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.WeekFields;
 import java.util.*;
@@ -32,6 +35,7 @@ public class CultoAgendaService {
     /** Janela alinhada à UI (mês atual + próximo) com folga para passados. */
     private static final int DIAS_PASSADOS = 62;
     private static final int DIAS_FUTUROS = 62;
+    private static final DateTimeFormatter DATA_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -47,6 +51,7 @@ public class CultoAgendaService {
     private final LouvorRepository louvorRepository;
     private final UserRepository userRepository;
     private final TenantService tenantService;
+    private final NotificacaoEnvioService notificacaoEnvioService;
 
     public CultoAgendaService(
         CultoRegistroRepository cultoRegistroRepository,
@@ -59,7 +64,8 @@ public class CultoAgendaService {
         GrupoLouvorItemRepository grupoLouvorItemRepository,
         LouvorRepository louvorRepository,
         UserRepository userRepository,
-        TenantService tenantService
+        TenantService tenantService,
+        NotificacaoEnvioService notificacaoEnvioService
     ) {
         this.cultoRegistroRepository = cultoRegistroRepository;
         this.cultoOcorrenciaRepository = cultoOcorrenciaRepository;
@@ -72,6 +78,7 @@ public class CultoAgendaService {
         this.louvorRepository = louvorRepository;
         this.userRepository = userRepository;
         this.tenantService = tenantService;
+        this.notificacaoEnvioService = notificacaoEnvioService;
     }
 
     @Transactional(readOnly = true)
@@ -216,6 +223,94 @@ public class CultoAgendaService {
         return item;
     }
 
+    public CultoAgendaItemDTO cancelarOcorrencia(CultoCancelarDTO dto) {
+        if (dto.getCultoRegistroId() == null || dto.getData() == null) {
+            throw new BadRequestAlertException("Culto e data são obrigatórios", ENTITY, "dadosinvalidos");
+        }
+        String motivo = dto.getMotivoCancelamento() != null ? dto.getMotivoCancelamento().trim() : "";
+        if (motivo.isBlank()) {
+            throw new BadRequestAlertException("Informe o motivo do cancelamento", ENTITY, "motivobrigatorio");
+        }
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        Igreja igreja = tenantService.resolverIgrejaParaCriacao();
+        CultoRegistro culto = cultoRegistroRepository
+            .findByIdAndIgrejaId(dto.getCultoRegistroId(), igrejaId)
+            .orElseThrow(() -> new BadRequestAlertException("Culto não encontrado", ENTITY, "notfound"));
+
+        CultoOcorrencia oc = cultoOcorrenciaRepository
+            .findByCultoRegistroIdAndDataEvento(dto.getCultoRegistroId(), dto.getData())
+            .orElseGet(() -> {
+                CultoOcorrencia nova = new CultoOcorrencia();
+                nova.setIgreja(igreja);
+                nova.setCultoRegistro(culto);
+                nova.setDataEvento(dto.getData());
+                nova.setCriadoEm(Instant.now());
+                return nova;
+            });
+
+        if (Boolean.TRUE.equals(oc.getCancelado())) {
+            throw new BadRequestAlertException("Este culto já está cancelado", ENTITY, "jacancelado");
+        }
+
+        User usuario = tenantService.getUsuarioAtual();
+        oc.setCancelado(true);
+        oc.setMotivoCancelamento(motivo);
+        oc.setCanceladoEm(Instant.now());
+        oc.setCanceladoPor(usuario);
+        oc.setAtualizadoEm(Instant.now());
+        oc = cultoOcorrenciaRepository.save(oc);
+
+        NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
+        payload.setIgrejaId(igrejaId);
+        payload.setTipo("CULTO_CANCELADO");
+        payload.setEntidadeTipo("CULTO_OCORRENCIA");
+        payload.setEntidadeId(oc.getId());
+        payload.setTitulo("Culto cancelado");
+        payload.setMensagem(
+            "\"" +
+            culto.getNome() +
+            "\" de " +
+            DATA_FMT.format(dto.getData()) +
+            (culto.getHorario() != null ? " às " + culto.getHorario() : "") +
+            " foi cancelado. Motivo: " +
+            motivo
+        );
+        payload.setRotaDestino("/cultos");
+        payload.setRespeitarHorarioSilencioso(false);
+        payload.setRegistrarDeduplicacao(true);
+        payload.setContextoDestinatarios("cancelamento de culto — toda a igreja");
+        notificacaoEnvioService.enviarParaIgreja(igrejaId, payload);
+
+        return obterDetalhe(dto.getCultoRegistroId(), dto.getData());
+    }
+
+    public CultoAgendaItemDTO reativarOcorrencia(CultoCancelarDTO dto) {
+        if (dto.getCultoRegistroId() == null || dto.getData() == null) {
+            throw new BadRequestAlertException("Culto e data são obrigatórios", ENTITY, "dadosinvalidos");
+        }
+        Long igrejaId = tenantService.getIgrejaIdAtual();
+        cultoRegistroRepository
+            .findByIdAndIgrejaId(dto.getCultoRegistroId(), igrejaId)
+            .orElseThrow(() -> new BadRequestAlertException("Culto não encontrado", ENTITY, "notfound"));
+
+        CultoOcorrencia oc = cultoOcorrenciaRepository
+            .findByCultoRegistroIdAndDataEvento(dto.getCultoRegistroId(), dto.getData())
+            .orElseThrow(() -> new BadRequestAlertException("Ocorrência não encontrada", ENTITY, "notfound"));
+
+        if (!Boolean.TRUE.equals(oc.getCancelado())) {
+            throw new BadRequestAlertException("Este culto não está cancelado", ENTITY, "naocancelado");
+        }
+
+        oc.setCancelado(false);
+        oc.setMotivoCancelamento(null);
+        oc.setCanceladoEm(null);
+        oc.setCanceladoPor(null);
+        oc.setAtualizadoEm(Instant.now());
+        cultoOcorrenciaRepository.save(oc);
+
+        return obterDetalhe(dto.getCultoRegistroId(), dto.getData());
+    }
+
     public CultoAgendaItemDTO salvarOcorrencia(CultoOcorrenciaSalvarDTO dto) {
         if (dto.getCultoRegistroId() == null || dto.getData() == null) {
             throw new BadRequestAlertException("Culto e data são obrigatórios", ENTITY, "dadosinvalidos");
@@ -351,6 +446,9 @@ public class CultoAgendaService {
             dto.setTituloMensagem(oc.getTituloMensagem());
             dto.setVersiculoCentral(oc.getVersiculoCentral());
             dto.setObservacoes(oc.getObservacoes());
+            dto.setCancelado(Boolean.TRUE.equals(oc.getCancelado()));
+            dto.setMotivoCancelamento(oc.getMotivoCancelamento());
+            dto.setCanceladoEm(oc.getCanceladoEm());
             if (oc.getGrupoLouvorOrigem() != null) {
                 dto.setGrupoLouvorOrigemId(oc.getGrupoLouvorOrigem().getId());
                 dto.setGrupoLouvorOrigemNome(oc.getGrupoLouvorOrigem().getNome());

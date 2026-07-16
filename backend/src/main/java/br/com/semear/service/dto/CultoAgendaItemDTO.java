@@ -3,6 +3,7 @@ package br.com.semear.service.dto;
 import br.com.semear.domain.enumeration.PapelCultoResponsavel;
 import br.com.semear.domain.enumeration.TipoCulto;
 import java.io.Serializable;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,9 @@ public class CultoAgendaItemDTO implements Serializable {
     private List<CultoResponsavelDTO> responsaveis = new ArrayList<>();
     private boolean temOverrideResponsaveis;
     private boolean temEscalaGerada;
+    private boolean cancelado;
+    private String motivoCancelamento;
+    private Instant canceladoEm;
 
     public Long getOcorrenciaId() { return ocorrenciaId; }
     public void setOcorrenciaId(Long ocorrenciaId) { this.ocorrenciaId = ocorrenciaId; }
@@ -60,6 +64,12 @@ public class CultoAgendaItemDTO implements Serializable {
     }
     public boolean isTemEscalaGerada() { return temEscalaGerada; }
     public void setTemEscalaGerada(boolean temEscalaGerada) { this.temEscalaGerada = temEscalaGerada; }
+    public boolean isCancelado() { return cancelado; }
+    public void setCancelado(boolean cancelado) { this.cancelado = cancelado; }
+    public String getMotivoCancelamento() { return motivoCancelamento; }
+    public void setMotivoCancelamento(String motivoCancelamento) { this.motivoCancelamento = motivoCancelamento; }
+    public Instant getCanceladoEm() { return canceladoEm; }
+    public void setCanceladoEm(Instant canceladoEm) { this.canceladoEm = canceladoEm; }
 
     public static class CultoLouvorItemDTO implements Serializable {
         private Long louvorId;

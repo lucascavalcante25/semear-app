@@ -2,6 +2,7 @@ package br.com.semear.service;
 
 import br.com.semear.config.PushNotificationProperties;
 import br.com.semear.domain.CultoRegistro;
+import br.com.semear.domain.CultoOcorrencia;
 import br.com.semear.domain.Escala;
 import br.com.semear.domain.EscalaItem;
 import br.com.semear.domain.Evento;
@@ -9,6 +10,7 @@ import br.com.semear.domain.Igreja;
 import br.com.semear.domain.UsuarioPreferenciaNotificacao;
 import br.com.semear.domain.enumeration.StatusEvento;
 import br.com.semear.domain.enumeration.StatusEscalaPublicacao;
+import br.com.semear.repository.CultoOcorrenciaRepository;
 import br.com.semear.repository.CultoRegistroRepository;
 import br.com.semear.repository.EscalaItemRepository;
 import br.com.semear.repository.EscalaRepository;
@@ -34,6 +36,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -57,6 +60,7 @@ public class PushLembreteScheduler {
     private final NotificacaoProgramadaService notificacaoProgramadaService;
     private final UserRepository userRepository;
     private final CultoRegistroRepository cultoRegistroRepository;
+    private final CultoOcorrenciaRepository cultoOcorrenciaRepository;
 
     public PushLembreteScheduler(
         PushNotificationProperties pushProperties,
@@ -68,7 +72,8 @@ public class PushLembreteScheduler {
         UsuarioPreferenciaNotificacaoRepository preferenciaRepository,
         NotificacaoProgramadaService notificacaoProgramadaService,
         UserRepository userRepository,
-        CultoRegistroRepository cultoRegistroRepository
+        CultoRegistroRepository cultoRegistroRepository,
+        CultoOcorrenciaRepository cultoOcorrenciaRepository
     ) {
         this.pushProperties = pushProperties;
         this.notificacaoEnvioService = notificacaoEnvioService;
@@ -80,6 +85,7 @@ public class PushLembreteScheduler {
         this.notificacaoProgramadaService = notificacaoProgramadaService;
         this.userRepository = userRepository;
         this.cultoRegistroRepository = cultoRegistroRepository;
+        this.cultoOcorrenciaRepository = cultoOcorrenciaRepository;
     }
 
     /** Lembretes configurados por evento — a cada hora (independente do flag push). */
@@ -367,6 +373,11 @@ public class PushLembreteScheduler {
                 }
                 for (LocalDate data : List.of(hoje, amanha)) {
                     if (!CultoRecorrenciaUtils.cultoOcorreNaData(culto, data)) {
+                        continue;
+                    }
+                    Optional<CultoOcorrencia> ocOpt =
+                        cultoOcorrenciaRepository.findByCultoRegistroIdAndDataEvento(culto.getId(), data);
+                    if (ocOpt.isPresent() && Boolean.TRUE.equals(ocOpt.get().getCancelado())) {
                         continue;
                     }
                     LocalTime horario = CultoLembreteUtils.parseHorario(culto.getHorario());

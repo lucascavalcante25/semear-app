@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  Ban,
   BookOpen,
   Church,
   Edit,
@@ -26,6 +27,7 @@ import {
   Loader2,
   Mic2,
   Music,
+  RotateCcw,
   Sparkles,
   User,
   Users,
@@ -42,6 +44,8 @@ import {
   DialogTitle,
   dialogContentSizeWide,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { VisualizadorLetraLouvor } from "@/components/louvores/VisualizadorLetraLouvor";
 import { VisualizadorCifraOnlineLouvor } from "@/components/louvores/VisualizadorCifraOnlineLouvor";
@@ -97,6 +101,8 @@ type Props = {
   onFechar: () => void;
   podeEditar: boolean;
   onEditar: () => void;
+  onCancelar?: (motivo: string) => Promise<void>;
+  onReativar?: () => Promise<void>;
   onReordenarLouvores?: (louvores: CultoLouvorItemDTO[]) => Promise<void>;
   destacandoProximo?: boolean;
 };
@@ -208,6 +214,8 @@ export function ModalResumoCulto({
   onFechar,
   podeEditar,
   onEditar,
+  onCancelar,
+  onReativar,
   onReordenarLouvores,
   destacandoProximo,
 }: Props) {
@@ -215,6 +223,9 @@ export function ModalResumoCulto({
   const [salvandoOrdem, setSalvandoOrdem] = useState(false);
   const [louvorLetra, setLouvorLetra] = useState<LouvorApp | null>(null);
   const [louvorCifra, setLouvorCifra] = useState<LouvorApp | null>(null);
+  const [dialogCancelar, setDialogCancelar] = useState(false);
+  const [motivoCancelamento, setMotivoCancelamento] = useState("");
+  const [salvandoStatus, setSalvandoStatus] = useState(false);
 
   useEffect(() => {
     if (!item) {
@@ -222,7 +233,33 @@ export function ModalResumoCulto({
       return;
     }
     setLouvores([...(item.louvores ?? [])].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0)));
+    setDialogCancelar(false);
+    setMotivoCancelamento("");
   }, [item]);
+
+  const confirmarCancelamento = async () => {
+    if (!onCancelar) return;
+    const motivo = motivoCancelamento.trim();
+    if (motivo.length < 3) return;
+    setSalvandoStatus(true);
+    try {
+      await onCancelar(motivo);
+      setDialogCancelar(false);
+      setMotivoCancelamento("");
+    } finally {
+      setSalvandoStatus(false);
+    }
+  };
+
+  const confirmarReativacao = async () => {
+    if (!onReativar) return;
+    setSalvandoStatus(true);
+    try {
+      await onReativar();
+    } finally {
+      setSalvandoStatus(false);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -273,15 +310,26 @@ export function ModalResumoCulto({
             "[&>button]:text-white [&>button]:opacity-90 [&>button]:hover:opacity-100 [&>button]:hover:bg-white/10 [&>button]:right-3 [&>button]:top-3",
           )}
         >
-          <div className="relative overflow-hidden rounded-t-lg bg-gradient-to-br from-olive/90 via-olive to-olive/80 text-white px-3.5 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4">
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-t-lg text-white px-3.5 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4",
+              item.cancelado
+                ? "bg-gradient-to-br from-stone-500 via-stone-600 to-stone-700"
+                : "bg-gradient-to-br from-olive/90 via-olive to-olive/80",
+            )}
+          >
             <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -left-6 bottom-0 h-24 w-24 rounded-full bg-black/10 blur-xl" />
             <DialogHeader className="relative space-y-1 text-left pr-8">
               <div className="flex flex-wrap items-center gap-1.5">
                 <Church className="h-4 w-4 shrink-0 opacity-90" />
-                {destacandoProximo && (
+                {item.cancelado ? (
+                  <Badge className="bg-red-500 text-white hover:bg-red-500 text-[10px] px-1.5 py-0">
+                    Cancelado
+                  </Badge>
+                ) : destacandoProximo ? (
                   <Badge className="bg-white text-olive hover:bg-white/90 text-[10px] px-1.5 py-0">Próximo</Badge>
-                )}
+                ) : null}
                 <Badge variant="secondary" className="bg-white/15 text-white border-0 text-[10px] px-1.5 py-0">
                   {item.tipo === "EXTRAORDINARIO" ? "Extraordinário" : "Recorrente"}
                 </Badge>
@@ -291,7 +339,12 @@ export function ModalResumoCulto({
                   </Badge>
                 )}
               </div>
-              <DialogTitle className="text-lg sm:text-xl font-bold leading-tight text-white">
+              <DialogTitle
+                className={cn(
+                  "text-lg sm:text-xl font-bold leading-tight text-white",
+                  item.cancelado && "line-through decoration-white/50",
+                )}
+              >
                 {item.nome}
               </DialogTitle>
               <DialogDescription className="text-white/85 text-xs sm:text-sm">
@@ -301,6 +354,17 @@ export function ModalResumoCulto({
           </div>
 
           <div className="space-y-3 px-3.5 py-3 sm:px-5 sm:py-4">
+            {item.cancelado && (
+              <section className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 space-y-1 dark:border-red-900/40 dark:bg-red-950/30">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-400">
+                  <Ban className="h-3.5 w-3.5" />
+                  Culto cancelado
+                </div>
+                <p className="text-sm text-foreground/90 whitespace-pre-wrap">
+                  {item.motivoCancelamento?.trim() || "Sem motivo informado."}
+                </p>
+              </section>
+            )}
             <section className="rounded-xl border bg-muted/20 px-3 py-2.5 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <Sparkles className="h-3.5 w-3.5 text-olive" />
@@ -430,11 +494,38 @@ export function ModalResumoCulto({
             </section>
           </div>
 
-          <DialogFooter className="border-t px-3.5 py-2.5 sm:px-5 gap-2 flex-col-reverse sm:flex-row">
+          <DialogFooter className="border-t px-3.5 py-2.5 sm:px-5 gap-2 flex-col-reverse sm:flex-row sm:flex-wrap sm:justify-end">
             <Button type="button" variant="outline" className="w-full sm:w-auto h-10 touch-manipulation" onClick={onFechar}>
               Fechar
             </Button>
-            {podeEditar && (
+            {podeEditar && item.cancelado && onReativar && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full sm:w-auto h-10 touch-manipulation"
+                disabled={salvandoStatus}
+                onClick={() => void confirmarReativacao()}
+              >
+                {salvandoStatus ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                )}
+                Reativar culto
+              </Button>
+            )}
+            {podeEditar && !item.cancelado && onCancelar && (
+              <Button
+                type="button"
+                variant="destructive"
+                className="w-full sm:w-auto h-10 touch-manipulation"
+                onClick={() => setDialogCancelar(true)}
+              >
+                <Ban className="h-4 w-4 mr-2" />
+                Cancelar culto
+              </Button>
+            )}
+            {podeEditar && !item.cancelado && (
               <Button
                 type="button"
                 className="w-full sm:w-auto h-10 touch-manipulation"
@@ -444,6 +535,49 @@ export function ModalResumoCulto({
                 Editar culto
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={dialogCancelar} onOpenChange={(o) => !o && !salvandoStatus && setDialogCancelar(false)}>
+        <DialogContent className="max-w-md w-[calc(100vw-1.5rem)]">
+          <DialogHeader>
+            <DialogTitle>Cancelar culto</DialogTitle>
+            <DialogDescription>
+              O culto permanece na agenda como cancelado. Toda a igreja receberá uma notificação com o motivo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-1">
+            <Label htmlFor="motivo-cancelamento-culto">Motivo do cancelamento</Label>
+            <Textarea
+              id="motivo-cancelamento-culto"
+              value={motivoCancelamento}
+              onChange={(e) => setMotivoCancelamento(e.target.value)}
+              placeholder="Ex.: Manutenção no som da igreja"
+              rows={4}
+              maxLength={500}
+              disabled={salvandoStatus}
+            />
+            <p className="text-[11px] text-muted-foreground">Mínimo de 3 caracteres.</p>
+          </div>
+          <DialogFooter className="gap-2 flex-col-reverse sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={salvandoStatus}
+              onClick={() => setDialogCancelar(false)}
+            >
+              Voltar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={salvandoStatus || motivoCancelamento.trim().length < 3}
+              onClick={() => void confirmarCancelamento()}
+            >
+              {salvandoStatus ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Ban className="h-4 w-4 mr-2" />}
+              Confirmar cancelamento
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

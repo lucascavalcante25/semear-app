@@ -15,6 +15,7 @@ import {
   Loader2,
   Megaphone,
   Settings2,
+  Church,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
@@ -51,6 +52,7 @@ const ICONE_POR_TIPO: Record<string, React.ElementType> = {
   EVENTO_PUBLICACAO: CalendarDays,
   EVENTO_LEMBRETE_HOJE: CalendarDays,
   EVENTO_LEMBRETE_AMANHA: CalendarDays,
+  CULTO_CANCELADO: Church,
   DOCUMENTO_VENCENDO: FileWarning,
 };
 
@@ -58,6 +60,7 @@ const labelLinkNotificacao = (tipo: string) => {
   if (tipo.startsWith("EVENTO")) return "Ver eventos";
   if (tipo.startsWith("ESCALA")) return "Ver escalas";
   if (tipo === "COMUNICADO") return "Ver comunicados";
+  if (tipo === "CULTO_CANCELADO") return "Ver cultos";
   if (tipo === "DOCUMENTO_VENCENDO") return "Ver documentos";
   return "Ver detalhes";
 };

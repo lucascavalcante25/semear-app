@@ -226,7 +226,7 @@ export function DestaqueProximoCulto() {
       setCarregando(true);
       try {
         const agenda = await listarAgendaCultos();
-        const proximo = agenda?.proximos?.[0] ?? null;
+        const proximo = (agenda?.proximos ?? []).find((i) => !i.cancelado) ?? null;
         setCulto(proximo);
         setLouvores(
           proximo?.louvores

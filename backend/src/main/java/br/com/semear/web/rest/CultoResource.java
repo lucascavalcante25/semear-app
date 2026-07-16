@@ -6,6 +6,7 @@ import br.com.semear.service.EscalaAutomacaoService;
 import br.com.semear.service.ModuleAccessService;
 import br.com.semear.service.dto.CultoAgendaItemDTO;
 import br.com.semear.service.dto.CultoAgendaListaDTO;
+import br.com.semear.service.dto.CultoCancelarDTO;
 import br.com.semear.service.dto.CultoOcorrenciaSalvarDTO;
 import br.com.semear.service.dto.CultoRegistroDTO;
 import jakarta.annotation.security.RolesAllowed;
@@ -70,6 +71,20 @@ public class CultoResource {
     public ResponseEntity<CultoAgendaItemDTO> salvarAgenda(@Valid @RequestBody CultoOcorrenciaSalvarDTO body) {
         moduleAccessService.assertModuleAccess("cultos", NivelAcessoModulo.WRITE);
         return ResponseEntity.ok(cultoAgendaService.salvarOcorrencia(body));
+    }
+
+    @PostMapping("/agenda/cancelar")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    public ResponseEntity<CultoAgendaItemDTO> cancelar(@Valid @RequestBody CultoCancelarDTO body) {
+        moduleAccessService.assertModuleAccess("cultos", NivelAcessoModulo.WRITE);
+        return ResponseEntity.ok(cultoAgendaService.cancelarOcorrencia(body));
+    }
+
+    @PostMapping("/agenda/reativar")
+    @RolesAllowed({"ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA"})
+    public ResponseEntity<CultoAgendaItemDTO> reativar(@Valid @RequestBody CultoCancelarDTO body) {
+        moduleAccessService.assertModuleAccess("cultos", NivelAcessoModulo.WRITE);
+        return ResponseEntity.ok(cultoAgendaService.reativarOcorrencia(body));
     }
 
     @GetMapping("/grupos-louvor/{grupoId}/preview")

@@ -131,4 +131,5 @@
     <include file="config/liquibase/changelog/20260710000001_culto_ocorrencia.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260714000001_culto_frequencia.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260714000002_pre_cadastro_push_cultos.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260716000001_culto_ocorrencia_cancelamento.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>
