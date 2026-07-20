@@ -41,6 +41,7 @@ import br.com.semear.service.dto.NotificacaoPayloadDTO;
 import br.com.semear.service.dto.NotificacaoContagemDTO;
 import br.com.semear.service.dto.NotificacaoResumoDTO;
 import br.com.semear.service.util.EscalaNotificacaoUtils;
+import br.com.semear.service.util.EventoLembreteMensagens;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -322,11 +323,25 @@ public class NotificacaoService {
             if (TIPO_ESCALA.equals(notificacao.getTipo())) {
                 continue;
             }
+            String titulo = notificacao.getTitulo();
+            String mensagem = notificacao.getMensagem();
+            if (
+                EventoLembreteMensagens.ehTipoLembreteEvento(notificacao.getTipo()) &&
+                "EVENTO".equals(notificacao.getEntidadeTipo()) &&
+                notificacao.getEntidadeId() != null
+            ) {
+                var eventoOpt = eventoRepository.findById(notificacao.getEntidadeId());
+                if (eventoOpt.isPresent()) {
+                    EventoLembreteMensagens.TextoLembrete texto = EventoLembreteMensagens.montar(eventoOpt.get());
+                    titulo = texto.titulo();
+                    mensagem = texto.mensagem();
+                }
+            }
             itens.add(new NotificacaoItem(
                 notificacao.getTipo(),
                 notificacao.getId(),
-                notificacao.getTitulo(),
-                notificacao.getMensagem(),
+                titulo,
+                mensagem,
                 notificacao.getLink() != null ? notificacao.getLink() : "/eventos"
             ));
         }

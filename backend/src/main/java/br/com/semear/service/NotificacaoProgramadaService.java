@@ -6,10 +6,12 @@ import br.com.semear.domain.NotificacaoAgendamento;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.StatusEvento;
 import br.com.semear.domain.enumeration.StatusNotificacaoAgendamento;
+import br.com.semear.repository.EventoRepository;
 import br.com.semear.repository.NotificacaoAgendamentoRepository;
 import br.com.semear.service.dto.ConfigNotificacaoDTO;
 import br.com.semear.service.dto.NotificacaoPayloadDTO;
 import br.com.semear.service.util.ConfigNotificacaoJsonUtil;
+import br.com.semear.service.util.EventoLembreteMensagens;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,15 +44,18 @@ public class NotificacaoProgramadaService {
     private final NotificacaoAgendamentoRepository agendamentoRepository;
     private final NotificacaoAudienciaService audienciaService;
     private final NotificacaoEnvioService envioService;
+    private final EventoRepository eventoRepository;
 
     public NotificacaoProgramadaService(
         NotificacaoAgendamentoRepository agendamentoRepository,
         NotificacaoAudienciaService audienciaService,
-        NotificacaoEnvioService envioService
+        NotificacaoEnvioService envioService,
+        EventoRepository eventoRepository
     ) {
         this.agendamentoRepository = agendamentoRepository;
         this.audienciaService = audienciaService;
         this.envioService = envioService;
+        this.eventoRepository = eventoRepository;
     }
 
     public ConfigNotificacaoDTO lerConfig(String json) {
@@ -170,13 +175,28 @@ public class NotificacaoProgramadaService {
                     continue;
                 }
 
+                String titulo = ag.getTitulo();
+                String mensagem = ag.getMensagem();
+                if (
+                    "EVENTO".equals(ag.getEntidadeTipo()) &&
+                    ag.getEntidadeId() != null &&
+                    EventoLembreteMensagens.ehTipoLembreteEvento(ag.getTipoNotificacao())
+                ) {
+                    var eventoOpt = eventoRepository.findById(ag.getEntidadeId());
+                    if (eventoOpt.isPresent()) {
+                        EventoLembreteMensagens.TextoLembrete texto = EventoLembreteMensagens.montar(eventoOpt.get());
+                        titulo = texto.titulo();
+                        mensagem = texto.mensagem();
+                    }
+                }
+
                 NotificacaoPayloadDTO payload = new NotificacaoPayloadDTO();
                 payload.setIgrejaId(ag.getIgrejaId());
                 payload.setTipo(ag.getTipoNotificacao());
                 payload.setEntidadeTipo(ag.getEntidadeTipo());
                 payload.setEntidadeId(ag.getEntidadeId());
-                payload.setTitulo(ag.getTitulo());
-                payload.setMensagem(ag.getMensagem());
+                payload.setTitulo(titulo);
+                payload.setMensagem(mensagem);
                 payload.setRotaDestino(ag.getRotaDestino());
                 payload.setRegistrarDeduplicacao(true);
                 payload.setContextoDestinatarios("agendamento " + ag.getChaveUnica());
@@ -265,7 +285,15 @@ public class NotificacaoProgramadaService {
             }
 
             String titulo = diasAntes == 0 ? "Evento hoje" : diasAntes == 1 ? "Evento amanhã" : "Lembrete de evento";
-            String mensagem = montarMensagemLembrete(evento, diasAntes);
+            EventoLembreteMensagens.TextoLembrete texto = EventoLembreteMensagens.montar(evento);
+            String mensagem = texto.mensagem();
+            if (diasAntes == 0) {
+                titulo = "Evento hoje";
+            } else if (diasAntes == 1) {
+                titulo = "Evento amanhã";
+            } else {
+                titulo = texto.titulo();
+            }
             String chave = String.format(
                 "AGEND:EVENTO:%s:LEMBRETE:%s:%s",
                 evento.getId(),
@@ -350,19 +378,6 @@ public class NotificacaoProgramadaService {
             : "em breve";
         String local = evento.getLocal() != null && !evento.getLocal().isBlank() ? " — " + evento.getLocal() : "";
         return "\"" + evento.getTitulo() + "\" em " + quando + local + ".";
-    }
-
-    private String montarMensagemLembrete(Evento evento, int diasAntes) {
-        String hora = evento.getDataInicio() != null ? HORA_FMT.format(evento.getDataInicio().atZone(ZONE_BR)) : "";
-        if (diasAntes == 0) {
-            return "Hoje: \"" + evento.getTitulo() + "\" às " + hora + ".";
-        }
-        if (diasAntes == 1) {
-            return "Amanhã: \"" + evento.getTitulo() + "\" às " + hora + ".";
-        }
-        LocalDate dataEvento = evento.getDataInicio().atZone(ZONE_BR).toLocalDate();
-        long diasRestantes = ChronoUnit.DAYS.between(LocalDate.now(ZONE_BR), dataEvento);
-        return "Em " + diasRestantes + " dias: \"" + evento.getTitulo() + "\" (" + hora + ").";
     }
 
     private String linkEvento(Evento evento) {

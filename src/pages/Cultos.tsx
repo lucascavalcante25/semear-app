@@ -51,6 +51,7 @@ import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canWrite } from "@/auth/permissions";
 import { cn } from "@/lib/utils";
 import { ModalResumoCulto } from "@/components/cultos/ModalResumoCulto";
+import { ModalSelecionarLouvoresRepertorio } from "@/components/cultos/ModalSelecionarLouvoresRepertorio";
 import { listarDepartamentos, type DepartamentoDTO } from "@/modules/departamentos/api";
 import { listarGrupos, type GrupoLouvorApp } from "@/modules/grupos-louvor/api";
 import { listarMembros, type MembroApi } from "@/modules/members/api";
@@ -176,7 +177,7 @@ function SeletorMembro({
               <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[min(100vw-2rem,20rem)] p-0" align="start">
+          <PopoverContent className="z-[70] w-[min(100vw-2rem,20rem)] p-0" align="start">
             <Command>
               <CommandInput placeholder="Buscar por nome…" />
               <CommandList className="max-h-56">
@@ -255,7 +256,7 @@ export default function Cultos() {
   const [editGrupoId, setEditGrupoId] = useState<string>("");
   const [editResponsaveis, setEditResponsaveis] = useState<RespEdit[]>([]);
   const [responsaveisAlterados, setResponsaveisAlterados] = useState(false);
-  const [popoverLouvorAberto, setPopoverLouvorAberto] = useState(false);
+  const [modalRepertorioAberto, setModalRepertorioAberto] = useState(false);
 
   const deptosPortariaRecep = useMemo(
     () => departamentos.filter((d) => ehPortariaOuRecepcao(d.nome)),
@@ -439,22 +440,28 @@ export default function Cultos() {
     }
   };
 
-  const adicionarLouvorRepertorio = (louvor: LouvorApp) => {
-    if (!louvor.idNum) return;
-    if (editLouvores.some((l) => l.louvorId === louvor.idNum)) {
-      toast.error("Este louvor já está neste culto.");
+  const adicionarLouvoresRepertorio = (louvores: LouvorApp[]) => {
+    const novos = louvores.filter(
+      (l) => l.idNum != null && !editLouvores.some((e) => e.louvorId === l.idNum),
+    );
+    if (novos.length === 0) {
+      toast.error("Nenhum louvor novo para adicionar.");
       return;
     }
     setEditLouvores((prev) => [
       ...prev,
-      {
+      ...novos.map((louvor, i) => ({
         louvorId: louvor.idNum!,
         titulo: louvor.title,
         artista: louvor.artist,
-        ordem: prev.length,
-      },
+        ordem: prev.length + i,
+      })),
     ]);
-    setPopoverLouvorAberto(false);
+    toast.success(
+      novos.length === 1
+        ? "Louvor adicionado a este culto."
+        : `${novos.length} louvores adicionados a este culto.`,
+    );
   };
 
   const setResponsavelPapel = (papel: PapelCultoResponsavel, m: MembroApi | null) => {
@@ -798,10 +805,6 @@ export default function Cultos() {
       </div>
     );
   };
-
-  const louvoresDisponiveis = repertorio.filter(
-    (l) => l.idNum != null && !editLouvores.some((e) => e.louvorId === l.idNum),
-  );
 
   return (
     <LayoutApp>
@@ -1171,36 +1174,16 @@ export default function Cultos() {
                         <Music className="h-4 w-4" /> Louvores deste culto
                       </Label>
                       {podeEditar && podeLouvores && (
-                        <Popover open={popoverLouvorAberto} onOpenChange={setPopoverLouvorAberto}>
-                          <PopoverTrigger asChild>
-                            <Button type="button" variant="outline" size="sm" className="h-9 w-full sm:w-auto touch-manipulation">
-                              <Plus className="h-3.5 w-3.5 mr-1" />
-                              Do repertório
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[min(100vw-2rem,22rem)] p-0" align="end">
-                            <Command>
-                              <CommandInput placeholder="Buscar louvor…" />
-                              <CommandList className="max-h-56">
-                                <CommandEmpty>Nenhum louvor disponível.</CommandEmpty>
-                                <CommandGroup>
-                                  {louvoresDisponiveis.map((l) => (
-                                    <CommandItem
-                                      key={l.id}
-                                      value={`${l.title} ${l.artist}`}
-                                      onSelect={() => adicionarLouvorRepertorio(l)}
-                                    >
-                                      <div className="min-w-0">
-                                        <p className="truncate text-sm">{l.title}</p>
-                                        <p className="truncate text-xs text-muted-foreground">{l.artist}</p>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-9 w-full touch-manipulation sm:w-auto"
+                          onClick={() => setModalRepertorioAberto(true)}
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Do repertório
+                        </Button>
                       )}
                     </div>
                     {podeEditar && podeLouvores && (
@@ -1208,7 +1191,7 @@ export default function Cultos() {
                         <SelectTrigger>
                           <SelectValue placeholder="Puxar de um grupo de louvor" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[70]">
                           <SelectItem value="__none__">Sem grupo</SelectItem>
                           {grupos.map((g) => (
                             <SelectItem key={g.id} value={String(g.idNum)}>{g.name}</SelectItem>
@@ -1322,6 +1305,15 @@ export default function Cultos() {
             )}
           </DialogContent>
         </Dialog>
+
+        <ModalSelecionarLouvoresRepertorio
+          aberto={modalRepertorioAberto}
+          onFechar={() => setModalRepertorioAberto(false)}
+          louvores={repertorio}
+          idsJaNoCulto={editLouvores.map((l) => l.louvorId)}
+          carregando={carregandoAuxiliaresEdicao && !auxiliaresEdicaoProntos}
+          onConfirmar={adicionarLouvoresRepertorio}
+        />
       </div>
     </LayoutApp>
   );
