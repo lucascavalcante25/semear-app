@@ -103,6 +103,26 @@ export function abrirWhatsAppComTexto(texto: string): void {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
+/**
+ * Acorda a página de compartilhamento e o banner antes do WhatsApp buscar a prévia.
+ * O backend no Render pode estar "frio"; se demorar, o WhatsApp desiste da prévia OG.
+ */
+function aquecerPrevia(eventoId: number): void {
+  const link = linkCompartilharEvento(eventoId);
+  try {
+    void fetch(link, { mode: "no-cors", cache: "no-store" }).catch(() => {});
+    const api = URL_BASE_API?.replace(/\/$/, "") ?? "";
+    if (api) {
+      void fetch(`${api}/api/public/eventos/${eventoId}/banner`, {
+        mode: "no-cors",
+        cache: "no-store",
+      }).catch(() => {});
+    }
+  } catch {
+    // prévia é melhoria progressiva; o convite funciona sem ela
+  }
+}
+
 async function obterArquivoBanner(evento: EventoDTO): Promise<File | null> {
   const imagemAbsoluta = resolverUrlApi(evento.imagemUrl?.split("?")[0]);
   if (!imagemAbsoluta) return null;
@@ -297,8 +317,8 @@ async function copiarTexto(texto: string): Promise<boolean> {
 }
 
 /**
- * WhatsApp: abre direto o WhatsApp com o convite (a prévia OG do link mostra o banner).
- * Não usa o share sheet do sistema — o usuário já escolheu o WhatsApp ao clicar no botão.
+ * WhatsApp: abre direto o WhatsApp com o convite. A prévia OG do link mostra o banner
+ * em cima e o texto embaixo, na mesma mensagem.
  */
 export async function compartilharEventoWhatsApp(
   evento: EventoDTO,
@@ -307,6 +327,9 @@ export async function compartilharEventoWhatsApp(
   const texto = montarTextoCompartilhamentoEvento(evento, opcoes);
   if (!texto) throw new Error("Evento sem dados para compartilhar");
 
+  if (evento.id) {
+    aquecerPrevia(evento.id);
+  }
   abrirWhatsAppComTexto(texto);
   return "whatsapp";
 }

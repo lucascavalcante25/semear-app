@@ -3,8 +3,10 @@ package br.com.semear.web.rest;
 import br.com.semear.domain.Evento;
 import br.com.semear.domain.Igreja;
 import br.com.semear.domain.enumeration.StatusEvento;
+import br.com.semear.repository.EventoBannerRepository;
 import br.com.semear.repository.EventoRepository;
 import br.com.semear.service.EventoService;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -35,6 +37,7 @@ public class PublicEventoCompartilharResource {
 
     private final EventoRepository eventoRepository;
     private final EventoService eventoService;
+    private final EventoBannerRepository eventoBannerRepository;
     private final JHipsterProperties jHipsterProperties;
 
     /** URL pública da API (Render). Necessária quando a página é acessada via proxy da Vercel. */
@@ -44,10 +47,12 @@ public class PublicEventoCompartilharResource {
     public PublicEventoCompartilharResource(
         EventoRepository eventoRepository,
         EventoService eventoService,
+        EventoBannerRepository eventoBannerRepository,
         JHipsterProperties jHipsterProperties
     ) {
         this.eventoRepository = eventoRepository;
         this.eventoService = eventoService;
+        this.eventoBannerRepository = eventoBannerRepository;
         this.jHipsterProperties = jHipsterProperties;
     }
 
@@ -68,8 +73,11 @@ public class PublicEventoCompartilharResource {
 
         // Só marca banner se o arquivo existir de fato (evita og:image quebrado).
         boolean temBanner = eventoService.obterBanner(id).isPresent();
-        // Cache-bust ajuda o WhatsApp a atualizar a prévia após reenvio do banner.
-        String imagemUrl = temBanner ? apiBase + "/api/public/eventos/" + id + "/banner?v=" + System.currentTimeMillis() / 60_000 : "";
+        // Versão estável baseada na última atualização do banner: o WhatsApp reaproveita
+        // a prévia em cache e só rebusca quando o banner realmente muda.
+        Instant bannerAtualizadoEm = temBanner ? eventoBannerRepository.findAtualizadoEmByEventoId(id) : null;
+        long versaoBanner = bannerAtualizadoEm != null ? bannerAtualizadoEm.getEpochSecond() : 0;
+        String imagemUrl = temBanner ? apiBase + "/api/public/eventos/" + id + "/banner?v=" + versaoBanner : "";
 
         Igreja igreja = evento.getIgreja();
         String nomeIgreja = igreja != null
@@ -178,7 +186,7 @@ public class PublicEventoCompartilharResource {
             .body(html);
     }
 
-    /** Banner público para og:image (WhatsApp/crawlers). */
+    /** Banner público para og:image (WhatsApp/crawlers). URL versionada (?v=) permite cache longo. */
     @GetMapping("/{id}/banner")
     public ResponseEntity<byte[]> bannerPublico(@PathVariable Long id) {
         return eventoService
@@ -186,7 +194,7 @@ public class PublicEventoCompartilharResource {
             .map(banner ->
                 ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(banner.contentType()))
-                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=300, must-revalidate")
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
                     .body(banner.bytes())
             )
             .orElse(ResponseEntity.notFound().build());
