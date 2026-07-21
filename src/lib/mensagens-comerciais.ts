@@ -8,37 +8,43 @@ export type MensagensComerciais = {
 };
 
 export const MENSAGENS_PADRAO: MensagensComerciais = {
-  mensagemAbordagem: `Olá, pastor. Tudo bem?
+  mensagemAbordagem: `Olá, {nomePastor}. Tudo bem?
 
-Eu desenvolvi a plataforma Minha Igreja Digital para ajudar igrejas a organizar membros, visitantes, avisos, louvores, financeiro, devocionais e ofertas via PIX.
+Meu nome é Lucas, sou desenvolvedor de software.
 
-Ela funciona no computador e no celular, sem precisar instalar aplicativo.
+Tenho conversado com igrejas que buscam reunir em um só lugar informações que hoje ficam divididas entre planilhas, cadernos e grupos de WhatsApp. Foi pensando nisso que criei o Minha Igreja Digital.
 
-Estou liberando 7 dias grátis para algumas igrejas testarem.
+Ele ajuda a organizar membros, visitantes, escalas, eventos, avisos e o financeiro — no computador e no celular, sem instalar aplicativo.
 
-Posso te enviar uma demonstração?`,
-  mensagemPreco: `Pastor, o plano de lançamento do Minha Igreja Digital ficou assim:
+Seria inconveniente eu enviar uma demonstração rápida para o senhor conhecer, sem compromisso?`,
+  mensagemPreco: `{nomePastor}, com prazer. Antes dos números, um detalhe importante: o plano é completo, sem limite de membros no lançamento, e dá para testar 7 dias grátis antes de qualquer pagamento.
 
 ✅ Teste grátis por 7 dias
-✅ Plano mensal: R$ 57,00/mês
-✅ Plano anual à vista no PIX: R$ 570,00/ano (equivalente a 10 meses — 2 meses grátis)
-✅ Taxa de adesão promocional: R$ 200,00 (pagamento único na ativação)
+✅ Plano mensal: {valorMensal}/mês
+✅ Plano anual à vista no PIX: {valorAnual}/ano (equivale a 10 meses — 2 meses grátis)
+✅ Taxa de adesão promocional: R$ 200,00 (pagamento único, na ativação)
 
-No cartão, o anual pode ser parcelado em 12× de R$ 57,00 (mesmo valor do mensal).
+No cartão, o anual pode ser parcelado em 12× de {valorMensal} (mesmo valor do mensal).
 
-O sistema funciona no computador e no celular, sem precisar instalar aplicativo.`,
-  mensagemDemo: `Pastor, posso te mostrar uma demonstração rápida do Minha Igreja Digital?
+O que precisaria fazer parte do sistema para esse investimento fazer sentido para a igreja?`,
+  mensagemDemo: `{nomePastor}, imagino que a rotina aí seja corrida, então serei breve.
 
-Em poucos minutos eu consigo te mostrar como a igreja pode organizar membros, visitantes, financeiro, avisos, louvores, devocionais e ofertas via PIX em um único lugar.`,
-  mensagemFimTeste: `Olá, pastor. Tudo bem?
+Em uns 15 minutos eu consigo mostrar como a igreja pode organizar membros, visitantes, escalas, eventos, avisos e o financeiro em um único lugar — direto no celular.
 
-O teste grátis da sua igreja no Minha Igreja Digital está chegando ao fim.
+É sem compromisso nenhum. Seria inconveniente marcarmos um horário rápido nesta semana?`,
+  mensagemFimTeste: `Olá, {nomePastor}. Tudo bem?
 
-Para continuar usando a plataforma, podemos ativar sua assinatura:
+O teste grátis da {nomeIgreja} no Minha Igreja Digital está chegando ao fim.
 
-• Mensal: R$ 57,00/mês
-• Anual à vista no PIX: R$ 570,00 (2 meses grátis)
-• Anual no cartão: 12× de R$ 57,00`,
+Como foi a experiência da equipe até aqui? O que mais ajudou no dia a dia?
+
+Se fizer sentido continuar, a ativação fica assim:
+
+• Mensal: {valorMensal}/mês
+• Anual à vista no PIX: {valorAnual} (2 meses grátis)
+• Anual no cartão: 12× de {valorMensal}
+
+E se este não for um bom momento, sem problema — basta me avisar. Como o senhor prefere seguir?`,
 };
 
 export type PlaceholdersMensagem = {

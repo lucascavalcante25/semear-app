@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Atualiza as mensagens comerciais com abordagem consultiva:
+        rotulagem, perguntas calibradas e pergunta orientada ao "não",
+        mantendo os placeholders {nomePastor}, {nomeIgreja}, {valorMensal}, {valorAnual}.
+    -->
+    <changeSet id="20260721000001-1" author="semear">
+        <update tableName="plano">
+            <column name="mensagem_abordagem" value="Olá, {nomePastor}. Tudo bem?&#10;&#10;Meu nome é Lucas, sou desenvolvedor de software.&#10;&#10;Tenho conversado com igrejas que buscam reunir em um só lugar informações que hoje ficam divididas entre planilhas, cadernos e grupos de WhatsApp. Foi pensando nisso que criei o Minha Igreja Digital.&#10;&#10;Ele ajuda a organizar membros, visitantes, escalas, eventos, avisos e o financeiro — no computador e no celular, sem instalar aplicativo.&#10;&#10;Seria inconveniente eu enviar uma demonstração rápida para o senhor conhecer, sem compromisso?"/>
+            <column name="mensagem_preco" value="{nomePastor}, com prazer. Antes dos números, um detalhe importante: o plano é completo, sem limite de membros no lançamento, e dá para testar 7 dias grátis antes de qualquer pagamento.&#10;&#10;✅ Teste grátis por 7 dias&#10;✅ Plano mensal: {valorMensal}/mês&#10;✅ Plano anual à vista no PIX: {valorAnual}/ano (equivale a 10 meses — 2 meses grátis)&#10;✅ Taxa de adesão promocional: R$ 200,00 (pagamento único, na ativação)&#10;&#10;No cartão, o anual pode ser parcelado em 12× de {valorMensal} (mesmo valor do mensal).&#10;&#10;O que precisaria fazer parte do sistema para esse investimento fazer sentido para a igreja?"/>
+            <column name="mensagem_demo" value="{nomePastor}, imagino que a rotina aí seja corrida, então serei breve.&#10;&#10;Em uns 15 minutos eu consigo mostrar como a igreja pode organizar membros, visitantes, escalas, eventos, avisos e o financeiro em um único lugar — direto no celular.&#10;&#10;É sem compromisso nenhum. Seria inconveniente marcarmos um horário rápido nesta semana?"/>
+            <column name="mensagem_fim_teste" value="Olá, {nomePastor}. Tudo bem?&#10;&#10;O teste grátis da {nomeIgreja} no Minha Igreja Digital está chegando ao fim.&#10;&#10;Como foi a experiência da equipe até aqui? O que mais ajudou no dia a dia?&#10;&#10;Se fizer sentido continuar, a ativação fica assim:&#10;&#10;• Mensal: {valorMensal}/mês&#10;• Anual à vista no PIX: {valorAnual} (2 meses grátis)&#10;• Anual no cartão: 12× de {valorMensal}&#10;&#10;E se este não for um bom momento, sem problema — basta me avisar. Como o senhor prefere seguir?"/>
+            <where>id = 1</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

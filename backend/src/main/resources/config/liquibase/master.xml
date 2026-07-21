@@ -133,4 +133,5 @@
     <include file="config/liquibase/changelog/20260714000002_pre_cadastro_push_cultos.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260716000001_culto_ocorrencia_cancelamento.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260716000002_evento_banner_db.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260721000001_mensagens_negociacao.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>
