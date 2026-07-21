@@ -25,12 +25,8 @@ export function BotoesCompartilharEvento({ evento, nomeIgreja, className }: Prop
   const noWhatsApp = async () => {
     setCarregando("whatsapp");
     try {
-      const modo = await compartilharEventoWhatsApp(evento, opcoes);
-      toast.success(
-        modo === "imagem"
-          ? "Escolha o WhatsApp para enviar."
-          : "Abrindo WhatsApp com o convite.",
-      );
+      await compartilharEventoWhatsApp(evento, opcoes);
+      toast.success("Abrindo WhatsApp com o convite.");
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       toast.error("Não foi possível compartilhar no WhatsApp.");

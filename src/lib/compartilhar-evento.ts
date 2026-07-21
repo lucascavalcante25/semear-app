@@ -297,32 +297,15 @@ async function copiarTexto(texto: string): Promise<boolean> {
 }
 
 /**
- * WhatsApp: no celular tenta imagem + texto; senão abre o WhatsApp com o convite.
+ * WhatsApp: abre direto o WhatsApp com o convite (a prévia OG do link mostra o banner).
+ * Não usa o share sheet do sistema — o usuário já escolheu o WhatsApp ao clicar no botão.
  */
 export async function compartilharEventoWhatsApp(
   evento: EventoDTO,
   opcoes?: { nomeIgreja?: string },
-): Promise<"imagem" | "whatsapp"> {
+): Promise<"whatsapp"> {
   const texto = montarTextoCompartilhamentoEvento(evento, opcoes);
   if (!texto) throw new Error("Evento sem dados para compartilhar");
-
-  // Preferência: só texto + prévia OG (mais limpo no WhatsApp).
-  // Se o dispositivo permitir, ainda oferece imagem+texto via share sheet.
-  const arquivo = await obterArquivoBanner(evento);
-  if (
-    arquivo &&
-    typeof navigator !== "undefined" &&
-    typeof navigator.share === "function" &&
-    typeof navigator.canShare === "function" &&
-    navigator.canShare({ files: [arquivo] })
-  ) {
-    try {
-      await navigator.share({ files: [arquivo], title: evento.titulo, text: texto });
-      return "imagem";
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") throw e;
-    }
-  }
 
   abrirWhatsAppComTexto(texto);
   return "whatsapp";
@@ -332,7 +315,7 @@ export async function compartilharEventoWhatsApp(
 export async function compartilharEvento(
   evento: EventoDTO,
   opcoes?: { nomeIgreja?: string },
-): Promise<"imagem" | "whatsapp"> {
+): Promise<"whatsapp"> {
   return compartilharEventoWhatsApp(evento, opcoes);
 }
 
