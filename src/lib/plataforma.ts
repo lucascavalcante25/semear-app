@@ -41,6 +41,8 @@ export const MARCA = {
     telefoneE164: "+5585999584674",
     email: "willtechsolutionsdev@gmail.com",
     whatsappUrl: "https://wa.me/5585999584674",
+    instagramUsuario: "minhaigrejadigit",
+    instagramUrl: "https://www.instagram.com/minhaigrejadigit",
   },
 } as const;
 

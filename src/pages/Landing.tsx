@@ -41,6 +41,7 @@ import {
   Heart,
   Mail,
   ImageIcon,
+  Instagram,
   MessageCircle,
   Phone,
   Megaphone,
@@ -910,9 +911,9 @@ export default function Landing() {
           <h2 className="text-2xl font-bold sm:text-3xl">Fale conosco</h2>
           <p className="mt-3 text-muted-foreground">
             Tire dúvidas sobre o {MARCA.nome}, planos ou teste grátis. A equipe {MARCA.empresa} responde por
-            WhatsApp, telefone ou e-mail.
+            WhatsApp, telefone, e-mail ou Instagram.
           </p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="text-left shadow-sm">
               <CardHeader className="pb-2">
                 <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -952,7 +953,7 @@ export default function Landing() {
                 <p className="mt-1 text-xs text-muted-foreground">Toque para abrir a conversa</p>
               </CardContent>
             </Card>
-            <Card className="text-left shadow-sm sm:col-span-1">
+            <Card className="text-left shadow-sm">
               <CardHeader className="pb-2">
                 <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Mail className="h-5 w-5 text-primary" />
@@ -966,6 +967,26 @@ export default function Landing() {
                 >
                   {MARCA.contato.email}
                 </a>
+              </CardContent>
+            </Card>
+            <Card className="text-left shadow-sm">
+              <CardHeader className="pb-2">
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Instagram className="h-5 w-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">Instagram</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <a
+                  href={MARCA.contato.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-primary hover:underline"
+                  aria-label={`Abrir Instagram: @${MARCA.contato.instagramUsuario}`}
+                >
+                  @{MARCA.contato.instagramUsuario}
+                </a>
+                <p className="mt-1 text-xs text-muted-foreground">Novidades da plataforma</p>
               </CardContent>
             </Card>
           </div>
@@ -1032,6 +1053,15 @@ export default function Landing() {
             {" · "}
             <a href={`mailto:${MARCA.contato.email}`} className="hover:text-foreground hover:underline">
               {MARCA.contato.email}
+            </a>
+            {" · "}
+            <a
+              href={MARCA.contato.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground hover:underline"
+            >
+              @{MARCA.contato.instagramUsuario}
             </a>
           </p>
         </div>
