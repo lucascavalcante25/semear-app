@@ -31,6 +31,7 @@ import {
 import {
   CalendarDays,
   ArrowRight,
+  Bell,
   BookOpen,
   CheckCircle2,
   Church,
@@ -58,7 +59,7 @@ const HERO_SLIDES = [
     destaque: "Minha Igreja Digital",
     titulo: "Sua igreja organizada em um só lugar",
     subtitulo:
-      "Membros, visitantes, escalas de portaria e limpeza, eventos com inscrições, informativos, oração, documentos, louvores, financeiro e PIX — no computador e no celular.",
+      "Membros, visitantes, cultos, escalas de portaria e limpeza, eventos com inscrições e divulgação no WhatsApp, informativos, oração, documentos, louvores, financeiro e PIX — no computador e no celular.",
     imagem: "/landing/dashboard.webp",
     imagemAlt: "Painel principal com visão geral da igreja",
   },
@@ -95,6 +96,14 @@ const HERO_SLIDES = [
     imagemAlt: "Escalas de portaria, recepção e limpeza organizadas por ciclo",
   },
   {
+    destaque: "Eventos com inscrições e divulgação",
+    titulo: "Divulgue eventos no WhatsApp e Instagram em um toque",
+    subtitulo:
+      "Crie o evento com banner, abra inscrições com controle de vagas e compartilhe o convite pronto — com prévia da imagem no WhatsApp e arte vertical para Stories.",
+    imagem: "/landing/dashboard.webp",
+    imagemAlt: "Evento com inscrições e botões de compartilhamento",
+  },
+  {
     destaque: "Suporte dentro do próprio sistema",
     titulo: "Dúvidas, erros e sugestões com quem entende sua igreja",
     subtitulo:
@@ -129,7 +138,7 @@ const PILARES = [
 
 const DESTAQUES = [
   { valor: "7", label: "dias de teste grátis" },
-  { valor: "15+", label: "módulos integrados" },
+  { valor: "18", label: "módulos integrados" },
   { valor: "100%", label: "web — sem instalar app" },
   { valor: "Docs", label: "documentos da igreja" },
 ];
@@ -159,8 +168,14 @@ const MODULOS = [
   {
     titulo: "Eventos",
     descricao:
-      "Cadastre eventos com banner, inscrições e lembretes. Eventos públicos podem aparecer no site da igreja.",
+      "Banner, inscrições com controle de vagas, lista de inscritos com relatório em PDF, lembretes automáticos e compartilhamento direto no WhatsApp e Instagram.",
     icon: Sparkles,
+  },
+  {
+    titulo: "Cultos",
+    descricao:
+      "Agenda de cultos recorrentes e extraordinários com pregador, mensagem, versículo, louvores do repertório e responsáveis de portaria, recepção e limpeza.",
+    icon: Church,
   },
   {
     titulo: "Pedidos de Oração",
@@ -181,8 +196,15 @@ const MODULOS = [
   },
   {
     titulo: "Louvores",
-    descricao: "Organize repertório, grupos e escalas do ministério de louvor.",
+    descricao:
+      "Repertório com letra e cifra, grupos de louvor e músicas escolhidas culto a culto sem alterar o grupo original.",
     icon: Music,
+  },
+  {
+    titulo: "Notificações",
+    descricao:
+      "Push no celular e central de avisos: lembretes de eventos com contagem regressiva, escalas publicadas, leitura bíblica do dia e versículo diário.",
+    icon: Bell,
   },
   {
     titulo: "Devocionais",
@@ -237,6 +259,11 @@ const FAQ = [
     pergunta: "Como funcionam as escalas de portaria e limpeza?",
     resposta:
       "Você cadastra os cultos, configura portaria/recepção e limpeza em abas separadas, gera o sorteio em rascunho e publica quando estiver satisfeito. A limpeza pode ser mensal, semanal ou por culto. Voluntários veem as escalas no calendário do ciclo, confirmam presença pelo sistema e recebem avisos no login e na central de notificações.",
+  },
+  {
+    pergunta: "Como funcionam os eventos com inscrições?",
+    resposta:
+      "Você cria o evento com banner e define vagas e prazo. Os membros se inscrevem pelo app, a liderança acompanha a lista de inscritos e gera relatório em PDF. O sistema envia lembretes automáticos conforme o evento se aproxima, e o convite pode ser compartilhado direto no WhatsApp (com prévia da imagem) e no Instagram (arte pronta para Stories).",
   },
   {
     pergunta: "A igreja tem uma página pública na internet?",
