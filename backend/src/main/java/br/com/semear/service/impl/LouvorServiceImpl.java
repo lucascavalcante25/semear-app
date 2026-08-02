@@ -1,12 +1,15 @@
 package br.com.semear.service.impl;
 
 import br.com.semear.domain.Louvor;
+import br.com.semear.repository.CultoOcorrenciaLouvorRepository;
+import br.com.semear.repository.GrupoLouvorItemRepository;
 import br.com.semear.repository.LouvorRepository;
 import br.com.semear.repository.projection.LouvorListagemProjection;
 import br.com.semear.service.ArtistaLouvorService;
 import br.com.semear.service.LouvorService;
 import br.com.semear.service.TenantService;
 import br.com.semear.service.dto.LouvorDTO;
+import br.com.semear.web.rest.errors.BadRequestAlertException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -20,17 +23,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class LouvorServiceImpl implements LouvorService {
 
     private static final Logger log = LoggerFactory.getLogger(LouvorServiceImpl.class);
+    private static final String ENTITY = "louvor";
 
     private final LouvorRepository louvorRepository;
+    private final GrupoLouvorItemRepository grupoLouvorItemRepository;
+    private final CultoOcorrenciaLouvorRepository cultoOcorrenciaLouvorRepository;
     private final TenantService tenantService;
     private final ArtistaLouvorService artistaLouvorService;
 
     public LouvorServiceImpl(
         LouvorRepository louvorRepository,
+        GrupoLouvorItemRepository grupoLouvorItemRepository,
+        CultoOcorrenciaLouvorRepository cultoOcorrenciaLouvorRepository,
         TenantService tenantService,
         ArtistaLouvorService artistaLouvorService
     ) {
         this.louvorRepository = louvorRepository;
+        this.grupoLouvorItemRepository = grupoLouvorItemRepository;
+        this.cultoOcorrenciaLouvorRepository = cultoOcorrenciaLouvorRepository;
         this.tenantService = tenantService;
         this.artistaLouvorService = artistaLouvorService;
     }
@@ -174,6 +184,23 @@ public class LouvorServiceImpl implements LouvorService {
 
     @Override
     public void delete(Long id) {
-        louvorRepository.deleteById(id);
+        Louvor louvor = louvorRepository
+            .findById(id)
+            .orElseThrow(() -> new BadRequestAlertException("Louvor não encontrado", ENTITY, "naoencontrado"));
+        tenantService.validarMesmaIgreja(louvor.getIgreja());
+
+        long emGrupos = grupoLouvorItemRepository.countByLouvorId(id);
+        long emCultos = cultoOcorrenciaLouvorRepository.countByLouvorId(id);
+        log.info(
+            "Excluindo louvor {} (removendo vínculos: {} grupo(s), {} culto(s))",
+            id,
+            emGrupos,
+            emCultos
+        );
+
+        // Remove vínculos antes do delete para evitar violação de FK (grupo_louvor_item / culto_ocorrencia_louvor).
+        grupoLouvorItemRepository.deleteByLouvorId(id);
+        cultoOcorrenciaLouvorRepository.deleteByLouvorId(id);
+        louvorRepository.delete(louvor);
     }
 }

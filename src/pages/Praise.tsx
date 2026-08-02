@@ -792,7 +792,7 @@ export default function PaginaLouvores() {
       );
       setLouvorDetalhe((prev) => (prev?.louvor.idNum === idNumExcluido ? null : prev));
     } catch (e) {
-      toast.error("Erro ao excluir louvor.");
+      toast.error(e instanceof Error ? e.message : "Erro ao excluir louvor.");
     }
   };
 
@@ -1361,7 +1361,7 @@ export default function PaginaLouvores() {
             <AlertDialogHeader>
               <AlertDialogTitle>Excluir louvor</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja excluir &quot;{excluindo?.title}&quot;? Esta ação não pode ser desfeita.
+                Tem certeza que deseja excluir &quot;{excluindo?.title}&quot;? Se estiver em grupos ou cultos, esses vínculos serão removidos automaticamente.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

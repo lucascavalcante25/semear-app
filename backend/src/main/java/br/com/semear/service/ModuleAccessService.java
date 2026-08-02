@@ -151,12 +151,36 @@ public class ModuleAccessService {
 
     public void assertModuleAccess(String module, NivelAcessoModulo nivel) {
         if (!hasModuleAccess(module, nivel)) {
+            String rotulo = rotuloModulo(module);
+            String acao = nivel == NivelAcessoModulo.WRITE ? "editar" : "visualizar";
             throw new BadRequestAlertException(
-                "Acesso negado ao módulo " + module,
+                "Sem permissão para " + acao + " o módulo \"" + rotulo + "\". Peça ao administrador para liberar o acesso no cargo.",
                 ENTITY,
                 "acessonegado"
             );
         }
+    }
+
+    private static String rotuloModulo(String module) {
+        if (module == null) return "desconhecido";
+        return switch (module) {
+            case "louvores" -> "Louvores";
+            case "cultos" -> "Cultos";
+            case "escalas" -> "Escalas";
+            case "departamentos" -> "Departamentos";
+            case "membros" -> "Membros";
+            case "visitantes" -> "Visitantes";
+            case "comunicados" -> "Comunicados";
+            case "financeiro" -> "Financeiro";
+            case "oracao" -> "Oração";
+            case "eventos" -> "Eventos";
+            case "configuracoes" -> "Configurações";
+            case "aprovar-pre-cadastros" -> "Aprovar pré-cadastros";
+            case "devocionais" -> "Devocionais";
+            case "biblia" -> "Bíblia";
+            case "dashboard" -> "Dashboard";
+            default -> module;
+        };
     }
 
     private boolean temAcessoTotalPorRole(User user) {

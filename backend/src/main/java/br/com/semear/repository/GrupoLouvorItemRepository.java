@@ -19,4 +19,8 @@ public interface GrupoLouvorItemRepository extends JpaRepository<GrupoLouvorItem
     Optional<GrupoLouvorItem> findByGrupoIdAndLouvorId(Long grupoId, Long louvorId);
 
     void deleteByGrupoId(Long grupoId);
+
+    void deleteByLouvorId(Long louvorId);
+
+    long countByLouvorId(Long louvorId);
 }

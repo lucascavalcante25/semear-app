@@ -14,6 +14,10 @@ public interface CultoOcorrenciaLouvorRepository extends JpaRepository<CultoOcor
 
     void deleteByCultoOcorrenciaId(Long cultoOcorrenciaId);
 
+    void deleteByLouvorId(Long louvorId);
+
+    long countByLouvorId(Long louvorId);
+
     @Query(
         """
         SELECT col.cultoOcorrencia.id AS ocorrenciaId,

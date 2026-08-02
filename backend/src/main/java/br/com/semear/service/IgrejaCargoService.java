@@ -288,23 +288,32 @@ public class IgrejaCargoService {
         Map<String, CargoTemplate> templatesByCodigo = templatesPadrao()
             .stream()
             .collect(Collectors.toMap(CargoTemplate::codigo, t -> t));
+        Set<String> cargosLiderancaTotal = Set.of("ADMIN_IGREJA", "PASTOR", "COPASTOR");
         for (IgrejaCargo cargo : cargoRepository.findByIgrejaIdOrderByOrdemAscNomeAsc(igrejaId)) {
             if (!Boolean.TRUE.equals(cargo.getSistema())) continue;
             CargoTemplate template = templatesByCodigo.get(cargo.getCodigo());
             if (template == null) continue;
-            Set<String> existentes = cargo
+            Map<String, IgrejaCargoModulo> porModulo = cargo
                 .getModulos()
                 .stream()
-                .map(IgrejaCargoModulo::getModulo)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toMap(IgrejaCargoModulo::getModulo, m -> m, (a, b) -> a));
             boolean changed = false;
             for (ModuloPermissaoDTO mp : template.modulos()) {
-                if (!existentes.contains(mp.getModulo())) {
+                IgrejaCargoModulo existente = porModulo.get(mp.getModulo());
+                if (existente == null) {
                     IgrejaCargoModulo item = new IgrejaCargoModulo();
                     item.setCargo(cargo);
                     item.setModulo(mp.getModulo());
                     item.setNivel(mp.getNivel());
                     cargo.getModulos().add(item);
+                    changed = true;
+                } else if (
+                    cargosLiderancaTotal.contains(cargo.getCodigo()) &&
+                    mp.getNivel() == NivelAcessoModulo.WRITE &&
+                    existente.getNivel() != NivelAcessoModulo.WRITE
+                ) {
+                    // Pastor/co-pastor/admin da igreja devem manter WRITE nos módulos do template (ex.: cultos).
+                    existente.setNivel(NivelAcessoModulo.WRITE);
                     changed = true;
                 }
             }

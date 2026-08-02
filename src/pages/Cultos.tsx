@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import { canWrite } from "@/auth/permissions";
+import { canAccess, canWrite } from "@/auth/permissions";
 import { cn } from "@/lib/utils";
 import { ModalResumoCulto } from "@/components/cultos/ModalResumoCulto";
 import { ModalSelecionarLouvoresRepertorio } from "@/components/cultos/ModalSelecionarLouvoresRepertorio";
@@ -220,7 +220,9 @@ export default function Cultos() {
   const { user } = usarAutenticacao();
   const [searchParams, setSearchParams] = useSearchParams();
   const podeEditar = canWrite(user, "/cultos");
-  const podeLouvores = canWrite(user, "/louvores");
+  /** Para montar a lista do culto basta ler o repertório; a gravação exige WRITE em cultos. */
+  const podeVerLouvores = canAccess(user, "/louvores");
+  const podeMontarLouvoresNoCulto = podeEditar && podeVerLouvores;
 
   const [aba, setAba] = useState("agenda");
   const [carregando, setCarregando] = useState(true);
@@ -349,7 +351,7 @@ export default function Cultos() {
             .then((m) => setMembros((m ?? []).filter((x) => x.activated !== false && x.idNum != null))),
         );
       }
-      if (podeLouvores) {
+      if (podeVerLouvores) {
         tasks.push(
           Promise.all([
             listarGrupos().catch(() => [] as GrupoLouvorApp[]),
@@ -365,7 +367,7 @@ export default function Cultos() {
     } finally {
       setCarregandoAuxiliaresEdicao(false);
     }
-  }, [auxiliaresEdicaoProntos, carregandoAuxiliaresEdicao, podeEditar, podeLouvores]);
+  }, [auxiliaresEdicaoProntos, carregandoAuxiliaresEdicao, podeEditar, podeVerLouvores]);
 
   useEffect(() => {
     if (detalhe) void garantirAuxiliaresEdicao();
@@ -1173,7 +1175,7 @@ export default function Cultos() {
                       <Label className="flex items-center gap-1">
                         <Music className="h-4 w-4" /> Louvores deste culto
                       </Label>
-                      {podeEditar && podeLouvores && (
+                      {podeMontarLouvoresNoCulto && (
                         <Button
                           type="button"
                           variant="outline"
@@ -1186,18 +1188,23 @@ export default function Cultos() {
                         </Button>
                       )}
                     </div>
-                    {podeEditar && podeLouvores && (
+                    {podeMontarLouvoresNoCulto && (
                       <Select value={editGrupoId || "__none__"} onValueChange={(v) => void puxarGrupo(v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Puxar de um grupo de louvor" />
                         </SelectTrigger>
-                        <SelectContent className="z-[70]">
+                        <SelectContent>
                           <SelectItem value="__none__">Sem grupo</SelectItem>
                           {grupos.map((g) => (
                             <SelectItem key={g.id} value={String(g.idNum)}>{g.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                    )}
+                    {podeEditar && !podeVerLouvores && (
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        Seu cargo pode editar o culto, mas não tem acesso ao módulo Louvores para montar a lista. Peça liberação de leitura em Louvores.
+                      </p>
                     )}
                     {editLouvores.length === 0 ? (
                       <p className="text-sm text-muted-foreground">Nenhum louvor definido para este culto.</p>

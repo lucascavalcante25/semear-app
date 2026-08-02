@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -197,11 +198,19 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private String getCustomizedTitle(Throwable err) {
-        if (err instanceof MethodArgumentNotValidException) return "Method argument not valid";
+        if (err instanceof MethodArgumentNotValidException) return "Dados inválidos";
+        if (err instanceof DataIntegrityViolationException) {
+            return mensagemIntegridade((DataIntegrityViolationException) err);
+        }
+        if (err instanceof AccessDeniedException) return "Acesso negado";
+        if (err instanceof BadCredentialsException) return "Credenciais inválidas";
         return null;
     }
 
     private String getCustomizedErrorDetails(Throwable err) {
+        if (err instanceof DataIntegrityViolationException div) {
+            return mensagemIntegridade(div);
+        }
         Collection<String> activeProfiles = Arrays.asList(env.getActiveProfiles());
         if (activeProfiles.contains(JHipsterConstants.SPRING_PROFILE_PRODUCTION)) {
             if (err instanceof HttpMessageConversionException) return "Unable to convert http message";
@@ -211,11 +220,33 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         return err.getCause() != null ? err.getCause().getMessage() : err.getMessage();
     }
 
+    private String mensagemIntegridade(DataIntegrityViolationException err) {
+        String raw = Optional.ofNullable(err.getMostSpecificCause()).map(Throwable::getMessage).orElse(err.getMessage());
+        if (raw == null) {
+            return "Operação não permitida: há dados relacionados que impedem esta ação.";
+        }
+        String lower = raw.toLowerCase();
+        if (lower.contains("fk_grupo_louvor_item_louvor") || lower.contains("grupo_louvor_item")) {
+            return "Não é possível excluir este louvor porque ele ainda está em um ou mais grupos de louvor. Remova-o dos grupos ou tente novamente.";
+        }
+        if (lower.contains("fk_culto_ocorrencia_louvor") || lower.contains("culto_ocorrencia_louvor")) {
+            return "Não é possível excluir este louvor porque ele está vinculado a um ou mais cultos. Remova-o dos cultos ou tente novamente.";
+        }
+        if (lower.contains("foreign key") || lower.contains("violates foreign key") || lower.contains("23503")) {
+            return "Não é possível concluir a exclusão: este registro ainda está sendo usado em outra parte do sistema.";
+        }
+        if (lower.contains("unique") || lower.contains("duplicate") || lower.contains("23505")) {
+            return "Já existe um registro com os mesmos dados. Verifique e tente novamente.";
+        }
+        return "Operação não permitida: há dados relacionados que impedem esta ação.";
+    }
+
     private HttpStatus getMappedStatus(Throwable err) {
         // Where we disagree with Spring defaults
         if (err instanceof AccessDeniedException) return HttpStatus.FORBIDDEN;
         if (err instanceof ConcurrencyFailureException) return HttpStatus.CONFLICT;
         if (err instanceof BadCredentialsException) return HttpStatus.UNAUTHORIZED;
+        if (err instanceof DataIntegrityViolationException) return HttpStatus.CONFLICT;
         return null;
     }
 
