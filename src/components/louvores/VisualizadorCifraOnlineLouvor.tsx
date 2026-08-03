@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { textoCifraParaExibicao } from "@/lib/cifra-linhas";
+import { estimarColunasMonospace, textoCifraQuebradaParaExibicao } from "@/lib/cifra-linhas";
 import {
   obterCifraOnlineLouvor,
   salvarCifraManualLouvor,
@@ -42,6 +42,8 @@ export function VisualizadorCifraOnlineLouvor({
   const [doCache, setDoCache] = useState(false);
   const [escala, setEscala] = useState(ESCALA_PADRAO);
   const [modoEdicao, setModoEdicao] = useState(false);
+  const [larguraUtil, setLarguraUtil] = useState(0);
+  const areaCifraRef = useRef<HTMLPreElement | null>(null);
 
   const carregar = useCallback(async () => {
     if (!louvor?.idNum) return;
@@ -76,6 +78,7 @@ export function VisualizadorCifraOnlineLouvor({
       setErro(null);
       setEscala(ESCALA_PADRAO);
       setModoEdicao(false);
+      setLarguraUtil(0);
       return;
     }
 
@@ -130,6 +133,21 @@ export function VisualizadorCifraOnlineLouvor({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [aberto, onFechar, modoEdicao]);
 
+  useEffect(() => {
+    if (!aberto || modoEdicao || carregando || erro || linhas.length === 0) return;
+    const el = areaCifraRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const atualizar = () => {
+      const w = el.clientWidth;
+      if (w > 0) setLarguraUtil(w);
+    };
+    atualizar();
+    const observer = new ResizeObserver(atualizar);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [aberto, modoEdicao, carregando, erro, linhas.length, escala]);
+
   const abrirEdicao = (conteudoInicial = "") => {
     setTextoEdicao(conteudoInicial || linhas.join("\n"));
     setModoEdicao(true);
@@ -161,8 +179,11 @@ export function VisualizadorCifraOnlineLouvor({
 
   if (!aberto || !louvor) return null;
 
-  const textoExibicao = textoCifraParaExibicao(linhas);
   const tamanhoFonte = Math.round(15 * escala);
+  const maxCols =
+    larguraUtil > 0 ? estimarColunasMonospace(larguraUtil, tamanhoFonte) : 48;
+  const textoExibicao =
+    linhas.length > 0 ? textoCifraQuebradaParaExibicao(linhas, maxCols) : "";
 
   return createPortal(
     <div
@@ -297,7 +318,7 @@ export function VisualizadorCifraOnlineLouvor({
           </div>
         )}
 
-        {!modoEdicao && !carregando && !erro && textoExibicao.length > 0 && (
+        {!modoEdicao && !carregando && !erro && linhas.length > 0 && (
           <article
             className={cn(
               "mx-auto max-w-2xl rounded-lg bg-[#fffef8] px-4 py-5 text-zinc-900 shadow-2xl shadow-black/40",
@@ -305,10 +326,11 @@ export function VisualizadorCifraOnlineLouvor({
             )}
           >
             <pre
-              className="overflow-x-auto whitespace-pre font-mono leading-relaxed text-zinc-900"
+              ref={areaCifraRef}
+              className="w-full max-w-full overflow-x-auto font-mono leading-relaxed text-zinc-900 whitespace-pre"
               style={{ fontSize: `${tamanhoFonte}px`, tabSize: 4 }}
             >
-              {textoExibicao}
+              {textoExibicao || " "}
             </pre>
             {url && fonte !== "manual" && (
               <p className="mt-6 text-center text-xs text-zinc-500">
