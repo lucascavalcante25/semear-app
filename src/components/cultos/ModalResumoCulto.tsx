@@ -237,6 +237,17 @@ export function ModalResumoCulto({
     setMotivoCancelamento("");
   }, [item]);
 
+  // Fecha letra/cifra ao fechar o culto — senão o estado persiste e a cifra
+  // reabre sozinha na próxima abertura do modal.
+  useEffect(() => {
+    if (!aberto || !item) {
+      setLouvorLetra(null);
+      setLouvorCifra(null);
+      setDialogCancelar(false);
+      setMotivoCancelamento("");
+    }
+  }, [aberto, item]);
+
   const confirmarCancelamento = async () => {
     if (!onCancelar) return;
     const motivo = motivoCancelamento.trim();
@@ -298,17 +309,43 @@ export function ModalResumoCulto({
     }
   };
 
-  if (!item) return null;
+  const visualizadorAberto = Boolean(louvorLetra || louvorCifra);
+
+  if (!item) {
+    // Mantém os visualizadores montados só o suficiente para limpar overlays;
+    // o estado já é zerado pelo effect acima.
+    return null;
+  }
 
   return (
     <>
-      <Dialog open={aberto} onOpenChange={(o) => !o && onFechar()}>
+      <Dialog
+        open={aberto}
+        // Com letra/cifra aberta, libera o trap do Radix (pointer/scroll) para o portal.
+        modal={!visualizadorAberto}
+        onOpenChange={(o) => {
+          if (!o) {
+            if (visualizadorAberto) {
+              setLouvorLetra(null);
+              setLouvorCifra(null);
+              return;
+            }
+            onFechar();
+          }
+        }}
+      >
         <DialogContent
           className={cn(
             dialogContentSizeWide,
             "max-h-[92dvh] overflow-y-auto w-[calc(100vw-1.25rem)] p-0 gap-0",
             "[&>button]:text-white [&>button]:opacity-90 [&>button]:hover:opacity-100 [&>button]:hover:bg-white/10 [&>button]:right-3 [&>button]:top-3",
           )}
+          onPointerDownOutside={(e) => {
+            if (visualizadorAberto) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (visualizadorAberto) e.preventDefault();
+          }}
         >
           <div
             className={cn(
@@ -466,7 +503,13 @@ export function ModalResumoCulto({
                   Nenhum louvor definido para este culto.
                 </p>
               ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void aoFimDrag(e)}>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(e) => void aoFimDrag(e)}
+                  // Evita o dnd-kit capturar toques enquanto letra/cifra está aberta.
+                  {...(visualizadorAberto ? { autoScroll: false } : {})}
+                >
                   <SortableContext
                     items={louvores.map((l) => String(l.louvorId))}
                     strategy={rectSortingStrategy}
@@ -477,7 +520,7 @@ export function ModalResumoCulto({
                           key={l.louvorId}
                           item={l}
                           indice={i}
-                          podeArrastar={podeArrastar}
+                          podeArrastar={podeArrastar && !visualizadorAberto}
                           onVerLetra={() => setLouvorLetra(louvorAppDoItem(l))}
                           onVerCifra={() => setLouvorCifra(louvorAppDoItem(l))}
                         />

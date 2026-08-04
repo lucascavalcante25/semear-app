@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,13 +35,17 @@ export function VisualizadorLetraLouvor({
   const [doCache, setDoCache] = useState(false);
   const [escala, setEscala] = useState(ESCALA_PADRAO);
   const [modoEdicao, setModoEdicao] = useState(false);
+  const onCacheAtualizadoRef = useRef(onCacheAtualizado);
+  onCacheAtualizadoRef.current = onCacheAtualizado;
+  const pedidoRef = useRef(0);
 
-  const carregar = useCallback(async () => {
-    if (!louvor?.idNum) return;
+  const carregar = useCallback(async (louvorId: number) => {
+    const pedido = ++pedidoRef.current;
     setCarregando(true);
     setErro(null);
     try {
-      const resposta = await obterLetraLouvor(louvor.idNum);
+      const resposta = await obterLetraLouvor(louvorId);
+      if (pedido !== pedidoRef.current) return;
       if (!resposta.disponivel || !resposta.texto?.trim()) {
         setErro(resposta.mensagem ?? "Letra não disponível.");
         setTexto("");
@@ -51,41 +55,50 @@ export function VisualizadorLetraLouvor({
       setFonte(resposta.fonte ?? null);
       setDoCache(resposta.doCache);
       if (!resposta.doCache) {
-        onCacheAtualizado?.();
+        onCacheAtualizadoRef.current?.();
       }
     } catch (e) {
+      if (pedido !== pedidoRef.current) return;
       setErro(e instanceof Error ? e.message : "Erro ao carregar letra.");
       setTexto("");
     } finally {
-      setCarregando(false);
+      if (pedido === pedidoRef.current) setCarregando(false);
     }
-  }, [louvor, onCacheAtualizado]);
+  }, []);
 
   useEffect(() => {
     if (!aberto) {
+      pedidoRef.current += 1;
       setTexto("");
       setTextoEdicao("");
       setFonte(null);
       setErro(null);
       setEscala(ESCALA_PADRAO);
       setModoEdicao(false);
+      setCarregando(false);
       return;
     }
 
+    const louvorId = louvor?.idNum;
+    if (!louvorId) return;
+
     const iniciar = async () => {
-      if (modoEdicaoInicial && louvor?.temLetraSalva && louvor.idNum) {
+      if (modoEdicaoInicial && louvor?.temLetraSalva) {
+        const pedido = ++pedidoRef.current;
         setCarregando(true);
         try {
-          const resposta = await obterLetraLouvor(louvor.idNum);
+          const resposta = await obterLetraLouvor(louvorId);
+          if (pedido !== pedidoRef.current) return;
           const conteudo = resposta.texto?.trim() ?? "";
           setTexto(conteudo);
           setTextoEdicao(conteudo);
           setFonte(resposta.fonte ?? null);
           setDoCache(resposta.doCache);
         } catch {
+          if (pedido !== pedidoRef.current) return;
           setTextoEdicao("");
         } finally {
-          setCarregando(false);
+          if (pedido === pedidoRef.current) setCarregando(false);
         }
         setModoEdicao(true);
         return;
@@ -98,7 +111,7 @@ export function VisualizadorLetraLouvor({
         return;
       }
 
-      void carregar();
+      void carregar(louvorId);
     };
 
     void iniciar();
@@ -108,8 +121,11 @@ export function VisualizadorLetraLouvor({
     if (!aberto) return;
     const anterior = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const peAnterior = document.body.style.pointerEvents;
+    document.body.style.pointerEvents = "";
     return () => {
       document.body.style.overflow = anterior;
+      document.body.style.pointerEvents = peAnterior;
     };
   }, [aberto]);
 
@@ -141,7 +157,7 @@ export function VisualizadorLetraLouvor({
       setDoCache(true);
       setModoEdicao(false);
       setErro(null);
-      onCacheAtualizado?.();
+      onCacheAtualizadoRef.current?.();
       toast.success("Letra salva.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar letra.");
@@ -169,7 +185,7 @@ export function VisualizadorLetraLouvor({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-zinc-950 text-zinc-100"
+      className="fixed inset-0 z-[100] flex flex-col bg-zinc-950 text-zinc-100 pointer-events-auto"
       role="dialog"
       aria-modal="true"
       aria-label={`Letra: ${louvor.title}`}
@@ -230,7 +246,10 @@ export function VisualizadorLetraLouvor({
         )}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-auto overscroll-contain touch-pan-y px-3 py-4 sm:px-8 sm:py-8">
+      <div
+        className="min-h-0 flex-1 overflow-auto overscroll-contain touch-pan-y px-3 py-4 sm:px-8 sm:py-8"
+        data-scroll-lock-scrollable=""
+      >
         {modoEdicao && carregando && (
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-zinc-400">
             <Loader2 className="h-8 w-8 animate-spin text-gold" />
@@ -287,7 +306,7 @@ export function VisualizadorLetraLouvor({
               <Button
                 variant="secondary"
                 className="bg-zinc-100 text-zinc-900 hover:bg-white"
-                onClick={() => void carregar()}
+                onClick={() => louvor.idNum && void carregar(louvor.idNum)}
               >
                 Tentar novamente
               </Button>

@@ -44,13 +44,17 @@ export function VisualizadorCifraOnlineLouvor({
   const [modoEdicao, setModoEdicao] = useState(false);
   const [larguraUtil, setLarguraUtil] = useState(0);
   const areaCifraRef = useRef<HTMLPreElement | null>(null);
+  const onCacheAtualizadoRef = useRef(onCacheAtualizado);
+  onCacheAtualizadoRef.current = onCacheAtualizado;
+  const pedidoRef = useRef(0);
 
-  const carregar = useCallback(async () => {
-    if (!louvor?.idNum) return;
+  const carregar = useCallback(async (louvorId: number) => {
+    const pedido = ++pedidoRef.current;
     setCarregando(true);
     setErro(null);
     try {
-      const resposta = await obterCifraOnlineLouvor(louvor.idNum);
+      const resposta = await obterCifraOnlineLouvor(louvorId);
+      if (pedido !== pedidoRef.current) return;
       if (!resposta.disponivel || !resposta.linhas?.length) {
         setErro(resposta.mensagem ?? "Cifra não disponível.");
         setLinhas([]);
@@ -61,32 +65,40 @@ export function VisualizadorCifraOnlineLouvor({
       setFonte(resposta.fonte ?? null);
       setDoCache(resposta.doCache);
       if (!resposta.doCache) {
-        onCacheAtualizado?.();
+        onCacheAtualizadoRef.current?.();
       }
     } catch (e) {
+      if (pedido !== pedidoRef.current) return;
       setErro(e instanceof Error ? e.message : "Erro ao carregar cifra.");
       setLinhas([]);
     } finally {
-      setCarregando(false);
+      if (pedido === pedidoRef.current) setCarregando(false);
     }
-  }, [louvor, onCacheAtualizado]);
+  }, []);
 
   useEffect(() => {
     if (!aberto) {
+      pedidoRef.current += 1;
       setLinhas([]);
       setTextoEdicao("");
       setErro(null);
       setEscala(ESCALA_PADRAO);
       setModoEdicao(false);
       setLarguraUtil(0);
+      setCarregando(false);
       return;
     }
 
+    const louvorId = louvor?.idNum;
+    if (!louvorId) return;
+
     const iniciar = async () => {
-      if (modoEdicaoInicial && louvor?.temCifraApiSalva && louvor.idNum) {
+      if (modoEdicaoInicial && louvor?.temCifraApiSalva) {
+        const pedido = ++pedidoRef.current;
         setCarregando(true);
         try {
-          const resposta = await obterCifraOnlineLouvor(louvor.idNum);
+          const resposta = await obterCifraOnlineLouvor(louvorId);
+          if (pedido !== pedidoRef.current) return;
           const conteudo = resposta.linhas?.join("\n") ?? "";
           setLinhas(resposta.linhas ?? []);
           setTextoEdicao(conteudo);
@@ -94,9 +106,10 @@ export function VisualizadorCifraOnlineLouvor({
           setFonte(resposta.fonte ?? null);
           setDoCache(resposta.doCache);
         } catch {
+          if (pedido !== pedidoRef.current) return;
           setTextoEdicao("");
         } finally {
-          setCarregando(false);
+          if (pedido === pedidoRef.current) setCarregando(false);
         }
         setModoEdicao(true);
         return;
@@ -109,7 +122,7 @@ export function VisualizadorCifraOnlineLouvor({
         return;
       }
 
-      void carregar();
+      void carregar(louvorId);
     };
 
     void iniciar();
@@ -119,8 +132,12 @@ export function VisualizadorCifraOnlineLouvor({
     if (!aberto) return;
     const anterior = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    // Garante que o portal do visualizador continue clicável mesmo com Dialog Radix aberto.
+    const peAnterior = document.body.style.pointerEvents;
+    document.body.style.pointerEvents = "";
     return () => {
       document.body.style.overflow = anterior;
+      document.body.style.pointerEvents = peAnterior;
     };
   }, [aberto]);
 
@@ -168,7 +185,7 @@ export function VisualizadorCifraOnlineLouvor({
       setDoCache(true);
       setModoEdicao(false);
       setErro(null);
-      onCacheAtualizado?.();
+      onCacheAtualizadoRef.current?.();
       toast.success("Cifra salva.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Erro ao salvar cifra.");
@@ -187,7 +204,7 @@ export function VisualizadorCifraOnlineLouvor({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-zinc-950 text-zinc-100"
+      className="fixed inset-0 z-[100] flex flex-col bg-zinc-950 text-zinc-100 pointer-events-auto"
       role="dialog"
       aria-modal="true"
       aria-label={`Cifra: ${louvor.title}`}
@@ -250,7 +267,10 @@ export function VisualizadorCifraOnlineLouvor({
         )}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-auto overscroll-contain touch-pan-y px-3 py-4 sm:px-6 sm:py-6">
+      <div
+        className="min-h-0 flex-1 overflow-auto overscroll-contain touch-pan-y px-3 py-4 sm:px-6 sm:py-6"
+        data-scroll-lock-scrollable=""
+      >
         {modoEdicao && carregando && (
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-zinc-400">
             <Loader2 className="h-8 w-8 animate-spin text-gold" />
@@ -307,7 +327,7 @@ export function VisualizadorCifraOnlineLouvor({
               <Button
                 variant="secondary"
                 className="bg-zinc-100 text-zinc-900 hover:bg-white"
-                onClick={() => void carregar()}
+                onClick={() => louvor.idNum && void carregar(louvor.idNum)}
               >
                 Tentar novamente
               </Button>
