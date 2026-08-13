@@ -1,9 +1,54 @@
 const PADRAO_CORDA_TAB = /^[EBGDA]\|/i;
 const PADRAO_PARTE_TAB = /^parte\s+\d+\s+de\s+\d+$/i;
 
-/** Token típico de acorde (C, Am7, F#m, Bb/D, Gsus4, N.C., etc.). */
+/** Token típico de acorde (C, Am7, F#m, Bb/D, Gsus4, E9, N.C.). Nota em maiúscula para não colorir "em"/"a". */
 const TOKEN_ACORDE =
-  /^(N\.?C\.?|%|[A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|º)?[0-9]*(?:\/[A-G](?:#|b)?)?)$/i;
+  /^(N\.?C\.?|%|[A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|º)?[0-9]*(?:\([^)]+\))?(?:\+|M)?(?:\/[A-G](?:#|b)?)?)$/;
+
+export function ehTokenAcorde(token: string): boolean {
+  const t = token.trim();
+  if (!t) return false;
+  return TOKEN_ACORDE.test(t) || t === "|" || t === "-" || t === "/";
+}
+
+export type SegmentoCifra = { texto: string; acorde: boolean };
+
+/** Separa a linha em espaços e tokens, marcando acordes (preserva alinhamento). */
+export function segmentarLinhaCifra(linha: string): SegmentoCifra[] {
+  if (!linha) return [{ texto: "", acorde: false }];
+  return linha.split(/(\s+)/).map((parte) => ({
+    texto: parte,
+    acorde: !/^\s*$/.test(parte) && TOKEN_ACORDE.test(parte),
+  }));
+}
+
+export function colorirAcordesNaLinha(linha: string): boolean {
+  if (!linha.trim() || ehMarcadorSecao(linha)) return false;
+  if (ehLinhaDeAcordes(linha)) return true;
+  const t = linha.trim();
+  if (t.startsWith("[") && t.includes("]")) {
+    const depois = t.slice(t.indexOf("]") + 1).trim();
+    return depois.split(/\s+/).some((tok) => TOKEN_ACORDE.test(tok));
+  }
+  return false;
+}
+
+export function agruparEstrofes(linhas: string[]): string[][] {
+  const estrofes: string[][] = [];
+  let atual: string[] = [];
+  for (const linha of linhas) {
+    if (linha.trim() === "") {
+      if (atual.length > 0) {
+        estrofes.push(atual);
+        atual = [];
+      }
+      continue;
+    }
+    atual.push(linha);
+  }
+  if (atual.length > 0) estrofes.push(atual);
+  return estrofes;
+}
 
 /** Linhas típicas de tablatura (E|, B|, etc.) ou marcadores "Parte N de M". */
 export function ehLinhaTablatura(linha: string): boolean {

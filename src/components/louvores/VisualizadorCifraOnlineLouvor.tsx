@@ -3,8 +3,8 @@ import { createPortal } from "react-dom";
 import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { estimarColunasMonospace, textoCifraQuebradaParaExibicao } from "@/lib/cifra-linhas";
+import { CifraEstiloCifraClub, COR_ACORDE_CIFRA } from "@/components/louvores/CifraEstiloCifraClub";
+import { estimarColunasMonospace, quebrarCifraParaLargura } from "@/lib/cifra-linhas";
 import {
   obterCifraOnlineLouvor,
   salvarCifraManualLouvor,
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 const ESCALA_MIN = 0.85;
 const ESCALA_MAX = 1.8;
-const ESCALA_PADRAO = 1.05;
+const ESCALA_PADRAO = 1;
 const PASSO = 0.1;
 
 type Props = {
@@ -43,7 +43,7 @@ export function VisualizadorCifraOnlineLouvor({
   const [escala, setEscala] = useState(ESCALA_PADRAO);
   const [modoEdicao, setModoEdicao] = useState(false);
   const [larguraUtil, setLarguraUtil] = useState(0);
-  const areaCifraRef = useRef<HTMLPreElement | null>(null);
+  const areaCifraRef = useRef<HTMLDivElement | null>(null);
   const onCacheAtualizadoRef = useRef(onCacheAtualizado);
   onCacheAtualizadoRef.current = onCacheAtualizado;
   const pedidoRef = useRef(0);
@@ -132,7 +132,6 @@ export function VisualizadorCifraOnlineLouvor({
     if (!aberto) return;
     const anterior = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    // Garante que o portal do visualizador continue clicável mesmo com Dialog Radix aberto.
     const peAnterior = document.body.style.pointerEvents;
     document.body.style.pointerEvents = "";
     return () => {
@@ -196,25 +195,31 @@ export function VisualizadorCifraOnlineLouvor({
 
   if (!aberto || !louvor) return null;
 
-  const tamanhoFonte = Math.round(15 * escala);
+  const tablet = larguraUtil >= 700 || (typeof window !== "undefined" && window.innerWidth >= 768);
+  const duasColunas = tablet && larguraUtil >= 900;
+  const tamanhoBase = tablet ? 17 : 15;
+  const tamanhoFonte = Math.round(tamanhoBase * escala);
   const maxCols =
-    larguraUtil > 0 ? estimarColunasMonospace(larguraUtil, tamanhoFonte) : 48;
-  const textoExibicao =
-    linhas.length > 0 ? textoCifraQuebradaParaExibicao(linhas, maxCols) : "";
+    larguraUtil > 0
+      ? estimarColunasMonospace(duasColunas ? larguraUtil / 2 - 24 : larguraUtil, tamanhoFonte)
+      : tablet
+        ? 56
+        : 40;
+  const linhasExibicao = linhas.length > 0 ? quebrarCifraParaLargura(linhas, maxCols) : [];
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex flex-col bg-zinc-950 text-zinc-100 pointer-events-auto"
+      className="pointer-events-auto fixed inset-0 z-[100] flex flex-col bg-[#121212] text-[#f3f3f3]"
       role="dialog"
       aria-modal="true"
       aria-label={`Cifra: ${louvor.title}`}
     >
-      <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-zinc-800 bg-zinc-950/95 px-3 py-2 backdrop-blur-sm sm:px-4">
+      <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-white/10 bg-[#121212] px-3 py-2 sm:px-5">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-9 w-9 shrink-0 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+          className="h-9 w-9 shrink-0 text-zinc-300 hover:bg-white/10 hover:text-white"
           onClick={onFechar}
           aria-label="Fechar"
         >
@@ -222,8 +227,8 @@ export function VisualizadorCifraOnlineLouvor({
         </Button>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold sm:text-base">{louvor.title}</p>
-          <p className="truncate text-xs text-zinc-400">
+          <p className="truncate text-base font-semibold text-white sm:text-lg">{louvor.title}</p>
+          <p className="truncate text-xs sm:text-sm" style={{ color: COR_ACORDE_CIFRA }}>
             {louvor.artist}
             {doCache && linhas.length > 0 && !modoEdicao && (
               <span className="ml-2 text-zinc-500">· salva no app</span>
@@ -232,12 +237,12 @@ export function VisualizadorCifraOnlineLouvor({
         </div>
 
         {!carregando && !modoEdicao && linhas.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-zinc-300"
+              className="h-8 w-8 text-zinc-300 hover:bg-white/10"
               onClick={() => abrirEdicao()}
               aria-label="Editar cifra"
             >
@@ -247,7 +252,7 @@ export function VisualizadorCifraOnlineLouvor({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-zinc-300"
+              className="h-8 w-8 text-zinc-300 hover:bg-white/10"
               onClick={() => setEscala((v) => Math.max(ESCALA_MIN, v - PASSO))}
               aria-label="Diminuir fonte"
             >
@@ -257,7 +262,7 @@ export function VisualizadorCifraOnlineLouvor({
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-zinc-300"
+              className="h-8 w-8 text-zinc-300 hover:bg-white/10"
               onClick={() => setEscala((v) => Math.min(ESCALA_MAX, v + PASSO))}
               aria-label="Aumentar fonte"
             >
@@ -268,18 +273,18 @@ export function VisualizadorCifraOnlineLouvor({
       </header>
 
       <div
-        className="min-h-0 flex-1 overflow-auto overscroll-contain touch-pan-y px-3 py-4 sm:px-6 sm:py-6"
+        className="min-h-0 flex-1 overflow-auto overscroll-contain touch-pan-y px-4 py-4 sm:px-8 sm:py-6 md:px-10 lg:px-16"
         data-scroll-lock-scrollable=""
       >
         {modoEdicao && carregando && (
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-zinc-400">
-            <Loader2 className="h-8 w-8 animate-spin text-gold" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: COR_ACORDE_CIFRA }} />
             <p className="text-sm">Carregando…</p>
           </div>
         )}
 
         {modoEdicao && !carregando && (
-          <div className="mx-auto flex max-w-2xl flex-col gap-4">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
             <p className="text-sm text-zinc-400">
               Cole a cifra com acordes e letra (formato Cifra Club). Ela ficará salva no app.
             </p>
@@ -287,7 +292,7 @@ export function VisualizadorCifraOnlineLouvor({
               value={textoEdicao}
               onChange={(e) => setTextoEdicao(e.target.value)}
               placeholder={"[Intro] C  G  Am  F\n\nC              G\nPrimeira linha da letra\nAm             F\nSegunda linha..."}
-              className="min-h-[50vh] resize-y bg-zinc-900 text-zinc-100 border-zinc-700 font-mono text-sm leading-relaxed"
+              className="min-h-[50vh] resize-y border-zinc-700 bg-zinc-900 font-mono text-sm leading-relaxed text-zinc-100"
               autoFocus
             />
             <div className="flex flex-wrap gap-2">
@@ -314,7 +319,7 @@ export function VisualizadorCifraOnlineLouvor({
 
         {!modoEdicao && carregando && (
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-zinc-400">
-            <Loader2 className="h-8 w-8 animate-spin text-gold" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: COR_ACORDE_CIFRA }} />
             <p className="text-sm">Buscando cifra…</p>
           </div>
         )}
@@ -339,29 +344,32 @@ export function VisualizadorCifraOnlineLouvor({
         )}
 
         {!modoEdicao && !carregando && !erro && linhas.length > 0 && (
-          <article
-            className={cn(
-              "mx-auto max-w-2xl rounded-lg bg-[#fffef8] px-4 py-5 text-zinc-900 shadow-2xl shadow-black/40",
-              "sm:px-8 sm:py-8",
+          <article className="mx-auto w-full max-w-3xl pb-10 md:max-w-4xl lg:max-w-5xl">
+            {louvor.key?.trim() && (
+              <p className="mb-4 font-mono text-[15px] text-[#f3f3f3] md:text-base">
+                Tom:{" "}
+                <span className="font-bold" style={{ color: COR_ACORDE_CIFRA }}>
+                  {louvor.key}
+                </span>
+              </p>
             )}
-          >
-            <pre
-              ref={areaCifraRef}
-              className="w-full max-w-full overflow-x-auto font-mono leading-relaxed text-zinc-900 whitespace-pre"
-              style={{ fontSize: `${tamanhoFonte}px`, tabSize: 4 }}
-            >
-              {textoExibicao || " "}
-            </pre>
+            <div ref={areaCifraRef} className="w-full min-w-0">
+              <CifraEstiloCifraClub
+                linhas={linhasExibicao}
+                tamanhoFonte={tamanhoFonte}
+                duasColunas={duasColunas}
+              />
+            </div>
             {url && fonte !== "manual" && (
-              <p className="mt-6 text-center text-xs text-zinc-500">
+              <p className="mt-8 text-center text-xs text-zinc-500">
                 Fonte:{" "}
-                <a href={url} target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-700">
+                <a href={url} target="_blank" rel="noopener noreferrer" className="underline hover:text-zinc-300">
                   Cifra Club
                 </a>
               </p>
             )}
             {fonte === "manual" && (
-              <p className="mt-6 text-center text-xs text-zinc-500">Fonte: Manual</p>
+              <p className="mt-8 text-center text-xs text-zinc-500">Fonte: Manual</p>
             )}
           </article>
         )}

@@ -127,8 +127,23 @@ public class LouvorServiceImpl implements LouvorService {
                 louvor.setCifraConteudo(existente.getCifraConteudo());
                 louvor.setCifraApiCacheEm(existente.getCifraApiCacheEm());
             }
-        } else if (louvor.getIgreja() == null) {
-            louvor.setIgreja(tenantService.resolverIgrejaParaCriacao());
+        } else {
+            if (louvor.getIgreja() == null) {
+                louvor.setIgreja(tenantService.resolverIgrejaParaCriacao());
+            }
+            List<Louvor> jaCadastrados = louvorRepository.findPorIgrejaTituloEArtista(
+                louvor.getIgreja().getId(),
+                dto.getTitulo(),
+                dto.getArtista()
+            );
+            if (!jaCadastrados.isEmpty()) {
+                Louvor existente = jaCadastrados.get(0);
+                log.info(
+                    "Louvor já existia (id={}); reusando letra/cifra salvas em vez de cadastrar duplicata",
+                    existente.getId()
+                );
+                return toDto(existente);
+            }
         }
         louvor = louvorRepository.save(louvor);
         artistaLouvorService.registrarSeNecessario(louvor.getIgreja(), louvor.getArtista());

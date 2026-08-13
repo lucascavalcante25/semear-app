@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  agruparEstrofes,
+  colorirAcordesNaLinha,
   ehLinhaDeAcordes,
+  ehTokenAcorde,
   estimarColunasMonospace,
   quebrarCifraParaLargura,
   quebrarParAcordeLetra,
+  segmentarLinhaCifra,
 } from "@/lib/cifra-linhas";
 
 describe("cifra-linhas — quebra inteligente", () => {
@@ -47,5 +51,25 @@ describe("cifra-linhas — quebra inteligente", () => {
   it("estima colunas a partir da largura", () => {
     expect(estimarColunasMonospace(320, 16)).toBeGreaterThan(20);
     expect(estimarColunasMonospace(0, 16)).toBe(40);
+  });
+
+  it("não trata palavra 'em' da letra como acorde", () => {
+    expect(ehTokenAcorde("em")).toBe(false);
+    expect(ehTokenAcorde("Em")).toBe(true);
+    expect(colorirAcordesNaLinha("Há um bálsamo em Gileade")).toBe(false);
+    expect(colorirAcordesNaLinha("D               Bm")).toBe(true);
+    expect(colorirAcordesNaLinha("[Intro] F# G#m E F#")).toBe(true);
+  });
+
+  it("segmenta acordes preservando espaços", () => {
+    const segs = segmentarLinhaCifra("D               Bm");
+    expect(segs.some((s) => s.acorde && s.texto === "D")).toBe(true);
+    expect(segs.some((s) => s.acorde && s.texto === "Bm")).toBe(true);
+  });
+
+  it("agrupa estrofes por linha em branco", () => {
+    const grupos = agruparEstrofes(["A", "letra", "", "B", "outra"]);
+    expect(grupos).toHaveLength(2);
+    expect(grupos[0]).toEqual(["A", "letra"]);
   });
 });

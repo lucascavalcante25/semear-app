@@ -747,17 +747,22 @@ export default function PaginaLouvores() {
           temLetraSalva: false,
           temCifraApiSalva: false,
         });
-        toast.success("Louvor cadastrado.");
+        const jaExistia = louvores.some((l) => l.idNum != null && l.idNum === salvo.idNum);
+        if (jaExistia) {
+          toast.success("Este louvor já existia no repertório. Letra e cifra salvas foram reaproveitadas.");
+        } else {
+          toast.success("Louvor cadastrado.");
+        }
       }
-      if (salvo.idNum && letraManual.trim()) {
+      if (salvo.idNum && letraManual.trim() && !salvo.temLetraSalva) {
         await salvarLetraManualLouvor(salvo.idNum, letraManual.trim());
         salvo = { ...salvo, temLetraSalva: true };
       }
-      if (salvo.idNum && cifraManual.trim()) {
+      if (salvo.idNum && cifraManual.trim() && !salvo.temCifraApiSalva) {
         await salvarCifraManualLouvor(salvo.idNum, cifraManual.trim());
         salvo = { ...salvo, temCifraApiSalva: true };
       }
-      if (editando?.idNum) {
+      if (editando?.idNum || louvores.some((l) => l.idNum != null && l.idNum === salvo.idNum)) {
         atualizarLouvorNaLista(salvo);
       } else {
         setLouvores((prev) => [salvo, ...prev]);
@@ -1116,7 +1121,7 @@ export default function PaginaLouvores() {
                                   <DialogHeader>
                                     <DialogTitle>Adicionar louvores ao grupo</DialogTitle>
                                     <DialogDescription>
-                                      Selecione um ou mais louvores para adicionar ao grupo &quot;{grupo.name}&quot;.
+                                      Selecione louvores do repertório. Letra e cifra já salvas vêm junto — não precisa buscar de novo.
                                     </DialogDescription>
                                   </DialogHeader>
                                   <Command className="mt-2">
