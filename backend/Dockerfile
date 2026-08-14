@@ -21,4 +21,7 @@ COPY --from=build /workspace/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java","-Dspring.profiles.active=prod","-jar","app.jar"]
+# Limita a JVM à RAM do container (Render mata com 137 se o heap crescer demais).
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=55.0 -XX:InitialRAMPercentage=15.0 -XX:MaxMetaspaceSize=192m -Xss256k -XX:+ExitOnOutOfMemoryError"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -Dspring.profiles.active=prod -jar app.jar"]

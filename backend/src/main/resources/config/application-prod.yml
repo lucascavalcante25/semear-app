@@ -39,6 +39,8 @@ spring:
     hikari:
       poolName: Hikari
       auto-commit: false
+      maximum-pool-size: 5
+      minimum-idle: 1
   # Replace by 'prod, faker' to add the faker context and have sample data loaded in production
   liquibase:
     contexts: prod
@@ -56,6 +58,10 @@ spring:
             required: true
   thymeleaf:
     cache: true
+  jpa:
+    properties:
+      hibernate.cache.use_second_level_cache: false
+      hibernate.javax.cache.missing_cache_strategy: fail
 
 # ===================================================================
 # To enable TLS in production, generate a certificate using:
@@ -103,9 +109,9 @@ jhipster:
     cache: # Used by the CachingHttpHeadersFilter
       timeToLiveInDays: 1461
   cache: # Cache configuration
-    ehcache: # Ehcache configuration
-      time-to-live-seconds: 3600 # By default objects stay 1 hour in the cache
-      max-entries: 1000 # Number of objects in each cache entry
+    ehcache: # Cache configuration
+      time-to-live-seconds: 3600
+      max-entries: 100
   security:
     authentication:
       jwt:
@@ -167,3 +173,8 @@ semear:
       email-destinos: ${SEMEAR_MONITORAMENTO_ALERTAS_EMAIL:}
 
 # application:
+application:
+  liquibase:
+    # Síncrono no Render: Liquibase + Hibernate ao mesmo tempo estoura RAM (exit 137)
+    async-start: false
+

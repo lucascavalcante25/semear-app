@@ -12,7 +12,7 @@ services:
     rootDir: backend
 
     buildCommand: ./mvnw -B -Pprod clean package -DskipTests
-    startCommand: java -Djava.security.egd=file:/dev/./urandom -jar target/semear-*.jar --spring.profiles.active=prod
+    startCommand: java -XX:+UseContainerSupport -XX:MaxRAMPercentage=55.0 -XX:MaxMetaspaceSize=192m -Xss256k -Djava.security.egd=file:/dev/./urandom -jar target/semear-*.jar --spring.profiles.active=prod
 
     envVars:
       - key: SPRING_PROFILES_ACTIVE
