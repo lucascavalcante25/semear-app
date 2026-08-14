@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: semear
+      POSTGRES_USER: semear
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U semear -d semear"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    mem_limit: 1g
+
+  api:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SEMEAR_DB_URL: jdbc:postgresql://db:5432/semear
+      SEMEAR_DB_USER: semear
+      SEMEAR_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SEMEAR_CORS_ORIGINS: ${SEMEAR_CORS_ORIGINS:-https://minha-igreja-digital-app.vercel.app}
+      JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=55.0 -XX:MaxMetaspaceSize=192m -Xss256k"
+    mem_limit: 3g
+
+volumes:
+  pgdata:
