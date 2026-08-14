@@ -30,6 +30,7 @@ public class IgrejaSitePublicoDTO implements Serializable {
         private Long id;
         private String titulo;
         private String conteudo;
+        private String imagemUrl;
 
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
@@ -37,6 +38,8 @@ public class IgrejaSitePublicoDTO implements Serializable {
         public void setTitulo(String titulo) { this.titulo = titulo; }
         public String getConteudo() { return conteudo; }
         public void setConteudo(String conteudo) { this.conteudo = conteudo; }
+        public String getImagemUrl() { return imagemUrl; }
+        public void setImagemUrl(String imagemUrl) { this.imagemUrl = imagemUrl; }
     }
 
     public Long getId() { return id; }

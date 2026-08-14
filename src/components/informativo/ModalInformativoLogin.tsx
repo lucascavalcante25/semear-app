@@ -11,13 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
-import {
-  confirmarComunicado,
-  listarComunicadosPendentesLogin,
-  LABEL_TIPO,
-  type ComunicadoDTO,
-} from "@/modules/comunicados/api";
+import { confirmarComunicado, listarComunicadosPendentesLogin, LABEL_TIPO, type ComunicadoDTO } from "@/modules/comunicados/api";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { resolverUrlApi } from "@/modules/api/client";
 
 export function ModalInformativoLogin() {
   const { user } = usarAutenticacao();
@@ -96,7 +92,7 @@ export function ModalInformativoLogin() {
             <div className="space-y-3 pt-2">
               {atual.imagemUrl && (
                 <img
-                  src={atual.imagemUrl}
+                  src={resolverUrlApi(atual.imagemUrl)}
                   alt=""
                   className="w-full max-h-48 object-cover rounded-lg border"
                 />

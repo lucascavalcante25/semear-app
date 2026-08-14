@@ -24,6 +24,7 @@ export type AvisoPublicoDTO = {
   id?: number;
   titulo: string;
   conteudo?: string;
+  imagemUrl?: string;
 };
 
 export type IgrejaPublicaSiteDTO = {

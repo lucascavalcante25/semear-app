@@ -1,10 +1,12 @@
 package br.com.semear.service;
 
 import br.com.semear.domain.Comunicado;
+import br.com.semear.domain.ComunicadoBanner;
 import br.com.semear.domain.ComunicadoLeitura;
 import br.com.semear.domain.User;
 import br.com.semear.domain.enumeration.PublicoAlvoInformativo;
 import br.com.semear.domain.enumeration.TipoComunicado;
+import br.com.semear.repository.ComunicadoBannerRepository;
 import br.com.semear.repository.ComunicadoLeituraRepository;
 import br.com.semear.repository.ComunicadoRepository;
 import br.com.semear.repository.UserRepository;
@@ -15,24 +17,35 @@ import br.com.semear.service.dto.ComunicadoLeituraDTO;
 import br.com.semear.service.mapper.ComunicadoMapper;
 import br.com.semear.service.util.ConfigNotificacaoJsonUtil;
 import br.com.semear.web.rest.errors.BadRequestAlertException;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional
 public class ComunicadoService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ComunicadoService.class);
     private static final String ENTITY = "comunicado";
     private static final String TIPO_NOTIFICACAO_COMUNICADO = "COMUNICADO";
     private static final String TIPO_NOTIFICACAO_AVISO = "AVISO";
+    private static final long TAMANHO_MAX_BANNER_BYTES = 3L * 1024 * 1024;
+    private static final Set<String> TIPOS_IMAGEM = Set.of("image/jpeg", "image/png", "image/gif", "image/webp");
+
+    public record BannerArquivo(byte[] bytes, String contentType) {}
 
     private final ComunicadoRepository comunicadoRepository;
+    private final ComunicadoBannerRepository comunicadoBannerRepository;
     private final ComunicadoLeituraRepository comunicadoLeituraRepository;
     private final TenantService tenantService;
     private final ComunicadoMapper comunicadoMapper;
@@ -42,6 +55,7 @@ public class ComunicadoService {
 
     public ComunicadoService(
         ComunicadoRepository comunicadoRepository,
+        ComunicadoBannerRepository comunicadoBannerRepository,
         ComunicadoLeituraRepository comunicadoLeituraRepository,
         TenantService tenantService,
         ComunicadoMapper comunicadoMapper,
@@ -50,6 +64,7 @@ public class ComunicadoService {
         UsuarioNotificacaoVistaRepository usuarioNotificacaoVistaRepository
     ) {
         this.comunicadoRepository = comunicadoRepository;
+        this.comunicadoBannerRepository = comunicadoBannerRepository;
         this.comunicadoLeituraRepository = comunicadoLeituraRepository;
         this.tenantService = tenantService;
         this.comunicadoMapper = comunicadoMapper;
@@ -149,6 +164,7 @@ public class ComunicadoService {
         validarLideranca();
         Comunicado comunicado = obterDaIgreja(id).orElseThrow(this::naoEncontrado);
         notificacaoProgramadaService.cancelarEntidade("COMUNICADO", comunicado.getId());
+        comunicadoBannerRepository.deleteById(comunicado.getId());
         comunicadoLeituraRepository.deleteByComunicadoId(comunicado.getId());
         usuarioNotificacaoVistaRepository.deleteAllByTipoAndReferenciaId(TIPO_NOTIFICACAO_COMUNICADO, comunicado.getId());
         usuarioNotificacaoVistaRepository.deleteAllByTipoAndReferenciaId(TIPO_NOTIFICACAO_AVISO, comunicado.getId());
@@ -177,6 +193,55 @@ public class ComunicadoService {
         }
 
         return comunicadoMapper.toDto(comunicado, true);
+    }
+
+    public ComunicadoDTO uploadImagem(Long id, MultipartFile file) {
+        validarLideranca();
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestAlertException("Arquivo vazio", ENTITY, "arquivovazio");
+        }
+        if (file.getSize() > TAMANHO_MAX_BANNER_BYTES) {
+            throw new BadRequestAlertException("A imagem deve ter no máximo 3 MB", ENTITY, "arquivoGrande");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !TIPOS_IMAGEM.contains(contentType)) {
+            throw new BadRequestAlertException("Use JPEG, PNG, GIF ou WebP", ENTITY, "tipoinvalido");
+        }
+        Comunicado entity = obterDaIgreja(id).orElseThrow(this::naoEncontrado);
+        final byte[] bytes;
+        try {
+            bytes = file.getBytes();
+        } catch (IOException e) {
+            LOG.error("Erro ao ler bytes da imagem do comunicado {}", entity.getId(), e);
+            throw new BadRequestAlertException("Erro ao ler o arquivo da imagem", ENTITY, "errosalvar");
+        }
+
+        ComunicadoBanner banner = comunicadoBannerRepository.findById(entity.getId()).orElseGet(ComunicadoBanner::new);
+        banner.setComunicadoId(entity.getId());
+        banner.setContentType(contentType);
+        banner.setDados(bytes);
+        banner.setAtualizadoEm(Instant.now());
+        comunicadoBannerRepository.saveAndFlush(banner);
+
+        entity.setImagemUrl("/api/comunicados/" + entity.getId() + "/imagem");
+        Comunicado salvo = comunicadoRepository.saveAndFlush(entity);
+        return comunicadoMapper.toDto(salvo);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<BannerArquivo> obterImagem(Long id) {
+        return comunicadoBannerRepository
+            .findById(id)
+            .filter(b -> b.getDados() != null && b.getDados().length > 0)
+            .map(b -> new BannerArquivo(b.getDados(), b.getContentType()));
+    }
+
+    public ComunicadoDTO removerImagem(Long id) {
+        validarLideranca();
+        Comunicado entity = obterDaIgreja(id).orElseThrow(this::naoEncontrado);
+        comunicadoBannerRepository.deleteById(id);
+        entity.setImagemUrl(null);
+        return comunicadoMapper.toDto(comunicadoRepository.save(entity));
     }
 
     public String resolverCriadoPorDisplayName(String criadoPor) {

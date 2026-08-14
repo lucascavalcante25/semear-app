@@ -116,6 +116,7 @@ public class PublicIgrejaSiteService {
         dto.setId(comunicado.getId());
         dto.setTitulo(comunicado.getTitulo());
         dto.setConteudo(comunicado.getConteudo());
+        dto.setImagemUrl(comunicado.getImagemUrl());
         return dto;
     }
 

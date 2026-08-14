@@ -231,11 +231,16 @@ export default function PublicIgreja() {
             </CardHeader>
             <CardContent className="space-y-3">
               {comunicados.map((item) => (
-                <div key={item.id ?? item.titulo} className="rounded-lg border p-3">
-                  <p className="font-medium">{item.titulo}</p>
-                  {item.conteudo && (
-                    <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{item.conteudo}</p>
+                <div key={item.id ?? item.titulo} className="rounded-lg border overflow-hidden">
+                  {item.imagemUrl && (
+                    <img src={resolverUrlApi(item.imagemUrl)} alt="" className="w-full h-32 object-cover" />
                   )}
+                  <div className="p-3">
+                    <p className="font-medium">{item.titulo}</p>
+                    {item.conteudo && (
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{item.conteudo}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </CardContent>

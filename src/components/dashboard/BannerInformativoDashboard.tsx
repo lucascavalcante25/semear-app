@@ -5,12 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { usarAutenticacao } from "@/contexts/AuthContext";
-import {
-  confirmarComunicado,
-  listarComunicadosBanner,
-  LABEL_TIPO,
-  type ComunicadoDTO,
-} from "@/modules/comunicados/api";
+import { LABEL_TIPO, confirmarComunicado, listarComunicadosBanner, type ComunicadoDTO } from "@/modules/comunicados/api";
+import { resolverUrlApi } from "@/modules/api/client";
 
 export function BannerInformativoDashboard() {
   const { user } = usarAutenticacao();
@@ -80,6 +76,13 @@ export function BannerInformativoDashboard() {
                     {tipoLabel}
                   </Badge>
                 </div>
+                {item.imagemUrl && (
+                  <img
+                    src={resolverUrlApi(item.imagemUrl)}
+                    alt=""
+                    className="w-full max-h-40 object-cover rounded-lg border"
+                  />
+                )}
                 <h3 className="font-semibold">{item.titulo}</h3>
                 <p className="text-sm text-muted-foreground whitespace-pre-line line-clamp-3">
                   {item.conteudo}

@@ -12,8 +12,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.PaginationUtil;
 
@@ -86,6 +88,33 @@ public class ComunicadoResource {
     public ComunicadoDTO confirmar(@PathVariable Long id) {
         moduleAccessService.assertModuleAccess("comunicados", NivelAcessoModulo.READ);
         return comunicadoService.confirmarLeitura(id);
+    }
+
+    @PostMapping("/{id}/imagem")
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA" })
+    public ResponseEntity<ComunicadoDTO> uploadImagem(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        moduleAccessService.assertModuleAccess("comunicados", NivelAcessoModulo.WRITE);
+        return ResponseEntity.ok(enriquecerCriadoPor(comunicadoService.uploadImagem(id, file)));
+    }
+
+    @GetMapping("/{id}/imagem")
+    public ResponseEntity<byte[]> obterImagem(@PathVariable Long id) {
+        return comunicadoService
+            .obterImagem(id)
+            .map(banner ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(banner.contentType()))
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=300, must-revalidate")
+                    .body(banner.bytes())
+            )
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}/imagem")
+    @RolesAllowed({ "ROLE_ADMIN", "ROLE_ADMIN_IGREJA", "ROLE_PASTOR", "ROLE_COPASTOR", "ROLE_LIDER", "ROLE_SECRETARIA" })
+    public ComunicadoDTO removerImagem(@PathVariable Long id) {
+        moduleAccessService.assertModuleAccess("comunicados", NivelAcessoModulo.WRITE);
+        return enriquecerCriadoPor(comunicadoService.removerImagem(id));
     }
 
     @GetMapping("/{id}/leituras")

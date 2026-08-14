@@ -62,6 +62,7 @@ export type ComunicadoApp = {
   createdBy: string;
   ctaRotulo?: string | null;
   ctaRota?: string | null;
+  imagemUrl?: string | null;
   configNotificacao?: ConfigNotificacao;
 };
 
@@ -82,6 +83,13 @@ export const LABEL_TIPO: Record<TipoComunicadoApi, string> = {
 };
 
 const toDateLocal = (yyyyMmDd: string) => new Date(`${yyyyMmDd}T00:00:00`);
+
+export const dataLocalYyyyMmDd = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
 
 const mapTipo = (tipo: TipoComunicadoApi): ComunicadoApp["type"] => {
   if (tipo === "FIXO") return "fixed";
@@ -119,13 +127,14 @@ export const mapearComunicado = (dto: ComunicadoDTO): ComunicadoApp => ({
   createdBy: dto.criadoPor ?? "Sistema",
   ctaRotulo: dto.ctaRotulo,
   ctaRota: dto.ctaRota,
+  imagemUrl: dto.imagemUrl ?? null,
   configNotificacao: dto.configNotificacao,
 });
 
 export const dtoFromApp = (
   item: Omit<ComunicadoApp, "id" | "idNum" | "createdAt" | "createdBy"> & { idNum?: number },
 ): ComunicadoDTO => {
-  const yyyyMmDd = (d: Date) => d.toISOString().slice(0, 10);
+  const yyyyMmDd = dataLocalYyyyMmDd;
   return {
     id: item.idNum,
     titulo: item.title.trim(),
@@ -141,6 +150,7 @@ export const dtoFromApp = (
     ativo: item.isActive,
     ctaRotulo: item.ctaRotulo ?? null,
     ctaRota: item.ctaRota ?? null,
+    imagemUrl: item.imagemUrl ?? null,
     configNotificacao: item.configNotificacao,
   };
 };
@@ -197,3 +207,22 @@ export const confirmarComunicado = (id: number) =>
 
 export const listarLeiturasComunicado = (id: number) =>
   requisicaoApi<ComunicadoLeituraDTO[]>(`/api/comunicados/${id}/leituras`, { auth: true });
+
+export async function uploadImagemComunicado(id: number, arquivo: File): Promise<ComunicadoApp> {
+  const form = new FormData();
+  form.append("file", arquivo);
+  const dto = await requisicaoApi<ComunicadoDTO>(`/api/comunicados/${id}/imagem`, {
+    method: "POST",
+    auth: true,
+    body: form,
+  });
+  return mapearComunicado(dto);
+}
+
+export const removerImagemComunicado = async (id: number) => {
+  const dto = await requisicaoApi<ComunicadoDTO>(`/api/comunicados/${id}/imagem`, {
+    method: "DELETE",
+    auth: true,
+  });
+  return mapearComunicado(dto);
+};

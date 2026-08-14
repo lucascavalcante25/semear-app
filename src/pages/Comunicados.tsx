@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutApp } from "@/components/layout";
 import { ConfigNotificacaoForm } from "@/components/notificacoes/ConfigNotificacaoForm";
 import { configNotificacaoPadrao } from "@/modules/notificacoes/config-types";
@@ -47,6 +47,7 @@ import {
   Loader2,
   Bell,
   Globe,
+  Camera,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -59,6 +60,7 @@ import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
 import { canWrite } from "@/auth/permissions";
+import { resolverUrlApi } from "@/modules/api/client";
 import {
   criarComunicado,
   excluirComunicado,
@@ -66,6 +68,9 @@ import {
   obterComunicado,
   atualizarComunicado,
   dtoFromApp,
+  dataLocalYyyyMmDd,
+  uploadImagemComunicado,
+  removerImagemComunicado,
   LABEL_PUBLICO,
   type ComunicadoApp,
   type PublicoAlvoComunicadoApi,
@@ -130,7 +135,14 @@ function CartaoComunicado({
   const Icon = config.icon;
 
   return (
-    <Card className={cn("transition-shadow hover:shadow-md", config.cardClass)}>
+    <Card className={cn("transition-shadow hover:shadow-md overflow-hidden", config.cardClass)}>
+      {item.imagemUrl && (
+        <img
+          src={resolverUrlApi(item.imagemUrl)}
+          alt=""
+          className="h-36 w-full object-cover"
+        />
+      )}
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div
@@ -205,19 +217,23 @@ function CartaoComunicado({
   );
 }
 
-const comunicadoVazio = (): Omit<ComunicadoApp, "id" | "idNum" | "createdAt" | "createdBy"> => ({
-  title: "",
-  content: "",
-  type: "normal",
-  publicoAlvo: "TODOS",
-  prioridade: "NORMAL",
-  exibirNoLogin: false,
-  obrigatorio: false,
-  exibirNoSitePublico: true,
-  startDate: new Date(),
-  isActive: true,
-  configNotificacao: configNotificacaoPadrao(),
-});
+const comunicadoVazio = (): Omit<ComunicadoApp, "id" | "idNum" | "createdAt" | "createdBy"> => {
+  const agora = new Date();
+  return {
+    title: "",
+    content: "",
+    type: "normal",
+    publicoAlvo: "TODOS",
+    prioridade: "NORMAL",
+    exibirNoLogin: false,
+    obrigatorio: false,
+    exibirNoSitePublico: true,
+    startDate: new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()),
+    isActive: true,
+    imagemUrl: null,
+    configNotificacao: configNotificacaoPadrao(),
+  };
+};
 
 export default function Comunicados() {
   const { user } = usarAutenticacao();
@@ -232,6 +248,14 @@ export default function Comunicados() {
   const [confirmarExclusao, setConfirmarExclusao] = useState<ComunicadoApp | null>(null);
   const [excluindo, setExcluindo] = useState(false);
   const [form, setForm] = useState(comunicadoVazio());
+  const inputImagemRef = useRef<HTMLInputElement>(null);
+  const [arquivoImagem, setArquivoImagem] = useState<File | null>(null);
+  const [previewLocal, setPreviewLocal] = useState<string | null>(null);
+  const [removerImagem, setRemoverImagem] = useState(false);
+
+  const previewImagem = removerImagem
+    ? null
+    : previewLocal ?? resolverUrlApi(form.imagemUrl) ?? null;
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -270,6 +294,9 @@ export default function Comunicados() {
   const abrirNovo = () => {
     setEmEdicao(null);
     setForm(comunicadoVazio());
+    setArquivoImagem(null);
+    setPreviewLocal(null);
+    setRemoverImagem(false);
     setDialogAberto(true);
   };
 
@@ -291,8 +318,12 @@ export default function Comunicados() {
         isActive: completo.isActive,
         ctaRotulo: completo.ctaRotulo,
         ctaRota: completo.ctaRota,
+        imagemUrl: completo.imagemUrl ?? null,
         configNotificacao: completo.configNotificacao ?? configNotificacaoPadrao(),
       });
+      setArquivoImagem(null);
+      setPreviewLocal(null);
+      setRemoverImagem(false);
       setDialogAberto(true);
     } catch {
       toast.error("Não foi possível carregar o comunicado para edição.");
@@ -307,17 +338,25 @@ export default function Comunicados() {
     setSalvando(true);
     try {
       const dto = dtoFromApp({ ...form, idNum: emEdicao?.idNum });
+      let salvo: ComunicadoApp;
       if (!emEdicao) {
-        const criado = await criarComunicado(dto);
-        setLista((prev) => [criado, ...prev]);
+        salvo = await criarComunicado(dto);
         toast.success("Comunicado criado.");
       } else {
-        const atualizado = await atualizarComunicado(dto);
-        setLista((prev) =>
-          prev.map((c) => (c.idNum === atualizado.idNum || c.id === atualizado.id ? atualizado : c)),
-        );
+        salvo = await atualizarComunicado(dto);
         toast.success("Comunicado atualizado.");
       }
+      const idNum = salvo.idNum;
+      if (idNum != null && arquivoImagem) {
+        salvo = await uploadImagemComunicado(idNum, arquivoImagem);
+      } else if (idNum != null && removerImagem) {
+        salvo = await removerImagemComunicado(idNum);
+      }
+      setLista((prev) => {
+        const existe = prev.some((c) => c.idNum === salvo.idNum || c.id === salvo.id);
+        if (!existe) return [salvo, ...prev];
+        return prev.map((c) => (c.idNum === salvo.idNum || c.id === salvo.id ? salvo : c));
+      });
       setDialogAberto(false);
       await refreshNotificacoes();
     } catch (err) {
@@ -457,18 +496,21 @@ export default function Comunicados() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Data início</Label>
+                    <Label>Exibir a partir de</Label>
                     <DatePicker
-                      value={form.startDate.toISOString().slice(0, 10)}
+                      value={dataLocalYyyyMmDd(form.startDate)}
                       onChange={(v) =>
-                        setForm({ ...form, startDate: new Date(`${v ?? form.startDate.toISOString().slice(0, 10)}T00:00:00`) })
+                        setForm({
+                          ...form,
+                          startDate: new Date(`${v ?? dataLocalYyyyMmDd(form.startDate)}T00:00:00`),
+                        })
                       }
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Data fim (opcional)</Label>
+                    <Label>Exibir até (opcional)</Label>
                     <DatePicker
-                      value={form.endDate?.toISOString().slice(0, 10) ?? ""}
+                      value={form.endDate ? dataLocalYyyyMmDd(form.endDate) : ""}
                       onChange={(v) =>
                         setForm({
                           ...form,
@@ -477,6 +519,79 @@ export default function Comunicados() {
                       }
                     />
                   </div>
+                </div>
+                <p className="text-xs text-muted-foreground -mt-2">
+                  Essas datas controlam quando o comunicado aparece no app, no login e no site — não a data do evento.
+                  Se o mutirão é amanhã e você quer avisar hoje, deixe o início como hoje.
+                </p>
+                <div className="space-y-2">
+                  <Label>Imagem / banner</Label>
+                  <input
+                    ref={inputImagemRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      if (file.size > 3 * 1024 * 1024) {
+                        toast.error("A imagem deve ter no máximo 3 MB.");
+                        return;
+                      }
+                      setArquivoImagem(file);
+                      setPreviewLocal(URL.createObjectURL(file));
+                      setRemoverImagem(false);
+                    }}
+                  />
+                  {previewImagem ? (
+                    <div className="space-y-2">
+                      <div className="aspect-[16/7] w-full overflow-hidden rounded-lg border bg-muted">
+                        <img src={previewImagem} alt="Banner do comunicado" className="h-full w-full object-cover" />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => inputImagemRef.current?.click()}
+                        >
+                          <Camera className="h-3.5 w-3.5" />
+                          Trocar imagem
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                          onClick={() => {
+                            setArquivoImagem(null);
+                            setPreviewLocal(null);
+                            setRemoverImagem(true);
+                          }}
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed p-4 text-center space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Foto do mutirão, cartaz ou arte para aparecer no card, no login e no site.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => inputImagemRef.current?.click()}
+                      >
+                        <Camera className="h-4 w-4" />
+                        Selecionar imagem
+                      </Button>
+                      <p className="text-xs text-muted-foreground">JPEG, PNG, GIF ou WebP · até 3 MB</p>
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-lg border p-3 space-y-3">
                   <p className="text-sm font-medium">Onde exibir</p>

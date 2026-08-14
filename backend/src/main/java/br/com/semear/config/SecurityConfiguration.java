@@ -59,6 +59,8 @@ public class SecurityConfiguration {
                     .requestMatchers(mvc.pattern(HttpMethod.HEAD, "/api/igrejas/*/logo")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/eventos/*/banner")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.HEAD, "/api/eventos/*/banner")).permitAll()
+                    .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/comunicados/*/imagem")).permitAll()
+                    .requestMatchers(mvc.pattern(HttpMethod.HEAD, "/api/comunicados/*/imagem")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.GET, "/api/public/**")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.HEAD, "/api/public/**")).permitAll()
                     .requestMatchers(mvc.pattern(HttpMethod.POST, "/api/public/igrejas/*/pedidos-oracao")).permitAll()
