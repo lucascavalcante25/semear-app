@@ -31,8 +31,28 @@ services:
       SEMEAR_DB_USER: semear
       SEMEAR_DB_PASSWORD: ${POSTGRES_PASSWORD}
       SEMEAR_CORS_ORIGINS: ${SEMEAR_CORS_ORIGINS:-https://minha-igreja-digital-app.vercel.app}
+      SEMEAR_PUBLIC_API_URL: ${SEMEAR_PUBLIC_API_URL:-https://minha-igreja-digital.duckdns.org}
+      SEMEAR_MAIL_BASE_URL: ${SEMEAR_MAIL_BASE_URL:-https://minha-igreja-digital-app.vercel.app}
+      SEMEAR_MAIL_FROM: ${SEMEAR_MAIL_FROM:-willtechsolutionsdev@gmail.com}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp-relay.brevo.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
+      SEMEAR_BREVO_API_KEY: ${SEMEAR_BREVO_API_KEY:-}
+      SEMEAR_SMS_ENABLED: ${SEMEAR_SMS_ENABLED:-false}
+      SEMEAR_SMS_SENDER: ${SEMEAR_SMS_SENDER:-MinhaIgreja}
+      SEMEAR_PUSH_ENABLED: ${SEMEAR_PUSH_ENABLED:-true}
+      SEMEAR_PUSH_TESTE_ENABLED: ${SEMEAR_PUSH_TESTE_ENABLED:-false}
+      SEMEAR_FIREBASE_PROJECT_ID: ${SEMEAR_FIREBASE_PROJECT_ID:-}
+      SEMEAR_FIREBASE_VAPID_PUBLIC_KEY: ${SEMEAR_FIREBASE_VAPID_PUBLIC_KEY:-}
+      SEMEAR_FIREBASE_SERVICE_ACCOUNT: ${SEMEAR_FIREBASE_SERVICE_ACCOUNT:-/app/secrets/firebase-service-account.json}
+      SEMEAR_UPLOAD_DIR: /app/uploads
       JAVA_OPTS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=55.0 -XX:MaxMetaspaceSize=192m -Xss256k"
+    volumes:
+      - semear-uploads:/app/uploads
+      - ../../secrets/firebase-service-account.json:/app/secrets/firebase-service-account.json:ro
     mem_limit: 3g
 
 volumes:
   pgdata:
+  semear-uploads:

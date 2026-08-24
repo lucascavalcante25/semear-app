@@ -17,6 +17,7 @@ backend/.env
 
 # Firebase / push — nunca commitar chave privada
 secrets/*.json
+deploy/contabo/secrets/
 
 # Editor directories and files
 .vscode/*

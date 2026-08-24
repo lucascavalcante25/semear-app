@@ -286,7 +286,8 @@ export function VisualizadorCifraOnlineLouvor({
         {modoEdicao && !carregando && (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
             <p className="text-sm text-zinc-400">
-              Cole a cifra normalmente (texto simples). As cores no estilo Cifra Club aparecem depois de salvar.
+              Cole a cifra com acordes na linha de cima e a letra embaixo. A prévia abaixo já mostra o visual
+              Cifra Club; ao salvar, não precisa sair da música.
             </p>
             <Textarea
               value={textoEdicao}
@@ -298,9 +299,20 @@ export function VisualizadorCifraOnlineLouvor({
                 setTextoEdicao(sanitizarTextoCifraColado(colado));
               }}
               placeholder={"[Intro] C  G  Am  F\n\nC              G\nPrimeira linha da letra\nAm             F\nSegunda linha..."}
-              className="min-h-[50vh] resize-y border-zinc-700 bg-zinc-900 font-mono text-sm leading-relaxed text-zinc-100"
+              className="min-h-[28vh] resize-y border-zinc-700 bg-zinc-900 font-mono text-sm leading-relaxed text-zinc-100 md:min-h-[32vh]"
               autoFocus
             />
+            {textoEdicao.trim() && (
+              <div className="rounded-lg border border-white/10 bg-[#121212] px-3 py-3 md:px-4">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                  Prévia
+                </p>
+                <CifraEstiloCifraClub
+                  linhas={quebrarCifraParaLargura(textoEdicao.replace(/\t/g, "    ").split("\n"), 42)}
+                  tamanhoFonte={14}
+                />
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button onClick={() => void salvarManual()} disabled={salvando}>
                 {salvando ? "Salvando…" : "Salvar cifra"}
