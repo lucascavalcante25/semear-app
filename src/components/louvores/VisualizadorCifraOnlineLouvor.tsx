@@ -4,7 +4,7 @@ import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CifraEstiloCifraClub, COR_ACORDE_CIFRA } from "@/components/louvores/CifraEstiloCifraClub";
-import { estimarColunasMonospace, quebrarCifraParaLargura } from "@/lib/cifra-linhas";
+import { estimarColunasMonospace, quebrarCifraParaLargura, sanitizarLinhasCifra, sanitizarTextoCifraColado } from "@/lib/cifra-linhas";
 import {
   obterCifraOnlineLouvor,
   salvarCifraManualLouvor,
@@ -60,7 +60,7 @@ export function VisualizadorCifraOnlineLouvor({
         setLinhas([]);
         return;
       }
-      setLinhas(resposta.linhas);
+      setLinhas(sanitizarLinhasCifra(resposta.linhas));
       setUrl(resposta.url ?? null);
       setFonte(resposta.fonte ?? null);
       setDoCache(resposta.doCache);
@@ -99,8 +99,8 @@ export function VisualizadorCifraOnlineLouvor({
         try {
           const resposta = await obterCifraOnlineLouvor(louvorId);
           if (pedido !== pedidoRef.current) return;
-          const conteudo = resposta.linhas?.join("\n") ?? "";
-          setLinhas(resposta.linhas ?? []);
+          const conteudo = sanitizarTextoCifraColado(resposta.linhas?.join("\n") ?? "");
+          setLinhas(conteudo ? conteudo.split("\n") : []);
           setTextoEdicao(conteudo);
           setUrl(resposta.url ?? null);
           setFonte(resposta.fonte ?? null);
@@ -177,8 +177,8 @@ export function VisualizadorCifraOnlineLouvor({
     }
     setSalvando(true);
     try {
-      const resposta = await salvarCifraManualLouvor(louvor.idNum, textoEdicao.trim());
-      setLinhas(resposta.linhas ?? textoEdicao.split("\n"));
+      const resposta = await salvarCifraManualLouvor(louvor.idNum, sanitizarTextoCifraColado(textoEdicao));
+      setLinhas(sanitizarLinhasCifra(resposta.linhas ?? textoEdicao.split("\n")));
       setUrl(null);
       setFonte("manual");
       setDoCache(true);
@@ -205,7 +205,7 @@ export function VisualizadorCifraOnlineLouvor({
       : tablet
         ? 56
         : 40;
-  const linhasExibicao = linhas.length > 0 ? quebrarCifraParaLargura(linhas, maxCols) : [];
+  const linhasExibicao = linhas.length > 0 ? quebrarCifraParaLargura(sanitizarLinhasCifra(linhas), maxCols) : [];
 
   return createPortal(
     <div
@@ -286,11 +286,17 @@ export function VisualizadorCifraOnlineLouvor({
         {modoEdicao && !carregando && (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
             <p className="text-sm text-zinc-400">
-              Cole a cifra com acordes e letra (formato Cifra Club). Ela ficará salva no app.
+              Cole a cifra normalmente (texto simples). As cores no estilo Cifra Club aparecem depois de salvar.
             </p>
             <Textarea
               value={textoEdicao}
               onChange={(e) => setTextoEdicao(e.target.value)}
+              onPaste={(e) => {
+                const colado = e.clipboardData.getData("text");
+                if (!colado) return;
+                e.preventDefault();
+                setTextoEdicao(sanitizarTextoCifraColado(colado));
+              }}
               placeholder={"[Intro] C  G  Am  F\n\nC              G\nPrimeira linha da letra\nAm             F\nSegunda linha..."}
               className="min-h-[50vh] resize-y border-zinc-700 bg-zinc-900 font-mono text-sm leading-relaxed text-zinc-100"
               autoFocus

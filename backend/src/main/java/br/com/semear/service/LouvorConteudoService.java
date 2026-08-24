@@ -4,6 +4,7 @@ import br.com.semear.domain.Louvor;
 import br.com.semear.repository.LouvorRepository;
 import br.com.semear.service.dto.LouvorCifraApiDTO;
 import br.com.semear.service.dto.LouvorLetraDTO;
+import br.com.semear.service.util.CifraTextoUtils;
 import br.com.semear.service.util.LouvorLetraUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,11 +109,12 @@ public class LouvorConteudoService {
 
             Louvor louvor = carregarLouvor(id);
             Instant agora = Instant.now();
-            salvarLetraCache(louvor, texto.trim(), "manual", agora);
+            String textoLimpo = CifraTextoUtils.sanitizar(texto.trim());
+            salvarLetraCache(louvor, textoLimpo, "manual", agora);
 
             LouvorLetraDTO dto = new LouvorLetraDTO();
             dto.setDisponivel(true);
-            dto.setTexto(texto.trim());
+            dto.setTexto(textoLimpo);
             dto.setFonte("manual");
             dto.setDoCache(true);
             dto.setCacheEm(agora);
@@ -174,7 +176,7 @@ public class LouvorConteudoService {
                 throw new IllegalArgumentException("Informe o texto da cifra.");
             }
 
-            List<String> linhas = textoParaLinhas(texto);
+            List<String> linhas = CifraTextoUtils.sanitizarLinhas(textoParaLinhas(texto));
             if (linhas.isEmpty()) {
                 throw new IllegalArgumentException("Informe o texto da cifra.");
             }

@@ -4,6 +4,7 @@ import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { obterLetraLouvor, salvarLetraManualLouvor, type LouvorApp } from "@/modules/louvores/api";
+import { sanitizarTextoCifraColado } from "@/lib/cifra-linhas";
 import { toast } from "sonner";
 
 const ESCALA_MIN = 0.9;
@@ -51,7 +52,7 @@ export function VisualizadorLetraLouvor({
         setTexto("");
         return;
       }
-      setTexto(resposta.texto);
+      setTexto(sanitizarTextoCifraColado(resposta.texto));
       setFonte(resposta.fonte ?? null);
       setDoCache(resposta.doCache);
       if (!resposta.doCache) {
@@ -89,7 +90,7 @@ export function VisualizadorLetraLouvor({
         try {
           const resposta = await obterLetraLouvor(louvorId);
           if (pedido !== pedidoRef.current) return;
-          const conteudo = resposta.texto?.trim() ?? "";
+          const conteudo = sanitizarTextoCifraColado(resposta.texto?.trim() ?? "");
           setTexto(conteudo);
           setTextoEdicao(conteudo);
           setFonte(resposta.fonte ?? null);
@@ -151,8 +152,8 @@ export function VisualizadorLetraLouvor({
     }
     setSalvando(true);
     try {
-      const resposta = await salvarLetraManualLouvor(louvor.idNum, textoEdicao.trim());
-      setTexto(resposta.texto ?? textoEdicao.trim());
+      const resposta = await salvarLetraManualLouvor(louvor.idNum, sanitizarTextoCifraColado(textoEdicao.trim()));
+      setTexto(resposta.texto ?? sanitizarTextoCifraColado(textoEdicao.trim()));
       setFonte("manual");
       setDoCache(true);
       setModoEdicao(false);
@@ -265,6 +266,12 @@ export function VisualizadorLetraLouvor({
             <Textarea
               value={textoEdicao}
               onChange={(e) => setTextoEdicao(e.target.value)}
+              onPaste={(e) => {
+                const colado = e.clipboardData.getData("text");
+                if (!colado) return;
+                e.preventDefault();
+                setTextoEdicao(sanitizarTextoCifraColado(colado));
+              }}
               placeholder={"[Refrão]\n\nPrimeira linha da letra\nSegunda linha..."}
               className="min-h-[50vh] resize-y bg-zinc-900 text-zinc-100 border-zinc-700 font-sans text-base leading-relaxed"
               autoFocus
@@ -318,11 +325,9 @@ export function VisualizadorLetraLouvor({
         )}
 
         {!modoEdicao && !carregando && !erro && texto && (
-          <article
-            className="mx-auto max-w-xl rounded-lg bg-[#fffef8] px-5 py-6 text-zinc-900 shadow-2xl shadow-black/40 sm:px-10 sm:py-10"
-          >
+          <article className="mx-auto max-w-xl rounded-lg bg-[#121212] px-5 py-6 text-[#f3f3f3] sm:px-10 sm:py-10">
             <div
-              className="whitespace-pre-wrap leading-[1.75] tracking-wide"
+              className="whitespace-pre-wrap leading-[1.75] tracking-wide text-[#f3f3f3]"
               style={{ fontSize: `${tamanhoFonte}px` }}
             >
               {linhas.map((linha, idx) => (

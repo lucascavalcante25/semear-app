@@ -83,8 +83,11 @@ import {
   atualizarTomLouvor,
   salvarLetraManualLouvor,
   salvarCifraManualLouvor,
+  obterLetraLouvor,
+  obterCifraOnlineLouvor,
   type LouvorApp,
 } from "@/modules/louvores/api";
+import { sanitizarTextoCifraColado } from "@/lib/cifra-linhas";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DndContext,
@@ -571,6 +574,7 @@ export default function PaginaLouvores() {
   const [letraManual, setLetraManual] = useState("");
   const [cifraManual, setCifraManual] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [carregandoConteudoEdicao, setCarregandoConteudoEdicao] = useState(false);
 
   const carregarLouvores = useCallback(async () => {
     setCarregando(true);
@@ -703,7 +707,7 @@ export default function PaginaLouvores() {
     setDialogAberto(true);
   };
 
-  const abrirEditar = (louvor: LouvorApp) => {
+  const abrirEditar = async (louvor: LouvorApp) => {
     setEditando(louvor);
     setTitulo(louvor.title);
     setArtista(louvor.artist);
@@ -713,6 +717,29 @@ export default function PaginaLouvores() {
     setLetraManual("");
     setCifraManual("");
     setDialogAberto(true);
+
+    if (!louvor.idNum || (!louvor.temLetraSalva && !louvor.temCifraApiSalva)) {
+      return;
+    }
+    setCarregandoConteudoEdicao(true);
+    try {
+      const [letra, cifra] = await Promise.all([
+        louvor.temLetraSalva ? obterLetraLouvor(louvor.idNum).catch(() => null) : Promise.resolve(null),
+        louvor.temCifraApiSalva ? obterCifraOnlineLouvor(louvor.idNum).catch(() => null) : Promise.resolve(null),
+      ]);
+      if (letra?.disponivel && letra.texto) {
+        setLetraManual(letra.texto);
+      }
+      if (cifra?.disponivel && cifra.linhas?.length) {
+        setCifraManual(sanitizarTextoCifraColado(cifra.linhas.join("\n")));
+      }
+    } finally {
+      setCarregandoConteudoEdicao(false);
+    }
+  };
+
+  const colarTextoLimpo = (valor: string, setter: (v: string) => void) => {
+    setter(sanitizarTextoCifraColado(valor));
   };
 
   const salvar = async () => {
@@ -754,12 +781,12 @@ export default function PaginaLouvores() {
           toast.success("Louvor cadastrado.");
         }
       }
-      if (salvo.idNum && letraManual.trim() && !salvo.temLetraSalva) {
-        await salvarLetraManualLouvor(salvo.idNum, letraManual.trim());
+      if (salvo.idNum && letraManual.trim()) {
+        await salvarLetraManualLouvor(salvo.idNum, sanitizarTextoCifraColado(letraManual.trim()));
         salvo = { ...salvo, temLetraSalva: true };
       }
-      if (salvo.idNum && cifraManual.trim() && !salvo.temCifraApiSalva) {
-        await salvarCifraManualLouvor(salvo.idNum, cifraManual.trim());
+      if (salvo.idNum && cifraManual.trim()) {
+        await salvarCifraManualLouvor(salvo.idNum, sanitizarTextoCifraColado(cifraManual.trim()));
         salvo = { ...salvo, temCifraApiSalva: true };
       }
       if (editando?.idNum || louvores.some((l) => l.idNum != null && l.idNum === salvo.idNum)) {
@@ -1004,9 +1031,19 @@ export default function PaginaLouvores() {
                       placeholder="Cole a letra aqui, se já tiver. Também pode buscar depois pela API."
                       value={letraManual}
                       onChange={(e) => setLetraManual(e.target.value)}
+                      onPaste={(e) => {
+                        const colado = e.clipboardData.getData("text");
+                        if (!colado) return;
+                        e.preventDefault();
+                        colarTextoLimpo(colado, setLetraManual);
+                      }}
                       rows={4}
                       className="font-mono text-sm"
+                      disabled={carregandoConteudoEdicao}
                     />
+                    {carregandoConteudoEdicao && (
+                      <p className="text-xs text-muted-foreground">Carregando letra e cifra salvas…</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cifra-manual">Cifra (opcional)</Label>
@@ -1015,8 +1052,15 @@ export default function PaginaLouvores() {
                       placeholder="Cole a cifra aqui, se já tiver. Também pode buscar depois pela API."
                       value={cifraManual}
                       onChange={(e) => setCifraManual(e.target.value)}
+                      onPaste={(e) => {
+                        const colado = e.clipboardData.getData("text");
+                        if (!colado) return;
+                        e.preventDefault();
+                        colarTextoLimpo(colado, setCifraManual);
+                      }}
                       rows={4}
                       className="font-mono text-sm whitespace-pre"
+                      disabled={carregandoConteudoEdicao}
                     />
                   </div>
                   <div className="flex justify-end gap-2 pt-4">

@@ -202,6 +202,83 @@ export function textoCifraQuebradaParaExibicao(linhas: string[], maxCols: number
   return quebrarCifraParaLargura(linhas, maxCols).join("\n");
 }
 
+/**
+ * Limpa cola do Cifra Club / HTML: restos `">D`, tags e linhas duplicadas.
+ * Usar na hora de colar/salvar — a coloração laranja só acontece na exibição.
+ */
+export function sanitizarTextoCifraColado(texto: string): string {
+  return sanitizarLinhasCifra(texto.split(/\r\n|\n|\r/)).join("\n").replace(/\s+$/, "");
+}
+
+export function sanitizarLinhasCifra(linhas: string[]): string[] {
+  const normalizadas: string[] = [];
+  for (const original of linhas) {
+    const eraLixoHtml = /^\s*["']\s*>/.test(original) || /^\s*>[A-G]/.test(original);
+    let linha = original
+      .replace(/\u00a0/g, " ")
+      .replace(/\t/g, "    ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#34;/g, '"')
+      .replace(/&gt;/gi, ">")
+      .replace(/&#62;/g, ">")
+      .replace(/&lt;/gi, "<")
+      .replace(/&amp;/gi, "&");
+
+    if (/<[a-z/][\s\S]*?>/i.test(linha) || /<\/[a-z]+>/i.test(linha)) {
+      linha = linha
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/(p|div|tr|li|h[1-6])>/gi, "\n")
+        .replace(/<[^>]+>/g, "");
+    }
+
+    linha = linha.replace(/["']\s*>\s*(?=[A-G])/g, "");
+    linha = linha.replace(/^\s*>\s*(?=[A-G])/g, "");
+    linha = linha.replace(/\s+$/, "");
+
+    if (/^\s*[>"']+\s*$/.test(linha)) continue;
+
+    for (const pedaco of linha.split("\n")) {
+      const limpa = pedaco.replace(/\s+$/, "");
+      if (/^\s*[>"']+\s*$/.test(limpa)) continue;
+      const soAcorde = ehLinhaDeAcordes(limpa) || TOKEN_ACORDE.test(limpa.trim());
+      if (eraLixoHtml && soAcorde) continue;
+      normalizadas.push(limpa);
+    }
+  }
+  return deduplicarLinhasCifra(normalizadas);
+}
+
+/** Remove linhas iguais seguidas e pares acorde+letra duplicados (cola do Cifra Club). */
+export function deduplicarLinhasCifra(linhas: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < linhas.length; i += 1) {
+    const atual = linhas[i];
+    const proxima = linhas[i + 1];
+    const depois = linhas[i + 2];
+    const quarta = linhas[i + 3];
+
+    if (proxima != null && atual === proxima) {
+      continue;
+    }
+    if (
+      proxima != null &&
+      depois != null &&
+      quarta != null &&
+      atual === depois &&
+      proxima === quarta
+    ) {
+      i += 1;
+      continue;
+    }
+    out.push(atual);
+  }
+  while (out.length > 0 && out[out.length - 1].trim() === "") {
+    out.pop();
+  }
+  return out;
+}
+
 /** Estima colunas monoespaçadas que cabem na largura útil. */
 export function estimarColunasMonospace(larguraPx: number, tamanhoFontePx: number): number {
   if (larguraPx <= 0 || tamanhoFontePx <= 0) return 40;

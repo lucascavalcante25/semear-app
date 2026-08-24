@@ -7,6 +7,7 @@ import {
   estimarColunasMonospace,
   quebrarCifraParaLargura,
   quebrarParAcordeLetra,
+  sanitizarTextoCifraColado,
   segmentarLinhaCifra,
 } from "@/lib/cifra-linhas";
 
@@ -71,5 +72,32 @@ describe("cifra-linhas — quebra inteligente", () => {
     const grupos = agruparEstrofes(["A", "letra", "", "B", "outra"]);
     expect(grupos).toHaveLength(2);
     expect(grupos[0]).toEqual(["A", "letra"]);
+  });
+});
+
+describe("cifra-linhas — sanitizar cola", () => {
+  it("remove restos \">D do HTML do Cifra Club", () => {
+    const bruto = `[Intro] G C9 Em7\n">D\nG C9 Em7\n">D\n[Primeira Parte]\n">D\n[Primeira Parte]`;
+    const limpo = sanitizarTextoCifraColado(bruto);
+    expect(limpo).not.toContain('">');
+    expect(limpo.split("\n").filter((l) => l === "[Primeira Parte]")).toHaveLength(1);
+  });
+
+  it("remove duplicidade de frases da música", () => {
+    const bruto = [
+      "G                    C9",
+      "Eu vejo a glória do Senhor hoje aqui",
+      "G                    C9",
+      "Eu vejo a glória do Senhor hoje aqui",
+      "Em7                  D",
+      "A sua mão, o seu poder sobre mim",
+    ].join("\n");
+    const limpo = sanitizarTextoCifraColado(bruto);
+    expect(limpo.split("\n").filter((l) => l.includes("Eu vejo a glória"))).toHaveLength(1);
+  });
+
+  it("preserva cifra limpa colada normalmente", () => {
+    const limpa = "[Intro] G  C9  Em7  D\n\nG                    C9\nEu vejo a glória";
+    expect(sanitizarTextoCifraColado(limpa)).toBe(limpa);
   });
 });
