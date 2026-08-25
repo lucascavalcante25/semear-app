@@ -1,0 +1,48 @@
+# Deploy automático da API na Contabo (igual ao Auto-Deploy do Render).
+# Dispara em push na main quando backend/deploy Contabo mudam.
+#
+# Secrets necessários no GitHub (Settings → Secrets and variables → Actions):
+#   CONTABO_HOST     → IP da VPS (ex.: 169.58.179.91)
+#   CONTABO_USER     → root
+#   CONTABO_SSH_KEY  → chave privada SSH (conteúdo completo do arquivo .pem / id_ed25519)
+
+name: Deploy Contabo API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "deploy/contabo/**"
+      - ".github/workflows/deploy-contabo.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-contabo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.CONTABO_HOST }}
+          username: ${{ secrets.CONTABO_USER }}
+          key: ${{ secrets.CONTABO_SSH_KEY }}
+          port: 22
+          command_timeout: 40m
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd /opt/semear-app
+            git fetch origin main
+            git reset --hard origin/main
+            cd deploy/contabo
+            docker compose up -d --build api
+            sleep 12
+            curl -sf http://127.0.0.1:8080/management/health
+            echo
+            echo "Deploy Contabo OK"
