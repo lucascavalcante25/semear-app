@@ -42,7 +42,21 @@ jobs:
             git reset --hard origin/main
             cd deploy/contabo
             docker compose up -d --build api
-            sleep 12
-            curl -sf http://127.0.0.1:8080/management/health
-            echo
+            echo "Aguardando API ficar UP (Spring Boot pode demorar 1–3 min)..."
+            ok=0
+            for i in $(seq 1 36); do
+              if curl -sf http://127.0.0.1:8080/management/health | grep -q '"status":"UP"'; then
+                echo
+                echo "Health OK (tentativa $i)"
+                ok=1
+                break
+              fi
+              echo "  tentativa $i/36 — ainda subindo..."
+              sleep 5
+            done
+            if [ "$ok" != "1" ]; then
+              echo "API não respondeu UP a tempo. Últimos logs:"
+              docker compose logs api --tail 80
+              exit 1
+            fi
             echo "Deploy Contabo OK"
