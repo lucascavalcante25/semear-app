@@ -54,6 +54,11 @@ describe("cifra-linhas — quebra inteligente", () => {
     expect(estimarColunasMonospace(0, 16)).toBe(40);
   });
 
+  it("reconhece B4 e Em7M como acorde", () => {
+    expect(ehTokenAcorde("B4")).toBe(true);
+    expect(ehTokenAcorde("Em7M")).toBe(true);
+  });
+
   it("não trata palavra 'em' da letra como acorde", () => {
     expect(ehTokenAcorde("em")).toBe(false);
     expect(ehTokenAcorde("Em")).toBe(true);
@@ -76,11 +81,47 @@ describe("cifra-linhas — quebra inteligente", () => {
 });
 
 describe("cifra-linhas — sanitizar cola", () => {
-  it("remove restos \">D do HTML do Cifra Club", () => {
+  it("remove restos \"> do HTML e não duplica seção", () => {
     const bruto = `[Intro] G C9 Em7\n">D\nG C9 Em7\n">D\n[Primeira Parte]\n">D\n[Primeira Parte]`;
     const limpo = sanitizarTextoCifraColado(bruto);
     expect(limpo).not.toContain('">');
     expect(limpo.split("\n").filter((l) => l === "[Primeira Parte]")).toHaveLength(1);
+    expect(limpo).toContain("D");
+  });
+
+  it("preserva acordes da cola do Cifra Club (Leão de Judá)", () => {
+    const bruto = [
+      "Tom: G",
+      "[Intro] Em D C Am B4",
+      "[Primeira Parte]",
+      '">Em7',
+      "[Primeira Parte]",
+      "Em7",
+      "Ouve-se o júbilo de todos os povos",
+      "D",
+      "Os reis se dobraram ao Senhor",
+      "C Am7",
+      "Ouve-se um brado de vitória",
+      "B7",
+      "O dia do Senhor chegou",
+    ].join("\n");
+    const limpo = sanitizarTextoCifraColado(bruto);
+    expect(limpo).toContain("B4");
+    expect(limpo.split("\n").filter((l) => l === "[Primeira Parte]")).toHaveLength(1);
+    expect(limpo).toContain("Em7");
+    expect(limpo).toContain("Am7");
+    expect(limpo).toContain("B7");
+    expect(limpo).toContain("Ouve-se o júbilo de todos os povos");
+    expect(limpo).toContain("O dia do Senhor chegou");
+  });
+
+  it("extrai acordes de HTML do Cifra Club", () => {
+    const html =
+      "<pre>[Intro] <b>Em</b> <b>D</b> <b>C</b> <b>Am</b> <b>B4</b><br><b>Em7</b><br>Ouve-se o júbilo</pre>";
+    const limpo = sanitizarTextoCifraColado(html);
+    expect(limpo).toContain("B4");
+    expect(limpo).toContain("Em7");
+    expect(limpo).toContain("Ouve-se o júbilo");
   });
 
   it("remove duplicidade de frases da música", () => {

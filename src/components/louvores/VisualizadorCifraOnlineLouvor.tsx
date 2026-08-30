@@ -4,7 +4,13 @@ import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CifraEstiloCifraClub, COR_ACORDE_CIFRA } from "@/components/louvores/CifraEstiloCifraClub";
-import { estimarColunasMonospace, quebrarCifraParaLargura, sanitizarLinhasCifra, sanitizarTextoCifraColado } from "@/lib/cifra-linhas";
+import {
+  estimarColunasMonospace,
+  quebrarCifraParaLargura,
+  sanitizarLinhasCifra,
+  sanitizarTextoCifraColado,
+  textoCifraDoClipboard,
+} from "@/lib/cifra-linhas";
 import {
   obterCifraOnlineLouvor,
   salvarCifraManualLouvor,
@@ -293,10 +299,14 @@ export function VisualizadorCifraOnlineLouvor({
               value={textoEdicao}
               onChange={(e) => setTextoEdicao(e.target.value)}
               onPaste={(e) => {
-                const colado = e.clipboardData.getData("text");
+                const colado = textoCifraDoClipboard(e.clipboardData);
                 if (!colado) return;
                 e.preventDefault();
-                setTextoEdicao(sanitizarTextoCifraColado(colado));
+                const alvo = e.currentTarget;
+                const inicio = alvo.selectionStart ?? textoEdicao.length;
+                const fim = alvo.selectionEnd ?? textoEdicao.length;
+                const misturado = textoEdicao.slice(0, inicio) + colado + textoEdicao.slice(fim);
+                setTextoEdicao(sanitizarTextoCifraColado(misturado));
               }}
               placeholder={"[Intro] C  G  Am  F\n\nC              G\nPrimeira linha da letra\nAm             F\nSegunda linha..."}
               className="min-h-[28vh] resize-y border-zinc-700 bg-zinc-900 font-mono text-sm leading-relaxed text-zinc-100 md:min-h-[32vh]"

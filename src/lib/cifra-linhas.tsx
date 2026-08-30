@@ -1,9 +1,9 @@
 const PADRAO_CORDA_TAB = /^[EBGDA]\|/i;
 const PADRAO_PARTE_TAB = /^parte\s+\d+\s+de\s+\d+$/i;
 
-/** Token típico de acorde (C, Am7, F#m, Bb/D, Gsus4, E9, N.C.). Nota em maiúscula para não colorir "em"/"a". */
+/** Token típico de acorde (C, Am7, F#m, Bb/D, B4, Gsus4, E9, 7M, N.C.). Nota em maiúscula para não colorir "em"/"a". */
 const TOKEN_ACORDE =
-  /^(N\.?C\.?|%|[A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|º)?[0-9]*(?:\([^)]+\))?(?:\+|M)?(?:\/[A-G](?:#|b)?)?)$/;
+  /^(N\.?C\.?|%|[A-G](?:#|b)?(?:m|M|maj|min|dim|aug|sus|add|°|º)?[0-9]*(?:M)?(?:\([^)]+\))?(?:\+|M)?(?:\/[A-G](?:#|b)?[0-9]*)?)$/;
 
 export function ehTokenAcorde(token: string): boolean {
   const t = token.trim();
@@ -202,36 +202,65 @@ export function textoCifraQuebradaParaExibicao(linhas: string[], maxCols: number
   return quebrarCifraParaLargura(linhas, maxCols).join("\n");
 }
 
+function decodificarEntidadesHtml(texto: string): string {
+  return texto
+    .replace(/\u00a0/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#34;/g, '"')
+    .replace(/&gt;/gi, ">")
+    .replace(/&#62;/g, ">")
+    .replace(/&lt;/gi, "<")
+    .replace(/&amp;/gi, "&");
+}
+
+/** Extrai cifra de HTML do Cifra Club (`<b>` nos acordes) sem perder linhas de acorde. */
+export function cifraAPartirDeHtml(html: string): string {
+  let s = html.replace(/\r\n|\r/g, "\n");
+  s = s.replace(/<script[\s\S]*?<\/script>/gi, "");
+  s = s.replace(/<style[\s\S]*?<\/style>/gi, "");
+  s = s.replace(/<br\s*\/?>/gi, "\n");
+  s = s.replace(/<\/(p|div|tr|li|h[1-6]|pre)>/gi, "\n");
+  s = s.replace(/<\/b>\s*<b>/gi, " ");
+  s = s.replace(/<\/strong>\s*<strong>/gi, " ");
+  s = s.replace(/<[^>]+>/g, "");
+  return decodificarEntidadesHtml(s);
+}
+
+/** Prefere text/html do Cifra Club; senão usa texto simples. */
+export function textoCifraDoClipboard(clipboard: DataTransfer | null): string {
+  if (!clipboard) return "";
+  const html = clipboard.getData("text/html");
+  const plain = clipboard.getData("text/plain") || clipboard.getData("text") || "";
+  if (html && /<(?:b|pre|span|div|br)\b/i.test(html)) {
+    return cifraAPartirDeHtml(html);
+  }
+  return plain;
+}
+
 /**
- * Limpa cola do Cifra Club / HTML: restos `">D`, tags e linhas duplicadas.
- * Usar na hora de colar/salvar — a coloração laranja só acontece na exibição.
+ * Limpa cola do Cifra Club / HTML: restos `">`, tags e seções duplicadas.
+ * Mantém as linhas de acorde (Em7, D, B4…) — não apaga como se fossem lixo.
  */
 export function sanitizarTextoCifraColado(texto: string): string {
-  return sanitizarLinhasCifra(texto.split(/\r\n|\n|\r/)).join("\n").replace(/\s+$/, "");
+  const bruto = /<[a-z][\s\S]*?>/i.test(texto) ? cifraAPartirDeHtml(texto) : texto;
+  return sanitizarLinhasCifra(bruto.split(/\r\n|\n|\r/)).join("\n").replace(/\s+$/, "");
 }
 
 export function sanitizarLinhasCifra(linhas: string[]): string[] {
   const normalizadas: string[] = [];
   for (const original of linhas) {
-    const eraLixoHtml = /^\s*["']\s*>/.test(original) || /^\s*>[A-G]/.test(original);
-    let linha = original
-      .replace(/\u00a0/g, " ")
-      .replace(/\t/g, "    ")
-      .replace(/&nbsp;/gi, " ")
-      .replace(/&quot;/gi, '"')
-      .replace(/&#34;/g, '"')
-      .replace(/&gt;/gi, ">")
-      .replace(/&#62;/g, ">")
-      .replace(/&lt;/gi, "<")
-      .replace(/&amp;/gi, "&");
+    let linha = decodificarEntidadesHtml(original).replace(/\t/g, "    ");
 
     if (/<[a-z/][\s\S]*?>/i.test(linha) || /<\/[a-z]+>/i.test(linha)) {
       linha = linha
         .replace(/<br\s*\/?>/gi, "\n")
-        .replace(/<\/(p|div|tr|li|h[1-6])>/gi, "\n")
+        .replace(/<\/(p|div|tr|li|h[1-6]|pre)>/gi, "\n")
+        .replace(/<\/b>\s*<b>/gi, " ")
         .replace(/<[^>]+>/g, "");
     }
 
+    // Cifra Club cola acordes como `">Em7` — tira o prefixo e **mantém** o acorde.
     linha = linha.replace(/["']\s*>\s*(?=[A-G])/g, "");
     linha = linha.replace(/^\s*>\s*(?=[A-G])/g, "");
     linha = linha.replace(/\s+$/, "");
@@ -241,15 +270,18 @@ export function sanitizarLinhasCifra(linhas: string[]): string[] {
     for (const pedaco of linha.split("\n")) {
       const limpa = pedaco.replace(/\s+$/, "");
       if (/^\s*[>"']+\s*$/.test(limpa)) continue;
-      const soAcorde = ehLinhaDeAcordes(limpa) || TOKEN_ACORDE.test(limpa.trim());
-      if (eraLixoHtml && soAcorde) continue;
       normalizadas.push(limpa);
     }
   }
   return deduplicarLinhasCifra(normalizadas);
 }
 
-/** Remove linhas iguais seguidas e pares acorde+letra duplicados (cola do Cifra Club). */
+function ehAcordeIsolado(linha: string): boolean {
+  const t = linha.trim();
+  return TOKEN_ACORDE.test(t);
+}
+
+/** Remove linhas iguais seguidas, seções repetidas e pares acorde+letra duplicados (cola do Cifra Club). */
 export function deduplicarLinhasCifra(linhas: string[]): string[] {
   const out: string[] = [];
   for (let i = 0; i < linhas.length; i += 1) {
@@ -259,6 +291,18 @@ export function deduplicarLinhasCifra(linhas: string[]): string[] {
     const quarta = linhas[i + 3];
 
     if (proxima != null && atual === proxima) {
+      continue;
+    }
+    // [Primeira Parte] / D / [Primeira Parte] → um marcador (acorde solto do HTML).
+    if (
+      ehMarcadorSecao(atual) &&
+      proxima != null &&
+      depois != null &&
+      ehAcordeIsolado(proxima) &&
+      depois.trim() === atual.trim()
+    ) {
+      i += 2;
+      out.push(atual);
       continue;
     }
     if (

@@ -4,7 +4,7 @@ import { AlertCircle, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { obterLetraLouvor, salvarLetraManualLouvor, type LouvorApp } from "@/modules/louvores/api";
-import { sanitizarTextoCifraColado } from "@/lib/cifra-linhas";
+import { sanitizarTextoCifraColado, textoCifraDoClipboard } from "@/lib/cifra-linhas";
 import { toast } from "sonner";
 
 const ESCALA_MIN = 0.9;
@@ -267,10 +267,14 @@ export function VisualizadorLetraLouvor({
               value={textoEdicao}
               onChange={(e) => setTextoEdicao(e.target.value)}
               onPaste={(e) => {
-                const colado = e.clipboardData.getData("text");
+                const colado = textoCifraDoClipboard(e.clipboardData);
                 if (!colado) return;
                 e.preventDefault();
-                setTextoEdicao(sanitizarTextoCifraColado(colado));
+                const alvo = e.currentTarget;
+                const inicio = alvo.selectionStart ?? textoEdicao.length;
+                const fim = alvo.selectionEnd ?? textoEdicao.length;
+                const misturado = textoEdicao.slice(0, inicio) + colado + textoEdicao.slice(fim);
+                setTextoEdicao(sanitizarTextoCifraColado(misturado));
               }}
               placeholder={"[Refrão]\n\nPrimeira linha da letra\nSegunda linha..."}
               className="min-h-[50vh] resize-y bg-zinc-900 text-zinc-100 border-zinc-700 font-sans text-base leading-relaxed"
