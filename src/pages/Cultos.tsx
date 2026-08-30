@@ -45,12 +45,14 @@ import {
   User,
   Check,
   ChevronsUpDown,
+  Share2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess, canWrite } from "@/auth/permissions";
 import { cn } from "@/lib/utils";
 import { ModalResumoCulto } from "@/components/cultos/ModalResumoCulto";
+import { ModalCompartilharCulto } from "@/components/cultos/ModalCompartilharCulto";
 import { ModalSelecionarLouvoresRepertorio } from "@/components/cultos/ModalSelecionarLouvoresRepertorio";
 import { listarDepartamentos, type DepartamentoDTO } from "@/modules/departamentos/api";
 import { listarGrupos, type GrupoLouvorApp } from "@/modules/grupos-louvor/api";
@@ -248,6 +250,7 @@ export default function Cultos() {
   const [mesesAbertosPassados, setMesesAbertosPassados] = useState<Set<string>>(() => new Set());
 
   const [resumo, setResumo] = useState<CultoAgendaItemDTO | null>(null);
+  const [cultoCompartilhar, setCultoCompartilhar] = useState<CultoAgendaItemDTO | null>(null);
   const [detalhe, setDetalhe] = useState<CultoAgendaItemDTO | null>(null);
   const [salvandoDetalhe, setSalvandoDetalhe] = useState(false);
   const [editPregador, setEditPregador] = useState("");
@@ -651,20 +654,23 @@ export default function Cultos() {
       .filter(Boolean)
       .join(" · ");
     return (
-      <button
-        type="button"
+      <div
         className={cn(
-          "w-full text-left rounded-lg border p-2.5 sm:p-3 transition-colors touch-manipulation",
+          "w-full rounded-lg border p-2.5 sm:p-3 transition-colors",
           item.cancelado
-            ? "bg-muted/50 border-dashed opacity-90 hover:bg-muted/70"
+            ? "bg-muted/50 border-dashed opacity-90"
             : destacar
               ? "bg-olive/10 border-olive/40 ring-1 ring-olive/30 shadow-sm"
-              : "bg-card hover:bg-muted/40 active:bg-muted/60",
+              : "bg-card hover:bg-muted/40",
         )}
-        onClick={() => abrirResumo(item)}
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex items-start gap-1">
+          <button
+            type="button"
+            className="min-w-0 flex-1 text-left touch-manipulation active:opacity-90"
+            onClick={() => abrirResumo(item)}
+          >
+            <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               <p
                 className={cn(
@@ -716,8 +722,21 @@ export default function Cultos() {
                 {item.louvores.length} louvor{item.louvores.length !== 1 ? "es" : ""}
               </p>
             )}
-          </div>
+            </div>
+          </button>
           <div className="flex flex-col items-end gap-1 shrink-0">
+            {!item.cancelado && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Compartilhar no WhatsApp"
+                onClick={() => setCultoCompartilhar(item)}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            )}
             <Badge variant="outline" className="text-[10px] whitespace-nowrap">
               {item.tipo === "EXTRAORDINARIO" ? "Extra" : "Recorrente"}
             </Badge>
@@ -728,7 +747,7 @@ export default function Cultos() {
             )}
           </div>
         </div>
-      </button>
+      </div>
     );
   };
 
@@ -1103,6 +1122,12 @@ export default function Cultos() {
             )}
           </Tabs>
         )}
+
+        <ModalCompartilharCulto
+          item={cultoCompartilhar}
+          aberto={!!cultoCompartilhar}
+          onFechar={() => setCultoCompartilhar(null)}
+        />
 
         <ModalResumoCulto
           item={resumo}

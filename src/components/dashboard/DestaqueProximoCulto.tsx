@@ -27,6 +27,7 @@ import {
   Loader2,
   Mic2,
   Music,
+  Share2,
   User,
   Users,
   Youtube,
@@ -37,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ModalResumoCulto, louvorAppDoItem } from "@/components/cultos/ModalResumoCulto";
+import { ModalCompartilharCulto } from "@/components/cultos/ModalCompartilharCulto";
 import { VisualizadorLetraLouvor } from "@/components/louvores/VisualizadorLetraLouvor";
 import { VisualizadorCifraOnlineLouvor } from "@/components/louvores/VisualizadorCifraOnlineLouvor";
 import { usarAutenticacao } from "@/contexts/AuthContext";
@@ -214,6 +216,7 @@ export function DestaqueProximoCulto() {
   const [carregando, setCarregando] = useState(true);
   const [salvandoOrdem, setSalvandoOrdem] = useState(false);
   const [resumoAberto, setResumoAberto] = useState(false);
+  const [compartilharAberto, setCompartilharAberto] = useState(false);
   const [louvorLetra, setLouvorLetra] = useState<LouvorApp | null>(null);
   const [louvorCifra, setLouvorCifra] = useState<LouvorApp | null>(null);
 
@@ -341,7 +344,17 @@ export function DestaqueProximoCulto() {
 
   return (
     <>
-      <Card className="overflow-hidden shadow-md border-olive/25">
+      <Card className="overflow-hidden shadow-md border-olive/25 relative">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="absolute top-2.5 right-2.5 z-10 h-9 w-9 text-white hover:bg-white/20 hover:text-white"
+          title="Compartilhar no WhatsApp"
+          onClick={() => setCompartilharAberto(true)}
+        >
+          <Share2 className="h-4 w-4" />
+        </Button>
         <button
           type="button"
           className="w-full text-left touch-manipulation"
@@ -351,7 +364,7 @@ export function DestaqueProximoCulto() {
             <div className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
             <div className="absolute -left-8 bottom-0 h-28 w-28 rounded-full bg-black/10 blur-xl pointer-events-none" />
             <div className="relative flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-              <div className="min-w-0 space-y-1.5 pr-6 sm:pr-0">
+              <div className="min-w-0 space-y-1.5 pr-10 sm:pr-0">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
                     <Church className="h-4 w-4" />
@@ -478,6 +491,12 @@ export function DestaqueProximoCulto() {
           </Button>
         </div>
       </Card>
+
+      <ModalCompartilharCulto
+        item={culto}
+        aberto={compartilharAberto}
+        onFechar={() => setCompartilharAberto(false)}
+      />
 
       <ModalResumoCulto
         item={culto}
