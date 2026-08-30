@@ -37,15 +37,39 @@ function nomeResponsavel(item: CultoAgendaItemDTO, papel: PapelCultoResponsavel)
   return nome || null;
 }
 
-function linhaLouvor(l: CultoLouvorItemDTO): string {
+function linhaLouvor(l: CultoLouvorItemDTO, numero: number): string {
   const titulo = l.titulo?.trim() || "Louvor";
   const artista = l.artista?.trim();
-  return artista ? `• ${titulo} — ${artista}` : `• ${titulo}`;
+  const base = artista ? `${titulo} — ${artista}` : titulo;
+  return `${numero}. ${base}`;
+}
+
+/** Ordem do drag-and-drop: campo `ordem`, depois posição original na lista. */
+export function ordenarLouvoresCulto(louvores: CultoLouvorItemDTO[]): CultoLouvorItemDTO[] {
+  return [...louvores]
+    .map((l, idx) => ({ l, idx }))
+    .sort((a, b) => {
+      const oa = a.l.ordem ?? a.idx;
+      const ob = b.l.ordem ?? b.idx;
+      if (oa !== ob) return oa - ob;
+      return a.idx - b.idx;
+    })
+    .map(({ l }) => l);
+}
+
+export function urlAppSemear(): string {
+  const env = (import.meta.env.VITE_SITE_URL as string | undefined)?.trim().replace(/\/$/, "");
+  if (env) return env;
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, "");
+  }
+  return "https://minha-igreja-digital-app.vercel.app";
 }
 
 export function montarMensagemCultoWhatsApp(
   item: CultoAgendaItemDTO,
   opcoes: OpcoesCompartilharCulto,
+  urlApp: string = urlAppSemear(),
 ): string {
   const linhas: string[] = [];
   linhas.push(`🙏 *${item.nome.trim() || "Culto"}*`);
@@ -57,12 +81,12 @@ export function montarMensagemCultoWhatsApp(
   }
 
   if (opcoes.louvores && (item.louvores?.length ?? 0) > 0) {
-    const ordenados = [...item.louvores].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+    const ordenados = ordenarLouvoresCulto(item.louvores);
     linhas.push("");
     linhas.push("🎵 *Louvores:*");
-    for (const l of ordenados) {
-      linhas.push(linhaLouvor(l));
-    }
+    ordenados.forEach((l, i) => {
+      linhas.push(linhaLouvor(l, i + 1));
+    });
   }
 
   const portaria = opcoes.portaria ? nomeResponsavel(item, "PORTARIA") : null;
@@ -78,6 +102,10 @@ export function montarMensagemCultoWhatsApp(
 
   linhas.push("");
   linhas.push("Você é bem-vindo(a)! ✨");
+  linhas.push("");
+  linhas.push("—");
+  linhas.push("📱 _Compartilhado pelo app Semear — Minha Igreja Digital_");
+  linhas.push(`🔗 ${urlApp}`);
   return linhas.join("\n");
 }
 

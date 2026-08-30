@@ -493,7 +493,7 @@ export function DestaqueProximoCulto() {
       </Card>
 
       <ModalCompartilharCulto
-        item={culto}
+        item={culto ? { ...culto, louvores } : null}
         aberto={compartilharAberto}
         onFechar={() => setCompartilharAberto(false)}
       />

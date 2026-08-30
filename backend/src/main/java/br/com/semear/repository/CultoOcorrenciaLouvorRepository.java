@@ -32,7 +32,7 @@ public interface CultoOcorrenciaLouvorRepository extends JpaRepository<CultoOcor
         FROM CultoOcorrenciaLouvor col
         JOIN col.louvor l
         WHERE col.cultoOcorrencia.id IN :ocorrenciaIds
-        ORDER BY col.ordem ASC
+        ORDER BY col.cultoOcorrencia.id ASC, col.ordem ASC
         """
     )
     List<CultoLouvorAgendaProjection> findAgendaByOcorrenciaIdIn(@Param("ocorrenciaIds") Collection<Long> ocorrenciaIds);
