@@ -28,6 +28,7 @@ import {
   Mic2,
   Music,
   RotateCcw,
+  Share2,
   Sparkles,
   User,
   Users,
@@ -49,6 +50,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { VisualizadorLetraLouvor } from "@/components/louvores/VisualizadorLetraLouvor";
 import { VisualizadorCifraOnlineLouvor } from "@/components/louvores/VisualizadorCifraOnlineLouvor";
+import { ModalCompartilharCulto } from "@/components/cultos/ModalCompartilharCulto";
 import { cn } from "@/lib/utils";
 import type { LouvorApp } from "@/modules/louvores/api";
 import type { CultoAgendaItemDTO, CultoLouvorItemDTO, PapelCultoResponsavel } from "@/modules/cultos/api";
@@ -226,6 +228,7 @@ export function ModalResumoCulto({
   const [dialogCancelar, setDialogCancelar] = useState(false);
   const [motivoCancelamento, setMotivoCancelamento] = useState("");
   const [salvandoStatus, setSalvandoStatus] = useState(false);
+  const [compartilharAberto, setCompartilharAberto] = useState(false);
 
   useEffect(() => {
     if (!item) {
@@ -537,10 +540,24 @@ export function ModalResumoCulto({
             </section>
           </div>
 
-          <DialogFooter className="border-t px-3.5 py-2.5 sm:px-5 gap-2 flex-col-reverse sm:flex-row sm:flex-wrap sm:justify-end">
-            <Button type="button" variant="outline" className="w-full sm:w-auto h-10 touch-manipulation" onClick={onFechar}>
-              Fechar
-            </Button>
+          <DialogFooter className="border-t px-3.5 py-2.5 sm:px-5 gap-2 flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto">
+              {!item.cancelado && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full sm:w-auto h-10 touch-manipulation"
+                  onClick={() => setCompartilharAberto(true)}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Compartilhar
+                </Button>
+              )}
+              <Button type="button" variant="outline" className="w-full sm:w-auto h-10 touch-manipulation" onClick={onFechar}>
+                Fechar
+              </Button>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto sm:justify-end">
             {podeEditar && item.cancelado && onReativar && (
               <Button
                 type="button"
@@ -578,6 +595,7 @@ export function ModalResumoCulto({
                 Editar culto
               </Button>
             )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -624,6 +642,12 @@ export function ModalResumoCulto({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ModalCompartilharCulto
+        item={item ? { ...item, louvores } : null}
+        aberto={compartilharAberto}
+        onFechar={() => setCompartilharAberto(false)}
+      />
 
       <VisualizadorLetraLouvor
         louvor={louvorLetra}

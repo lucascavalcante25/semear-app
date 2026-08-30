@@ -344,17 +344,7 @@ export function DestaqueProximoCulto() {
 
   return (
     <>
-      <Card className="overflow-hidden shadow-md border-olive/25 relative">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="absolute top-2.5 right-2.5 z-10 h-9 w-9 text-white hover:bg-white/20 hover:text-white"
-          title="Compartilhar no WhatsApp"
-          onClick={() => setCompartilharAberto(true)}
-        >
-          <Share2 className="h-4 w-4" />
-        </Button>
+      <Card className="overflow-hidden shadow-md border-olive/25">
         <button
           type="button"
           className="w-full text-left touch-manipulation"
@@ -364,7 +354,7 @@ export function DestaqueProximoCulto() {
             <div className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10 blur-2xl pointer-events-none" />
             <div className="absolute -left-8 bottom-0 h-28 w-28 rounded-full bg-black/10 blur-xl pointer-events-none" />
             <div className="relative flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-              <div className="min-w-0 space-y-1.5 pr-10 sm:pr-0">
+              <div className="min-w-0 space-y-1.5 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">
                     <Church className="h-4 w-4" />
@@ -482,8 +472,18 @@ export function DestaqueProximoCulto() {
           </div>
         )}
 
-        <div className="border-t px-3.5 py-2 sm:px-4 flex justify-stretch sm:justify-end">
-          <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground h-9 w-full sm:w-auto touch-manipulation">
+        <div className="border-t px-3.5 py-2 sm:px-4 flex items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 touch-manipulation shrink-0"
+            onClick={() => setCompartilharAberto(true)}
+          >
+            <Share2 className="h-4 w-4 mr-1.5" />
+            Compartilhar
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="text-xs text-muted-foreground h-9 touch-manipulation">
             <Link to="/cultos">
               Ir para Culto
               <ChevronRight className="ml-1 h-3 w-3" />
