@@ -365,29 +365,6 @@ function CartaoLouvor({
 }: CartaoLouvorProps) {
   const config = typeConfig[louvor.type];
 
-  const linksExtras = (
-    <>
-      <DropdownMenuItem onClick={() => aoVisualizarLetra?.(louvor)}>
-        <Mic2 className="h-4 w-4 mr-2" />
-        Ver letra
-        {louvor.temLetraSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
-      </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => aoVisualizarCifraOnline?.(louvor)}>
-        <FileText className="h-4 w-4 mr-2" />
-        Cifra online
-        {louvor.temCifraApiSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
-      </DropdownMenuItem>
-      {louvor.youtubeUrl && (
-        <DropdownMenuItem
-          onClick={() => aoAbrirYoutube?.(louvor)}
-        >
-          <Youtube className="h-4 w-4 mr-2" />
-          Ouvir no app
-        </DropdownMenuItem>
-      )}
-    </>
-  );
-
   return (
     <Card className={cn("hover:shadow-md transition-shadow min-w-0 overflow-hidden", compacto && "shadow-none")}>
       <CardContent className={cn("p-3 sm:p-4", compacto && "p-2 sm:p-2.5")}>
@@ -439,67 +416,60 @@ function CartaoLouvor({
           </button>
 
           <div className="flex items-center gap-0.5 shrink-0 -mr-1 sm:mr-0">
-            {!compacto && (
-              <div className="hidden sm:flex items-center gap-0.5">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => aoVisualizarLetra?.(louvor)}
-                    >
-                      <Mic2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => aoVisualizarCifraOnline?.(louvor)}
-                    >
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
-                  </TooltipContent>
-                </Tooltip>
-                {louvor.youtubeUrl && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => aoAbrirYoutube?.(louvor)}
-                      >
-                        <Youtube className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Ouvir no app</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
-            )}
-            {compacto && louvor.youtubeUrl && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-8 w-8 text-foreground",
+                    compacto && "h-7 w-7",
+                    louvor.temLetraSalva && "text-primary",
+                  )}
+                  onClick={() => aoVisualizarLetra?.(louvor)}
+                  aria-label="Ver letra"
+                >
+                  <Mic2 className={cn("h-4 w-4", compacto && "h-3.5 w-3.5")} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-8 w-8 text-foreground",
+                    compacto && "h-7 w-7",
+                    louvor.temCifraApiSalva && "text-primary",
+                  )}
+                  onClick={() => aoVisualizarCifraOnline?.(louvor)}
+                  aria-label="Ver cifra"
+                >
+                  <FileText className={cn("h-4 w-4", compacto && "h-3.5 w-3.5")} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
+              </TooltipContent>
+            </Tooltip>
+            {louvor.youtubeUrl && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className={cn("h-8 w-8", compacto && "h-7 w-7")}
                     onClick={() => aoAbrirYoutube?.(louvor)}
+                    aria-label="Ouvir no app"
                   >
-                    <Youtube className="h-3.5 w-3.5" />
+                    <Youtube className={cn("h-4 w-4", compacto && "h-3.5 w-3.5")} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -521,29 +491,6 @@ function CartaoLouvor({
                 </TooltipContent>
               </Tooltip>
               <DropdownMenuContent align="end" className="w-52">
-                {compacto ? (
-                  <>
-                    <DropdownMenuItem onClick={() => aoVisualizarLetra?.(louvor)}>
-                      <Mic2 className="h-4 w-4 mr-2" />
-                      Ver letra
-                      {louvor.temLetraSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => aoVisualizarCifraOnline?.(louvor)}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Cifra online
-                      {louvor.temCifraApiSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
-                    </DropdownMenuItem>
-                    {louvor.youtubeUrl && (
-                      <DropdownMenuItem onClick={() => aoAbrirYoutube?.(louvor)}>
-                        <Youtube className="h-4 w-4 mr-2" />
-                        Ouvir no app
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                  </>
-                ) : (
-                  <div className="sm:hidden">{linksExtras}</div>
-                )}
                 <DropdownMenuItem onClick={() => aoVerDetalhes?.(louvor)}>
                   <Music className="h-4 w-4 mr-2" />
                   Ver detalhes
@@ -611,6 +558,7 @@ export default function PaginaLouvores() {
   );
 
   const [buscaTexto, setBuscaTexto] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState<"todos" | LouvorApp["type"]>("todos");
   const [louvores, setLouvores] = useState<LouvorApp[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [dialogAberto, setDialogAberto] = useState(false);
@@ -1012,15 +960,23 @@ export default function PaginaLouvores() {
 
   const louvoresFiltrados = useMemo(() => {
     const q = buscaTexto.trim().toLowerCase();
-    if (!q) return louvores;
-    return louvores.filter(
-      (l) =>
+    return louvores.filter((l) => {
+      if (filtroTipo !== "todos" && l.type !== filtroTipo) return false;
+      if (!q) return true;
+      return (
         l.title.toLowerCase().includes(q) ||
         l.artist.toLowerCase().includes(q) ||
-        (l.key ?? "").toLowerCase().includes(q),
-    );
-  }, [louvores, buscaTexto]);
+        (l.key ?? "").toLowerCase().includes(q) ||
+        typeConfig[l.type].label.toLowerCase().includes(q)
+      );
+    });
+  }, [louvores, buscaTexto, filtroTipo]);
   const obterLouvorPorId = (id: string) => louvores.find((p) => p.id === id);
+  const temFiltroAtivo = Boolean(buscaTexto.trim()) || filtroTipo !== "todos";
+  const limparFiltros = () => {
+    setBuscaTexto("");
+    setFiltroTipo("todos");
+  };
 
   return (
     <LayoutApp largura="ampla">
@@ -1212,8 +1168,8 @@ export default function PaginaLouvores() {
           defaultValue="groups"
           className="w-full min-w-0"
           onValueChange={(aba) => {
-            // Busca fica só no Repertório; ao voltar aos grupos, limpa para não confundir.
-            if (aba === "groups" && buscaTexto) setBuscaTexto("");
+            // Busca/filtros ficam só no Repertório; ao voltar aos grupos, limpa.
+            if (aba === "groups" && (buscaTexto || filtroTipo !== "todos")) limparFiltros();
           }}
         >
           <TabsList className="grid w-full grid-cols-2 min-w-0">
@@ -1423,14 +1379,42 @@ export default function PaginaLouvores() {
           </TabsContent>
 
           <TabsContent value="all" className="mt-4 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar louvor..."
-                className="pl-10"
-                value={buscaTexto}
-                onChange={(e) => setBuscaTexto(e.target.value)}
-              />
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por título, artista ou tom..."
+                  className="pl-10"
+                  value={buscaTexto}
+                  onChange={(e) => setBuscaTexto(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={filtroTipo === "todos" ? "default" : "outline"}
+                  className="h-8 rounded-full px-3 text-xs"
+                  onClick={() => setFiltroTipo("todos")}
+                >
+                  Todos
+                </Button>
+                {TIPOS_LOUVOR.map((t) => (
+                  <Button
+                    key={t.value}
+                    type="button"
+                    size="sm"
+                    variant={filtroTipo === t.value ? "default" : "outline"}
+                    className={cn(
+                      "h-8 rounded-full px-3 text-xs",
+                      filtroTipo !== t.value && typeConfig[t.value].color,
+                    )}
+                    onClick={() => setFiltroTipo(t.value)}
+                  >
+                    {t.label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {carregando ? (
@@ -1438,7 +1422,7 @@ export default function PaginaLouvores() {
                 <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 md:items-start">
                 {louvoresFiltrados.map((louvor) => (
                   <CartaoLouvor
                     key={louvor.id}
@@ -1449,22 +1433,25 @@ export default function PaginaLouvores() {
                     aoVisualizarLetra={abrirVisualizadorLetra}
                     aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
                     aoAbrirYoutube={aoAbrirYoutube}
+                    compacto
                   />
                 ))}
                 {louvoresFiltrados.length === 0 && (
-                  <div className="text-center py-12">
+                  <div className="col-span-full text-center py-12">
                     <Music className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                     <p className="text-muted-foreground">
-                      {buscaTexto.trim() ? "Nenhum louvor encontrado para esta busca" : "Nenhum louvor encontrado"}
+                      {temFiltroAtivo
+                        ? "Nenhum louvor encontrado para esta busca"
+                        : "Nenhum louvor encontrado"}
                     </p>
-                    {!buscaTexto.trim() && podeCadastrar && (
+                    {!temFiltroAtivo && podeCadastrar && (
                       <p className="text-sm text-muted-foreground mt-2">
                         Clique em <strong>Novo Louvor</strong> no canto superior direito para cadastrar seu primeiro louvor.
                       </p>
                     )}
-                    {buscaTexto.trim() && (
-                      <Button variant="outline" className="mt-4" onClick={() => setBuscaTexto("")}>
-                        Limpar busca
+                    {temFiltroAtivo && (
+                      <Button variant="outline" className="mt-4" onClick={limparFiltros}>
+                        Limpar filtros
                       </Button>
                     )}
                   </div>
