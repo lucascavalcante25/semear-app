@@ -10,12 +10,15 @@ import { BarraLateral } from "./Sidebar";
 import { usarEhMobile } from "@/hooks/use-mobile";
 import { ModalInformativoLogin } from "@/components/informativo/ModalInformativoLogin";
 import { ModalAvisoEscalaLogin } from "@/components/escalas/ModalAvisoEscalaLogin";
+import { cn } from "@/lib/utils";
 
 interface LayoutAppProps {
   children: ReactNode;
+  /** `ampla` usa quase toda a área útil (ex.: grade de grupos em Louvores). */
+  largura?: "padrao" | "ampla";
 }
 
-export function LayoutApp({ children }: LayoutAppProps) {
+export function LayoutApp({ children, largura = "padrao" }: LayoutAppProps) {
   const isMobile = usarEhMobile();
   const { nomeExibicao } = useIgrejaConfiguracao();
   useTituloDocumento({ igreja: nomeExibicao, area: "produto" });
@@ -39,7 +42,12 @@ export function LayoutApp({ children }: LayoutAppProps) {
         {!isMobile && <BarraLateral />}
 
         <main className="flex-1 min-w-0 overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 md:ml-64">
-          <div className="w-full max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div
+            className={cn(
+              "w-full mx-auto px-4 md:px-6 py-4 md:py-6",
+              largura === "ampla" ? "max-w-[1600px]" : "max-w-4xl",
+            )}
+          >
             <BannerTesteGratis />
             {children}
           </div>

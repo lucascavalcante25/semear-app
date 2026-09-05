@@ -1023,7 +1023,7 @@ export default function PaginaLouvores() {
   const obterLouvorPorId = (id: string) => louvores.find((p) => p.id === id);
 
   return (
-    <LayoutApp>
+    <LayoutApp largura="ampla">
       <div className="space-y-4 animate-fade-in min-w-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 min-w-0">
@@ -1233,7 +1233,7 @@ export default function PaginaLouvores() {
                 <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 md:items-start">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 md:items-start">
                 {grupos.filter((g): g is GrupoLouvorApp => g != null).map((grupo) => {
                   const louvoresNoGrupo = grupo.louvorIds
                     .map((id) => obterLouvorPorId(id))
