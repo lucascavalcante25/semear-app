@@ -520,7 +520,7 @@ export function ModalResumoCulto({
                     items={louvores.map((l) => String(l.louvorId))}
                     strategy={rectSortingStrategy}
                   >
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                    <ul className="grid grid-cols-1 gap-1 min-[900px]:grid-cols-2">
                       {louvores.map((l, i) => (
                         <SortableLouvorRow
                           key={l.louvorId}

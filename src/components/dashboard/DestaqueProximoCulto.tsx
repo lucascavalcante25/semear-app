@@ -137,12 +137,12 @@ function SortableLouvorCard({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="font-medium truncate leading-snug">
+        <p className="font-medium line-clamp-2 leading-snug break-words">
           {podeArrastar ? `${indice + 1}. ` : ""}
           {item.titulo}
         </p>
         {item.artista && (
-          <p className="text-[11px] text-muted-foreground truncate leading-tight">{item.artista}</p>
+          <p className="text-[11px] text-muted-foreground line-clamp-1 leading-tight break-words">{item.artista}</p>
         )}
       </div>
       <div className="flex items-center shrink-0">
@@ -455,7 +455,7 @@ export function DestaqueProximoCulto() {
             </div>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void aoFimDrag(e)}>
               <SortableContext items={louvores.map((l) => String(l.louvorId))} strategy={rectSortingStrategy}>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <ul className="grid grid-cols-1 gap-1.5 min-[900px]:grid-cols-2">
                   {louvores.map((l, i) => (
                     <SortableLouvorCard
                       key={l.louvorId}

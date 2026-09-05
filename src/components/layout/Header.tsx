@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MenuMobile } from "./MobileMenu";
 import { usarEhMobile } from "@/hooks/use-mobile";
 import { usarNotificacoes } from "@/contexts/NotificationsContext";
+import { useSidebarLayout } from "@/contexts/SidebarLayoutContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,11 +28,13 @@ import { podeVerPreCadastrosPendentes } from "@/lib/pre-cadastro-permissoes";
 import { Link, useNavigate } from "react-router-dom";
 import { usarTema } from "@/contexts/ThemeContext";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
+import { cn } from "@/lib/utils";
 
 
 export function Cabecalho() {
   const isMobile = usarEhMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { aberta: sidebarAberta, alternar: alternarSidebar } = useSidebarLayout();
   const { pendentesCount, notificacoes } = usarNotificacoes();
   const { user, logout } = usarAutenticacao();
   const cargosIgreja = useCargosIgreja();
@@ -60,12 +63,17 @@ export function Cabecalho() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass safe-top overflow-visible">
       <div className="flex h-14 md:h-16 items-center">
-        {/* Marca (alinhada com a sidebar no desktop) */}
-        <div className="flex items-center gap-2 px-3 md:px-4 h-full shrink-0 min-w-0 md:w-64 md:border-r md:border-border">
-          {isMobile && (
+        {/* Marca + menu (hambúrguer no mobile; recolher sidebar no tablet/desktop) */}
+        <div
+          className={cn(
+            "flex items-center gap-2 px-3 md:px-4 h-full shrink-0 min-w-0 md:border-r md:border-border transition-[width] duration-200",
+            !isMobile && sidebarAberta ? "md:w-64" : "md:w-auto",
+          )}
+        >
+          {isMobile ? (
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon-sm">
+                <Button variant="ghost" size="icon-sm" aria-label="Abrir menu">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -73,6 +81,17 @@ export function Cabecalho() {
                 <MenuMobile onClose={() => setIsMenuOpen(false)} />
               </SheetContent>
             </Sheet>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={sidebarAberta ? "Esconder menu lateral" : "Mostrar menu lateral"}
+              title={sidebarAberta ? "Esconder menu" : "Mostrar menu"}
+              onClick={alternarSidebar}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
           )}
 
           <Link to="/" className="flex items-center gap-2 min-w-0">
@@ -84,11 +103,11 @@ export function Cabecalho() {
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="flex flex-col min-w-0">
+            <div className={cn("flex flex-col min-w-0", !isMobile && !sidebarAberta && "hidden lg:flex")}>
               <span className="text-lg font-bold tracking-tight text-foreground truncate">
                 {nomeExibicao}
               </span>
-              {!isMobile && subtituloExibicao && (
+              {!isMobile && subtituloExibicao && sidebarAberta && (
                 <span className="text-[10px] text-muted-foreground -mt-0.5 truncate">
                   {subtituloExibicao}
                 </span>

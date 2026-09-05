@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { BannerTesteGratis } from "@/components/comercial/BannerTesteGratis";
 import { BotaoFlutuanteSuporte } from "@/components/suporte/BotaoFlutuanteSuporte";
 import { useIgrejaConfiguracao } from "@/contexts/IgrejaContext";
+import { ProvedorSidebarLayout, useSidebarLayout } from "@/contexts/SidebarLayoutContext";
 import { useTituloDocumento } from "@/hooks/use-titulo-documento";
 import { Cabecalho } from "./Header";
 import { NavegacaoInferior } from "./BottomNav";
@@ -18,8 +19,9 @@ interface LayoutAppProps {
   largura?: "padrao" | "ampla";
 }
 
-export function LayoutApp({ children, largura = "padrao" }: LayoutAppProps) {
+function LayoutAppInterno({ children, largura = "padrao" }: LayoutAppProps) {
   const isMobile = usarEhMobile();
+  const { aberta: sidebarAberta } = useSidebarLayout();
   const { nomeExibicao } = useIgrejaConfiguracao();
   useTituloDocumento({ igreja: nomeExibicao, area: "produto" });
 
@@ -34,18 +36,25 @@ export function LayoutApp({ children, largura = "padrao" }: LayoutAppProps) {
         )
       : null;
 
+  const mostrarSidebarDesktop = !isMobile && sidebarAberta;
+
   return (
     <div className="min-h-screen bg-background">
       {navegacaoFixa}
 
       <div className="flex min-w-0 pt-14 md:pt-16">
-        {!isMobile && <BarraLateral />}
+        {mostrarSidebarDesktop && <BarraLateral />}
 
-        <main className="flex-1 min-w-0 overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 md:ml-64">
+        <main
+          className={cn(
+            "flex-1 min-w-0 overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-6 transition-[margin] duration-200",
+            mostrarSidebarDesktop ? "md:ml-64" : "md:ml-0",
+          )}
+        >
           <div
             className={cn(
-              "w-full mx-auto px-4 md:px-6 py-4 md:py-6",
-              largura === "ampla" ? "max-w-[1600px]" : "max-w-4xl",
+              "w-full mx-auto px-3 sm:px-4 md:px-6 py-4 md:py-6",
+              largura === "ampla" ? "max-w-none" : "max-w-4xl",
             )}
           >
             <BannerTesteGratis />
@@ -58,5 +67,13 @@ export function LayoutApp({ children, largura = "padrao" }: LayoutAppProps) {
       <ModalInformativoLogin />
       <ModalAvisoEscalaLogin />
     </div>
+  );
+}
+
+export function LayoutApp(props: LayoutAppProps) {
+  return (
+    <ProvedorSidebarLayout>
+      <LayoutAppInterno {...props} />
+    </ProvedorSidebarLayout>
   );
 }

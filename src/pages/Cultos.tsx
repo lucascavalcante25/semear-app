@@ -15,7 +15,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  dialogContentSizeDefault,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -50,7 +52,6 @@ import {
 import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
 import { canAccess, canWrite } from "@/auth/permissions";
-import { cn } from "@/lib/utils";
 import { ModalResumoCulto } from "@/components/cultos/ModalResumoCulto";
 import { ModalCompartilharCulto } from "@/components/cultos/ModalCompartilharCulto";
 import { ModalSelecionarLouvoresRepertorio } from "@/components/cultos/ModalSelecionarLouvoresRepertorio";
@@ -1146,10 +1147,15 @@ export default function Cultos() {
         />
 
         <Dialog open={!!detalhe} onOpenChange={(o) => !o && setDetalhe(null)}>
-          <DialogContent className="max-h-[90dvh] overflow-y-auto w-[calc(100vw-1.5rem)] max-w-lg p-4 sm:p-6">
+          <DialogContent
+            className={cn(
+              dialogContentSizeDefault,
+              "flex max-h-[92dvh] w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:w-full",
+            )}
+          >
             {detalhe && (
               <>
-                <DialogHeader className="pr-6">
+                <DialogHeader className="shrink-0 space-y-1 border-b px-4 pb-3 pt-5 pr-12 text-left sm:px-6 sm:pt-6">
                   <DialogTitle className="text-left text-base sm:text-lg leading-snug break-words">
                     {detalhe.nome}
                   </DialogTitle>
@@ -1158,7 +1164,7 @@ export default function Cultos() {
                     {detalhe.temEscalaGerada ? " · Escala gerada" : ""}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-3 py-2">
+                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6 sm:py-4">
                   <div className="space-y-1">
                     <Label>Pregador da palavra</Label>
                     <Input
@@ -1237,7 +1243,7 @@ export default function Cultos() {
                       <ul className="text-sm space-y-1">
                         {editLouvores.map((l, i) => (
                           <li key={l.louvorId} className="flex items-center justify-between gap-2">
-                            <span>
+                            <span className="min-w-0 break-words">
                               {i + 1}. {l.titulo}
                               {l.artista ? ` — ${l.artista}` : ""}
                             </span>
@@ -1246,7 +1252,7 @@ export default function Cultos() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-7 w-7 shrink-0"
                                 onClick={() => setEditLouvores((p) => p.filter((x) => x.louvorId !== l.louvorId))}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -1323,7 +1329,7 @@ export default function Cultos() {
                   </div>
                 </div>
                 {podeEditar && (
-                  <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+                  <DialogFooter className="shrink-0 flex-col-reverse gap-2 border-t bg-background px-4 py-3 sm:flex-row sm:px-6">
                     <Button variant="outline" className="w-full sm:w-auto" onClick={() => setDetalhe(null)}>
                       Cancelar
                     </Button>
