@@ -141,4 +141,39 @@ describe("cifra-linhas — sanitizar cola", () => {
     const limpa = "[Intro] G  C9  Em7  D\n\nG                    C9\nEu vejo a glória";
     expect(sanitizarTextoCifraColado(limpa)).toBe(limpa);
   });
+
+  it("corrige letra/acorde/mesma letra (cola Cifra Club — Fernandinho)", () => {
+    const bruto = [
+      "Tom: D",
+      "Tom: D",
+      "[Refrão]",
+      "D",
+      "[Refrão]",
+      "Se não for pra te adorar",
+      "D",
+      "Se não for pra te adorar",
+      "Para que nasci?",
+      "G",
+      "Para que nasci?",
+      "Se não for pra Te servir",
+      "Bm7",
+      "Se não for pra Te servir",
+      "Por que estou aqui?",
+      "A2",
+      "Por que estou aqui?",
+    ].join("\n");
+    const limpo = sanitizarTextoCifraColado(bruto);
+    const linhas = limpo.split("\n");
+    expect(linhas.filter((l) => l === "Tom: D")).toHaveLength(1);
+    expect(linhas.filter((l) => l === "[Refrão]")).toHaveLength(1);
+    expect(linhas.filter((l) => l === "Se não for pra te adorar")).toHaveLength(1);
+    expect(linhas.filter((l) => l === "Para que nasci?")).toHaveLength(1);
+    expect(linhas.filter((l) => l === "Se não for pra Te servir")).toHaveLength(1);
+    expect(linhas.filter((l) => l === "Por que estou aqui?")).toHaveLength(1);
+    // Ordem correta: acorde acima da letra
+    expect(limpo).toContain("D\nSe não for pra te adorar");
+    expect(limpo).toContain("G\nPara que nasci?");
+    expect(limpo).toContain("Bm7\nSe não for pra Te servir");
+    expect(limpo).toContain("A2\nPor que estou aqui?");
+  });
 });

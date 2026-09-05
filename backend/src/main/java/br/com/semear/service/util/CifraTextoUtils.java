@@ -70,10 +70,43 @@ public final class CifraTextoUtils {
             String proxima = i + 1 < linhas.size() ? linhas.get(i + 1) : null;
             String depois = i + 2 < linhas.size() ? linhas.get(i + 2) : null;
             String quarta = i + 3 < linhas.size() ? linhas.get(i + 3) : null;
-            if (proxima != null && atual.equals(proxima)) {
+            if (proxima != null && linhasIguais(atual, proxima)) {
                 continue;
             }
-            if (proxima != null && depois != null && quarta != null && atual.equals(depois) && proxima.equals(quarta)) {
+            // [Refrão] / D / [Refrão] → um marcador
+            if (
+                ehMarcadorSecao(atual) &&
+                proxima != null &&
+                depois != null &&
+                pareceSoAcorde(proxima.trim()) &&
+                linhasIguais(depois, atual)
+            ) {
+                i += 2;
+                out.add(atual.stripTrailing());
+                continue;
+            }
+            // letra / acorde / mesma letra → acorde + letra
+            if (
+                proxima != null &&
+                depois != null &&
+                linhasIguais(atual, depois) &&
+                !atual.isBlank() &&
+                !ehMarcadorSecao(atual) &&
+                !pareceSoAcorde(atual.trim()) &&
+                pareceSoAcorde(proxima.trim())
+            ) {
+                out.add(proxima);
+                out.add(depois);
+                i += 2;
+                continue;
+            }
+            if (
+                proxima != null &&
+                depois != null &&
+                quarta != null &&
+                linhasIguais(atual, depois) &&
+                linhasIguais(proxima, quarta)
+            ) {
                 i++;
                 continue;
             }
@@ -83,6 +116,15 @@ public final class CifraTextoUtils {
             out.remove(out.size() - 1);
         }
         return out;
+    }
+
+    private static boolean linhasIguais(String a, String b) {
+        return a.trim().equals(b.trim());
+    }
+
+    private static boolean ehMarcadorSecao(String linha) {
+        String t = linha.trim();
+        return (t.startsWith("[") && t.endsWith("]")) || (t.startsWith("(") && t.endsWith(")"));
     }
 
     private static boolean pareceSoAcorde(String texto) {

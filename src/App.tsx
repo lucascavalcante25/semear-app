@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ProvedorAutenticacao } from "@/contexts/AuthContext";
 import { ProvedorNotificacoes } from "@/contexts/NotificationsContext";
+import { ProvedorYoutubeMiniPlayer } from "@/contexts/YoutubeMiniPlayerContext";
+import { YoutubeMiniPlayerHost } from "@/components/louvores/YoutubeMiniPlayer";
 import { RequerAutenticacao } from "@/components/auth/RequireAuth";
 import { ProvedorTema } from "@/contexts/ThemeContext";
 import { ProvedorIgreja } from "@/contexts/IgrejaContext";
@@ -85,6 +87,7 @@ const App = () => (
         <ProvedorAutenticacao>
           <ProvedorIgreja>
           <ProvedorNotificacoes>
+          <ProvedorYoutubeMiniPlayer>
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <RastreadorAnalytics />
             <MetaVerificacaoGoogle />
@@ -92,6 +95,7 @@ const App = () => (
             <SincronizarIgreja />
             <SincronizarCoresIgreja />
             <LimparBloqueioNavegacao />
+            <YoutubeMiniPlayerHost />
             <Suspense fallback={<CarregandoPagina />}>
             <Routes>
               <Route path="/login" element={<Entrar />} />
@@ -372,6 +376,7 @@ const App = () => (
             </Routes>
             </Suspense>
           </BrowserRouter>
+          </ProvedorYoutubeMiniPlayer>
           </ProvedorNotificacoes>
           </ProvedorIgreja>
         </ProvedorAutenticacao>

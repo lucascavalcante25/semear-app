@@ -281,6 +281,14 @@ function ehAcordeIsolado(linha: string): boolean {
   return TOKEN_ACORDE.test(t);
 }
 
+function linhasIguais(a: string, b: string): boolean {
+  return a.trim() === b.trim();
+}
+
+function ehLinhaDeAcordeUtil(linha: string): boolean {
+  return ehAcordeIsolado(linha) || ehLinhaDeAcordes(linha);
+}
+
 /** Remove linhas iguais seguidas, seções repetidas e pares acorde+letra duplicados (cola do Cifra Club). */
 export function deduplicarLinhasCifra(linhas: string[]): string[] {
   const out: string[] = [];
@@ -290,7 +298,7 @@ export function deduplicarLinhasCifra(linhas: string[]): string[] {
     const depois = linhas[i + 2];
     const quarta = linhas[i + 3];
 
-    if (proxima != null && atual === proxima) {
+    if (proxima != null && linhasIguais(atual, proxima)) {
       continue;
     }
     // [Primeira Parte] / D / [Primeira Parte] → um marcador (acorde solto do HTML).
@@ -298,19 +306,35 @@ export function deduplicarLinhasCifra(linhas: string[]): string[] {
       ehMarcadorSecao(atual) &&
       proxima != null &&
       depois != null &&
-      ehAcordeIsolado(proxima) &&
-      depois.trim() === atual.trim()
+      ehLinhaDeAcordeUtil(proxima) &&
+      linhasIguais(depois, atual)
     ) {
       i += 2;
-      out.push(atual);
+      out.push(atual.trim() === atual ? atual : atual.replace(/\s+$/, ""));
       continue;
     }
+    // letra / acorde / mesma letra → acorde + letra (ordem correta da cifra)
+    if (
+      proxima != null &&
+      depois != null &&
+      linhasIguais(atual, depois) &&
+      atual.trim() !== "" &&
+      !ehMarcadorSecao(atual) &&
+      !ehLinhaDeAcordeUtil(atual) &&
+      ehLinhaDeAcordeUtil(proxima)
+    ) {
+      out.push(proxima);
+      out.push(depois);
+      i += 2;
+      continue;
+    }
+    // acorde+letra repetidos em seguida (A B A B)
     if (
       proxima != null &&
       depois != null &&
       quarta != null &&
-      atual === depois &&
-      proxima === quarta
+      linhasIguais(atual, depois) &&
+      linhasIguais(proxima, quarta)
     ) {
       i += 1;
       continue;

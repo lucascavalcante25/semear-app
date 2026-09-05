@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usarAutenticacao } from "@/contexts/AuthContext";
+import { useYoutubeMiniPlayer } from "@/contexts/YoutubeMiniPlayerContext";
 import { canWrite } from "@/auth/permissions";
 import {
   listarLouvores,
@@ -143,7 +144,9 @@ interface CartaoLouvorProps {
   aoVerDetalhes?: (louvor: LouvorApp) => void;
   aoVisualizarLetra?: (louvor: LouvorApp) => void;
   aoVisualizarCifraOnline?: (louvor: LouvorApp) => void;
+  aoAbrirYoutube?: (louvor: LouvorApp) => void;
   showDrag?: boolean;
+  compacto?: boolean;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
@@ -161,6 +164,7 @@ function DialogDetalheLouvor({
   onLouvorAtualizado,
   noGrupo,
   aoRemoverDoGrupo,
+  aoAbrirYoutube,
 }: {
   louvor: LouvorApp | null;
   aberto: boolean;
@@ -173,6 +177,7 @@ function DialogDetalheLouvor({
   onLouvorAtualizado?: (louvor: LouvorApp) => void;
   noGrupo?: boolean;
   aoRemoverDoGrupo?: (louvor: LouvorApp) => void;
+  aoAbrirYoutube?: (louvor: LouvorApp) => void;
 }) {
   const [tom, setTom] = useState("");
   const [salvandoTom, setSalvandoTom] = useState(false);
@@ -274,11 +279,17 @@ function DialogDetalheLouvor({
               )}
             </Button>
             {louvor.youtubeUrl && (
-              <Button variant="outline" size="sm" className="justify-start" asChild>
-                <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
-                  <Youtube className="h-4 w-4 mr-2" />
-                  Abrir no YouTube
-                </a>
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-start"
+                onClick={() => {
+                  onAbertoChange(false);
+                  aoAbrirYoutube?.(louvor);
+                }}
+              >
+                <Youtube className="h-4 w-4 mr-2" />
+                Ouvir no app
               </Button>
             )}
           </div>
@@ -345,7 +356,9 @@ function CartaoLouvor({
   aoVerDetalhes,
   aoVisualizarLetra,
   aoVisualizarCifraOnline,
+  aoAbrirYoutube,
   showDrag,
+  compacto,
   noGrupo,
   aoRemoverDoGrupo,
   dragHandleProps,
@@ -365,28 +378,31 @@ function CartaoLouvor({
         {louvor.temCifraApiSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
       </DropdownMenuItem>
       {louvor.youtubeUrl && (
-        <DropdownMenuItem asChild>
-          <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
-            <Youtube className="h-4 w-4 mr-2" />
-            Abrir no YouTube
-          </a>
+        <DropdownMenuItem
+          onClick={() => aoAbrirYoutube?.(louvor)}
+        >
+          <Youtube className="h-4 w-4 mr-2" />
+          Ouvir no app
         </DropdownMenuItem>
       )}
     </>
   );
 
   return (
-    <Card className="hover:shadow-md transition-shadow min-w-0 overflow-hidden">
-      <CardContent className="p-3 sm:p-4">
-        <div className="flex items-start gap-2 sm:gap-3 min-w-0">
+    <Card className={cn("hover:shadow-md transition-shadow min-w-0 overflow-hidden", compacto && "shadow-none")}>
+      <CardContent className={cn("p-3 sm:p-4", compacto && "p-2 sm:p-2.5")}>
+        <div className={cn("flex items-start gap-2 sm:gap-3 min-w-0", compacto && "gap-1.5 sm:gap-2")}>
           {showDrag && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <div
                   {...dragHandleProps}
-                  className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted shrink-0 mt-0.5"
+                  className={cn(
+                    "cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted shrink-0 mt-0.5",
+                    compacto && "p-0.5",
+                  )}
                 >
-                  <GripVertical className="h-5 w-5 text-muted-foreground" />
+                  <GripVertical className={cn("h-5 w-5 text-muted-foreground", compacto && "h-4 w-4")} />
                 </div>
               </TooltipTrigger>
               <TooltipContent>
@@ -395,7 +411,12 @@ function CartaoLouvor({
             </Tooltip>
           )}
 
-          <div className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold-dark font-bold text-xs sm:text-sm">
+          <div
+            className={cn(
+              "flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold-dark font-bold text-xs sm:text-sm",
+              compacto && "h-8 w-8 sm:h-8 sm:w-8 text-[11px]",
+            )}
+          >
             {louvor.key || "—"}
           </div>
 
@@ -404,72 +425,94 @@ function CartaoLouvor({
             className="flex-1 min-w-0 text-left rounded-md -my-1 py-1 px-0.5 hover:bg-muted/50 transition-colors"
             onClick={() => aoVerDetalhes?.(louvor)}
           >
-            <h3 className="font-semibold text-sm sm:text-base leading-snug break-words">
+            <h3 className={cn("font-semibold text-sm sm:text-base leading-snug break-words", compacto && "text-sm line-clamp-2")}>
               {louvor.title}
             </h3>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <Badge variant="outline" className={cn("text-[10px] sm:text-xs shrink-0", config.color)}>
+            <div className={cn("mt-1 flex flex-wrap items-center gap-x-2 gap-y-1", compacto && "mt-0.5 gap-x-1.5")}>
+              <Badge variant="outline" className={cn("text-[10px] sm:text-xs shrink-0", config.color, compacto && "text-[10px] px-1.5 py-0")}>
                 {config.label}
               </Badge>
-              <p className="text-xs sm:text-sm text-muted-foreground break-words min-w-0">
+              <p className={cn("text-xs sm:text-sm text-muted-foreground break-words min-w-0", compacto && "text-[11px] truncate")}>
                 {louvor.artist}
               </p>
             </div>
           </button>
 
           <div className="flex items-center gap-0.5 shrink-0 -mr-1 sm:mr-0">
-            <div className="hidden sm:flex items-center gap-0.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => aoVisualizarLetra?.(louvor)}
-                  >
-                    <Mic2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => aoVisualizarCifraOnline?.(louvor)}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
-                </TooltipContent>
-              </Tooltip>
-              {louvor.youtubeUrl && (
+            {!compacto && (
+              <div className="hidden sm:flex items-center gap-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                      <a href={louvor.youtubeUrl} target="_blank" rel="noopener noreferrer">
-                        <Youtube className="h-4 w-4" />
-                      </a>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => aoVisualizarLetra?.(louvor)}
+                    >
+                      <Mic2 className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Abrir no YouTube</p>
+                    <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
                   </TooltipContent>
                 </Tooltip>
-              )}
-            </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => aoVisualizarCifraOnline?.(louvor)}
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
+                  </TooltipContent>
+                </Tooltip>
+                {louvor.youtubeUrl && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => aoAbrirYoutube?.(louvor)}
+                      >
+                        <Youtube className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ouvir no app</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            )}
+            {compacto && louvor.youtubeUrl && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => aoAbrirYoutube?.(louvor)}
+                  >
+                    <Youtube className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ouvir no app</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             <DropdownMenu>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                      <MoreVertical className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className={cn("h-8 w-8 shrink-0", compacto && "h-7 w-7")}>
+                      <MoreVertical className={cn("h-4 w-4", compacto && "h-3.5 w-3.5")} />
                     </Button>
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
@@ -478,7 +521,29 @@ function CartaoLouvor({
                 </TooltipContent>
               </Tooltip>
               <DropdownMenuContent align="end" className="w-52">
-                <div className="sm:hidden">{linksExtras}</div>
+                {compacto ? (
+                  <>
+                    <DropdownMenuItem onClick={() => aoVisualizarLetra?.(louvor)}>
+                      <Mic2 className="h-4 w-4 mr-2" />
+                      Ver letra
+                      {louvor.temLetraSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => aoVisualizarCifraOnline?.(louvor)}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Cifra online
+                      {louvor.temCifraApiSalva && <span className="ml-auto text-[10px] text-muted-foreground">salva</span>}
+                    </DropdownMenuItem>
+                    {louvor.youtubeUrl && (
+                      <DropdownMenuItem onClick={() => aoAbrirYoutube?.(louvor)}>
+                        <Youtube className="h-4 w-4 mr-2" />
+                        Ouvir no app
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                  </>
+                ) : (
+                  <div className="sm:hidden">{linksExtras}</div>
+                )}
                 <DropdownMenuItem onClick={() => aoVerDetalhes?.(louvor)}>
                   <Music className="h-4 w-4 mr-2" />
                   Ver detalhes
@@ -535,6 +600,15 @@ function SortableCartaoLouvor(props: SortableCartaoLouvorProps) {
 export default function PaginaLouvores() {
   const { user } = usarAutenticacao();
   const podeCadastrar = canWrite(user, "/louvores");
+  const { abrir: abrirYoutube } = useYoutubeMiniPlayer();
+
+  const aoAbrirYoutube = useCallback(
+    (louvor: LouvorApp) => {
+      if (!louvor.youtubeUrl) return;
+      abrirYoutube({ url: louvor.youtubeUrl, titulo: louvor.title });
+    },
+    [abrirYoutube],
+  );
 
   const [buscaTexto, setBuscaTexto] = useState("");
   const [louvores, setLouvores] = useState<LouvorApp[]>([]);
@@ -579,7 +653,9 @@ export default function PaginaLouvores() {
   const carregarLouvores = useCallback(async () => {
     setCarregando(true);
     try {
-      const lista = await listarLouvores(buscaTexto || undefined);
+      // Sempre carrega o repertório completo — a busca filtra só na aba Repertório.
+      // Se filtrar na API, os grupos "somem" os louvores ao pesquisar algo inexistente.
+      const lista = await listarLouvores();
       setLouvores(lista);
     } catch (e) {
       toast.error("Erro ao carregar louvores.");
@@ -587,7 +663,7 @@ export default function PaginaLouvores() {
     } finally {
       setCarregando(false);
     }
-  }, [buscaTexto]);
+  }, []);
 
   useEffect(() => {
     carregarLouvores();
@@ -934,13 +1010,22 @@ export default function PaginaLouvores() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const louvoresFiltrados = louvores;
+  const louvoresFiltrados = useMemo(() => {
+    const q = buscaTexto.trim().toLowerCase();
+    if (!q) return louvores;
+    return louvores.filter(
+      (l) =>
+        l.title.toLowerCase().includes(q) ||
+        l.artist.toLowerCase().includes(q) ||
+        (l.key ?? "").toLowerCase().includes(q),
+    );
+  }, [louvores, buscaTexto]);
   const obterLouvorPorId = (id: string) => louvores.find((p) => p.id === id);
 
   return (
     <LayoutApp>
       <div className="space-y-4 animate-fade-in min-w-0">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gold text-gold-foreground">
               <Music className="h-6 w-6" />
@@ -953,13 +1038,19 @@ export default function PaginaLouvores() {
             </div>
           </div>
 
-          <Dialog open={dialogAberto} onOpenChange={(open) => { setDialogAberto(open); if (!open) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button className="gap-2 shrink-0 w-full sm:w-auto" onClick={abrirNovo} disabled={!podeCadastrar} title={!podeCadastrar ? "Apenas administradores podem cadastrar louvores" : undefined}>
-                  <Plus className="h-4 w-4" />
-                  Novo
-              </Button>
-            </DialogTrigger>
+          <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:shrink-0">
+            <Dialog open={dialogAberto} onOpenChange={(open) => { setDialogAberto(open); if (!open) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button
+                  className="gap-1.5 sm:gap-2 min-w-0 px-2.5 sm:px-4 text-xs sm:text-sm"
+                  onClick={abrirNovo}
+                  disabled={!podeCadastrar}
+                  title={!podeCadastrar ? "Apenas administradores podem cadastrar louvores" : undefined}
+                >
+                  <Plus className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Novo Louvor</span>
+                </Button>
+              </DialogTrigger>
               <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editando ? "Editar Louvor" : "Novo Louvor"}</DialogTitle>
@@ -1075,30 +1166,17 @@ export default function PaginaLouvores() {
                 </div>
               </DialogContent>
             </Dialog>
-        </div>
 
-        <Tabs defaultValue="groups" className="w-full min-w-0">
-          <TabsList className="grid w-full grid-cols-2 min-w-0">
-            <TabsTrigger value="groups" className="gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
-              <List className="h-4 w-4 shrink-0" />
-              <span className="truncate">Grupos</span>
-            </TabsTrigger>
-            <TabsTrigger value="all" className="gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
-              <Music className="h-4 w-4 shrink-0" />
-              <span className="truncate">Repertório</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="groups" className="mt-4 space-y-4">
             <Dialog open={dialogGrupoAberto} onOpenChange={setDialogGrupoAberto}>
               <Button
                 variant="outline"
-                className="w-full gap-2"
+                className="gap-1.5 sm:gap-2 min-w-0 px-2.5 sm:px-4 text-xs sm:text-sm"
                 onClick={() => setDialogGrupoAberto(true)}
                 disabled={!podeCadastrar}
+                title={!podeCadastrar ? "Apenas administradores podem criar grupos" : undefined}
               >
-                <Plus className="h-4 w-4" />
-                Criar Novo Grupo
+                <Plus className="h-4 w-4 shrink-0" />
+                <span className="truncate">Novo Grupo</span>
               </Button>
               <DialogContent>
                 <DialogHeader>
@@ -1127,13 +1205,35 @@ export default function PaginaLouvores() {
                 </div>
               </DialogContent>
             </Dialog>
+          </div>
+        </div>
 
+        <Tabs
+          defaultValue="groups"
+          className="w-full min-w-0"
+          onValueChange={(aba) => {
+            // Busca fica só no Repertório; ao voltar aos grupos, limpa para não confundir.
+            if (aba === "groups" && buscaTexto) setBuscaTexto("");
+          }}
+        >
+          <TabsList className="grid w-full grid-cols-2 min-w-0">
+            <TabsTrigger value="groups" className="gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
+              <List className="h-4 w-4 shrink-0" />
+              <span className="truncate">Grupos</span>
+            </TabsTrigger>
+            <TabsTrigger value="all" className="gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
+              <Music className="h-4 w-4 shrink-0" />
+              <span className="truncate">Repertório</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="groups" className="mt-4 space-y-4">
             {carregandoGrupos ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 md:items-start">
                 {grupos.filter((g): g is GrupoLouvorApp => g != null).map((grupo) => {
                   const louvoresNoGrupo = grupo.louvorIds
                     .map((id) => obterLouvorPorId(id))
@@ -1143,22 +1243,22 @@ export default function PaginaLouvores() {
                   );
 
                   return (
-                    <Card key={grupo.id} className="min-w-0 overflow-hidden">
-                      <CardHeader className="pb-3 px-3 sm:px-6">
-                        <div className="flex flex-col gap-2 min-w-0 sm:flex-row sm:items-center sm:justify-between">
-                          <CardTitle className="text-base break-words text-left leading-snug">
+                    <Card key={grupo.id} className="min-w-0 overflow-hidden flex flex-col">
+                      <CardHeader className="pb-2 px-3 pt-3">
+                        <div className="flex flex-col gap-2 min-w-0">
+                          <CardTitle className="text-sm font-semibold break-words text-left leading-snug line-clamp-2">
                             {grupo.name}
                           </CardTitle>
-                          <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
+                          <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                             {podeCadastrar && (
                               <Dialog open={grupoModalAdicionar?.id === grupo.id} onOpenChange={(open) => !open && fecharModalAdicionar()}>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="gap-1"
+                                  className="gap-1 h-7 text-xs px-2"
                                   onClick={() => abrirModalAdicionar(grupo)}
                                 >
-                                  <Plus className="h-4 w-4" />
+                                  <Plus className="h-3.5 w-3.5" />
                                   Adicionar
                                 </Button>
                                 <DialogContent className="max-h-[85vh]">
@@ -1226,7 +1326,7 @@ export default function PaginaLouvores() {
                                 </DialogContent>
                               </Dialog>
                             )}
-                            <Badge variant="secondary" className="text-xs shrink-0 whitespace-nowrap">
+                            <Badge variant="secondary" className="text-[10px] shrink-0 whitespace-nowrap">
                               {grupo.louvorIds.length} louvores
                             </Badge>
                             {podeCadastrar && (
@@ -1235,10 +1335,10 @@ export default function PaginaLouvores() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-destructive ml-0.5 sm:ml-1"
+                                    className="h-7 w-7 text-destructive"
                                     onClick={() => setExcluindoGrupo(grupo)}
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-3.5 w-3.5" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -1249,9 +1349,9 @@ export default function PaginaLouvores() {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-2 px-3 sm:px-6">
+                      <CardContent className="space-y-1.5 px-3 pb-3 pt-0">
                         {louvoresNoGrupo.length === 0 ? (
-                          <p className="text-sm text-muted-foreground py-4">
+                          <p className="text-xs text-muted-foreground py-3">
                             Nenhum louvor no grupo. Clique em &quot;Adicionar&quot; para incluir louvores.
                           </p>
                         ) : (
@@ -1264,7 +1364,7 @@ export default function PaginaLouvores() {
                               items={grupo.louvorIds}
                               strategy={verticalListSortingStrategy}
                             >
-                              <div className="space-y-2">
+                              <div className="space-y-1.5">
                                 {louvoresNoGrupo.map((louvor) => (
                                   <SortableCartaoLouvor
                                     key={louvor.id}
@@ -1275,6 +1375,8 @@ export default function PaginaLouvores() {
                                     aoVerDetalhes={(l) => abrirDetalheLouvor(l, grupo)}
                                     aoVisualizarLetra={abrirVisualizadorLetra}
                                     aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
+                                    aoAbrirYoutube={aoAbrirYoutube}
+                                    compacto
                                     noGrupo
                                     aoRemoverDoGrupo={() => solicitarRemoverDoGrupo(grupo, louvor)}
                                   />
@@ -1288,11 +1390,11 @@ export default function PaginaLouvores() {
                   );
                 })}
                 {grupos.length === 0 && !carregandoGrupos && (
-                  <div className="text-center py-12">
+                  <div className="col-span-full text-center py-12">
                     <List className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                     <p className="text-muted-foreground">Nenhum grupo criado</p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Clique em <strong>Criar Novo Grupo</strong> para começar.
+                      Clique em <strong>Novo Grupo</strong> para começar.
                     </p>
                   </div>
                 )}
@@ -1346,16 +1448,24 @@ export default function PaginaLouvores() {
                     aoVerDetalhes={(l) => abrirDetalheLouvor(l)}
                     aoVisualizarLetra={abrirVisualizadorLetra}
                     aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
+                    aoAbrirYoutube={aoAbrirYoutube}
                   />
                 ))}
                 {louvoresFiltrados.length === 0 && (
                   <div className="text-center py-12">
                     <Music className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">Nenhum louvor encontrado</p>
-                    {podeCadastrar && (
+                    <p className="text-muted-foreground">
+                      {buscaTexto.trim() ? "Nenhum louvor encontrado para esta busca" : "Nenhum louvor encontrado"}
+                    </p>
+                    {!buscaTexto.trim() && podeCadastrar && (
                       <p className="text-sm text-muted-foreground mt-2">
-                        Clique em <strong>Novo</strong> no canto superior direito para cadastrar seu primeiro louvor.
+                        Clique em <strong>Novo Louvor</strong> no canto superior direito para cadastrar seu primeiro louvor.
                       </p>
+                    )}
+                    {buscaTexto.trim() && (
+                      <Button variant="outline" className="mt-4" onClick={() => setBuscaTexto("")}>
+                        Limpar busca
+                      </Button>
                     )}
                   </div>
                 )}
@@ -1373,6 +1483,7 @@ export default function PaginaLouvores() {
           aoEditar={abrirEditar}
           aoVisualizarLetra={abrirVisualizadorLetra}
           aoVisualizarCifraOnline={abrirVisualizadorCifraOnline}
+          aoAbrirYoutube={aoAbrirYoutube}
           aoLetraManual={abrirLetraManual}
           aoCifraManual={abrirCifraManual}
           onLouvorAtualizado={atualizarLouvorNaLista}

@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useYoutubeMiniPlayer } from "@/contexts/YoutubeMiniPlayerContext";
 import { ModalResumoCulto, louvorAppDoItem } from "@/components/cultos/ModalResumoCulto";
 import { ModalCompartilharCulto } from "@/components/cultos/ModalCompartilharCulto";
 import { VisualizadorLetraLouvor } from "@/components/louvores/VisualizadorLetraLouvor";
@@ -104,6 +105,7 @@ function SortableLouvorCard({
   onVerLetra: () => void;
   onVerCifra: () => void;
 }) {
+  const { abrir: abrirYoutube } = useYoutubeMiniPlayer();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(item.louvorId),
     disabled: !podeArrastar,
@@ -185,19 +187,22 @@ function SortableLouvorCard({
         {item.youtubeUrl && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <a
-                href={item.youtubeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground touch-manipulation"
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 touch-manipulation text-muted-foreground"
                 aria-label={`YouTube: ${item.titulo}`}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  abrirYoutube({ url: item.youtubeUrl!, titulo: item.titulo });
+                }}
               >
                 <Youtube className="h-3.5 w-3.5" />
-              </a>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Abrir no YouTube</p>
+              <p>Ouvir no app</p>
             </TooltipContent>
           </Tooltip>
         )}

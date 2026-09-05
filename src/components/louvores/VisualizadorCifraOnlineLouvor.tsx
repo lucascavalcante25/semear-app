@@ -276,6 +276,18 @@ export function VisualizadorCifraOnlineLouvor({
             </Button>
           </div>
         )}
+
+        {modoEdicao && !carregando && (
+          <Button
+            type="button"
+            size="sm"
+            className="shrink-0"
+            onClick={() => void salvarManual()}
+            disabled={salvando}
+          >
+            {salvando ? "Salvando…" : "Salvar"}
+          </Button>
+        )}
       </header>
 
       <div
@@ -291,6 +303,25 @@ export function VisualizadorCifraOnlineLouvor({
 
         {modoEdicao && !carregando && (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => void salvarManual()} disabled={salvando}>
+                {salvando ? "Salvando…" : "Salvar cifra"}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-zinc-500 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700 hover:text-white"
+                onClick={() => {
+                  if (linhas.length > 0) {
+                    setModoEdicao(false);
+                  } else {
+                    onFechar();
+                  }
+                }}
+                disabled={salvando}
+              >
+                Cancelar
+              </Button>
+            </div>
             <p className="text-sm text-zinc-400">
               Cole a cifra com acordes na linha de cima e a letra embaixo. A prévia abaixo já mostra o visual
               Cifra Club; ao salvar, não precisa sair da música.
@@ -323,7 +354,7 @@ export function VisualizadorCifraOnlineLouvor({
                 />
               </div>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 pb-4">
               <Button onClick={() => void salvarManual()} disabled={salvando}>
                 {salvando ? "Salvando…" : "Salvar cifra"}
               </Button>

@@ -48,6 +48,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useYoutubeMiniPlayer } from "@/contexts/YoutubeMiniPlayerContext";
 import { VisualizadorLetraLouvor } from "@/components/louvores/VisualizadorLetraLouvor";
 import { VisualizadorCifraOnlineLouvor } from "@/components/louvores/VisualizadorCifraOnlineLouvor";
 import { ModalCompartilharCulto } from "@/components/cultos/ModalCompartilharCulto";
@@ -122,6 +123,7 @@ function SortableLouvorRow({
   onVerLetra: () => void;
   onVerCifra: () => void;
 }) {
+  const { abrir: abrirYoutube } = useYoutubeMiniPlayer();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(item.louvorId),
     disabled: !podeArrastar,
@@ -190,18 +192,19 @@ function SortableLouvorRow({
         {item.youtubeUrl && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <a
-                href={item.youtubeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-sm hover:bg-accent hover:text-accent-foreground touch-manipulation"
-                aria-label="Abrir no YouTube"
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 touch-manipulation"
+                aria-label="Ouvir no app"
+                onClick={() => abrirYoutube({ url: item.youtubeUrl!, titulo: item.titulo })}
               >
                 <Youtube className="h-4 w-4" />
-              </a>
+              </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Abrir no YouTube</p>
+              <p>Ouvir no app</p>
             </TooltipContent>
           </Tooltip>
         )}

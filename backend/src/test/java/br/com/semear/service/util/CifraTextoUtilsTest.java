@@ -40,4 +40,28 @@ class CifraTextoUtilsTest {
         String limpa = "[Intro] G  C9  Em7  D\n\nG                    C9\nEu vejo a glória";
         assertThat(CifraTextoUtils.sanitizar(limpa)).isEqualTo(limpa);
     }
+
+    @Test
+    void corrigeLetraAcordeMesmaLetra() {
+        String bruto = """
+            Tom: D
+            Tom: D
+            [Refrão]
+            D
+            [Refrão]
+            Se não for pra te adorar
+            D
+            Se não for pra te adorar
+            Para que nasci?
+            G
+            Para que nasci?
+            """;
+        String limpo = CifraTextoUtils.sanitizar(bruto);
+        assertThat(limpo.lines().filter(l -> l.equals("Tom: D")).count()).isEqualTo(1);
+        assertThat(limpo.lines().filter(l -> l.equals("[Refrão]")).count()).isEqualTo(1);
+        assertThat(limpo.lines().filter(l -> l.equals("Se não for pra te adorar")).count()).isEqualTo(1);
+        assertThat(limpo.lines().filter(l -> l.equals("Para que nasci?")).count()).isEqualTo(1);
+        assertThat(limpo).contains("D\nSe não for pra te adorar");
+        assertThat(limpo).contains("G\nPara que nasci?");
+    }
 }

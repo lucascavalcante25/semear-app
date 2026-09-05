@@ -131,12 +131,19 @@ public class LouvorConteudoService {
 
             Optional<CifraCache> cache = lerCacheCifra(louvor.getCifraConteudo());
             if (cache.isPresent()) {
+                List<String> linhas = CifraTextoUtils.sanitizarLinhas(cache.get().linhas());
+                if (!linhas.equals(cache.get().linhas())) {
+                    Instant agora = Instant.now();
+                    salvarCacheCifra(louvor, cache.get().url(), linhas, cache.get().fonte(), agora);
+                    dto.setCacheEm(agora);
+                } else {
+                    dto.setCacheEm(louvor.getCifraApiCacheEm());
+                }
                 dto.setDisponivel(true);
-                dto.setLinhas(cache.get().linhas());
+                dto.setLinhas(linhas);
                 dto.setUrl(cache.get().url());
                 dto.setFonte(cache.get().fonte());
                 dto.setDoCache(true);
-                dto.setCacheEm(louvor.getCifraApiCacheEm());
                 return dto;
             }
 
