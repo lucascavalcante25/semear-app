@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ClipboardEvent } from "react";
 import { LayoutApp } from "@/components/layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,7 +88,7 @@ import {
   obterCifraOnlineLouvor,
   type LouvorApp,
 } from "@/modules/louvores/api";
-import { sanitizarTextoCifraColado } from "@/lib/cifra-linhas";
+import { sanitizarTextoCifraColado, textoCifraDoClipboard } from "@/lib/cifra-linhas";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DndContext,
@@ -364,254 +364,167 @@ function CartaoLouvor({
   dragHandleProps,
 }: CartaoLouvorProps) {
   const config = typeConfig[louvor.type];
+  const iconBtn = cn("shrink-0 text-foreground", compacto ? "h-7 w-7" : "h-8 w-8");
+  const iconSize = compacto ? "h-3.5 w-3.5" : "h-4 w-4";
 
   return (
     <Card className={cn("hover:shadow-md transition-shadow min-w-0 overflow-hidden", compacto && "shadow-none")}>
-      <CardContent className={cn("p-3 sm:p-4", compacto && "p-2.5 sm:p-3")}>
-        <div className={cn("flex items-start gap-2 sm:gap-3 min-w-0", compacto && "flex-col gap-2")}>
-          <div className={cn("flex items-start gap-2 sm:gap-3 min-w-0 w-full", compacto && "gap-1.5")}>
-            {showDrag && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    {...dragHandleProps}
-                    className={cn(
-                      "cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted shrink-0 mt-0.5",
-                      compacto && "p-0.5",
-                    )}
-                  >
-                    <GripVertical className={cn("h-5 w-5 text-muted-foreground", compacto && "h-4 w-4")} />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Arrastar para reordenar</p>
-                </TooltipContent>
-              </Tooltip>
+      <CardContent className={cn("p-3 sm:p-4", compacto && "p-2 sm:p-2.5")}>
+        <div className={cn("flex items-start gap-2 min-w-0", compacto ? "gap-1.5" : "sm:gap-3")}>
+          {showDrag && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  {...dragHandleProps}
+                  className={cn(
+                    "cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 rounded hover:bg-muted shrink-0 mt-0.5",
+                    compacto && "p-0.5",
+                  )}
+                >
+                  <GripVertical className={cn("h-5 w-5 text-muted-foreground", compacto && "h-4 w-4")} />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Arrastar para reordenar</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          <div
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold-dark font-bold",
+              compacto ? "h-8 w-8 text-[11px]" : "h-9 w-9 sm:h-10 sm:w-10 text-xs sm:text-sm",
             )}
-
-            <div
-              className={cn(
-                "flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-lg bg-gold/10 text-gold-dark font-bold text-xs sm:text-sm",
-                compacto && "h-8 w-8 text-[11px]",
-              )}
-            >
-              {louvor.key || "—"}
-            </div>
-
-            <button
-              type="button"
-              className="flex-1 min-w-0 text-left rounded-md -my-1 py-1 px-0.5 hover:bg-muted/50 transition-colors"
-              onClick={() => aoVerDetalhes?.(louvor)}
-            >
-              <h3 className={cn("font-semibold text-sm sm:text-base leading-snug break-words", compacto && "text-sm line-clamp-2")}>
-                {louvor.title}
-              </h3>
-              <div className={cn("mt-1 flex flex-wrap items-center gap-x-2 gap-y-1", compacto && "mt-0.5 gap-x-1.5")}>
-                <Badge variant="outline" className={cn("text-[10px] sm:text-xs shrink-0", config.color, compacto && "text-[10px] px-1.5 py-0")}>
-                  {config.label}
-                </Badge>
-                <p className={cn("text-xs sm:text-sm text-muted-foreground break-words min-w-0", compacto && "text-[11px] line-clamp-1")}>
-                  {louvor.artist}
-                </p>
-              </div>
-            </button>
-
-            {!compacto && (
-              <div className="flex items-center gap-0.5 shrink-0 -mr-1 sm:mr-0">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={cn("h-8 w-8 text-foreground", louvor.temLetraSalva && "text-primary")}
-                      onClick={() => aoVisualizarLetra?.(louvor)}
-                      aria-label="Ver letra"
-                    >
-                      <Mic2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={cn("h-8 w-8 text-foreground", louvor.temCifraApiSalva && "text-primary")}
-                      onClick={() => aoVisualizarCifraOnline?.(louvor)}
-                      aria-label="Ver cifra"
-                    >
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
-                  </TooltipContent>
-                </Tooltip>
-                {louvor.youtubeUrl && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => aoAbrirYoutube?.(louvor)}
-                        aria-label="Ouvir no app"
-                      >
-                        <Youtube className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Ouvir no app</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                <DropdownMenu>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Mais opções</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem onClick={() => aoVerDetalhes?.(louvor)}>
-                      <Music className="h-4 w-4 mr-2" />
-                      Ver detalhes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => aoEditar(louvor)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Editar
-                    </DropdownMenuItem>
-                    {(noGrupo && aoRemoverDoGrupo) || !noGrupo ? <DropdownMenuSeparator /> : null}
-                    {noGrupo && aoRemoverDoGrupo && (
-                      <DropdownMenuItem
-                        onClick={() => aoRemoverDoGrupo(louvor)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Remover do grupo
-                      </DropdownMenuItem>
-                    )}
-                    {!noGrupo && (
-                      <DropdownMenuItem onClick={() => aoExcluir(louvor)} className="text-destructive focus:text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
+          >
+            {louvor.key || "—"}
           </div>
 
-          {compacto && (
-            <div className="flex items-center justify-end gap-0.5 w-full border-t border-border/60 pt-1.5 -mb-0.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-7 w-7 text-foreground", louvor.temLetraSalva && "text-primary")}
-                    onClick={() => aoVisualizarLetra?.(louvor)}
-                    aria-label="Ver letra"
-                  >
-                    <Mic2 className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-7 w-7 text-foreground", louvor.temCifraApiSalva && "text-primary")}
-                    onClick={() => aoVisualizarCifraOnline?.(louvor)}
-                    aria-label="Ver cifra"
-                  >
-                    <FileText className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
-                </TooltipContent>
-              </Tooltip>
-              {louvor.youtubeUrl && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => aoAbrirYoutube?.(louvor)}
-                      aria-label="Ouvir no app"
-                    >
-                      <Youtube className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Ouvir no app</p>
-                  </TooltipContent>
-                </Tooltip>
+          <button
+            type="button"
+            className="flex-1 min-w-0 text-left rounded-md -my-1 py-1 px-0.5 hover:bg-muted/50 transition-colors"
+            onClick={() => aoVerDetalhes?.(louvor)}
+          >
+            <h3
+              className={cn(
+                "font-semibold leading-snug break-words",
+                compacto ? "text-sm line-clamp-2" : "text-sm sm:text-base",
               )}
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Mais opções</p>
-                  </TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem onClick={() => aoVerDetalhes?.(louvor)}>
-                    <Music className="h-4 w-4 mr-2" />
-                    Ver detalhes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => aoEditar(louvor)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </DropdownMenuItem>
-                  {(noGrupo && aoRemoverDoGrupo) || !noGrupo ? <DropdownMenuSeparator /> : null}
-                  {noGrupo && aoRemoverDoGrupo && (
-                    <DropdownMenuItem
-                      onClick={() => aoRemoverDoGrupo(louvor)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remover do grupo
-                    </DropdownMenuItem>
-                  )}
-                  {!noGrupo && (
-                    <DropdownMenuItem onClick={() => aoExcluir(louvor)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Excluir
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+            >
+              {louvor.title}
+            </h3>
+            <div className={cn("mt-1 flex flex-wrap items-center gap-x-2 gap-y-1", compacto && "mt-0.5 gap-x-1.5")}>
+              <Badge
+                variant="outline"
+                className={cn("text-[10px] sm:text-xs shrink-0", config.color, compacto && "px-1.5 py-0")}
+              >
+                {config.label}
+              </Badge>
+              <p
+                className={cn(
+                  "text-muted-foreground min-w-0",
+                  compacto ? "text-[11px] line-clamp-1" : "text-xs sm:text-sm break-words",
+                )}
+              >
+                {louvor.artist}
+              </p>
             </div>
-          )}
+          </button>
+
+          <div className="flex items-center gap-0 shrink-0 self-center -mr-1 sm:mr-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(iconBtn, louvor.temLetraSalva && "text-primary")}
+                  onClick={() => aoVisualizarLetra?.(louvor)}
+                  aria-label="Ver letra"
+                >
+                  <Mic2 className={iconSize} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ver letra{louvor.temLetraSalva ? " (salva)" : ""}</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(iconBtn, louvor.temCifraApiSalva && "text-primary")}
+                  onClick={() => aoVisualizarCifraOnline?.(louvor)}
+                  aria-label="Ver cifra"
+                >
+                  <FileText className={iconSize} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Cifra online{louvor.temCifraApiSalva ? " (salva)" : ""}</p>
+              </TooltipContent>
+            </Tooltip>
+            {louvor.youtubeUrl && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={iconBtn}
+                    onClick={() => aoAbrirYoutube?.(louvor)}
+                    aria-label="Ouvir no app"
+                  >
+                    <Youtube className={iconSize} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ouvir no app</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className={iconBtn}>
+                      <MoreVertical className={iconSize} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mais opções</p>
+                </TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={() => aoVerDetalhes?.(louvor)}>
+                  <Music className="h-4 w-4 mr-2" />
+                  Ver detalhes
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => aoEditar(louvor)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                {(noGrupo && aoRemoverDoGrupo) || !noGrupo ? <DropdownMenuSeparator /> : null}
+                {noGrupo && aoRemoverDoGrupo && (
+                  <DropdownMenuItem
+                    onClick={() => aoRemoverDoGrupo(louvor)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remover do grupo
+                  </DropdownMenuItem>
+                )}
+                {!noGrupo && (
+                  <DropdownMenuItem onClick={() => aoExcluir(louvor)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -856,8 +769,19 @@ export default function PaginaLouvores() {
     }
   };
 
-  const colarTextoLimpo = (valor: string, setter: (v: string) => void) => {
-    setter(sanitizarTextoCifraColado(valor));
+  const colarTextoLimpoNoCampo = (
+    e: ClipboardEvent<HTMLTextAreaElement>,
+    valorAtual: string,
+    setter: (v: string) => void,
+  ) => {
+    const colado = textoCifraDoClipboard(e.clipboardData);
+    if (!colado) return;
+    e.preventDefault();
+    const alvo = e.currentTarget;
+    const inicio = alvo.selectionStart ?? valorAtual.length;
+    const fim = alvo.selectionEnd ?? valorAtual.length;
+    const misturado = valorAtual.slice(0, inicio) + colado + valorAtual.slice(fim);
+    setter(sanitizarTextoCifraColado(misturado));
   };
 
   const salvar = async () => {
@@ -1172,12 +1096,7 @@ export default function PaginaLouvores() {
                       placeholder="Cole a letra aqui, se já tiver. Também pode buscar depois pela API."
                       value={letraManual}
                       onChange={(e) => setLetraManual(e.target.value)}
-                      onPaste={(e) => {
-                        const colado = e.clipboardData.getData("text");
-                        if (!colado) return;
-                        e.preventDefault();
-                        colarTextoLimpo(colado, setLetraManual);
-                      }}
+                      onPaste={(e) => colarTextoLimpoNoCampo(e, letraManual, setLetraManual)}
                       rows={4}
                       className="font-mono text-sm"
                       disabled={carregandoConteudoEdicao}
@@ -1190,16 +1109,11 @@ export default function PaginaLouvores() {
                     <Label htmlFor="cifra-manual">Cifra (opcional)</Label>
                     <Textarea
                       id="cifra-manual"
-                      placeholder="Cole a cifra aqui, se já tiver. Também pode buscar depois pela API."
+                      placeholder="Cole a cifra do Cifra Club aqui — o app limpa e formata igual na edição."
                       value={cifraManual}
                       onChange={(e) => setCifraManual(e.target.value)}
-                      onPaste={(e) => {
-                        const colado = e.clipboardData.getData("text");
-                        if (!colado) return;
-                        e.preventDefault();
-                        colarTextoLimpo(colado, setCifraManual);
-                      }}
-                      rows={4}
+                      onPaste={(e) => colarTextoLimpoNoCampo(e, cifraManual, setCifraManual)}
+                      rows={6}
                       className="font-mono text-sm whitespace-pre"
                       disabled={carregandoConteudoEdicao}
                     />
